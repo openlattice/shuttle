@@ -1,0 +1,102 @@
+plugins {
+    id "application"
+    id "java"
+    id "eclipse"
+    id "idea"
+    id "jacoco"
+}
+
+description = "synapse"
+group = "com.openlattice"
+
+//Keep the following block above the apply from
+ext.projectName = "synapse"
+ext.scmUrl = 'scm:git:https://github.com/openlattice/synapse.git'
+ext.connectionUrl = 'scm:git:https://github.com/openlattice/synapse.git'
+ext.developerConnectionUrl = 'scm:git:https://github.com/openlattice/synapse.git'
+
+apply from: "https://raw.githubusercontent.com/openlattice/gradles/master/openlattice.gradle"
+
+distTar {
+    archiveName "synapse.tgz"
+}
+//Light on the resources
+mainClassName = "com.openlattice.synapse.Synapse"
+applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server"]
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+run {
+    if (System.getProperty("exec.args")) {
+        args System.getProperty("exec.args").split()
+    }
+}
+
+run.args = ["cassandra", "spark"]
+
+configurations {
+    provided
+}
+
+configurations.all {
+    exclude module: 'slf4j-log4j12'
+}
+
+sourceSets {
+    main.compileClasspath += configurations.provided
+    test.compileClasspath += configurations.provided
+    test.runtimeClasspath += configurations.provided
+}
+
+dependencies {
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:${jackson_version}"
+    compile "com.datastax.spark:spark-cassandra-connector_2.11:${spark_cassandra_connector_version}"
+    compile "org.apache.spark:spark-core_2.11:${spark_version}"
+    compile "org.apache.spark:spark-sql_2.11:${spark_version}"
+    compile "org.apache.spark:spark-mllib_2.11:${spark_version}"
+    compile "org.apache.spark:spark-graphx_2.11:${spark_version}"
+    compile "org.apache.spark:spark-streaming_2.11:${spark_version}"
+
+    if (project.hasProperty('developmentMode') && project.developmentMode) {
+        logger.quiet(project.name + " using project dependencies.")
+        compile project(":rhizome")
+        compile project(":loom-api")
+
+        testCompile( project(path: ":loom-api", configuration: "tests"))
+        testCompile( project(path: ":rhizome", configuration: "tests"))
+        testCompile( project(path: ":rhizome-client", configuration: "tests"))
+    } else {
+        logger.quiet(project.name + " using jar dependencies.")
+        compile "com.kryptnostic:rhizome:${rhizome_version}"
+        compile "com.kryptnostic:loom-api:${loom_api_version}"
+        compile "com.kryptnostic:kindling:${kindling_version}"
+
+        testCompile "com.kryptnostic:loom-api:${loom_api_version}:tests"
+        testCompile "com.kryptnostic:rhizome:${rhizome_version}:tests"
+        testCompile "com.kryptnostic:rhizome-client:${rhizome_client_version}:tests"
+    }
+
+    compile fileTree(dir: "lib/", include: "*.jar")
+
+    /*
+     * TESTING
+     */
+    testCompile "junit:junit:${junit_version}"
+    testCompile "org.mockito:mockito-core:2.2.7";
+
+    if (project.hasProperty("developmentMode") && project.developmentMode) {
+       testCompile project(":loom-api")
+    } else{
+       testCompile "com.kryptnostic:loom-api:${loom_api_version}"
+    }
+}
+
+eclipse {
+    ext.downloadSources = true
+    ext.downloadJavadoc = true
+
+    ext.sourceCompatibility = JavaVersion.VERSION_1_8
+    ext.targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+eclipse.classpath.plusConfigurations += [configurations.provided]
