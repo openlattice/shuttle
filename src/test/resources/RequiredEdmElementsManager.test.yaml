@@ -1,0 +1,34 @@
+propertyTypes:
+- datatype: "String"
+  piiField: false
+  analyzer: "METAPHONE"
+  properties:
+  - type: "test.p0"
+    title: "Property 0"
+    description: "A property"
+  - type: "test.p1"
+    title: "Property 1"
+    description: "A property"
+  - type: "test.p2"
+    title: "Property 2"
+    description: "A property"
+
+entityTypes:
+- type: "test.a"
+  title: "A"
+  description: "An entity type"
+  key:
+  - "test.p0"
+  properties:
+  - "test.p1"
+  - "test.p2"
+  baseType: null
+
+entitySets:
+- type: "test.a"
+  name: "tester"
+  title: "Tester"
+  description: "This is a test entity set"
+  contacts:
+  - "info@openlattice.com"
+  - "support@openlattice.com"

@@ -6,22 +6,22 @@ plugins {
     id "jacoco"
 }
 
-description = "synapse"
+description = "shuttle"
 group = "com.openlattice"
 
-//Keep the following block above the apply from
-ext.projectName = "synapse"
-ext.scmUrl = 'scm:git:https://github.com/openlattice/synapse.git'
-ext.connectionUrl = 'scm:git:https://github.com/openlattice/synapse.git'
-ext.developerConnectionUrl = 'scm:git:https://github.com/openlattice/synapse.git'
+// keep the following block above the "apply from"
+ext.projectName = "shuttle"
+ext.scmUrl = 'scm:git:https://github.com/openlattice/shuttle.git'
+ext.connectionUrl = 'scm:git:https://github.com/openlattice/shuttle.git'
+ext.developerConnectionUrl = 'scm:git:https://github.com/openlattice/shuttle.git'
 
 apply from: "https://raw.githubusercontent.com/openlattice/gradles/master/openlattice.gradle"
 
 distTar {
-    archiveName "synapse.tgz"
+    archiveName "shuttle.tgz"
 }
-//Light on the resources
-mainClassName = "com.openlattice.synapse.Synapse"
+
+mainClassName = "com.openlattice.shuttle.ShuttleServer"
 applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server"]
 sourceCompatibility = JavaVersion.VERSION_1_8
 targetCompatibility = JavaVersion.VERSION_1_8
@@ -49,6 +49,7 @@ sourceSets {
 }
 
 dependencies {
+
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:${jackson_version}"
     compile "com.datastax.spark:spark-cassandra-connector_2.11:${spark_cassandra_connector_version}"
     compile "org.apache.spark:spark-core_2.11:${spark_version}"
@@ -78,9 +79,6 @@ dependencies {
 
     compile fileTree(dir: "lib/", include: "*.jar")
 
-    /*
-     * TESTING
-     */
     testCompile "junit:junit:${junit_version}"
     testCompile "org.mockito:mockito-core:2.2.7";
 
