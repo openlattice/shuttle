@@ -1,0 +1,4 @@
+reportEmailAddress: support@openlattice.com
+sparkJars:
+  - ../kindling/build/libs/kindling-0.0.0-SNAPSHOT-all.jar
+  - ./kindling/build/libs/kindling-0.0.0-SNAPSHOT-all.jar
