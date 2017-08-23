@@ -20,6 +20,7 @@
 package com.openlattice.shuttle;
 
 import com.dataloom.LoomUtil;
+import com.dataloom.authorization.PermissionsApi;
 import com.dataloom.client.ApiFactoryFactory;
 import com.dataloom.client.LoomClient;
 import com.dataloom.client.RetrofitFactory.Environment;
@@ -44,6 +45,7 @@ import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.slf4j.Logger;
@@ -51,6 +53,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,7 +71,7 @@ public class Shuttle implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger( Shuttle.class );
 
-    private static final ExecutorService executor = Executors.newFixedThreadPool( 25 );
+    private static final ExecutorService executor = Executors.newFixedThreadPool( 16 );
 
     private static transient LoadingCache<String, UUID>            entitySetIdCache = null;
     private static transient LoadingCache<FullQualifiedName, UUID> propertyIdsCache = null;
@@ -99,10 +102,12 @@ public class Shuttle implements Serializable {
 
         EdmApi edmApi;
         SyncApi syncApi;
+        PermissionsApi permissionsApi;
 
         try {
             edmApi = this.loomClient.getEdmApi();
             syncApi = this.loomClient.getSyncApi();
+            permissionsApi = this.loomClient.getPermissionsApi();
         } catch ( ExecutionException e ) {
             logger.error( "Failed to retrieve apis." );
             return;
@@ -112,7 +117,7 @@ public class Shuttle implements Serializable {
                 .loadConfiguration( RequiredEdmElements.class );
 
         if ( requiredEdmElements != null ) {
-            RequiredEdmElementsManager reem = new RequiredEdmElementsManager( edmApi );
+            RequiredEdmElementsManager reem = new RequiredEdmElementsManager( edmApi, permissionsApi );
             reem.ensureEdmElementsExist( requiredEdmElements );
         }
 
@@ -197,7 +202,7 @@ public class Shuttle implements Serializable {
     public void launchFlight( Flight flight, Dataset<Row> payload, Map<UUID, UUID> syncIds )
             throws InterruptedException {
 
-        payload.foreach( ( row ) -> {
+        BulkDataCreation remaining = payload.toJavaRDD().map( (Function<Row, BulkDataCreation>) ( Row row ) -> {
 
             DataApi dataApi;
             EdmApi edmApi;
@@ -207,7 +212,7 @@ public class Shuttle implements Serializable {
                 edmApi = this.loomClient.getEdmApi();
             } catch ( ExecutionException e ) {
                 logger.error( "Failed to retrieve apis." );
-                return;
+                throw new IllegalStateException( "Unable to retrieve APIs for execution" );
             }
 
             if ( entitySetIdCache == null ) {
@@ -332,14 +337,39 @@ public class Shuttle implements Serializable {
                 MissionControl.signal();
             }
 
-            executor.execute(
-                    () -> dataApi.createEntityAndAssociationData(
-                            new BulkDataCreation( syncTickets, entities, associations )
-                    )
-            );
+            return new BulkDataCreation( syncTickets, entities, associations );
+        } )
+        .reduce( ( a, b ) -> {
+
+            DataApi dataApi;
+            try {
+                dataApi = this.loomClient.getDataApi();
+            } catch ( ExecutionException e ) {
+                logger.error( "Failed to retrieve apis." );
+                throw new IllegalStateException( "Unable to retrieve APIs for execution" );
+            }
+
+            a.getTickets().addAll( b.getTickets() );
+            a.getAssociations().addAll( b.getAssociations() );
+            a.getEntities().addAll( b.getEntities() );
+
+            if ( a.getAssociations().size() > 10000 || a.getEntities().size() > 10000 ) {
+                dataApi.createEntityAndAssociationData( a ) ;//);
+                return new BulkDataCreation( new HashSet<>(), new HashSet<>(), new HashSet<>() );
+            }
+
+            return a;
         } );
 
-        MissionControl.waitForIt();
+        DataApi dataApi;
+        try {
+            dataApi = this.loomClient.getDataApi();
+            dataApi.createEntityAndAssociationData( remaining );
+        } catch ( ExecutionException e ) {
+            logger.error( "Failed to retrieve apis." );
+            throw new IllegalStateException( "Unable to retrieve APIs for execution" );
+        }
+        // MissionControl.waitForIt();
     }
 
     /*

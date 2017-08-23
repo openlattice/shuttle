@@ -23,10 +23,14 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 
 public class DateTimeHelper implements Serializable {
+
+    private static final Logger logger = LoggerFactory.getLogger( DateTimeHelper.class );
 
     private final     DateTimeZone      tz;
     private final     String            datePattern;
@@ -50,6 +54,11 @@ public class DateTimeHelper implements Serializable {
             this.formatter = DateTimeFormat.forPattern( datePattern );
         }
 
-        return LocalDateTime.parse( date, formatter ).toDateTime( tz ).toString();
+        try {
+            return LocalDateTime.parse( date, formatter ).toDateTime( tz ).toString();
+        } catch ( Exception e ) {
+            logger.error( "Unable to parse date {}", date, e );
+            return null;
+        }
     }
 }
