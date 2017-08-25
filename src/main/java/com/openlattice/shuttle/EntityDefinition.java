@@ -37,6 +37,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -213,6 +214,12 @@ public class EntityDefinition implements Serializable {
             this.useCurrentSync = false;
         }
 
+        public Builder key( String... key ) {
+            return key(
+                    Stream.of( key ).map( FullQualifiedName::new ).toArray( FullQualifiedName[]::new )
+            );
+        }
+
         public Builder key( FullQualifiedName... key ) {
 
             checkNotNull( key, "Key cannot be null." );
@@ -230,6 +237,10 @@ public class EntityDefinition implements Serializable {
             return this;
         }
 
+        public Builder ofType( String fqn ) {
+            return ofType( new FullQualifiedName( fqn ) );
+        }
+
         public Builder ofType( FullQualifiedName entityTypeFqn ) {
             this.entityTypeFqn = entityTypeFqn;
             return this;
@@ -244,6 +255,10 @@ public class EntityDefinition implements Serializable {
         public Builder useCurrentSync() {
             this.useCurrentSync = true;
             return this;
+        }
+
+        public PropertyDefinition.Builder<EntityDefinition.Builder> addProperty( String propertyTypeFqn ) {
+            return addProperty( new FullQualifiedName( propertyTypeFqn ) );
         }
 
         public PropertyDefinition.Builder<EntityDefinition.Builder> addProperty( FullQualifiedName propertyTypeFqn ) {

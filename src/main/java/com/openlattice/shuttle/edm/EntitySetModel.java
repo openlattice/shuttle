@@ -23,6 +23,7 @@ import com.dataloom.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import java.util.Set;
@@ -34,6 +35,8 @@ public class EntitySetModel {
     private final String            title;
     private final String            description;
     private final Set<String>       contacts;
+    private final Set<String>       owners;
+
 
     @JsonCreator
     public EntitySetModel(
@@ -41,13 +44,15 @@ public class EntitySetModel {
             @JsonProperty( SerializationConstants.NAME_FIELD ) String name,
             @JsonProperty( SerializationConstants.TITLE_FIELD ) String title,
             @JsonProperty( SerializationConstants.DESCRIPTION_FIELD ) Optional<String> description,
-            @JsonProperty( SerializationConstants.CONTACTS ) Set<String> contacts ) {
+            @JsonProperty( SerializationConstants.CONTACTS ) Set<String> contacts,
+            @JsonProperty( "owners" ) Optional<Set<String>> owners ) {
 
         this.type = new FullQualifiedName( type );
         this.name = name;
         this.title = title;
         this.description = description.or( "" );
         this.contacts = contacts;
+        this.owners = owners.or( ImmutableSet::of );
     }
 
     @JsonProperty( SerializationConstants.TYPE_FIELD )
@@ -75,6 +80,11 @@ public class EntitySetModel {
         return contacts;
     }
 
+    @JsonProperty( "owners" )
+    public Set<String> getOwners() {
+        return owners;
+    }
+
     @Override
     public boolean equals( Object o ) {
 
@@ -93,7 +103,11 @@ public class EntitySetModel {
             return false;
         if ( !description.equals( that.description ) )
             return false;
-        return contacts.equals( that.contacts );
+        if (!contacts.equals( that.contacts ) )
+            return false;
+        if (!owners.equals( that.owners ) )
+            return false;
+        return true;
     }
 
     @Override
@@ -104,6 +118,7 @@ public class EntitySetModel {
         result = 31 * result + title.hashCode();
         result = 31 * result + description.hashCode();
         result = 31 * result + contacts.hashCode();
+        result = 31 * result + owners.hashCode();
         return result;
     }
 }

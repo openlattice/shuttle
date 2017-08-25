@@ -19,6 +19,14 @@
 
 package com.openlattice.shuttle.edm;
 
+import com.dataloom.authorization.Ace;
+import com.dataloom.authorization.Acl;
+import com.dataloom.authorization.AclData;
+import com.dataloom.authorization.Action;
+import com.dataloom.authorization.Permission;
+import com.dataloom.authorization.PermissionsApi;
+import com.dataloom.authorization.Principal;
+import com.dataloom.authorization.PrincipalType;
 import com.dataloom.authorization.securable.SecurableObjectType;
 import com.dataloom.edm.EdmApi;
 import com.dataloom.edm.EntitySet;
@@ -27,6 +35,7 @@ import com.dataloom.edm.type.EntityType;
 import com.dataloom.edm.type.PropertyType;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -35,7 +44,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.InvalidParameterException;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -48,10 +59,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class RequiredEdmElementsManager {
 
     private static final Logger logger = LoggerFactory.getLogger( RequiredEdmElementsManager.class );
-    private final EdmApi edmApi;
+    private final EdmApi         edmApi;
+    private final PermissionsApi permissionsApi;
 
-    public RequiredEdmElementsManager( EdmApi edmApi ) {
+    public RequiredEdmElementsManager( EdmApi edmApi, PermissionsApi permissionsApi ) {
+
         this.edmApi = edmApi;
+        this.permissionsApi = permissionsApi;
     }
 
     public void ensureEdmElementsExist( RequiredEdmElements elements ) {
@@ -163,6 +177,22 @@ public class RequiredEdmElementsManager {
             ensureEntitySetAreEqual( entitySet, edmApi.getEntitySet( entitySetId ) );
         }
 
+        final UUID esId = entitySetId;
+
+        for ( String owner : entitySet.getOwners() ) {
+            Set<UUID> ownableAclIds = edmApi.getEntityType( entityTypeIds.get( entitySet.getType() ) )
+                    .getProperties();
+
+            Set<List<UUID>> aclKeys = ownableAclIds.stream()
+                    .map( idPart -> ImmutableList.of( esId, idPart ) )
+                    .collect( Collectors.toSet() );
+            aclKeys.add( ImmutableList.of( esId ) );
+
+            for ( List<UUID> aclKey : aclKeys ) {
+                addOwnerIfNotPresent( aclKey, owner );
+            }
+        }
+
         return checkNotNull( entitySetId, "Entity set doesn't exist or failed to create entity set" );
     }
 
@@ -193,6 +223,14 @@ public class RequiredEdmElementsManager {
         }
 
         return checkNotNull( entityTypeId, "Entity type doesn't exist or failed to create entity type" );
+    }
+
+    private void addOwnerIfNotPresent( List<UUID> aclKey, String owner ) {
+        Acl acl = new Acl( aclKey,
+                ImmutableList
+                        .of( new Ace( new Principal( PrincipalType.USER, owner ),
+                                EnumSet.allOf( Permission.class ) ) ) );
+        permissionsApi.updateAcl( new AclData( acl, Action.ADD ) );
     }
 
     private void ensurePropertyTypesAreEqual( PropertyType a, PropertyType b ) {
