@@ -274,8 +274,19 @@ public class EntityDefinition implements Serializable {
 
             return new PropertyDefinition.Builder<EntityDefinition.Builder>( propertyTypeFqn, this, onBuild );
         }
+        
+        public Builder addProperty( String propertyFqn, String columnName ) {
+            return addProperty( new FullQualifiedName( propertyFqn ), columnName );
+        }
+        
+        public Builder addProperty( FullQualifiedName propertyFqn, String columnName ) {
+            SerializableFunction<Row, ?> defaultMapper = row -> row.getAs( columnName );
+            PropertyDefinition propertyDefinition = new PropertyDefinition( propertyFqn, defaultMapper );
+            this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
+            return this;
+        }
 
-        public EntityGroup.Builder ok() {
+        public EntityGroup.Builder endEntity() {
 
             if ( this.propertyDefinitionMap.size() == 0 ) {
                 throw new IllegalStateException( "invoking addProperty() at least once is required" );

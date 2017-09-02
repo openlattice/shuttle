@@ -114,7 +114,7 @@ public class EntityGroup implements Serializable {
             return new EntityDefinition.Builder( entityAlias, this, onBuild );
         }
 
-        public Flight.Builder ok() {
+        public Flight.Builder endEntities() {
 
             if ( this.entityDefinitionMap.size() == 0 ) {
                 throw new IllegalStateException( "invoking addEntity() at least once is required" );

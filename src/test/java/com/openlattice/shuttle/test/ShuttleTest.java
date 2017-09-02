@@ -107,15 +107,15 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                                 hasher.putString( row.getString( 2 ), Charsets.UTF_8 );
                             } )
                             .ok()
-                        .ok()
+                        .endEntity()
                     .addEntity( MORE_CYPHERS_ALIAS )
                         .ofType( CYPHER_ET_FQN )
                         .to( MORE_CYPHERS_ES_NAME )
                         .key( KEY_SIZE_PT_FQN )
                         .addProperty( KEY_SIZE_PT_FQN ).value( row -> row.get( 2 ) ).ok()
                         .addProperty( MODE_PT_FQN ).value( row -> row.get( 1 ) ).ok()
-                        .ok()
-                    .ok()
+                        .endEntity()
+                    .endEntities()
                 .createAssociations()
                     .addAssociation( ASSOCIATION_ALIAS )
                         .ofType( ASSOCIATION_ET_FQN )
@@ -124,8 +124,8 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .toEntity( MORE_CYPHERS_ALIAS )
                         .key( ID_PT_FQN )
                         .addProperty( ID_PT_FQN ).value( row -> row.get( 3 ) ).ok()
-                        .ok()
-                    .ok()
+                        .endAssociation()
+                    .endAssociations()
                 .done();
         // @formatter:on
 
@@ -207,8 +207,8 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         // @formatter:off
         Flight flight = Flight.newFlight()
                 .createEntities()
-                .addEntity( CYPHERS_ALIAS).ofType( CYPHER_ET_FQN ).to( CYPHERS_ES_NAME ).ok()
-                .ok().done();
+                .addEntity( CYPHERS_ALIAS).ofType( CYPHER_ET_FQN ).to( CYPHERS_ES_NAME ).endEntity()
+                .endEntities().done();
         // @formatter:on
     }
 
@@ -223,14 +223,14 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .to( CYPHERS_ES_NAME )
                         .key( ALGO_PT_FQN )
                         .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .ok()
+                        .endEntity()
                     .addEntity( CYPHERS_ALIAS)
                         .ofType( CYPHER_ET_FQN )
                         .to( CYPHERS_ES_NAME )
                         .key( ALGO_PT_FQN )
                         .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .ok()
-                    .ok()
+                        .endEntity()
+                    .endEntities()
                 .done();
         // @formatter:on
     }
@@ -246,8 +246,8 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .to( CYPHERS_ES_NAME )
                         .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
                         .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .ok()
-                    .ok()
+                        .endEntity()
+                    .endEntities()
                 .done();
         // @formatter:on
     }
@@ -263,8 +263,8 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .to( CYPHERS_ES_NAME )
                         .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
                         .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .ok()
-                    .ok()
+                        .endEntity()
+                    .endEntities()
                 .createAssociations()
                     .addAssociation( ASSOCIATION_ALIAS )
                         .ofType( ASSOCIATION_ET_FQN )
@@ -274,8 +274,8 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .key( ALGO_PT_FQN )
                         .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
                         .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .ok()
-                    .ok()
+                        .endAssociation()
+                    .endAssociations()
                 .done();
         // @formatter:on
     }
