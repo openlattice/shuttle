@@ -19,6 +19,31 @@
 
 package com.openlattice.shuttle;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.dataloom.LoomUtil;
 import com.dataloom.authorization.PermissionsApi;
 import com.dataloom.client.ApiFactoryFactory;
@@ -29,6 +54,8 @@ import com.dataloom.data.EntityKey;
 import com.dataloom.data.requests.Association;
 import com.dataloom.data.requests.BulkDataCreation;
 import com.dataloom.data.requests.Entity;
+import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
+import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
 import com.dataloom.edm.EdmApi;
 import com.dataloom.mappers.ObjectMappers;
 import com.dataloom.sync.SyncApi;
@@ -43,43 +70,29 @@ import com.openlattice.shuttle.edm.RequiredEdmElements;
 import com.openlattice.shuttle.edm.RequiredEdmElementsManager;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.Serializable;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Shuttle implements Serializable {
 
-    private static final long serialVersionUID = -7356687761893337471L;
+    private static final long                                                       serialVersionUID = -7356687761893337471L;
 
-    private static final Logger logger = LoggerFactory.getLogger( Shuttle.class );
+    private static final Logger                                                     logger           = LoggerFactory
+            .getLogger( Shuttle.class );
 
-    private static final ExecutorService executor = Executors.newFixedThreadPool( 16 );
+    private static final ExecutorService                                            executor         = Executors
+            .newFixedThreadPool( 16 );
 
-    private static transient LoadingCache<String, UUID>            entitySetIdCache = null;
-    private static transient LoadingCache<FullQualifiedName, UUID> propertyIdsCache = null;
-    private static transient LoadingCache<UUID, UUID>              ticketCache      = null;
+    private static transient LoadingCache<String, UUID>                             entitySetIdCache = null;
+    private static transient LoadingCache<FullQualifiedName, UUID>                  propertyIdsCache = null;
+    private static transient LoadingCache<UUID, UUID>                               ticketCache      = null;
+    private static transient LoadingCache<String, LinkedHashSet<FullQualifiedName>> keyCache         = null;
 
     static {
-        ObjectMappers.foreach( JacksonLambdaSerializer::registerWithMapper );
-        ObjectMappers.foreach( JacksonLambdaDeserializer::registerWithMapper );
+        ObjectMappers.foreach( mapper -> {
+            JacksonLambdaSerializer.registerWithMapper( mapper );
+            FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
+            JacksonLambdaDeserializer.registerWithMapper( mapper );
+            FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );
+        } );
     }
 
     private final LoomClient loomClient;
@@ -121,46 +134,44 @@ public class Shuttle implements Serializable {
             reem.ensureEdmElementsExist( requiredEdmElements );
         }
 
-        if ( entitySetIdCache == null ) {
-            entitySetIdCache = CacheBuilder
-                    .newBuilder()
-                    .maximumSize( 1000 )
-                    .build( new CacheLoader<String, UUID>() {
-                        @Override
-                        public UUID load( String entitySetName ) throws Exception {
-                            return edmApi.getEntitySetId( entitySetName );
-                        }
-                    } );
-        }
+        initializeEdmCaches( edmApi );
 
-        Map<String, Boolean> entitySetNamesToSyncTypes = new HashMap<>();
+        Map<UUID, Boolean> entitySetIdsToSyncTypes = new HashMap<>();
 
         flightsToPayloads.keySet().forEach( flight -> {
 
             flight
                     .getEntities()
-                    .forEach( entityDefinition ->
-                            entitySetNamesToSyncTypes.put(
-                                    entityDefinition.getEntitySetName(),
-                                    entityDefinition.useCurrentSync()
-                            )
-                    );
+                    .forEach( entityDefinition -> {
+                        UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
+                        assertPropertiesMatchEdm( entityDefinition.getEntitySetName(),
+                                entitySetId,
+                                entityDefinition.getProperties(),
+                                edmApi );
+                        entitySetIdsToSyncTypes.put(
+                                entitySetId,
+                                entityDefinition.useCurrentSync() );
+                    } );
 
             flight
                     .getAssociations()
-                    .forEach( associationDefinition ->
-                            entitySetNamesToSyncTypes.put(
-                                    associationDefinition.getEntitySetName(),
-                                    associationDefinition.useCurrentSync()
-                            )
-                    );
+                    .forEach( associationDefinition -> {
+                        UUID entitySetId = entitySetIdCache.getUnchecked( associationDefinition.getEntitySetName() );
+                        assertPropertiesMatchEdm( associationDefinition.getEntitySetName(),
+                                entitySetId,
+                                associationDefinition.getProperties(),
+                                edmApi );
+                        entitySetIdsToSyncTypes.put(
+                                entitySetId,
+                                associationDefinition.useCurrentSync() );
+                    } );
         } );
 
         Map<UUID, UUID> syncIds = new HashMap<>();
 
-        entitySetNamesToSyncTypes.entrySet().forEach( entry -> {
+        entitySetIdsToSyncTypes.entrySet().forEach( entry -> {
+            UUID entitySetId = entry.getKey();
 
-            UUID entitySetId = entitySetIdCache.getUnchecked( entry.getKey() );
             UUID syncId = ( entry.getValue() )
                     ? syncApi.getCurrentSyncId( entitySetId )
                     : syncApi.acquireSyncId( entitySetId );
@@ -199,6 +210,71 @@ public class Shuttle implements Serializable {
 
     }
 
+    private void initializeEdmCaches( EdmApi edmApi ) {
+        if ( entitySetIdCache == null ) {
+            entitySetIdCache = CacheBuilder
+                    .newBuilder()
+                    .maximumSize( 1000 )
+                    .build( new CacheLoader<String, UUID>() {
+                        @Override
+                        public UUID load( String entitySetName ) throws Exception {
+                            return edmApi.getEntitySetId( entitySetName );
+                        }
+                    } );
+        }
+
+        if ( keyCache == null ) {
+            keyCache = CacheBuilder
+                    .newBuilder()
+                    .maximumSize( 1000 )
+                    .build( new CacheLoader<String, LinkedHashSet<FullQualifiedName>>() {
+                        @Override
+                        public LinkedHashSet<FullQualifiedName> load( String entitySetName ) throws Exception {
+                            return edmApi.getEntityType(
+                                    edmApi.getEntitySet( edmApi.getEntitySetId( entitySetName ) ).getEntityTypeId() )
+                                    .getKey().stream()
+                                    .map( propertyTypeId -> edmApi.getPropertyType( propertyTypeId ).getType() )
+                                    .collect( Collectors.toCollection( LinkedHashSet::new ) );
+                        }
+                    } );
+        }
+
+        if ( propertyIdsCache == null ) {
+            propertyIdsCache = CacheBuilder
+                    .newBuilder()
+                    .maximumSize( 1000 )
+                    .build( new CacheLoader<FullQualifiedName, UUID>() {
+                        @Override
+                        public UUID load( FullQualifiedName propertyTypeFqn ) throws Exception {
+                            return edmApi.getPropertyTypeId( propertyTypeFqn.getNamespace(),
+                                    propertyTypeFqn.getName() );
+                        }
+                    } );
+        }
+    }
+
+    private void assertPropertiesMatchEdm(
+            String entitySetName,
+            UUID entitySetId,
+            Collection<PropertyDefinition> properties,
+            EdmApi edmApi ) {
+
+        Set<FullQualifiedName> propertyFqns = properties.stream()
+                .map( propertyDef -> propertyDef.getFullQualifiedName() ).collect( Collectors.toSet() );
+        Set<FullQualifiedName> entitySetPropertyFqns = edmApi.getEntityType(
+                edmApi.getEntitySet( entitySetId ).getEntityTypeId() ).getProperties().stream()
+                .map( id -> edmApi.getPropertyType( id ).getType() ).collect( Collectors.toSet() );
+        Set<FullQualifiedName> illegalFqns = Sets.filter( propertyFqns, fqn -> !entitySetPropertyFqns.contains( fqn ) );
+        if ( !illegalFqns.isEmpty() ) {
+            illegalFqns.forEach( fqn -> {
+                logger.error( "Entity set {} does not contain any property type with FQN: {}",
+                        entitySetName,
+                        fqn.toString() );
+            } );
+            throw new NullPointerException( "Illegal property types defined for entity set " + entitySetName );
+        }
+    }
+
     public void launchFlight( Flight flight, Dataset<Row> payload, Map<UUID, UUID> syncIds )
             throws InterruptedException {
 
@@ -215,30 +291,7 @@ public class Shuttle implements Serializable {
                 throw new IllegalStateException( "Unable to retrieve APIs for execution" );
             }
 
-            if ( entitySetIdCache == null ) {
-                entitySetIdCache = CacheBuilder
-                        .newBuilder()
-                        .maximumSize( 1000 )
-                        .build( new CacheLoader<String, UUID>() {
-                            @Override
-                            public UUID load( String entitySetName ) throws Exception {
-                                return edmApi.getEntitySetId( entitySetName );
-                            }
-                        } );
-            }
-
-            if ( propertyIdsCache == null ) {
-                propertyIdsCache = CacheBuilder
-                        .newBuilder()
-                        .maximumSize( 1000 )
-                        .build( new CacheLoader<FullQualifiedName, UUID>() {
-                            @Override
-                            public UUID load( FullQualifiedName propertyTypeFqn ) throws Exception {
-                                return edmApi.getPropertyTypeId( propertyTypeFqn.getNamespace(),
-                                        propertyTypeFqn.getName() );
-                            }
-                        } );
-            }
+            initializeEdmCaches( edmApi );
 
             if ( ticketCache == null ) {
                 ticketCache = CacheBuilder
@@ -276,8 +329,7 @@ public class Shuttle implements Serializable {
                     if ( propertyValue != null ) {
                         properties.put(
                                 propertyIdsCache.getUnchecked( propertyDefinition.getFullQualifiedName() ),
-                                propertyValue
-                        );
+                                propertyValue );
                     }
                 }
 
@@ -288,7 +340,8 @@ public class Shuttle implements Serializable {
 
                 String entityId = ( entityDefinition.getGenerator().isPresent() )
                         ? entityDefinition.getGenerator().get().apply( row )
-                        : generateDefaultEntityId( entityDefinition.getKey(), properties );
+                        : generateDefaultEntityId( keyCache.getUnchecked( entityDefinition.getEntitySetName() ),
+                                properties );
 
                 if ( StringUtils.isNotBlank( entityId ) ) {
                     EntityKey key = new EntityKey( entitySetId, entityId, syncId );
@@ -324,7 +377,8 @@ public class Shuttle implements Serializable {
 
                     String entityId = ( associationDefinition.getGenerator().isPresent() )
                             ? associationDefinition.getGenerator().get().apply( row )
-                            : generateDefaultEntityId( associationDefinition.getKey(), properties );
+                            : generateDefaultEntityId(
+                                    keyCache.getUnchecked( associationDefinition.getEntitySetName() ), properties );
 
                     if ( StringUtils.isNotBlank( entityId ) ) {
                         EntityKey key = new EntityKey( entitySetId, entityId, syncId );
@@ -339,27 +393,27 @@ public class Shuttle implements Serializable {
 
             return new BulkDataCreation( syncTickets, entities, associations );
         } )
-        .reduce( ( a, b ) -> {
+                .reduce( ( a, b ) -> {
 
-            DataApi dataApi;
-            try {
-                dataApi = this.loomClient.getDataApi();
-            } catch ( ExecutionException e ) {
-                logger.error( "Failed to retrieve apis." );
-                throw new IllegalStateException( "Unable to retrieve APIs for execution" );
-            }
+                    DataApi dataApi;
+                    try {
+                        dataApi = this.loomClient.getDataApi();
+                    } catch ( ExecutionException e ) {
+                        logger.error( "Failed to retrieve apis." );
+                        throw new IllegalStateException( "Unable to retrieve APIs for execution" );
+                    }
 
-            a.getTickets().addAll( b.getTickets() );
-            a.getAssociations().addAll( b.getAssociations() );
-            a.getEntities().addAll( b.getEntities() );
+                    a.getTickets().addAll( b.getTickets() );
+                    a.getAssociations().addAll( b.getAssociations() );
+                    a.getEntities().addAll( b.getEntities() );
 
-            if ( a.getAssociations().size() > 10000 || a.getEntities().size() > 10000 ) {
-                dataApi.createEntityAndAssociationData( a ) ;//);
-                return new BulkDataCreation( new HashSet<>(), new HashSet<>(), new HashSet<>() );
-            }
+                    if ( a.getAssociations().size() > 10000 || a.getEntities().size() > 10000 ) {
+                        dataApi.createEntityAndAssociationData( a );// );
+                        return new BulkDataCreation( new HashSet<>(), new HashSet<>(), new HashSet<>() );
+                    }
 
-            return a;
-        } );
+                    return a;
+                } );
 
         DataApi dataApi;
         try {
@@ -377,13 +431,14 @@ public class Shuttle implements Serializable {
      * This is guaranteed to be unique for each unique set of primary key values. For this to work correctly it is very
      * important that Stream remain ordered. Ordered != sequential vs parallel.
      */
-    private static String generateDefaultEntityId( List<FullQualifiedName> key, SetMultimap<UUID, Object> properties ) {
+    private static String generateDefaultEntityId(
+            LinkedHashSet<FullQualifiedName> key,
+            SetMultimap<UUID, Object> properties ) {
 
         return LoomUtil.generateDefaultEntityId(
                 checkNotNull( key, "Key properties must be configured for entity id generation." )
                         .stream()
                         .map( propertyIdsCache::getUnchecked ),
-                properties
-        );
+                properties );
     }
 }
