@@ -285,6 +285,10 @@ public class EntityDefinition implements Serializable {
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
+        
+        public EntityGroup.Builder ok() {
+            return endEntity();
+        }
 
         public EntityGroup.Builder endEntity() {
 

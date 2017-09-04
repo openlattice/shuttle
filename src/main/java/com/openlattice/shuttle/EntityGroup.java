@@ -113,6 +113,10 @@ public class EntityGroup implements Serializable {
 
             return new EntityDefinition.Builder( entityAlias, this, onBuild );
         }
+        
+        public Flight.Builder ok() {
+            return endEntities();
+        }
 
         public Flight.Builder endEntities() {
 

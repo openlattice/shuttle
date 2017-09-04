@@ -352,6 +352,10 @@ public class AssociationDefinition implements Serializable {
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
+        
+        public AssociationGroup.Builder ok() {
+            return endAssociation();
+        }
 
         public AssociationGroup.Builder endAssociation() {
 
