@@ -27,6 +27,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.openlattice.shuttle.EntityDefinition.Builder;
+
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.spark.sql.Row;
 import org.slf4j.Logger;
@@ -38,15 +40,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class AssociationDefinition implements Serializable {
 
-    private static final long serialVersionUID = -6632902802080642647L;
+    private static final long                                 serialVersionUID = -6632902802080642647L;
 
-    private static final Logger logger = LoggerFactory.getLogger( AssociationDefinition.class );
+    private static final Logger                               logger           = LoggerFactory
+            .getLogger( AssociationDefinition.class );
 
     private final FullQualifiedName                           entityTypeFqn;
     private final String                                      entitySetName;
@@ -65,11 +70,9 @@ public class AssociationDefinition implements Serializable {
             @JsonProperty( SerializationConstants.KEY_FIELD ) List<FullQualifiedName> key,
             @JsonProperty( SerializationConstants.SRC ) String srcAlias,
             @JsonProperty( SerializationConstants.DST ) String dstAlias,
-            @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS )
-                    Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
+            @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS ) Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
-            @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
-                    Optional<SerializableFunction<Row, String>> generator,
+            @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR ) Optional<SerializableFunction<Row, String>> generator,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Optional<Boolean> useCurrentSync ) {
 
         this.entityTypeFqn = entityTypeFqn;
@@ -258,6 +261,11 @@ public class AssociationDefinition implements Serializable {
             this.useCurrentSync = false;
         }
 
+        public Builder key( String... key ) {
+            return key(
+                    Stream.of( key ).map( FullQualifiedName::new ).toArray( FullQualifiedName[]::new ) );
+        }
+
         public Builder key( FullQualifiedName... key ) {
 
             checkNotNull( key, "Key cannot be null." );
@@ -273,6 +281,10 @@ public class AssociationDefinition implements Serializable {
             return this;
         }
 
+        public Builder ofType( String entityTypeFqn ) {
+            return ofType( new FullQualifiedName( entityTypeFqn ) );
+        }
+
         public Builder ofType( FullQualifiedName entityTypeFqn ) {
 
             this.entityTypeFqn = entityTypeFqn;
@@ -283,8 +295,7 @@ public class AssociationDefinition implements Serializable {
 
             checkArgument(
                     entityAliases.contains( srcAlias ),
-                    "The source entity must be a previously defined alias."
-            );
+                    "The source entity must be a previously defined alias." );
 
             this.srcAlias = srcAlias;
             return this;
@@ -294,8 +305,7 @@ public class AssociationDefinition implements Serializable {
 
             checkArgument(
                     entityAliases.contains( dstAlias ),
-                    "The destination entity must be a previously defined alias."
-            );
+                    "The destination entity must be a previously defined alias." );
 
             this.dstAlias = dstAlias;
             return this;
@@ -313,6 +323,10 @@ public class AssociationDefinition implements Serializable {
             return this;
         }
 
+        public PropertyDefinition.Builder<AssociationDefinition.Builder> addProperty( String propertyTypeFqn ) {
+            return addProperty( new FullQualifiedName( propertyTypeFqn ) );
+        }
+
         public PropertyDefinition.Builder<AssociationDefinition.Builder> addProperty(
                 FullQualifiedName propertyTypeFqn ) {
 
@@ -320,8 +334,7 @@ public class AssociationDefinition implements Serializable {
                 FullQualifiedName propertyDefFqn = propertyDefinition.getFullQualifiedName();
                 if ( propertyDefinitionMap.containsKey( propertyDefFqn ) ) {
                     throw new IllegalStateException(
-                            String.format( "encountered duplicate property: %s", propertyDefFqn )
-                    );
+                            String.format( "encountered duplicate property: %s", propertyDefFqn ) );
                 }
                 propertyDefinitionMap.put( propertyDefFqn, propertyDefinition );
             };
@@ -329,7 +342,22 @@ public class AssociationDefinition implements Serializable {
             return new PropertyDefinition.Builder<AssociationDefinition.Builder>( propertyTypeFqn, this, onBuild );
         }
 
+        public Builder addProperty( String propertyFqn, String columnName ) {
+            return addProperty( new FullQualifiedName( propertyFqn ), columnName );
+        }
+
+        public Builder addProperty( FullQualifiedName propertyFqn, String columnName ) {
+            SerializableFunction<Row, ?> defaultMapper = row -> row.getAs( columnName );
+            PropertyDefinition propertyDefinition = new PropertyDefinition( propertyFqn, defaultMapper );
+            this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
+            return this;
+        }
+        
         public AssociationGroup.Builder ok() {
+            return endAssociation();
+        }
+
+        public AssociationGroup.Builder endAssociation() {
 
             if ( this.propertyDefinitionMap.size() == 0 ) {
                 throw new IllegalStateException( "invoking addProperty() at least once is required" );

@@ -19,19 +19,16 @@
 
 package com.openlattice.shuttle.test;
 
-import com.dataloom.client.ApiFactory;
-import com.dataloom.client.ApiFactoryFactory;
-import com.dataloom.data.DataApi;
-import com.dataloom.edm.EdmApi;
-import com.dataloom.sync.SyncApi;
-import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
-import com.google.common.io.Resources;
-import com.openlattice.shuttle.Flight;
-import com.openlattice.shuttle.Shuttle;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.net.URL;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.junit.Assert;
@@ -39,55 +36,64 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.UUID;
-
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import com.dataloom.authorization.PermissionsApi;
+import com.dataloom.client.ApiFactory;
+import com.dataloom.client.ApiFactoryFactory;
+import com.dataloom.data.DataApi;
+import com.dataloom.edm.EdmApi;
+import com.dataloom.edm.EntitySet;
+import com.dataloom.edm.type.AssociationType;
+import com.dataloom.edm.type.EntityType;
+import com.dataloom.edm.type.PropertyType;
+import com.dataloom.mapstores.TestDataFactory;
+import com.dataloom.sync.SyncApi;
+import com.datastax.driver.core.utils.UUIDs;
+import com.google.common.base.Charsets;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.io.Resources;
+import com.openlattice.shuttle.Flight;
+import com.openlattice.shuttle.Shuttle;
 
 public class ShuttleTest extends ShuttleTestBootstrap {
 
-    private static Dataset<Row> payload;
+    private static Dataset<Row>      payload;
 
-    private static String CYPHERS_ES_NAME      = "Cyphers";
-    private static String MORE_CYPHERS_ES_NAME = "More Cyphers";
-    private static String ASSOCIATION_ES_NAME  = "Is Also A Cypher";
-    private static String CYPHERS_ALIAS        = "cyphers";
-    private static String MORE_CYPHERS_ALIAS   = "moreCyphers";
-    private static String ASSOCIATION_ALIAS    = "cypherToCypher";
+    private static String            CYPHERS_ALIAS           = "cyphers";
+    private static String            MORE_CYPHERS_ALIAS      = "moreCyphers";
+    private static String            ASSOCIATION_ALIAS       = "cypherToCypher";
 
-    private static UUID CYPHER_ES_ID            = UUID.randomUUID();
-    private static UUID MORE_CYPHERS_ES_ID      = UUID.randomUUID();
-    private static UUID ASSOCIATION_ES_ID       = UUID.randomUUID();
-    private static UUID CYPHER_ES_SYNC_ID       = UUIDs.timeBased();
-    private static UUID MORE_CYPHERS_ES_SYNC_ID = UUIDs.timeBased();
-    private static UUID ASSOCIATION_ES_SYNC_ID  = UUIDs.timeBased();
+    private static UUID              CYPHER_ES_SYNC_ID       = UUIDs.timeBased();
+    private static UUID              MORE_CYPHERS_ES_SYNC_ID = UUIDs.timeBased();
+    private static UUID              ASSOCIATION_ES_SYNC_ID  = UUIDs.timeBased();
 
-    private static FullQualifiedName CYPHER_ET_FQN      = new FullQualifiedName( "KRYPTO", "Cypher" );
-    private static FullQualifiedName ASSOCIATION_ET_FQN = new FullQualifiedName( "KRYPTO", "CypherToCypher" );
-    private static FullQualifiedName ALGO_PT_FQN        = new FullQualifiedName( "KRYPTO", "Algo" );
-    private static FullQualifiedName MODE_PT_FQN        = new FullQualifiedName( "KRYPTO", "Mode" );
-    private static FullQualifiedName KEY_SIZE_PT_FQN    = new FullQualifiedName( "KRYPTO", "KeySize" );
-    private static FullQualifiedName CYPHER_HASH_PT_FQN = new FullQualifiedName( "KRYPTO", "CypherHash" );
-    private static FullQualifiedName ID_PT_FQN          = new FullQualifiedName( "KRYPTO", "id" );
+    private static PropertyType      ALGO_PT                 = TestDataFactory.propertyType();
+    private static PropertyType      MODE_PT                 = TestDataFactory.propertyType();
+    private static PropertyType      KEY_SIZE_PT             = TestDataFactory.propertyType();
+    private static PropertyType      CYPHER_HASH_PT          = TestDataFactory.propertyType();
+    private static PropertyType      ID_PT                   = TestDataFactory.propertyType();
 
-    public static Map<FullQualifiedName, UUID> PROPERTIES = Maps
-            .asMap(
-                    ImmutableSet.copyOf(
-                            Arrays.asList(
-                                    CYPHER_ET_FQN,
-                                    ALGO_PT_FQN,
-                                    MODE_PT_FQN,
-                                    KEY_SIZE_PT_FQN,
-                                    CYPHER_HASH_PT_FQN,
-                                    ID_PT_FQN
-                            )
-                    ),
-                    fqn -> UUID.randomUUID()
-            );
+    private static Set<PropertyType> PTS                     = Sets.newHashSet( ALGO_PT,
+            MODE_PT,
+            KEY_SIZE_PT,
+            CYPHER_HASH_PT,
+            ID_PT );
+
+    private static EntityType        CYPHERS_ET              = TestDataFactory
+            .childEntityTypeWithPropertyType( null,
+                    PTS.stream().map( pt -> pt.getId() ).collect( Collectors.toSet() ),
+                    ALGO_PT );
+
+    private static AssociationType   ASSOCIATION_TYPE        = TestDataFactory
+            .associationTypeWithProperties( PTS.stream().map( pt -> pt.getId() ).collect( Collectors.toSet() ), ID_PT );
+    private static EntityType        ASSOCIATION_ET          = ASSOCIATION_TYPE.getAssociationEntityType();
+
+    private static EntitySet         CYPHERS_ES              = TestDataFactory
+            .entitySetWithType( CYPHERS_ET.getId() );
+    private static EntitySet         MORE_CYPHERS_ES         = TestDataFactory
+            .entitySetWithType( CYPHERS_ET.getId() );
+    private static EntitySet         ASSOCIATION_ES          = TestDataFactory
+            .entitySetWithType( ASSOCIATION_ET.getId() );
 
     public static Flight getFlight() {
 
@@ -95,37 +101,31 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         Flight flight = Flight.newFlight()
                 .createEntities()
                     .addEntity( CYPHERS_ALIAS )
-                        .ofType( CYPHER_ET_FQN )
-                        .to( CYPHERS_ES_NAME )
-                        .key( ALGO_PT_FQN, MODE_PT_FQN )
-                        .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .addProperty( MODE_PT_FQN ).value( row -> row.get( 1 ) ).ok()
-                        .addProperty( CYPHER_HASH_PT_FQN )
+                        .to( CYPHERS_ES.getName() )
+                        .addProperty( ALGO_PT.getType() ).value( row -> row.get( 0 ) ).ok()
+                        .addProperty( MODE_PT.getType() ).value( row -> row.get( 1 ) ).ok()
+                        .addProperty( CYPHER_HASH_PT.getType() )
                             .value( ( row, hasher ) -> {
                                 hasher.putString( row.getString( 0 ), Charsets.UTF_8 );
                                 hasher.putString( row.getString( 1 ), Charsets.UTF_8 );
                                 hasher.putString( row.getString( 2 ), Charsets.UTF_8 );
                             } )
                             .ok()
-                        .ok()
+                        .endEntity()
                     .addEntity( MORE_CYPHERS_ALIAS )
-                        .ofType( CYPHER_ET_FQN )
-                        .to( MORE_CYPHERS_ES_NAME )
-                        .key( KEY_SIZE_PT_FQN )
-                        .addProperty( KEY_SIZE_PT_FQN ).value( row -> row.get( 2 ) ).ok()
-                        .addProperty( MODE_PT_FQN ).value( row -> row.get( 1 ) ).ok()
-                        .ok()
-                    .ok()
+                        .to( MORE_CYPHERS_ES.getName() )
+                        .addProperty( KEY_SIZE_PT.getType() ).value( row -> row.get( 2 ) ).ok()
+                        .addProperty( MODE_PT.getType() ).value( row -> row.get( 1 ) ).ok()
+                        .endEntity()
+                    .endEntities()
                 .createAssociations()
                     .addAssociation( ASSOCIATION_ALIAS )
-                        .ofType( ASSOCIATION_ET_FQN )
-                        .to( ASSOCIATION_ES_NAME )
+                        .to( ASSOCIATION_ES.getName() )
                         .fromEntity( CYPHERS_ALIAS )
                         .toEntity( MORE_CYPHERS_ALIAS )
-                        .key( ID_PT_FQN )
-                        .addProperty( ID_PT_FQN ).value( row -> row.get( 3 ) ).ok()
-                        .ok()
-                    .ok()
+                        .addProperty( ID_PT.getType() ).value( row -> row.get( 3 ) ).ok()
+                        .endAssociation()
+                    .endAssociations()
                 .done();
         // @formatter:on
 
@@ -141,6 +141,8 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                 .format( "com.databricks.spark.csv" )
                 .option( "header", "true" )
                 .load( url.getPath() );
+
+        // initializeTypes();
     }
 
     @Test
@@ -151,6 +153,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
             EdmApi edmApi = mock( EdmApi.class );
             DataApi mockDataApi = mock( DataApi.class );
             SyncApi mockSyncApi = mock( SyncApi.class );
+            PermissionsApi mockPermissionsApi = mock( PermissionsApi.class );
             ApiFactory mockApiFactory = mock( ApiFactory.class );
 
             when( mockApiFactory.create( DataApi.class ) )
@@ -162,16 +165,31 @@ public class ShuttleTest extends ShuttleTestBootstrap {
             when( mockApiFactory.create( SyncApi.class ) )
                     .thenReturn( mockSyncApi );
 
-            when( edmApi.getEntitySetId( CYPHERS_ES_NAME ) ).thenReturn( CYPHER_ES_ID );
-            when( edmApi.getEntitySetId( MORE_CYPHERS_ES_NAME ) ).thenReturn( MORE_CYPHERS_ES_ID );
-            when( edmApi.getEntitySetId( ASSOCIATION_ES_NAME ) ).thenReturn( ASSOCIATION_ES_ID );
-            when( mockSyncApi.acquireSyncId( CYPHER_ES_ID ) ).thenReturn( CYPHER_ES_SYNC_ID );
-            when( mockSyncApi.acquireSyncId( MORE_CYPHERS_ES_ID ) ).thenReturn( MORE_CYPHERS_ES_SYNC_ID );
-            when( mockSyncApi.acquireSyncId( ASSOCIATION_ES_ID ) ).thenReturn( ASSOCIATION_ES_SYNC_ID );
+            when( mockApiFactory.create( PermissionsApi.class ) )
+                    .thenReturn( mockPermissionsApi );
 
-            PROPERTIES.entrySet()
-                    .forEach( e -> when( edmApi.getPropertyTypeId( e.getKey().getNamespace(), e.getKey().getName() ) )
-                            .thenReturn( e.getValue() ) );
+            when( edmApi.getEntitySetId( CYPHERS_ES.getName() ) ).thenReturn( CYPHERS_ES.getId() );
+            when( edmApi.getEntitySetId( MORE_CYPHERS_ES.getName() ) ).thenReturn( MORE_CYPHERS_ES.getId() );
+            when( edmApi.getEntitySetId( ASSOCIATION_ES.getName() ) ).thenReturn( ASSOCIATION_ES.getId() );
+            when( mockSyncApi.acquireSyncId( CYPHERS_ES.getId() ) ).thenReturn( CYPHER_ES_SYNC_ID );
+            when( mockSyncApi.acquireSyncId( MORE_CYPHERS_ES.getId() ) ).thenReturn( MORE_CYPHERS_ES_SYNC_ID );
+            when( mockSyncApi.acquireSyncId( ASSOCIATION_ES.getId() ) ).thenReturn( ASSOCIATION_ES_SYNC_ID );
+
+            PTS.forEach( pt -> {
+                when( edmApi.getPropertyTypeId( pt.getType().getNamespace(), pt.getType().getName() ) )
+                        .thenReturn( pt.getId() );
+                when( edmApi.getPropertyType( pt.getId() ) ).thenReturn( pt );
+            } );
+
+            when( edmApi.getEntityType( CYPHERS_ET.getId() ) ).thenReturn( CYPHERS_ET );
+            when( edmApi.getEntityType( ASSOCIATION_ET.getId() ) ).thenReturn( ASSOCIATION_ET );
+            when( edmApi.getEntitySet( CYPHERS_ES.getId() ) ).thenReturn( CYPHERS_ES );
+            when( edmApi.getEntitySet( MORE_CYPHERS_ES.getId() ) ).thenReturn( MORE_CYPHERS_ES );
+            when( edmApi.getEntitySet( ASSOCIATION_ES.getId() ) ).thenReturn( ASSOCIATION_ES );
+            //
+            // PROPERTIES.entrySet()
+            // .forEach( e -> when( edmApi.getPropertyTypeId( e.getKey().getNamespace(), e.getKey().getName() ) )
+            // .thenReturn( e.getValue() ) );
 
             doAnswer( Answers.incrementCreateDataInvocationCount() )
                     .when( mockDataApi ).createEntityAndAssociationData( Mockito.any() );
@@ -195,87 +213,84 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         Assert.assertEquals( 2, Answers.getCreateDataApiInvocationCount() );
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test(
+        expected = IllegalStateException.class )
     public void testNoEntities() {
 
         Flight flight = Flight.newFlight().done();
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test(
+        expected = IllegalStateException.class )
     public void testNoProperties() {
 
         // @formatter:off
         Flight flight = Flight.newFlight()
                 .createEntities()
-                .addEntity( CYPHERS_ALIAS).ofType( CYPHER_ET_FQN ).to( CYPHERS_ES_NAME ).ok()
-                .ok().done();
+                .addEntity( CYPHERS_ALIAS).to( CYPHERS_ES.getName() ).endEntity()
+                .endEntities().done();
         // @formatter:on
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test(
+        expected = IllegalStateException.class )
     public void testNoDuplicateEntities() {
 
         // @formatter:off
         Flight flight = Flight.newFlight()
                 .createEntities()
                     .addEntity( CYPHERS_ALIAS)
-                        .ofType( CYPHER_ET_FQN )
-                        .to( CYPHERS_ES_NAME )
-                        .key( ALGO_PT_FQN )
-                        .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .ok()
+                        .to( CYPHERS_ES.getName() )
+                        .addProperty( ALGO_PT.getType() ).value( row -> row.get( 0 ) ).ok()
+                        .endEntity()
                     .addEntity( CYPHERS_ALIAS)
-                        .ofType( CYPHER_ET_FQN )
-                        .to( CYPHERS_ES_NAME )
-                        .key( ALGO_PT_FQN )
-                        .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .ok()
-                    .ok()
+                        .to( CYPHERS_ES.getName() )
+                        .addProperty( ALGO_PT.getType() ).value( row -> row.get( 0 ) ).ok()
+                        .endEntity()
+                    .endEntities()
                 .done();
         // @formatter:on
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test(
+        expected = IllegalStateException.class )
     public void testNoDuplicateProperties() {
 
         // @formatter:off
         Flight flight = Flight.newFlight()
                 .createEntities()
                     .addEntity( CYPHERS_ALIAS )
-                        .ofType( CYPHER_ET_FQN )
-                        .to( CYPHERS_ES_NAME )
-                        .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .ok()
-                    .ok()
+                        .to( CYPHERS_ES.getName() )
+                        .addProperty( ALGO_PT.getType() ).value( row -> row.get( 0 ) ).ok()
+                        .addProperty( ALGO_PT.getType() ).value( row -> row.get( 0 ) ).ok()
+                        .endEntity()
+                    .endEntities()
                 .done();
         // @formatter:on
     }
 
-    @Test( expected = IllegalStateException.class )
+    @Test(
+        expected = IllegalStateException.class )
     public void testAssociationSrcDstAliasesMustExist() {
 
         // @formatter:off
         Flight flight = Flight.newFlight()
                 .createEntities()
                     .addEntity( CYPHERS_ALIAS )
-                        .ofType( CYPHER_ET_FQN )
-                        .to( CYPHERS_ES_NAME )
-                        .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .ok()
-                    .ok()
+                        .to( CYPHERS_ES.getName() )
+                        .addProperty( ALGO_PT.getType() ).value( row -> row.get( 0 ) ).ok()
+                        .addProperty( ALGO_PT.getType() ).value( row -> row.get( 0 ) ).ok()
+                        .endEntity()
+                    .endEntities()
                 .createAssociations()
                     .addAssociation( ASSOCIATION_ALIAS )
-                        .ofType( ASSOCIATION_ET_FQN )
-                        .to( ASSOCIATION_ES_NAME )
+                        .to( ASSOCIATION_ES.getName() )
                         .fromEntity( CYPHERS_ALIAS )
                         .toEntity( MORE_CYPHERS_ALIAS )
-                        .key( ALGO_PT_FQN )
-                        .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .addProperty( ALGO_PT_FQN ).value( row -> row.get( 0 ) ).ok()
-                        .ok()
-                    .ok()
+                        .addProperty( ALGO_PT.getType() ).value( row -> row.get( 0 ) ).ok()
+                        .addProperty( ALGO_PT.getType() ).value( row -> row.get( 0 ) ).ok()
+                        .endAssociation()
+                    .endAssociations()
                 .done();
         // @formatter:on
     }
