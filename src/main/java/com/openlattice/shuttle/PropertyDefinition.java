@@ -94,6 +94,11 @@ public class PropertyDefinition implements Serializable {
             return this;
         }
 
+        public Builder<T> value( String column ) {
+            this.valueMapper = row -> row.getAs( column );
+            return this;
+        }
+
         public T ok() {
 
             if ( this.valueMapper == null ) {

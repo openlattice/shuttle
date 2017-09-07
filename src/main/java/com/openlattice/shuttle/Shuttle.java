@@ -21,28 +21,6 @@ package com.openlattice.shuttle;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.dataloom.LoomUtil;
 import com.dataloom.authorization.PermissionsApi;
 import com.dataloom.client.ApiFactoryFactory;
@@ -69,15 +47,35 @@ import com.openlattice.shuttle.edm.RequiredEdmElements;
 import com.openlattice.shuttle.edm.RequiredEdmElementsManager;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Shuttle implements Serializable {
 
-    private static final long                                                       serialVersionUID = -7356687761893337471L;
+    private static final long serialVersionUID = -7356687761893337471L;
 
-    private static final Logger                                                     logger           = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
 
-    private static final ExecutorService                                            executor         = Executors
+    private static final ExecutorService executor = Executors
             .newFixedThreadPool( 16 );
 
     private static transient LoadingCache<String, UUID>                             entitySetIdCache = null;
@@ -326,9 +324,14 @@ public class Shuttle implements Serializable {
                 for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
                     Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
                     if ( propertyValue != null ) {
-                        properties.put(
-                                propertyIdsCache.getUnchecked( propertyDefinition.getFullQualifiedName() ),
-                                propertyValue );
+                        UUID propertyId = propertyIdsCache.getUnchecked( propertyDefinition.getFullQualifiedName() );
+                        if ( propertyValue instanceof Iterable ) {
+                            properties.putAll( propertyId, (Iterable) propertyValue );
+                        } else {
+                            properties.put(
+                                    propertyId,
+                                    propertyValue );
+                        }
                     }
                 }
 
