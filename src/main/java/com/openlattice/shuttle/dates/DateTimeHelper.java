@@ -19,14 +19,14 @@
 
 package com.openlattice.shuttle.dates;
 
+import java.io.Serializable;
+import java.util.TimeZone;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Serializable;
 
 public class DateTimeHelper implements Serializable {
 
@@ -40,6 +40,10 @@ public class DateTimeHelper implements Serializable {
         this.tz = tz;
         this.datePattern = datePattern;
         this.formatter = DateTimeFormat.forPattern( datePattern );
+    }
+
+    public DateTimeHelper( TimeZone tz, String datePattern ) {
+        this( DateTimeZone.forTimeZone( tz ), datePattern );
     }
 
     public String parse( String date ) {
