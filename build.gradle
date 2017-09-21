@@ -48,10 +48,11 @@ sourceSets {
     test.runtimeClasspath += configurations.provided
 }
 
+
 jar {
     doFirst {
         manifest {
-            attributes "Class-Path": configurations.runtime.files*.collect { File file -> file.name }.join(" ")
+            attributes "Class-Path": configurations.runtime.files.collect { it.getName() }.join(" ")
         }
     }
 }
@@ -88,7 +89,7 @@ dependencies {
     compile fileTree(dir: "lib/", include: "*.jar")
 
     testCompile "junit:junit:${junit_version}"
-    testCompile "org.mockito:mockito-core:2.2.7";
+    testCompile "org.mockito:mockito-core:2.2.7"
 
     if (project.hasProperty("developmentMode") && project.developmentMode) {
         testCompile project(":loom-api")
