@@ -20,7 +20,10 @@
 package com.openlattice.shuttle.dates;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
@@ -33,20 +36,22 @@ public class DateTimeHelper implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger( DateTimeHelper.class );
 
-    private final     DateTimeZone      tz;
-    private final     String            datePattern;
-    private transient DateTimeFormatter formatter;
+    private final     DateTimeZone            tz;
+    private final     String[]                datePatterns;
+    private transient List<DateTimeFormatter> formatters;
 
-    public DateTimeHelper( DateTimeZone tz, String datePattern ) {
+    public DateTimeHelper( DateTimeZone tz, String... datePatterns ) {
         this.tz = tz;
-        this.datePattern = datePattern;
-        this.formatter = DateTimeFormat.forPattern( datePattern );
+        this.datePatterns = datePatterns;
+        formatters = Arrays.asList( datePatterns )
+                .stream()
+                .map( DateTimeFormat::forPattern )
+                .collect( Collectors.toList() );
     }
 
-    public DateTimeHelper( TimeZone tz, String datePattern ) {
-        this( DateTimeZone.forTimeZone( tz ), datePattern );
+    public DateTimeHelper( TimeZone tz, String... datePatterns ) {
+        this( DateTimeZone.forTimeZone( tz ), datePatterns );
     }
-
 
     public String parse( String date ) {
         DateTime ldt = parseDT( date );
@@ -59,17 +64,20 @@ public class DateTimeHelper implements Serializable {
         } else if ( date.equals( "NULL" ) ) {
             return null;
         }
+        for ( int i = 0; i < datePatterns.length; ++i ) {
+            DateTimeFormatter formatter = formatters.get( i );
+            if ( formatter == null ) {
+                formatter = DateTimeFormat.forPattern( datePatterns[ i ] );
+                formatters.set( i, formatter );
+            }
 
-        if ( formatter == null ) {
-            this.formatter = DateTimeFormat.forPattern( datePattern );
+            try {
+                return LocalDateTime.parse( date, formatter ).toDateTime( tz );
+            } catch ( Exception e ) {
+                logger.error( "Unable to parse date {} with format string {}", date, datePatterns[ i ], e );
+            }
         }
-
-        try {
-            return LocalDateTime.parse( date, formatter ).toDateTime( tz );
-        } catch ( Exception e ) {
-            logger.error( "Unable to parse date {}", date, e );
-            return null;
-        }
+        return null;
     }
 
 }
