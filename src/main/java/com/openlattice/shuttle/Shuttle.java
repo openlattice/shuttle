@@ -270,7 +270,7 @@ public class Shuttle implements Serializable {
 
     public void launchFlight( Flight flight, Dataset<Row> payload, Map<UUID, UUID> syncIds )
             throws InterruptedException {
-        logger.info("Flight {} has {}  rows", flight.getName(), payload.count();
+        logger.info("Flight {} has {}  rows", flight.getName(), payload.count() );
         BulkDataCreation remaining = payload.toJavaRDD().map( (Function<Row, BulkDataCreation>) ( Row row ) -> {
 
             DataApi dataApi;
