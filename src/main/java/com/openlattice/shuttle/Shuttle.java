@@ -75,9 +75,6 @@ public class Shuttle implements Serializable {
     private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
 
-    private static final ExecutorService executor = Executors
-            .newFixedThreadPool( 16 );
-
     private static transient LoadingCache<String, UUID>                             entitySetIdCache = null;
     private static transient LoadingCache<FullQualifiedName, UUID>                  propertyIdsCache = null;
     private static transient LoadingCache<UUID, UUID>                               ticketCache      = null;
@@ -190,9 +187,6 @@ public class Shuttle implements Serializable {
         } );
 
         syncIds.entrySet().forEach( entry -> syncApi.setCurrentSyncId( entry.getKey(), entry.getValue() ) );
-
-        executor.shutdown();
-        executor.awaitTermination( 1, TimeUnit.DAYS );
 
         DataApi dataApi;
 

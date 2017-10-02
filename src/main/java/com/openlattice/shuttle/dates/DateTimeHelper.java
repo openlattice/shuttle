@@ -21,6 +21,7 @@ package com.openlattice.shuttle.dates;
 
 import java.io.Serializable;
 import java.util.TimeZone;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -46,8 +47,13 @@ public class DateTimeHelper implements Serializable {
         this( DateTimeZone.forTimeZone( tz ), datePattern );
     }
 
-    public String parse( String date ) {
 
+    public String parse( String date ) {
+        DateTime ldt = parseDT( date );
+        return ldt == null ? null : ldt.toString();
+    }
+
+    public DateTime parseDT( String date ) {
         if ( date == null ) {
             return null;
         } else if ( date.equals( "NULL" ) ) {
@@ -59,10 +65,11 @@ public class DateTimeHelper implements Serializable {
         }
 
         try {
-            return LocalDateTime.parse( date, formatter ).toDateTime( tz ).toString();
+            return LocalDateTime.parse( date, formatter ).toDateTime( tz );
         } catch ( Exception e ) {
             logger.error( "Unable to parse date {}", date, e );
             return null;
         }
     }
+
 }

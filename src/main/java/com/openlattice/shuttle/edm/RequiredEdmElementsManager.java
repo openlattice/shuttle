@@ -19,6 +19,8 @@
 
 package com.openlattice.shuttle.edm;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.dataloom.authorization.Ace;
 import com.dataloom.authorization.Acl;
 import com.dataloom.authorization.AclData;
@@ -39,10 +41,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.security.InvalidParameterException;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -53,8 +51,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RequiredEdmElementsManager {
 
@@ -207,7 +206,9 @@ public class RequiredEdmElementsManager {
             ensurePropertyTypesAreEqual( propertyType, edmApi.getPropertyType( propertyTypeId ) );
         }
 
-        return checkNotNull( propertyTypeId, "Property type doesn't exist or failed to create property type" );
+        return checkNotNull( propertyTypeId,
+                "Property type " + fqn.getFullQualifiedNameAsString()
+                        + " doesn't exist or failed to create property type" );
     }
 
     public UUID getOrCreateEntityType( EntityTypeModel entityTypeModel, Map<FullQualifiedName, UUID> propertyIds ) {
