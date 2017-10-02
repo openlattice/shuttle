@@ -22,13 +22,12 @@ package com.openlattice.shuttle;
 import com.auth0.Auth0;
 import com.auth0.authentication.AuthenticationAPIClient;
 import com.google.common.base.Stopwatch;
-import org.apache.spark.sql.SparkSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import org.apache.spark.sql.SparkSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class MissionControl {
 
@@ -50,7 +49,7 @@ public final class MissionControl {
 
     static {
         sparkSession = SparkSession.builder()
-                .master( "local[8]" )
+                .master( "local[" + Runtime.getRuntime().availableProcessors() + "]" )
                 .appName( "test" )
                 .getOrCreate();
     }
