@@ -74,9 +74,10 @@ public class DateTimeHelper implements Serializable {
             try {
                 return LocalDateTime.parse( date, formatter ).toDateTime( tz );
             } catch ( Exception e ) {
-                logger.error( "Unable to parse date {} with format string {}", date, datePatterns[ i ], e );
+                logger.debug( "Unable to parse date {} with format string {}", date, datePatterns[ i ], e );
             }
         }
+        logger.error( "Unable to parse date {}, please see debug log for additional information." );
         return null;
     }
 
