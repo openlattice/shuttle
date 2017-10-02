@@ -35,6 +35,7 @@ public class Flight implements Serializable {
 
     private final Map<String, EntityDefinition>      entityDefinitions;
     private final Map<String, AssociationDefinition> associationDefinitions;
+    private String name ="Anon";
 
     @JsonCreator
     public Flight(
@@ -53,6 +54,14 @@ public class Flight implements Serializable {
 
     public static Flight.Builder newFlight() {
         return new Flight.Builder();
+    }
+
+    public static Flight.Builder newFlight(String name) {
+        return new Flight.Builder(name);
+    }
+
+    public String getName() {
+        return name;
     }
 
     @JsonIgnore
@@ -79,11 +88,19 @@ public class Flight implements Serializable {
 
         private Map<String, EntityDefinition>      entityDefinitionMap;
         private Map<String, AssociationDefinition> associationDefinitionMap;
+        private String name;
 
         public Builder() {
             this.entityDefinitionMap = Maps.newHashMap();
             this.associationDefinitionMap = Maps.newHashMap();
         }
+
+        public Builder(String name) {
+            this.entityDefinitionMap = Maps.newHashMap();
+            this.associationDefinitionMap = Maps.newHashMap();
+            this.name = name;
+        }
+
 
         public EntityGroup.Builder createEntities() {
 

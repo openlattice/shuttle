@@ -180,7 +180,9 @@ public class Shuttle implements Serializable {
 
         flightsToPayloads.entrySet().forEach( entry -> {
             try {
+                logger.info("Launching flight: {}", entry.getKey().getName() );
                 launchFlight( entry.getKey(), entry.getValue(), syncIds );
+                logger.info("Finished flight: {}", entry.getKey().getName() );
             } catch ( InterruptedException e ) {
                 logger.debug( "unable to launch flight" );
             }
