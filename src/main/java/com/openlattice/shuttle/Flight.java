@@ -50,6 +50,7 @@ public class Flight implements Serializable {
     private Flight( Flight.Builder builder ) {
         this.entityDefinitions = builder.entityDefinitionMap;
         this.associationDefinitions = builder.associationDefinitionMap;
+        this.name = builder.name;
     }
 
     public static Flight.Builder newFlight() {
