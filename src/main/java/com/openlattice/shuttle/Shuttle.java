@@ -75,9 +75,6 @@ public class Shuttle implements Serializable {
     private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
 
-    private static final ExecutorService executor = Executors
-            .newFixedThreadPool( 16 );
-
     private static transient LoadingCache<String, UUID>                             entitySetIdCache = null;
     private static transient LoadingCache<FullQualifiedName, UUID>                  propertyIdsCache = null;
     private static transient LoadingCache<UUID, UUID>                               ticketCache      = null;
@@ -183,16 +180,15 @@ public class Shuttle implements Serializable {
 
         flightsToPayloads.entrySet().forEach( entry -> {
             try {
+                logger.info("Launching flight: {} with {} entries", entry.getKey().getName() , entry.getValue().count() );
                 launchFlight( entry.getKey(), entry.getValue(), syncIds );
+                logger.info("Finished flight: {}", entry.getKey().getName() );
             } catch ( InterruptedException e ) {
                 logger.debug( "unable to launch flight" );
             }
         } );
 
         syncIds.entrySet().forEach( entry -> syncApi.setCurrentSyncId( entry.getKey(), entry.getValue() ) );
-
-        executor.shutdown();
-        executor.awaitTermination( 1, TimeUnit.DAYS );
 
         DataApi dataApi;
 
@@ -274,7 +270,7 @@ public class Shuttle implements Serializable {
 
     public void launchFlight( Flight flight, Dataset<Row> payload, Map<UUID, UUID> syncIds )
             throws InterruptedException {
-
+        logger.info("Flight {} has {}  rows", flight.getName(), payload.count() );
         BulkDataCreation remaining = payload.toJavaRDD().map( (Function<Row, BulkDataCreation>) ( Row row ) -> {
 
             DataApi dataApi;

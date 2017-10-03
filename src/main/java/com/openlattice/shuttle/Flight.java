@@ -35,6 +35,7 @@ public class Flight implements Serializable {
 
     private final Map<String, EntityDefinition>      entityDefinitions;
     private final Map<String, AssociationDefinition> associationDefinitions;
+    private String name ="Anon";
 
     @JsonCreator
     public Flight(
@@ -49,10 +50,19 @@ public class Flight implements Serializable {
     private Flight( Flight.Builder builder ) {
         this.entityDefinitions = builder.entityDefinitionMap;
         this.associationDefinitions = builder.associationDefinitionMap;
+        this.name = builder.name;
     }
 
     public static Flight.Builder newFlight() {
         return new Flight.Builder();
+    }
+
+    public static Flight.Builder newFlight(String name) {
+        return new Flight.Builder(name);
+    }
+
+    public String getName() {
+        return name;
     }
 
     @JsonIgnore
@@ -79,11 +89,19 @@ public class Flight implements Serializable {
 
         private Map<String, EntityDefinition>      entityDefinitionMap;
         private Map<String, AssociationDefinition> associationDefinitionMap;
+        private String name;
 
         public Builder() {
             this.entityDefinitionMap = Maps.newHashMap();
             this.associationDefinitionMap = Maps.newHashMap();
         }
+
+        public Builder(String name) {
+            this.entityDefinitionMap = Maps.newHashMap();
+            this.associationDefinitionMap = Maps.newHashMap();
+            this.name = name;
+        }
+
 
         public EntityGroup.Builder createEntities() {
 
@@ -111,37 +129,21 @@ public class Flight implements Serializable {
         }
     }
 
-    @Override
-    public int hashCode() {
+    @Override public boolean equals( Object o ) {
+        if ( this == o ) { return true; }
+        if ( !( o instanceof Flight ) ) { return false; }
 
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ( ( associationDefinitions == null ) ? 0 : associationDefinitions.hashCode() );
-        result = prime * result + ( ( entityDefinitions == null ) ? 0 : entityDefinitions.hashCode() );
+        Flight flight = (Flight) o;
+
+        if ( !entityDefinitions.equals( flight.entityDefinitions ) ) { return false; }
+        if ( !associationDefinitions.equals( flight.associationDefinitions ) ) { return false; }
+        return name.equals( flight.name );
+    }
+
+    @Override public int hashCode() {
+        int result = entityDefinitions.hashCode();
+        result = 31 * result + associationDefinitions.hashCode();
+        result = 31 * result + name.hashCode();
         return result;
     }
-
-    @Override
-    public boolean equals( Object obj ) {
-
-        if ( this == obj )
-            return true;
-        if ( obj == null )
-            return false;
-        if ( getClass() != obj.getClass() )
-            return false;
-        Flight other = (Flight) obj;
-        if ( associationDefinitions == null ) {
-            if ( other.associationDefinitions != null )
-                return false;
-        } else if ( !associationDefinitions.equals( other.associationDefinitions ) )
-            return false;
-        if ( entityDefinitions == null ) {
-            if ( other.entityDefinitions != null )
-                return false;
-        } else if ( !entityDefinitions.equals( other.entityDefinitions ) )
-            return false;
-        return true;
-    }
-
 }
