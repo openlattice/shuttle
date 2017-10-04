@@ -18,18 +18,6 @@ public class Parsers {
         return null;
     }
 
-    public static String parseDate( Object obj, String datePattern ) {
-        String dateStr = getAsString( obj );
-        if ( dateStr != null ) {
-            DateTimeFormatter customDateFormatter = DateTimeFormat.forPattern( datePattern );
-            LocalDate date = LocalDate.parse( dateStr, customDateFormatter );
-            if ( date != null )
-                return date.toString();
-        }
-        logger.error( "Unable to parse date \"{}\" for pattern \"{}\".", dateStr, datePattern );
-        return null;
-    }
-
     public static Integer parseInt( Object obj ) {
         String intStr = getAsString( obj );
         if ( intStr != null ) {
