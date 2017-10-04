@@ -22,8 +22,7 @@ public class Parsers {
         String intStr = getAsString( obj );
         if ( intStr != null ) {
             try {
-                int intValue = Integer.parseInt( intStr );
-                return intValue;
+                return Integer.parseInt( intStr );
             } catch ( NumberFormatException e ) {
                 logger.error( "Unable to parse int from value {}", intStr );
             }
@@ -35,8 +34,7 @@ public class Parsers {
         String shortStr = getAsString( obj );
         if ( shortStr != null ) {
             try {
-                short intValue = Short.parseShort( shortStr );
-                return intValue;
+                return Short.parseShort( shortStr );
             } catch ( NumberFormatException e ) {
                 logger.error( "Unable to parse short from value {}", shortStr );
             }
@@ -48,8 +46,7 @@ public class Parsers {
         String longStr = getAsString( obj );
         if ( longStr != null ) {
             try {
-                long longValue = Long.parseLong( longStr );
-                return longValue;
+                return Long.parseLong( longStr );
             } catch ( NumberFormatException e ) {
                 logger.error( "Unable to parse long from value {}", longStr );
             }
@@ -61,8 +58,7 @@ public class Parsers {
         String doubleStr = getAsString( obj );
         if ( doubleStr != null ) {
             try {
-                double doubleValue = Double.parseDouble( doubleStr );
-                return doubleValue;
+                return Double.parseDouble( doubleStr );
             } catch ( NumberFormatException e ) {
                 logger.error( "Unable to parse double from value {}", doubleStr );
             }
