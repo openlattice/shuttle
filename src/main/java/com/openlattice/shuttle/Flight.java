@@ -28,6 +28,7 @@ import com.google.common.collect.Maps;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
+import java.util.UUID;
 
 public class Flight implements Serializable {
 
@@ -54,7 +55,7 @@ public class Flight implements Serializable {
     }
 
     public static Flight.Builder newFlight() {
-        return new Flight.Builder();
+        return new Flight.Builder( UUID.randomUUID().toString() );
     }
 
     public static Flight.Builder newFlight(String name) {
