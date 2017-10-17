@@ -89,7 +89,7 @@ public class Flight implements Serializable {
 
         private Map<String, EntityDefinition>      entityDefinitionMap;
         private Map<String, AssociationDefinition> associationDefinitionMap;
-        private String name;
+        private String name = "Anon";
 
         public Builder() {
             this.entityDefinitionMap = Maps.newHashMap();
