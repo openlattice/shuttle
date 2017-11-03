@@ -209,7 +209,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         Shuttle shuttle = new Shuttle( apiFactorySupplier );
         shuttle.launch( flights );
 
-        Assert.assertEquals( 6, Answers.getCreateDataInvocationCount() );
+        Assert.assertEquals( 1, Answers.getCreateDataInvocationCount() );
         Assert.assertEquals( 2, Answers.getCreateDataApiInvocationCount() );
     }
 
