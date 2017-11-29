@@ -33,8 +33,8 @@ public final class MissionControl {
 
     private static final Logger logger = LoggerFactory.getLogger( MissionControl.class );
 
-    private static final String AUTH0_CLIENT_ID     = "KvwsETaUxuXVjW2cmz2LbdqXQBdYs6wH";
-    private static final String AUTH0_CLIENT_DOMAIN = "loom.auth0.com";
+    private static final String AUTH0_CLIENT_ID     = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh";
+    private static final String AUTH0_CLIENT_DOMAIN = "openlattice.auth0.com";
     private static final String AUTH0_CONNECTION    = "Username-Password-Authentication";
     private static final String AUTH0_SCOPES        = "openid email nickname roles user_id organizations";
 

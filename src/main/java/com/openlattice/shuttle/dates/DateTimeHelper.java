@@ -77,7 +77,7 @@ public class DateTimeHelper implements Serializable {
                 logger.debug( "Unable to parse date {} with format string {}", date, datePatterns[ i ], e );
             }
         }
-        logger.error( "Unable to parse date {}, please see debug log for additional information." );
+        logger.error( "Unable to parse date {}, please see debug log for additional information.", date );
         return null;
     }
 
