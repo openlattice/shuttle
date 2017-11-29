@@ -120,14 +120,6 @@ public class Shuttle implements Serializable {
             return;
         }
 
-        RequiredEdmElements requiredEdmElements = ConfigurationService.StaticLoader
-                .loadConfiguration( RequiredEdmElements.class );
-
-        if ( requiredEdmElements != null ) {
-            RequiredEdmElementsManager reem = new RequiredEdmElementsManager( edmApi, permissionsApi );
-            reem.ensureEdmElementsExist( requiredEdmElements );
-        }
-
         initializeEdmCaches( edmApi );
 
         Map<UUID, Boolean> entitySetIdsToSyncTypes = new HashMap<>();
