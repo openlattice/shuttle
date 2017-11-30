@@ -19,8 +19,8 @@
 
 package com.openlattice.shuttle;
 
-import com.auth0.Auth0;
-import com.auth0.authentication.AuthenticationAPIClient;
+import com.auth0.client.auth.AuthAPI;
+import com.auth0.exception.Auth0Exception;
 import com.google.common.base.Stopwatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -38,9 +38,7 @@ public final class MissionControl {
     private static final String AUTH0_CONNECTION    = "Username-Password-Authentication";
     private static final String AUTH0_SCOPES        = "openid email nickname roles user_id organizations";
 
-    private static final Auth0 auth0 = new Auth0( AUTH0_CLIENT_ID, AUTH0_CLIENT_DOMAIN );
-
-    private static final AuthenticationAPIClient client = auth0.newAuthenticationAPIClient();
+    private static final AuthAPI client = new AuthAPI( AUTH0_CLIENT_DOMAIN, AUTH0_CLIENT_ID, "" );
 
     private static final SparkSession sparkSession;
 
@@ -58,13 +56,10 @@ public final class MissionControl {
         return sparkSession;
     }
 
-    public static String getIdToken( String username, String password ) {
-
+    public static String getIdToken( String username, String password ) throws Auth0Exception {
         return client
-                .login( username, password )
+                .login( username, password, AUTH0_CONNECTION )
                 .setScope( AUTH0_SCOPES )
-                .setGrantType( "password" )
-                .setConnection( AUTH0_CONNECTION )
                 .execute()
                 .getIdToken();
     }
