@@ -63,6 +63,7 @@ public final class MissionControl {
         return client
                 .login( username, password )
                 .setScope( AUTH0_SCOPES )
+                .setGrantType( "password" )
                 .setConnection( AUTH0_CONNECTION )
                 .execute()
                 .getIdToken();
