@@ -18,8 +18,9 @@
  *
  */
 
-package com.openlattice.shuttle.test;
+package com.openlattice.shuttle;
 
+import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
 import com.openlattice.shuttle.MissionControl;
 import org.apache.commons.lang3.StringUtils;
@@ -30,9 +31,13 @@ import org.junit.Test;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class MissionControlTests {
+    private static final String AUTH0_CLIENT_ID  = "KTzgyxs6KBcJHB872eSMe2cpTHzhxS99";
+    private static final String AUTH0_CONNECTION = "Tests";
+
     @Test
     public void testAuth() throws Auth0Exception {
-        String idToken = MissionControl.getIdToken( "tests@openlattice.com", "openlattice" );
+        AuthAPI api = MissionControl.buildClient( AUTH0_CLIENT_ID );
+        String idToken = MissionControl.getIdToken( api, AUTH0_CONNECTION, "tests@openlattice.com", "openlattice" );
         Assert.assertTrue( "Id token cannot be blank", StringUtils.isNotBlank( idToken ) );
     }
 }
