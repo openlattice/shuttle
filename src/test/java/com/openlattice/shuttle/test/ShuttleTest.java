@@ -54,11 +54,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Ignore
 public class ShuttleTest extends ShuttleTestBootstrap {
     private static final Logger logger = LoggerFactory.getLogger( ShuttleTest.class );
     private static Stream<Map<String, String>> payload;
