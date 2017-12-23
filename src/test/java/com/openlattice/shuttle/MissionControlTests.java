@@ -31,13 +31,13 @@ import org.junit.Test;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class MissionControlTests {
-    private static final String AUTH0_CLIENT_ID  = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh";
+    private static final String AUTH0_CLIENT_ID  = "KTzgyxs6KBcJHB872eSMe2cpTHzhxS99";
     private static final String AUTH0_CONNECTION = "Username-Password-Authentication";
 
     @Test
     public void testAuth() throws Auth0Exception {
         AuthAPI api = MissionControl.buildClient( AUTH0_CLIENT_ID );
-        String idToken = MissionControl.getIdToken( api, AUTH0_CONNECTION, "tests@openlattice.com", "0p3n1attice!" );
+        String idToken = MissionControl.getIdToken( api, AUTH0_CONNECTION, "tests@openlattice.com", "openlattice" );
         Assert.assertTrue( "Id token cannot be blank", StringUtils.isNotBlank( idToken ) );
     }
 }
