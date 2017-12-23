@@ -29,12 +29,17 @@ import java.util.Map;
  */
 class RowAdapter implements SerializableFunction<Map<String, String>, Object> {
     private final SerializableFunction<Row, Object> extractor;
-
     RowAdapter( SerializableFunction<Row, Object> extractor ) {
         this.extractor = extractor;
     }
 
-    @Override public Object apply( Map<String, String> row ) {
-        return extractor.apply( row::get );
+    @Override public Object apply( final Map<String, String> row ) {
+        return extractor.apply( new Row() {
+            @Override public <T> T getAs( String column ) {
+                return (T) row.get( column );
+            }
+        };);
     }
+
+
 }
