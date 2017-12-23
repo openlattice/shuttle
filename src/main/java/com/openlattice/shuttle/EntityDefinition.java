@@ -19,6 +19,9 @@
 
 package com.openlattice.shuttle;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.dataloom.client.serialization.SerializableFunction;
 import com.dataloom.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -27,20 +30,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.apache.spark.sql.Row;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EntityDefinition implements Serializable {
 
@@ -48,13 +46,13 @@ public class EntityDefinition implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger( EntityDefinition.class );
 
-    private final FullQualifiedName                           entityTypeFqn;
-    private final String                                      entitySetName;
-    private final List<FullQualifiedName>                     key;
-    private final Map<FullQualifiedName, PropertyDefinition>  propertyDefinitions;
-    private final String                                      alias;
-    private final Optional<SerializableFunction<Row, String>> generator;
-    private final boolean                                     useCurrentSync;
+    private final FullQualifiedName                                           entityTypeFqn;
+    private final String                                                      entitySetName;
+    private final List<FullQualifiedName>                                     key;
+    private final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
+    private final String                                                      alias;
+    private final Optional<SerializableFunction<Map<String, String>, String>> generator;
+    private final boolean                                                     useCurrentSync;
 
     @JsonCreator
     public EntityDefinition(
@@ -65,7 +63,7 @@ public class EntityDefinition implements Serializable {
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
-                    Optional<SerializableFunction<Row, String>> generator,
+                    Optional<SerializableFunction<Map<String, String>, String>> generator,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Optional<Boolean> useCurrentSync ) {
 
         this.entityTypeFqn = entityTypeFqn;
@@ -114,7 +112,7 @@ public class EntityDefinition implements Serializable {
     }
 
     @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
-    public Optional<SerializableFunction<Row, String>> getGenerator() {
+    public Optional<SerializableFunction<Map<String, String>, String>> getGenerator() {
         return generator;
     }
 
@@ -152,55 +150,40 @@ public class EntityDefinition implements Serializable {
     @Override
     public boolean equals( Object obj ) {
 
-        if ( this == obj )
-            return true;
-        if ( obj == null )
-            return false;
-        if ( getClass() != obj.getClass() )
-            return false;
+        if ( this == obj ) { return true; }
+        if ( obj == null ) { return false; }
+        if ( getClass() != obj.getClass() ) { return false; }
         EntityDefinition other = (EntityDefinition) obj;
         if ( alias == null ) {
-            if ( other.alias != null )
-                return false;
-        } else if ( !alias.equals( other.alias ) )
-            return false;
+            if ( other.alias != null ) { return false; }
+        } else if ( !alias.equals( other.alias ) ) { return false; }
         if ( entitySetName == null ) {
-            if ( other.entitySetName != null )
-                return false;
-        } else if ( !entitySetName.equals( other.entitySetName ) )
-            return false;
+            if ( other.entitySetName != null ) { return false; }
+        } else if ( !entitySetName.equals( other.entitySetName ) ) { return false; }
         if ( entityTypeFqn == null ) {
-            if ( other.entityTypeFqn != null )
-                return false;
-        } else if ( !entityTypeFqn.equals( other.entityTypeFqn ) )
-            return false;
+            if ( other.entityTypeFqn != null ) { return false; }
+        } else if ( !entityTypeFqn.equals( other.entityTypeFqn ) ) { return false; }
         if ( generator == null ) {
-            if ( other.generator != null )
-                return false;
-        } else if ( !generator.equals( other.generator ) )
-            return false;
+            if ( other.generator != null ) { return false; }
+        } else if ( !generator.equals( other.generator ) ) { return false; }
         if ( key == null ) {
-            if ( other.key != null )
-                return false;
-        } else if ( !key.equals( other.key ) )
-            return false;
+            if ( other.key != null ) { return false; }
+        } else if ( !key.equals( other.key ) ) { return false; }
         if ( propertyDefinitions == null ) {
-            if ( other.propertyDefinitions != null )
-                return false;
-        } else if ( !propertyDefinitions.equals( other.propertyDefinitions ) )
-            return false;
+            if ( other.propertyDefinitions != null ) { return false; }
+        } else if ( !propertyDefinitions.equals( other.propertyDefinitions ) ) { return false; }
         return true;
     }
 
     public static class Builder extends BaseBuilder<EntityGroup.Builder, EntityDefinition> {
 
-        private FullQualifiedName                          entityTypeFqn;
-        private String                                     entitySetName;
-        private List<FullQualifiedName>                    key;
-        private Map<FullQualifiedName, PropertyDefinition> propertyDefinitionMap;
-        private String                                     alias;
-        private SerializableFunction<Row, String>          entityIdGenerator;
-        private boolean                                    useCurrentSync;
+        private FullQualifiedName                                 entityTypeFqn;
+        private String                                            entitySetName;
+        private List<FullQualifiedName>                           key;
+        private Map<FullQualifiedName, PropertyDefinition>        propertyDefinitionMap;
+        private String                                            alias;
+        private SerializableFunction<Map<String, String>, String> entityIdGenerator;
+        private boolean                                           useCurrentSync;
 
         public Builder(
                 String alias,
@@ -247,7 +230,7 @@ public class EntityDefinition implements Serializable {
         }
 
         public Builder entityIdGenerator(
-                SerializableFunction<Row, String> generator ) {
+                SerializableFunction<Map<String, String>, String> generator ) {
             this.entityIdGenerator = generator;
             return this;
         }
@@ -274,18 +257,18 @@ public class EntityDefinition implements Serializable {
 
             return new PropertyDefinition.Builder<EntityDefinition.Builder>( propertyTypeFqn, this, onBuild );
         }
-        
+
         public Builder addProperty( String propertyFqn, String columnName ) {
             return addProperty( new FullQualifiedName( propertyFqn ), columnName );
         }
-        
+
         public Builder addProperty( FullQualifiedName propertyFqn, String columnName ) {
-            SerializableFunction<Row, ?> defaultMapper = row -> row.getAs( columnName );
+            SerializableFunction<Map<String, String>, ?> defaultMapper = row -> row.get( columnName );
             PropertyDefinition propertyDefinition = new PropertyDefinition( propertyFqn, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
-        
+
         public EntityGroup.Builder ok() {
             return endEntity();
         }

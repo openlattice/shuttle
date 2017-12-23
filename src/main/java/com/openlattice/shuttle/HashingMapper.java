@@ -24,19 +24,20 @@ import com.google.common.hash.Funnel;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
-import org.apache.spark.sql.Row;
+import java.util.Map;
 
 public class HashingMapper {
 
-    public static SerializableFunction<Row, String> getMapper( Funnel<Row> funnel ) {
+    public static SerializableFunction<Map<String, String>, String> getMapper( Funnel<Map<String, String>> funnel ) {
 
         return getMapper( funnel, Hashing.sha256() );
     }
 
-    public static SerializableFunction<Row, String> getMapper( Funnel<Row> funnel, HashFunction hashFunction ) {
+    public static SerializableFunction<Map<String, String>, String> getMapper(
+            Funnel<Map<String, String>> funnel,
+            HashFunction hashFunction ) {
 
         return row -> {
-
             Hasher hasher = hashFunction.newHasher();
             funnel.funnel( row, hasher );
             return hasher.hash().toString();

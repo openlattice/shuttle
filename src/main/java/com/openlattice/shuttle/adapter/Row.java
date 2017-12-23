@@ -15,15 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * You can contact the owner of the copyright at support@openlattice.com
+ *
  */
 
-package com.openlattice.shuttle.test;
+package com.openlattice.shuttle.adapter;
 
-import org.junit.BeforeClass;
-
-public class ShuttleTestBootstrap {
-
-    @BeforeClass
-    public static void init() {
-    }
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+public interface Row {
+    <T> T getAs( String column );
 }

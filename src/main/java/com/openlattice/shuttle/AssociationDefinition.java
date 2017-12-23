@@ -19,6 +19,9 @@
 
 package com.openlattice.shuttle;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.dataloom.client.serialization.SerializableFunction;
 import com.dataloom.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -27,41 +30,33 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-import com.openlattice.shuttle.EntityDefinition.Builder;
-
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.apache.spark.sql.Row;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AssociationDefinition implements Serializable {
 
-    private static final long                                 serialVersionUID = -6632902802080642647L;
+    private static final long serialVersionUID = -6632902802080642647L;
 
-    private static final Logger                               logger           = LoggerFactory
+    private static final Logger logger = LoggerFactory
             .getLogger( AssociationDefinition.class );
 
-    private final FullQualifiedName                           entityTypeFqn;
-    private final String                                      entitySetName;
-    private final List<FullQualifiedName>                     key;
-    private final String                                      srcAlias;
-    private final String                                      dstAlias;
-    private final Map<FullQualifiedName, PropertyDefinition>  propertyDefinitions;
-    private final String                                      alias;
-    private final Optional<SerializableFunction<Row, String>> generator;
-    private final boolean                                     useCurrentSync;
+    private final FullQualifiedName                                           entityTypeFqn;
+    private final String                                                      entitySetName;
+    private final List<FullQualifiedName>                                     key;
+    private final String                                                      srcAlias;
+    private final String                                                      dstAlias;
+    private final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
+    private final String                                                      alias;
+    private final Optional<SerializableFunction<Map<String, String>, String>> generator;
+    private final boolean                                                     useCurrentSync;
 
     @JsonCreator
     public AssociationDefinition(
@@ -70,9 +65,11 @@ public class AssociationDefinition implements Serializable {
             @JsonProperty( SerializationConstants.KEY_FIELD ) List<FullQualifiedName> key,
             @JsonProperty( SerializationConstants.SRC ) String srcAlias,
             @JsonProperty( SerializationConstants.DST ) String dstAlias,
-            @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS ) Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
+            @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS )
+                    Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
-            @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR ) Optional<SerializableFunction<Row, String>> generator,
+            @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
+                    Optional<SerializableFunction<Map<String, String>, String>> generator,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Optional<Boolean> useCurrentSync ) {
 
         this.entityTypeFqn = entityTypeFqn;
@@ -135,7 +132,7 @@ public class AssociationDefinition implements Serializable {
     }
 
     @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
-    public Optional<SerializableFunction<Row, String>> getGenerator() {
+    public Optional<SerializableFunction<Map<String, String>, String>> getGenerator() {
         return generator;
     }
 
@@ -175,77 +172,58 @@ public class AssociationDefinition implements Serializable {
     @Override
     public boolean equals( Object obj ) {
 
-        if ( this == obj )
-            return true;
-        if ( obj == null )
-            return false;
-        if ( getClass() != obj.getClass() )
-            return false;
+        if ( this == obj ) { return true; }
+        if ( obj == null ) { return false; }
+        if ( getClass() != obj.getClass() ) { return false; }
         AssociationDefinition other = (AssociationDefinition) obj;
 
         if ( alias == null ) {
-            if ( other.alias != null )
-                return false;
-        } else if ( !alias.equals( other.alias ) )
-            return false;
+            if ( other.alias != null ) { return false; }
+        } else if ( !alias.equals( other.alias ) ) { return false; }
 
         if ( dstAlias == null ) {
-            if ( other.dstAlias != null )
-                return false;
-        } else if ( !dstAlias.equals( other.dstAlias ) )
-            return false;
+            if ( other.dstAlias != null ) { return false; }
+        } else if ( !dstAlias.equals( other.dstAlias ) ) { return false; }
 
         if ( entitySetName == null ) {
-            if ( other.entitySetName != null )
-                return false;
-        } else if ( !entitySetName.equals( other.entitySetName ) )
-            return false;
+            if ( other.entitySetName != null ) { return false; }
+        } else if ( !entitySetName.equals( other.entitySetName ) ) { return false; }
 
         if ( entityTypeFqn == null ) {
-            if ( other.entityTypeFqn != null )
-                return false;
-        } else if ( !entityTypeFqn.equals( other.entityTypeFqn ) )
-            return false;
+            if ( other.entityTypeFqn != null ) { return false; }
+        } else if ( !entityTypeFqn.equals( other.entityTypeFqn ) ) { return false; }
 
         if ( generator == null ) {
-            if ( other.generator != null )
-                return false;
-        } else if ( !generator.equals( other.generator ) )
-            return false;
+            if ( other.generator != null ) { return false; }
+        } else if ( !generator.equals( other.generator ) ) { return false; }
 
         if ( key == null ) {
-            if ( other.key != null )
-                return false;
-        } else if ( !key.equals( other.key ) )
-            return false;
+            if ( other.key != null ) { return false; }
+        } else if ( !key.equals( other.key ) ) { return false; }
 
         if ( propertyDefinitions == null ) {
-            if ( other.propertyDefinitions != null )
-                return false;
-        } else if ( !propertyDefinitions.equals( other.propertyDefinitions ) )
-            return false;
+            if ( other.propertyDefinitions != null ) { return false; }
+        } else if ( !propertyDefinitions.equals( other.propertyDefinitions ) ) { return false; }
 
         if ( srcAlias == null ) {
-            if ( other.srcAlias != null )
-                return false;
-        } else if ( !srcAlias.equals( other.srcAlias ) )
-            return false;
+            if ( other.srcAlias != null ) { return false; }
+        } else if ( !srcAlias.equals( other.srcAlias ) ) { return false; }
 
         return true;
     }
 
     public static class Builder extends BaseBuilder<AssociationGroup.Builder, AssociationDefinition> {
 
-        private FullQualifiedName                          entityTypeFqn;
-        private String                                     entitySetName;
-        private String                                     srcAlias;
-        private String                                     dstAlias;
-        private Map<FullQualifiedName, PropertyDefinition> propertyDefinitionMap;
-        private SerializableFunction<Row, String>          generator;
-        private List<FullQualifiedName>                    key;
-        private String                                     alias;
-        private Set<String>                                entityAliases;
-        private boolean                                    useCurrentSync;
+        private FullQualifiedName                                 entityTypeFqn;
+        private String                                            entitySetName;
+        private String                                            srcAlias;
+        private String                                            dstAlias;
+        private Map<FullQualifiedName, PropertyDefinition>        propertyDefinitionMap;
+        private SerializableFunction<Map<String, String>, String> generator;
+        private List<FullQualifiedName>                           key;
+        private String                                            alias;
+        private Set<String>                                       entityAliases;
+        private boolean                                           useCurrentSync;
 
         public Builder(
                 String alias,
@@ -311,7 +289,7 @@ public class AssociationDefinition implements Serializable {
             return this;
         }
 
-        public Builder entityIdGenerator( SerializableFunction<Row, String> generator ) {
+        public Builder entityIdGenerator( SerializableFunction<Map<String, String>, String> generator ) {
 
             this.generator = generator;
             return this;
@@ -347,12 +325,12 @@ public class AssociationDefinition implements Serializable {
         }
 
         public Builder addProperty( FullQualifiedName propertyFqn, String columnName ) {
-            SerializableFunction<Row, ?> defaultMapper = row -> row.getAs( columnName );
+            SerializableFunction<Map<String, String>, ?> defaultMapper = row -> row.get( columnName );
             PropertyDefinition propertyDefinition = new PropertyDefinition( propertyFqn, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
-        
+
         public AssociationGroup.Builder ok() {
             return endAssociation();
         }

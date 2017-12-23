@@ -15,15 +15,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * You can contact the owner of the copyright at support@openlattice.com
+ *
  */
 
-package com.openlattice.shuttle.test;
+package com.openlattice.shuttle.util;
 
-import org.junit.BeforeClass;
+import com.fasterxml.jackson.dataformat.csv.CsvMapper;
+import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 
-public class ShuttleTestBootstrap {
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+public class CsvUtil {
+    public static CsvMapper newDefaultMapper() {
+        return new CsvMapper();
+    }
 
-    @BeforeClass
-    public static void init() {
+    public static CsvSchema newDefaultSchemaFromHeader() {
+        return CsvSchema.emptySchema().withHeader();
     }
 }
