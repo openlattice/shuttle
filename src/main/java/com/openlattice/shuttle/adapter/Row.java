@@ -24,5 +24,5 @@ package com.openlattice.shuttle.adapter;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public interface Row {
-    Object getAs( String column );
+    <T> T getAs( String column );
 }
