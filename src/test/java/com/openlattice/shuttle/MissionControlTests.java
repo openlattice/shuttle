@@ -32,7 +32,7 @@ import org.junit.Test;
  */
 public class MissionControlTests {
     private static final String AUTH0_CLIENT_ID  = "KTzgyxs6KBcJHB872eSMe2cpTHzhxS99";
-    private static final String AUTH0_CONNECTION = "Username-Password-Authentication";
+    private static final String AUTH0_CONNECTION = "Tests";
 
     @Test
     public void testAuth() throws Auth0Exception {
