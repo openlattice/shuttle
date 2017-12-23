@@ -42,9 +42,6 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
-import com.kryptnostic.rhizome.configuration.service.ConfigurationService;
-import com.openlattice.shuttle.edm.RequiredEdmElements;
-import com.openlattice.shuttle.edm.RequiredEdmElementsManager;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
 import java.io.Serializable;
@@ -53,18 +50,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.apache.spark.api.java.function.Function;
-import org.apache.spark.sql.Dataset;
-import org.apache.spark.sql.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +98,7 @@ public class Shuttle implements Serializable {
         this.loomClient = new LoomClient( apiFactorySupplier );
     }
 
-    public void launch( Map<Flight, Dataset<Row>> flightsToPayloads ) throws InterruptedException {
+    public void launch( Map<Flight, Stream<Map<String, String>>> flightsToPayloads ) throws InterruptedException {
 
         EdmApi edmApi;
         SyncApi syncApi;
@@ -172,9 +165,11 @@ public class Shuttle implements Serializable {
 
         flightsToPayloads.entrySet().forEach( entry -> {
             try {
-                logger.info("Launching flight: {} with {} entries", entry.getKey().getName() , entry.getValue().count() );
+                logger.info( "Launching flight: {} with {} entries",
+                        entry.getKey().getName(),
+                        entry.getValue().count() );
                 launchFlight( entry.getKey(), entry.getValue(), syncIds );
-                logger.info("Finished flight: {}", entry.getKey().getName() );
+                logger.info( "Finished flight: {}", entry.getKey().getName() );
             } catch ( InterruptedException e ) {
                 logger.debug( "unable to launch flight" );
             }
@@ -260,130 +255,133 @@ public class Shuttle implements Serializable {
         }
     }
 
-    public void launchFlight( Flight flight, Dataset<Row> payload, Map<UUID, UUID> syncIds )
+    public void launchFlight( Flight flight, Stream<Map<String, String>> payload, Map<UUID, UUID> syncIds )
             throws InterruptedException {
-        logger.info("Flight {} has {}  rows", flight.getName(), payload.count() );
-        BulkDataCreation remaining = payload.toJavaRDD().map( (Function<Row, BulkDataCreation>) ( Row row ) -> {
+        logger.info( "Flight {} has {}  rows", flight.getName(), payload.count() );
+        Optional<BulkDataCreation> remaining = payload
+                .map( row -> {
+                    DataApi dataApi;
+                    EdmApi edmApi;
 
-            DataApi dataApi;
-            EdmApi edmApi;
-
-            try {
-                dataApi = this.loomClient.getDataApi();
-                edmApi = this.loomClient.getEdmApi();
-            } catch ( ExecutionException e ) {
-                logger.error( "Failed to retrieve apis." );
-                throw new IllegalStateException( "Unable to retrieve APIs for execution" );
-            }
-
-            initializeEdmCaches( edmApi );
-
-            if ( ticketCache == null ) {
-                ticketCache = CacheBuilder
-                        .newBuilder()
-                        .maximumSize( 1000 )
-                        .build( new CacheLoader<UUID, UUID>() {
-                            @Override
-                            public UUID load( UUID entitySetId ) throws Exception {
-                                final UUID syncId = syncIds.get( entitySetId );
-                                if ( syncId == null ) {
-                                    logger.error( "Sync id for entity set id {} is null.", entitySetId );
-                                    throw new NullPointerException( "Sync id is null." );
-                                }
-                                return dataApi.acquireSyncTicket( entitySetId, syncId );
-                            }
-                        } );
-            }
-
-            Map<String, EntityKey> aliasesToEntityKey = new HashMap<>();
-            Set<UUID> syncTickets = Sets.newHashSet();
-            Set<Entity> entities = Sets.newHashSet();
-            Set<Association> associations = Sets.newHashSet();
-            Map<String, Boolean> wasCreated = new HashMap<>();
-
-            for ( EntityDefinition entityDefinition : flight.getEntities() ) {
-
-                UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
-                UUID syncId = syncIds.get( entitySetId );
-                UUID ticket = ticketCache.getUnchecked( entitySetId );
-                syncTickets.add( ticket );
-                SetMultimap<UUID, Object> properties = HashMultimap.create();
-
-                for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
-                    Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
-                    if ( propertyValue != null ) {
-                        UUID propertyId = propertyIdsCache.getUnchecked( propertyDefinition.getFullQualifiedName() );
-                        if ( propertyValue instanceof Iterable ) {
-                            properties.putAll( propertyId, (Iterable) propertyValue );
-                        } else {
-                            properties.put(
-                                    propertyId,
-                                    propertyValue );
-                        }
+                    try {
+                        dataApi = this.loomClient.getDataApi();
+                        edmApi = this.loomClient.getEdmApi();
+                    } catch ( ExecutionException e ) {
+                        logger.error( "Failed to retrieve apis." );
+                        throw new IllegalStateException( "Unable to retrieve APIs for execution" );
                     }
-                }
+
+                    initializeEdmCaches( edmApi );
+
+                    if ( ticketCache == null ) {
+                        ticketCache = CacheBuilder
+                                .newBuilder()
+                                .maximumSize( 1000 )
+                                .build( new CacheLoader<UUID, UUID>() {
+                                    @Override
+                                    public UUID load( UUID entitySetId ) throws Exception {
+                                        final UUID syncId = syncIds.get( entitySetId );
+                                        if ( syncId == null ) {
+                                            logger.error( "Sync id for entity set id {} is null.", entitySetId );
+                                            throw new NullPointerException( "Sync id is null." );
+                                        }
+                                        return dataApi.acquireSyncTicket( entitySetId, syncId );
+                                    }
+                                } );
+                    }
+
+                    Map<String, EntityKey> aliasesToEntityKey = new HashMap<>();
+                    Set<UUID> syncTickets = Sets.newHashSet();
+                    Set<Entity> entities = Sets.newHashSet();
+                    Set<Association> associations = Sets.newHashSet();
+                    Map<String, Boolean> wasCreated = new HashMap<>();
+
+                    for ( EntityDefinition entityDefinition : flight.getEntities() ) {
+
+                        UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
+                        UUID syncId = syncIds.get( entitySetId );
+                        UUID ticket = ticketCache.getUnchecked( entitySetId );
+                        syncTickets.add( ticket );
+                        SetMultimap<UUID, Object> properties = HashMultimap.create();
+
+                        for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
+                            Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
+                            if ( propertyValue != null ) {
+                                UUID propertyId = propertyIdsCache
+                                        .getUnchecked( propertyDefinition.getFullQualifiedName() );
+                                if ( propertyValue instanceof Iterable ) {
+                                    properties.putAll( propertyId, (Iterable) propertyValue );
+                                } else {
+                                    properties.put(
+                                            propertyId,
+                                            propertyValue );
+                                }
+                            }
+                        }
 
                 /*
                  * For entityId generation to work correctly it is very important that Stream remain ordered. Ordered !=
                  * sequential vs parallel.
                  */
 
-                String entityId = ( entityDefinition.getGenerator().isPresent() )
-                        ? entityDefinition.getGenerator().get().apply( row )
-                        : generateDefaultEntityId( keyCache.getUnchecked( entityDefinition.getEntitySetName() ),
-                                properties );
+                        String entityId = ( entityDefinition.getGenerator().isPresent() )
+                                ? entityDefinition.getGenerator().get().apply( row )
+                                : generateDefaultEntityId( keyCache.getUnchecked( entityDefinition.getEntitySetName() ),
+                                        properties );
 
-                if ( StringUtils.isNotBlank( entityId ) ) {
-                    EntityKey key = new EntityKey( entitySetId, entityId, syncId );
-                    aliasesToEntityKey.put( entityDefinition.getAlias(), key );
-                    entities.add( new Entity( key, properties ) );
-                    wasCreated.put( entityDefinition.getAlias(), true );
-                } else {
-                    wasCreated.put( entityDefinition.getAlias(), false );
-                }
-
-                MissionControl.signal();
-            }
-
-            for ( AssociationDefinition associationDefinition : flight.getAssociations() ) {
-
-                if ( wasCreated.get( associationDefinition.getSrcAlias() )
-                        && wasCreated.get( associationDefinition.getDstAlias() ) ) {
-
-                    UUID entitySetId = entitySetIdCache.getUnchecked( associationDefinition.getEntitySetName() );
-                    UUID syncId = syncIds.get( entitySetId );
-                    UUID ticket = ticketCache.getUnchecked( entitySetId );
-                    syncTickets.add( ticket );
-                    SetMultimap<UUID, Object> properties = HashMultimap.create();
-
-                    for ( PropertyDefinition propertyDefinition : associationDefinition.getProperties() ) {
-                        Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
-                        if ( propertyValue != null ) {
-                            properties.put(
-                                    propertyIdsCache.getUnchecked( propertyDefinition.getFullQualifiedName() ),
-                                    propertyValue );
+                        if ( StringUtils.isNotBlank( entityId ) ) {
+                            EntityKey key = new EntityKey( entitySetId, entityId, syncId );
+                            aliasesToEntityKey.put( entityDefinition.getAlias(), key );
+                            entities.add( new Entity( key, properties ) );
+                            wasCreated.put( entityDefinition.getAlias(), true );
+                        } else {
+                            wasCreated.put( entityDefinition.getAlias(), false );
                         }
+
+                        MissionControl.signal();
                     }
 
-                    String entityId = ( associationDefinition.getGenerator().isPresent() )
-                            ? associationDefinition.getGenerator().get().apply( row )
-                            : generateDefaultEntityId(
-                                    keyCache.getUnchecked( associationDefinition.getEntitySetName() ), properties );
+                    for ( AssociationDefinition associationDefinition : flight.getAssociations() ) {
 
-                    if ( StringUtils.isNotBlank( entityId ) ) {
-                        EntityKey key = new EntityKey( entitySetId, entityId, syncId );
-                        EntityKey src = aliasesToEntityKey.get( associationDefinition.getSrcAlias() );
-                        EntityKey dst = aliasesToEntityKey.get( associationDefinition.getDstAlias() );
-                        associations.add( new Association( key, src, dst, properties ) );
+                        if ( wasCreated.get( associationDefinition.getSrcAlias() )
+                                && wasCreated.get( associationDefinition.getDstAlias() ) ) {
+
+                            UUID entitySetId = entitySetIdCache
+                                    .getUnchecked( associationDefinition.getEntitySetName() );
+                            UUID syncId = syncIds.get( entitySetId );
+                            UUID ticket = ticketCache.getUnchecked( entitySetId );
+                            syncTickets.add( ticket );
+                            SetMultimap<UUID, Object> properties = HashMultimap.create();
+
+                            for ( PropertyDefinition propertyDefinition : associationDefinition.getProperties() ) {
+                                Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
+                                if ( propertyValue != null ) {
+                                    properties.put(
+                                            propertyIdsCache.getUnchecked( propertyDefinition.getFullQualifiedName() ),
+                                            propertyValue );
+                                }
+                            }
+
+                            String entityId = ( associationDefinition.getGenerator().isPresent() )
+                                    ? associationDefinition.getGenerator().get().apply( row )
+                                    : generateDefaultEntityId(
+                                            keyCache.getUnchecked( associationDefinition.getEntitySetName() ),
+                                            properties );
+
+                            if ( StringUtils.isNotBlank( entityId ) ) {
+                                EntityKey key = new EntityKey( entitySetId, entityId, syncId );
+                                EntityKey src = aliasesToEntityKey.get( associationDefinition.getSrcAlias() );
+                                EntityKey dst = aliasesToEntityKey.get( associationDefinition.getDstAlias() );
+                                associations.add( new Association( key, src, dst, properties ) );
+                            }
+                        }
+
+                        MissionControl.signal();
                     }
-                }
 
-                MissionControl.signal();
-            }
-
-            return new BulkDataCreation( syncTickets, entities, associations );
-        } )
-                .reduce( ( a, b ) -> {
+                    return new BulkDataCreation( syncTickets, entities, associations );
+                } )
+                .reduce( ( BulkDataCreation a, BulkDataCreation b ) -> {
 
                     DataApi dataApi;
                     try {
@@ -405,15 +403,16 @@ public class Shuttle implements Serializable {
                     return a;
                 } );
 
-        DataApi dataApi;
-        try {
-            dataApi = this.loomClient.getDataApi();
-            dataApi.createEntityAndAssociationData( remaining );
-        } catch ( ExecutionException e ) {
-            logger.error( "Failed to retrieve apis." );
-            throw new IllegalStateException( "Unable to retrieve APIs for execution" );
-        }
-        // MissionControl.waitForIt();
+        remaining.ifPresent( r -> {
+            DataApi dataApi;
+            try {
+                dataApi = this.loomClient.getDataApi();
+                dataApi.createEntityAndAssociationData( r );
+            } catch ( ExecutionException e ) {
+                logger.error( "Failed to retrieve apis." );
+                throw new IllegalStateException( "Unable to retrieve APIs for execution" );
+            }
+        } );
     }
 
     /*

@@ -26,8 +26,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.HashFunction;
+import com.openlattice.shuttle.adapter.Row;
+import java.util.Map;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.apache.spark.sql.Row;
 
 import java.io.Serializable;
 
@@ -35,13 +36,13 @@ public class PropertyDefinition implements Serializable {
 
     private static final long serialVersionUID = -6759550320515138785L;
 
-    private FullQualifiedName            propertyTypeFqn;
-    private SerializableFunction<Row, ?> valueMapper;
+    private FullQualifiedName                           propertyTypeFqn;
+    private SerializableFunction<Map<String,String>, ?> valueMapper;
 
     @JsonCreator
     public PropertyDefinition(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName propertyTypeFqn,
-            @JsonProperty( SerializationConstants.VALUE_MAPPER ) SerializableFunction<Row, ?> valueMapper ) {
+            @JsonProperty( SerializationConstants.VALUE_MAPPER ) SerializableFunction<Map<String,String>, ?> valueMapper ) {
 
         this.propertyTypeFqn = propertyTypeFqn;
         this.valueMapper = valueMapper;
@@ -60,7 +61,7 @@ public class PropertyDefinition implements Serializable {
     }
 
     @JsonProperty( SerializationConstants.VALUE_MAPPER )
-    public SerializableFunction<Row, ?> getPropertyValue() {
+    public SerializableFunction<Map<String,String>, ?> getPropertyValue() {
 
         return row -> this.valueMapper.apply( Preconditions.checkNotNull( row ) );
     }
@@ -68,7 +69,7 @@ public class PropertyDefinition implements Serializable {
     public static class Builder<T extends BaseBuilder> extends BaseBuilder<T, PropertyDefinition> {
 
         private FullQualifiedName            propertyTypeFqn;
-        private SerializableFunction<Row, ?> valueMapper;
+        private SerializableFunction<Map<String,String>, ?> valueMapper;
 
         public Builder(
                 FullQualifiedName propertyTypeFqn,
@@ -79,23 +80,28 @@ public class PropertyDefinition implements Serializable {
             this.propertyTypeFqn = propertyTypeFqn;
         }
 
-        public Builder<T> value( Funnel<Row> funnel ) {
+        public Builder<T> value( Funnel<Map<String,String>> funnel ) {
             this.valueMapper = HashingMapper.getMapper( funnel );
             return this;
         }
 
-        public Builder<T> value( Funnel<Row> funnel, HashFunction hashFunction ) {
+        public Builder<T> value( Funnel<Map<String,String>> funnel, HashFunction hashFunction ) {
             this.valueMapper = HashingMapper.getMapper( funnel, hashFunction );
             return this;
         }
 
-        public Builder<T> value( SerializableFunction<Row, Object> mapper ) {
+        public Builder<T> extractor( SerializableFunction<Map<String,String>, Object> mapper ) {
             this.valueMapper = mapper;
             return this;
         }
 
+        public Builder<T> value( SerializableFunction<Row, Object> mapper ) {
+            this.valueMapper = new RowAdapter( mapper );
+            return this;
+        }
+
         public Builder<T> value( String column ) {
-            this.valueMapper = row -> row.getAs( column );
+            this.valueMapper = row -> row.get( column );
             return this;
         }
 

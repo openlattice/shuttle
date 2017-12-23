@@ -15,15 +15,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * You can contact the owner of the copyright at support@openlattice.com
+ *
  */
 
-package com.openlattice.shuttle.test;
+package com.openlattice.shuttle;
 
-import org.junit.BeforeClass;
+import com.dataloom.client.serialization.SerializableFunction;
+import com.google.common.collect.ImmutableMap;
+import com.openlattice.shuttle.adapter.Row;
+import java.util.Map;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class ShuttleTestBootstrap {
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+public class RowAdapterTest {
+    @Test
+    public void testRowAdapter() {
+        final Map<String,String> row = ImmutableMap.of( "test", RandomStringUtils.random( 5 ));
+        final SerializableFunction<Row,Object> sf =  r -> r.getAs( "test" );
 
-    @BeforeClass
-    public static void init() {
+        RowAdapter adapter = new RowAdapter( sf );
+        Assert.assertEquals(row.get("test"), adapter.apply( row ) );
     }
 }

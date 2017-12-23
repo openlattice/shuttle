@@ -15,15 +15,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * You can contact the owner of the copyright at support@openlattice.com
+ *
  */
 
-package com.openlattice.shuttle.test;
+package com.openlattice.shuttle;
 
-import org.junit.BeforeClass;
+import com.dataloom.client.serialization.SerializableFunction;
+import com.openlattice.shuttle.adapter.Row;
+import java.util.Map;
 
-public class ShuttleTestBootstrap {
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+class RowAdapter implements SerializableFunction<Map<String, String>, Object> {
+    private final SerializableFunction<Row, Object> extractor;
 
-    @BeforeClass
-    public static void init() {
+    RowAdapter( SerializableFunction<Row, Object> extractor ) {
+        this.extractor = extractor;
+    }
+
+    @Override public Object apply( Map<String, String> row ) {
+        return extractor.apply( row::get );
     }
 }

@@ -63,14 +63,14 @@ jar {
 dependencies {
 
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:${jackson_version}"
-    compile "com.datastax.spark:spark-cassandra-connector_2.11:${spark_cassandra_connector_version}"
-    compile "org.apache.spark:spark-core_2.11:${spark_version}"
-    compile "org.apache.spark:spark-sql_2.11:${spark_version}"
-    compile "org.apache.spark:spark-mllib_2.11:${spark_version}"
-    compile "org.apache.spark:spark-graphx_2.11:${spark_version}"
-    compile "org.apache.spark:spark-streaming_2.11:${spark_version}"
-    compile 'com.auth0:auth0:1.1.0'
-    compile 'com.auth0:java-jwt:3.2.0'
+//    compile "com.datastax.spark:spark-cassandra-connector_2.11:${spark_cassandra_connector_version}"
+//    compile "org.apache.spark:spark-core_2.11:${spark_version}"
+//    compile "org.apache.spark:spark-sql_2.11:${spark_version}"
+//    compile "org.apache.spark:spark-mllib_2.11:${spark_version}"
+//    compile "org.apache.spark:spark-graphx_2.11:${spark_version}"
+//    compile "org.apache.spark:spark-streaming_2.11:${spark_version}"
+//    compile 'com.auth0:auth0:1.1.0'
+//    compile 'com.auth0:java-jwt:3.2.0'
 
     if (project.hasProperty('developmentMode') && project.developmentMode) {
         logger.quiet(project.name + " using project dependencies.")
