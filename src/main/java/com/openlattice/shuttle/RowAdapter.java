@@ -38,7 +38,7 @@ class RowAdapter implements SerializableFunction<Map<String, String>, Object> {
             @Override public <T> T getAs( String column ) {
                 return (T) row.get( column );
             }
-        };);
+        });
     }
 
 
