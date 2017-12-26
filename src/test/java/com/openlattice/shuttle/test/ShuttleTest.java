@@ -60,7 +60,6 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore
 public class ShuttleTest extends ShuttleTestBootstrap {
     private static final Logger logger = LoggerFactory.getLogger( ShuttleTest.class );
     private static Stream<Map<String, String>> payload;
@@ -166,7 +165,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         shuttle.launch( flights );
 
         Assert.assertEquals( 1, Answers.getCreateDataInvocationCount() );
-        Assert.assertEquals( 2, Answers.getCreateDataApiInvocationCount() );
+        Assert.assertEquals( 1, Answers.getCreateDataApiInvocationCount() );
     }
 
     @Test(
@@ -258,20 +257,20 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                 .createEntities()
                     .addEntity( CYPHERS_ALIAS )
                         .to( CYPHERS_ES.getName() )
-                        .addProperty( ALGO_PT.getType() ).extractor( row -> row.get( "0" ) ).ok()
-                        .addProperty( MODE_PT.getType() ).extractor( row -> row.get( "1" ) ).ok()
+                        .addProperty( ALGO_PT.getType() ).extractor( row -> row.get( "algo" ) ).ok()
+                        .addProperty( MODE_PT.getType() ).extractor( row -> row.get( "mode" ) ).ok()
                         .addProperty( CYPHER_HASH_PT.getType() )
                             .value( ( row, hasher ) -> {
-                                hasher.putString( row.get( "0" ), Charsets.UTF_8 );
-                                hasher.putString( row.get( "1" ), Charsets.UTF_8 );
-                                hasher.putString( row.get( "2" ), Charsets.UTF_8 );
+                                hasher.putString( row.get( "algo" ), Charsets.UTF_8 );
+                                hasher.putString( row.get( "mode" ), Charsets.UTF_8 );
+                                hasher.putString( row.get( "keySize" ), Charsets.UTF_8 );
                             } )
                             .ok()
                         .endEntity()
                     .addEntity( MORE_CYPHERS_ALIAS )
                         .to( MORE_CYPHERS_ES.getName() )
-                        .addProperty( KEY_SIZE_PT.getType() ).extractor( row -> row.get( "2" ) ).ok()
-                        .addProperty( MODE_PT.getType() ).extractor( row -> row.get( "1" ) ).ok()
+                        .addProperty( KEY_SIZE_PT.getType() ).extractor( row -> row.get( "keySize" ) ).ok()
+                        .addProperty( MODE_PT.getType() ).extractor( row -> row.get( "mode" ) ).ok()
                         .endEntity()
                     .endEntities()
                 .createAssociations()
@@ -279,7 +278,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .to( ASSOCIATION_ES.getName() )
                         .fromEntity( CYPHERS_ALIAS )
                         .toEntity( MORE_CYPHERS_ALIAS )
-                        .addProperty( ID_PT.getType() ).extractor( row -> row.get( 3 ) ).ok()
+                        .addProperty( ID_PT.getType() ).extractor( row -> row.get( "id" ) ).ok()
                         .endAssociation()
                     .endAssociations()
                 .done();
