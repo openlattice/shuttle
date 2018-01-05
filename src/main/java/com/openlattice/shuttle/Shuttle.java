@@ -19,8 +19,6 @@
 
 package com.openlattice.shuttle;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.dataloom.LoomUtil;
 import com.dataloom.authorization.PermissionsApi;
 import com.dataloom.client.ApiFactoryFactory;
@@ -42,24 +40,21 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
-import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.Serializable;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Shuttle implements Serializable {
 
@@ -96,6 +91,11 @@ public class Shuttle implements Serializable {
 
     public Shuttle( ApiFactoryFactory apiFactorySupplier ) {
         this.loomClient = new LoomClient( apiFactorySupplier );
+    }
+
+    public void launchPayloadFlight( Map<Flight, Payload> flightsToPayloads ) throws InterruptedException {
+        launch( flightsToPayloads.entrySet().stream()
+                .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue().getPayload() ) ) );
     }
 
     public void launch( Map<Flight, Stream<Map<String, String>>> flightsToPayloads ) throws InterruptedException {
@@ -325,7 +325,7 @@ public class Shuttle implements Serializable {
                         String entityId = ( entityDefinition.getGenerator().isPresent() )
                                 ? entityDefinition.getGenerator().get().apply( row )
                                 : generateDefaultEntityId( keyCache.getUnchecked( entityDefinition.getEntitySetName() ),
-                                        properties );
+                                properties );
 
                         if ( StringUtils.isNotBlank( entityId ) ) {
                             EntityKey key = new EntityKey( entitySetId, entityId, syncId );
@@ -363,8 +363,8 @@ public class Shuttle implements Serializable {
                             String entityId = ( associationDefinition.getGenerator().isPresent() )
                                     ? associationDefinition.getGenerator().get().apply( row )
                                     : generateDefaultEntityId(
-                                            keyCache.getUnchecked( associationDefinition.getEntitySetName() ),
-                                            properties );
+                                    keyCache.getUnchecked( associationDefinition.getEntitySetName() ),
+                                    properties );
 
                             if ( StringUtils.isNotBlank( entityId ) ) {
                                 EntityKey key = new EntityKey( entitySetId, entityId, syncId );
