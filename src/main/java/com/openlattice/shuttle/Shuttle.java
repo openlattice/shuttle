@@ -185,8 +185,11 @@ public class Shuttle implements Serializable {
             return;
         }
 
-        ticketCache.asMap().keySet().stream().forEach( dataApi::releaseSyncTicket );
-
+        if ( ticketCache != null ) {
+            ticketCache.asMap().keySet().stream().forEach( dataApi::releaseSyncTicket );
+        } else {
+            logger.info( "No data written." );
+        }
     }
 
     private void initializeEdmCaches( EdmApi edmApi ) {
