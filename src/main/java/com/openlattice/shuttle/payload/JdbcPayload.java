@@ -32,9 +32,11 @@ public class JdbcPayload implements Payload {
     }
 
     @Override public Stream<Map<String, String>> getPayload() {
-        try ( Connection conn = hds.getConnection(); Statement statement = conn.createStatement() ) {
+        try {
+            Connection conn = hds.getConnection();
+            Statement statement = conn.createStatement();
             final ResultSet rs = statement.executeQuery( sql );
-            return StreamUtil.stream( () -> new ResultSetStringIterator( rs ) );
+            return StreamUtil.stream( () -> new ResultSetStringIterator( conn, statement, rs ) );
         } catch ( SQLException e ) {
             logger.info( "Unable to get payload.", e );
         }
@@ -42,12 +44,16 @@ public class JdbcPayload implements Payload {
     }
 
     static final class ResultSetStringIterator implements Iterator<Map<String, String>> {
+        private final Connection   connection;
+        private final Statement    stmt;
         private final ResultSet    rs;
         private final List<String> columns;
         private final int          columnCount;
         private AtomicBoolean hasNext = new AtomicBoolean( false );
 
-        public ResultSetStringIterator( ResultSet rs ) {
+        public ResultSetStringIterator( Connection connection, Statement stmt, ResultSet rs ) {
+            this.connection = connection;
+            this.stmt = stmt;
             this.rs = rs;
             ResultSetMetaData rsm = null;
             try {
@@ -74,6 +80,8 @@ public class JdbcPayload implements Payload {
                 hasNext.set( hn );
                 if ( !hn ) {
                     rs.close();
+                    stmt.close();
+                    connection.close();
                 }
             } catch ( SQLException e ) {
                 logger.error( "Unabe to advance to next item.", e );
@@ -95,12 +103,16 @@ public class JdbcPayload implements Payload {
     }
 
     static final class ResultSetIterator implements Iterator<Map<String, Object>> {
+        private final Connection   connection;
+        private final Statement    stmt;
         private final ResultSet    rs;
         private final List<String> columns;
         private final int          columnCount;
         private AtomicBoolean hasNext = new AtomicBoolean( false );
 
-        public ResultSetIterator( ResultSet rs ) {
+        public ResultSetIterator( Connection connection, Statement stmt, ResultSet rs ) {
+            this.connection = connection;
+            this.stmt = stmt;
             this.rs = rs;
             ResultSetMetaData rsm = null;
             try {
@@ -127,6 +139,8 @@ public class JdbcPayload implements Payload {
                 hasNext.set( hn );
                 if ( !hn ) {
                     rs.close();
+                    stmt.close();
+                    connection.close();
                 }
             } catch ( SQLException e ) {
                 logger.error( "Unabe to advance to next item.", e );
