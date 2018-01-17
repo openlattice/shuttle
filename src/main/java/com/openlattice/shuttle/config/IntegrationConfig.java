@@ -2,7 +2,9 @@ package com.openlattice.shuttle.config;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.util.Map;
@@ -17,10 +19,14 @@ public class IntegrationConfig {
     private static final Logger logger = LoggerFactory.getLogger( IntegrationConfig.class );
     private final Map<String, Properties> hikariConfigurations;
 
-    public IntegrationConfig( Map<String, Properties> hikariConfigurations ) {
+    @JsonCreator
+    public IntegrationConfig(
+            @JsonProperty( "hikariConfigs" )
+                    Map<String, Properties> hikariConfigurations ) {
         this.hikariConfigurations = hikariConfigurations;
     }
 
+    @JsonProperty( "hikariConfigs" )
     public Map<String, Properties> getHikariConfigurations() {
         return hikariConfigurations;
     }
