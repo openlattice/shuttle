@@ -2,6 +2,7 @@ package com.openlattice.shuttle.payload;
 
 import com.dataloom.streams.StreamUtil;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -15,6 +16,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +38,7 @@ public class JdbcPayload implements Payload {
         try {
             Connection conn = hds.getConnection();
             Statement statement = conn.createStatement();
+            statement.setFetchSize( 50000 );
             final ResultSet rs = statement.executeQuery( sql );
             return StreamUtil.stream( () -> new ResultSetStringIterator( conn, statement, rs ) );
         } catch ( SQLException e ) {
@@ -84,18 +88,20 @@ public class JdbcPayload implements Payload {
                     connection.close();
                 }
             } catch ( SQLException e ) {
-                logger.error( "Unabe to advance to next item.", e );
+                logger.error( "Unable to advance to next item.", e );
             }
             return data;
         }
 
         private static Map<String, String> read( List<String> columns, ResultSet rs ) {
             return columns.stream().collect( Collectors.toMap( Function.identity(), col -> {
-                String val = null;
+                String val = "";
                 try {
-                    val = (String) rs.getObject( col ).toString();
+                    Object obj = rs.getObject( col );
+                    if ( obj != null )
+                        val = obj.toString();
                 } catch ( SQLException e ) {
-                    logger.error( "Unabe to read col {}.", col, e );
+                    logger.error( "Unable to read col {}.", col, e );
                 }
                 return val;
             } ) );
@@ -143,7 +149,7 @@ public class JdbcPayload implements Payload {
                     connection.close();
                 }
             } catch ( SQLException e ) {
-                logger.error( "Unabe to advance to next item.", e );
+                logger.error( "Unable to advance to next item.", e );
             }
             return data;
         }
@@ -153,7 +159,7 @@ public class JdbcPayload implements Payload {
                 try {
                     return rs.getObject( col );
                 } catch ( SQLException e ) {
-                    logger.error( "Unabe to read col {}.", col, e );
+                    logger.error( "Unable to read col {}.", col, e );
                     return null;
                 }
             } ) );
