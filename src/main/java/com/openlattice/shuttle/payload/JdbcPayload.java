@@ -88,6 +88,7 @@ public class JdbcPayload implements Payload {
         }
 
         @Override public Map<String, String> next() {
+            rateLimiter.acquire();
             Map<String, String> data = read( columns, rs );
             try {
                 boolean hn = rs.next();
@@ -154,6 +155,7 @@ public class JdbcPayload implements Payload {
         }
 
         @Override public Map<String, Object> next() {
+            rateLimiter.acquire();
             Map<String, Object> data = read( columns, rs );
             try {
                 boolean hn = rs.next();
