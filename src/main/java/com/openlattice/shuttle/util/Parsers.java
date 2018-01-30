@@ -78,4 +78,16 @@ public class Parsers {
         return null;
     }
 
+    public static Boolean parseBoolean( Object obj ) {
+        String boolStr = getAsString( obj );
+        if ( boolStr != null ) {
+            try {
+                return Boolean.valueOf( boolStr );
+            } catch ( IllegalArgumentException e ) {
+                logger.error( "Unable to parse boolean from value {}", boolStr );
+            }
+        }
+        return null;
+    }
+
 }
