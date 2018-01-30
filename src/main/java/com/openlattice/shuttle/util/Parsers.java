@@ -82,6 +82,10 @@ public class Parsers {
         String boolStr = getAsString( obj );
         if ( boolStr != null ) {
             try {
+                if ( boolStr.toLowerCase().equals( "yes" ) )
+                    return true;
+                if ( boolStr.toLowerCase().equals( "no" ) )
+                    return false;
                 return Boolean.valueOf( boolStr );
             } catch ( IllegalArgumentException e ) {
                 logger.error( "Unable to parse boolean from value {}", boolStr );
