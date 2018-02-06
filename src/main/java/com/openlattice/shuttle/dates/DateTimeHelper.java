@@ -21,6 +21,7 @@ package com.openlattice.shuttle.dates;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
@@ -29,6 +30,8 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.LocalTime;
+import org.joda.time.LocalDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,4 +84,59 @@ public class DateTimeHelper implements Serializable {
         return null;
     }
 
+    public String parseTime( String date ) {
+        LocalTime lt = parseLocalTime( date );
+        return lt == null ? null : lt.toString();
+    }
+
+    public LocalTime parseLocalTime( String date ) {
+        if ( date == null ) {
+            return null;
+        } else if ( date.equals( "NULL" ) ) {
+            return null;
+        }
+        for ( int i = 0; i < datePatterns.length; ++i ) {
+            DateTimeFormatter formatter = formatters.get( i );
+            if ( formatter == null ) {
+                formatter = DateTimeFormat.forPattern( datePatterns[ i ] );
+                formatters.set( i, formatter );
+            }
+
+            try {
+                return LocalDateTime.parse( date, formatter ).toLocalTime();
+            } catch ( Exception e ) {
+                logger.debug( "Unable to parse time {} with format string {}", date, datePatterns[ i ], e );
+            }
+        }
+        logger.error( "Unable to parse time {}, please see debug log for additional information.", date );
+        return null;
+    }
+
+    public String parseDate( String date ) {
+        LocalDate dt = parseLocalDate( date );
+        return dt == null ? null : dt.toString();
+    }
+
+    public LocalDate parseLocalDate( String date ) {
+        if ( date == null ) {
+            return null;
+        } else if ( date.equals( "NULL" ) ) {
+            return null;
+        }
+        for ( int i = 0; i < datePatterns.length; ++i ) {
+            DateTimeFormatter formatter = formatters.get( i );
+            if ( formatter == null ) {
+                formatter = DateTimeFormat.forPattern( datePatterns[ i ] );
+                formatters.set( i, formatter );
+            }
+
+            try {
+                return LocalDateTime.parse( date, formatter ).toLocalDate( );
+            } catch ( Exception e ) {
+                logger.debug( "Unable to parse date {} with format string {}", date, datePatterns[ i ], e );
+            }
+        }
+        logger.error( "Unable to parse date {}, please see debug log for additional information.", date );
+        return null;
+    }
 }
