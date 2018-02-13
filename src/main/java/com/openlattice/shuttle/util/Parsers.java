@@ -1,5 +1,6 @@
 package com.openlattice.shuttle.util;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -20,7 +21,7 @@ public class Parsers {
 
     public static Integer parseInt( Object obj ) {
         String intStr = getAsString( obj );
-        if ( intStr != null ) {
+        if ( StringUtils.isNotBlank( intStr ) ) {
             try {
                 return Integer.parseInt( intStr );
             } catch ( NumberFormatException e ) {
@@ -56,7 +57,7 @@ public class Parsers {
 
     public static Double parseDouble( Object obj ) {
         String doubleStr = getAsString( obj );
-        if ( doubleStr != null ) {
+        if ( StringUtils.isNotBlank( doubleStr ) ) {
             try {
                 return Double.parseDouble( doubleStr );
             } catch ( NumberFormatException e ) {
