@@ -33,7 +33,7 @@ public class Parsers {
 
     public static Short parseShort( Object obj ) {
         String shortStr = getAsString( obj );
-        if ( shortStr != null ) {
+        if ( StringUtils.isNotBlank( shortStr ) ) {
             try {
                 return Short.parseShort( shortStr );
             } catch ( NumberFormatException e ) {
@@ -45,7 +45,7 @@ public class Parsers {
 
     public static Long parseLong( Object obj ) {
         String longStr = getAsString( obj );
-        if ( longStr != null ) {
+        if ( StringUtils.isNotBlank( longStr ) ) {
             try {
                 return Long.parseLong( longStr );
             } catch ( NumberFormatException e ) {
