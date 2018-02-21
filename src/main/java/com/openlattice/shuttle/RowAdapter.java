@@ -20,7 +20,7 @@
 
 package com.openlattice.shuttle;
 
-import com.dataloom.client.serialization.SerializableFunction;
+import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.shuttle.adapter.Row;
 import java.util.Map;
 

@@ -19,7 +19,7 @@
 
 package com.openlattice.shuttle.test;
 
-import com.dataloom.data.DataApi;
+import com.openlattice.data.DataApi;
 import org.mockito.stubbing.Answer;
 
 import java.io.Serializable;

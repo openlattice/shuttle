@@ -19,7 +19,7 @@
 
 package com.openlattice.shuttle;
 
-import com.dataloom.client.serialization.SerializableFunction;
+import com.openlattice.client.serialization.SerializableFunction;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;

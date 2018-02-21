@@ -19,32 +19,33 @@
 
 package com.openlattice.shuttle.test;
 
-import static com.openlattice.shuttle.util.CsvUtil.newDefaultMapper;
-import static com.openlattice.shuttle.util.CsvUtil.newDefaultSchemaFromHeader;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.dataloom.authorization.PermissionsApi;
-import com.dataloom.client.ApiFactory;
-import com.dataloom.client.ApiFactoryFactory;
-import com.dataloom.data.DataApi;
-import com.dataloom.edm.EdmApi;
-import com.dataloom.edm.EntitySet;
-import com.dataloom.edm.type.AssociationType;
-import com.dataloom.edm.type.EntityType;
-import com.dataloom.edm.type.PropertyType;
-import com.dataloom.mapstores.TestDataFactory;
 import com.dataloom.streams.StreamUtil;
-import com.dataloom.sync.SyncApi;
 import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
+import com.openlattice.authorization.PermissionsApi;
+import com.openlattice.client.ApiFactory;
+import com.openlattice.client.ApiFactoryFactory;
+import com.openlattice.data.DataApi;
+import com.openlattice.edm.EdmApi;
+import com.openlattice.edm.EntitySet;
+import com.openlattice.edm.type.AssociationType;
+import com.openlattice.edm.type.EntityType;
+import com.openlattice.edm.type.PropertyType;
+import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.shuttle.Flight;
 import com.openlattice.shuttle.Shuttle;
+import com.openlattice.sync.SyncApi;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
@@ -52,13 +53,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.mockito.Mockito;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static com.openlattice.shuttle.util.CsvUtil.newDefaultMapper;
+import static com.openlattice.shuttle.util.CsvUtil.newDefaultSchemaFromHeader;
+import static org.mockito.Mockito.*;
 
 public class ShuttleTest extends ShuttleTestBootstrap {
     private static final Logger logger = LoggerFactory.getLogger( ShuttleTest.class );

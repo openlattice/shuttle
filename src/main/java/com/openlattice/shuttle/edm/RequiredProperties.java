@@ -19,8 +19,8 @@
 
 package com.openlattice.shuttle.edm;
 
-import com.dataloom.client.serialization.SerializationConstants;
-import com.dataloom.edm.type.Analyzer;
+import com.openlattice.client.serialization.SerializationConstants;
+import com.openlattice.edm.type.Analyzer;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;

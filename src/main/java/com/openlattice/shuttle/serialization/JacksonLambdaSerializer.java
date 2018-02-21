@@ -19,7 +19,7 @@
 
 package com.openlattice.shuttle.serialization;
 
-import com.dataloom.client.serialization.SerializableFunction;
+import com.openlattice.client.serialization.SerializableFunction;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ClosureSerializer;

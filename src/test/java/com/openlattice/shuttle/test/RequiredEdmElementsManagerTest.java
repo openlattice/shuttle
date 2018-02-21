@@ -19,9 +19,9 @@
 
 package com.openlattice.shuttle.test;
 
-import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
-import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
 import com.dataloom.mappers.ObjectMappers;
+import com.openlattice.data.serializers.FullQualifedNameJacksonDeserializer;
+import com.openlattice.data.serializers.FullQualifedNameJacksonSerializer;
 import com.openlattice.shuttle.edm.RequiredEdmElements;
 import org.junit.Assert;
 import org.junit.Test;
