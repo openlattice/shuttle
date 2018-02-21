@@ -19,21 +19,21 @@
 
 package com.openlattice.shuttle;
 
-import com.dataloom.LoomUtil;
-import com.dataloom.authorization.PermissionsApi;
-import com.dataloom.client.ApiFactoryFactory;
-import com.dataloom.client.LoomClient;
-import com.dataloom.client.RetrofitFactory.Environment;
-import com.dataloom.data.DataApi;
-import com.dataloom.data.EntityKey;
-import com.dataloom.data.requests.Association;
-import com.dataloom.data.requests.BulkDataCreation;
-import com.dataloom.data.requests.Entity;
-import com.dataloom.data.serializers.FullQualifedNameJacksonDeserializer;
-import com.dataloom.data.serializers.FullQualifedNameJacksonSerializer;
-import com.dataloom.edm.EdmApi;
+import com.openlattice.ApiUtil;
+import com.openlattice.authorization.PermissionsApi;
+import com.openlattice.client.ApiFactoryFactory;
+import com.openlattice.client.LoomClient;
+import com.openlattice.client.RetrofitFactory.Environment;
+import com.openlattice.data.DataApi;
+import com.openlattice.data.EntityKey;
+import com.openlattice.data.requests.Association;
+import com.openlattice.data.requests.BulkDataCreation;
+import com.openlattice.data.requests.Entity;
+import com.openlattice.data.serializers.FullQualifedNameJacksonDeserializer;
+import com.openlattice.data.serializers.FullQualifedNameJacksonSerializer;
+import com.openlattice.edm.EdmApi;
 import com.dataloom.mappers.ObjectMappers;
-import com.dataloom.sync.SyncApi;
+import com.openlattice.sync.SyncApi;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -425,7 +425,7 @@ public class Shuttle implements Serializable {
             LinkedHashSet<FullQualifiedName> key,
             SetMultimap<UUID, Object> properties ) {
 
-        return LoomUtil.generateDefaultEntityId(
+        return ApiUtil.generateDefaultEntityId(
                 checkNotNull( key, "Key properties must be configured for entity id generation." )
                         .stream()
                         .map( propertyIdsCache::getUnchecked ),

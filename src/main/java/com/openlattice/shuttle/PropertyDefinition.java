@@ -19,8 +19,8 @@
 
 package com.openlattice.shuttle;
 
-import com.dataloom.client.serialization.SerializableFunction;
-import com.dataloom.client.serialization.SerializationConstants;
+import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;

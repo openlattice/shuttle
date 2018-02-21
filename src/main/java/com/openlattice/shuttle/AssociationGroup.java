@@ -18,7 +18,7 @@
  */
 package com.openlattice.shuttle;
 
-import com.dataloom.client.serialization.SerializationConstants;
+import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
