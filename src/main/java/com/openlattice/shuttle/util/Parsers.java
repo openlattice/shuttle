@@ -15,10 +15,8 @@ public class Parsers {
     public static String getAsString( Object obj ) {
         if ( obj != null ) {
             String objString = obj.toString();
-            if ( objString != null ) {
-                String objStringTrimmed = objString.trim();
-                if ( objStringTrimmed.length() > 0 )
-                    return objString.trim();
+            if ( objString != null && StringUtils.isNotBlank( objString ) ) {
+                return objString.trim();
             }
         }
         return null;
