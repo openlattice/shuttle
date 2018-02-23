@@ -30,12 +30,15 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+
+import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -263,7 +266,10 @@ public class EntityDefinition implements Serializable {
         }
 
         public Builder addProperty( FullQualifiedName propertyFqn, String columnName ) {
-            SerializableFunction<Map<String, String>, ?> defaultMapper = row -> row.get( columnName );
+            SerializableFunction<Map<String, String>, ?> defaultMapper = row -> {
+                String value = row.get( columnName );
+                return ( value instanceof String && StringUtils.isBlank( value ) ) ? null : value;
+            };
             PropertyDefinition propertyDefinition = new PropertyDefinition( propertyFqn, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;

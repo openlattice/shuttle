@@ -13,8 +13,11 @@ public class Parsers {
     private static final Logger logger = LoggerFactory.getLogger( Parsers.class );
 
     public static String getAsString( Object obj ) {
-        if ( obj != null && obj.toString() != null ) {
-            return obj.toString().trim();
+        if ( obj != null ) {
+            String objString = obj.toString();
+            if ( objString != null && StringUtils.isNotBlank( objString ) ) {
+                return objString.trim();
+            }
         }
         return null;
     }
