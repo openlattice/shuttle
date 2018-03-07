@@ -25,6 +25,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
@@ -57,6 +59,7 @@ public class DateTimeHelper implements Serializable {
     }
 
     public String parse( String date ) {
+        if ( StringUtils.isBlank( date )) return null;
         DateTime ldt = parseDT( date );
         return ldt == null ? null : ldt.toString();
     }
@@ -113,6 +116,7 @@ public class DateTimeHelper implements Serializable {
     }
 
     public String parseDate( String date ) {
+        if ( StringUtils.isBlank( date )) return null;
         LocalDate dt = parseLocalDate( date );
         return dt == null ? null : dt.toString();
     }
