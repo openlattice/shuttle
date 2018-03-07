@@ -54,7 +54,7 @@ public class DateTimeHelper implements Serializable {
     }
 
     public String parse( String date ) {
-        if ( StringUtils.isBlank( date )) return null;
+        if ( StringUtils.isBlank( date ) ) return null;
         DateTime ldt = parseDT( date );
         return ldt == null ? null : ldt.toString();
     }
@@ -88,7 +88,7 @@ public class DateTimeHelper implements Serializable {
     }
 
     public LocalTime parseLocalTime( String date ) {
-        if ( date == null ) {
+        if ( StringUtils.isBlank( date ) ) {
             return null;
         } else if ( date.equals( "NULL" ) ) {
             return null;
@@ -111,7 +111,7 @@ public class DateTimeHelper implements Serializable {
     }
 
     public String parseDate( String date ) {
-        if ( StringUtils.isBlank( date )) return null;
+        if ( StringUtils.isBlank( date ) ) return null;
         LocalDate dt = parseLocalDate( date );
         return dt == null ? null : dt.toString();
     }
