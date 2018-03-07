@@ -19,6 +19,7 @@
 
 package com.openlattice.shuttle.dates;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.*;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -53,6 +54,7 @@ public class DateTimeHelper implements Serializable {
     }
 
     public String parse( String date ) {
+        if ( StringUtils.isBlank( date )) return null;
         DateTime ldt = parseDT( date );
         return ldt == null ? null : ldt.toString();
     }
@@ -109,6 +111,7 @@ public class DateTimeHelper implements Serializable {
     }
 
     public String parseDate( String date ) {
+        if ( StringUtils.isBlank( date )) return null;
         LocalDate dt = parseLocalDate( date );
         return dt == null ? null : dt.toString();
     }
