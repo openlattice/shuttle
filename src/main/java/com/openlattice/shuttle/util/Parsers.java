@@ -13,8 +13,11 @@ public class Parsers {
     private static final Logger logger = LoggerFactory.getLogger( Parsers.class );
 
     public static String getAsString( Object obj ) {
-        if ( obj != null && obj.toString() != null ) {
-            return obj.toString().trim();
+        if ( obj != null ) {
+            String objString = obj.toString();
+            if ( objString != null && StringUtils.isNotBlank( objString ) ) {
+                return objString.trim();
+            }
         }
         return null;
     }
@@ -74,6 +77,22 @@ public class Parsers {
                 return UUID.fromString( uuidStr );
             } catch ( IllegalArgumentException e ) {
                 logger.error( "Unable to parse UUID from value {}", uuidStr );
+            }
+        }
+        return null;
+    }
+
+    public static Boolean parseBoolean( Object obj ) {
+        String boolStr = getAsString( obj );
+        if ( boolStr != null ) {
+            try {
+                if ( boolStr.toLowerCase().equals( "yes" ) )
+                    return true;
+                if ( boolStr.toLowerCase().equals( "no" ) )
+                    return false;
+                return Boolean.valueOf( boolStr );
+            } catch ( IllegalArgumentException e ) {
+                logger.error( "Unable to parse boolean from value {}", boolStr );
             }
         }
         return null;

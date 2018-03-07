@@ -20,13 +20,14 @@
 
 package com.openlattice.shuttle;
 
-import com.dataloom.client.serialization.SerializableFunction;
 import com.google.common.collect.ImmutableMap;
+import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.shuttle.adapter.Row;
-import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Map;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -34,10 +35,10 @@ import org.junit.Test;
 public class RowAdapterTest {
     @Test
     public void testRowAdapter() {
-        final Map<String,String> row = ImmutableMap.of( "test", RandomStringUtils.random( 5 ));
-        final SerializableFunction<Row,Object> sf =  r -> r.getAs( "test" );
+        final Map<String, String> row = ImmutableMap.of( "test", RandomStringUtils.random( 5 ) );
+        final SerializableFunction<Row, Object> sf = r -> r.getAs( "test" );
 
         RowAdapter adapter = new RowAdapter( sf );
-        Assert.assertEquals(row.get("test"), adapter.apply( row ) );
+        Assert.assertEquals( row.get( "test" ), adapter.apply( row ) );
     }
 }

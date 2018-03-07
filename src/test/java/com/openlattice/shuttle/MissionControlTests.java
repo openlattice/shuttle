@@ -22,7 +22,6 @@ package com.openlattice.shuttle;
 
 import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
-import com.openlattice.shuttle.MissionControl;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;

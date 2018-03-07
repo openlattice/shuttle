@@ -19,7 +19,7 @@
 
 package com.openlattice.shuttle.edm;
 
-import com.dataloom.client.serialization.SerializationConstants;
+import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
