@@ -21,16 +21,16 @@ package com.openlattice.shuttle;
 
 import com.openlattice.ApiUtil;
 import com.openlattice.authorization.PermissionsApi;
+import com.openlattice.client.ApiClient;
 import com.openlattice.client.ApiFactoryFactory;
-import com.openlattice.client.LoomClient;
 import com.openlattice.client.RetrofitFactory.Environment;
 import com.openlattice.data.DataApi;
 import com.openlattice.data.EntityKey;
 import com.openlattice.data.requests.Association;
 import com.openlattice.data.requests.BulkDataCreation;
 import com.openlattice.data.requests.Entity;
-import com.openlattice.data.serializers.FullQualifedNameJacksonDeserializer;
-import com.openlattice.data.serializers.FullQualifedNameJacksonSerializer;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.edm.EdmApi;
 import com.dataloom.mappers.ObjectMappers;
 import com.openlattice.sync.SyncApi;
@@ -71,26 +71,26 @@ public class Shuttle implements Serializable {
     static {
         ObjectMappers.foreach( mapper -> {
             JacksonLambdaSerializer.registerWithMapper( mapper );
-            FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
+            FullQualifiedNameJacksonSerializer.registerWithMapper( mapper );
             JacksonLambdaDeserializer.registerWithMapper( mapper );
-            FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );
+            FullQualifiedNameJacksonDeserializer.registerWithMapper( mapper );
         } );
     }
 
-    private final LoomClient loomClient;
+    private final ApiClient apiClient;
 
     public Shuttle( String authToken ) {
         // TODO: At some point we will have to handle mechanics of auth token expiration.
-        this.loomClient = new LoomClient( () -> authToken );
+        this.apiClient = new ApiClient( () -> authToken );
     }
 
     public Shuttle( Environment environment, String authToken ) {
         // TODO: At some point we will have to handle mechanics of auth token expiration.
-        this.loomClient = new LoomClient( environment, () -> authToken );
+        this.apiClient = new ApiClient( environment, () -> authToken );
     }
 
     public Shuttle( ApiFactoryFactory apiFactorySupplier ) {
-        this.loomClient = new LoomClient( apiFactorySupplier );
+        this.apiClient = new ApiClient( apiFactorySupplier );
     }
 
     public void launchPayloadFlight( Map<Flight, Payload> flightsToPayloads ) throws InterruptedException {
@@ -105,9 +105,9 @@ public class Shuttle implements Serializable {
         PermissionsApi permissionsApi;
 
         try {
-            edmApi = this.loomClient.getEdmApi();
-            syncApi = this.loomClient.getSyncApi();
-            permissionsApi = this.loomClient.getPermissionsApi();
+            edmApi = this.apiClient.getEdmApi();
+            syncApi = this.apiClient.getSyncApi();
+            permissionsApi = this.apiClient.getPermissionsApi();
         } catch ( ExecutionException e ) {
             logger.error( "Failed to retrieve apis." );
             return;
@@ -179,7 +179,7 @@ public class Shuttle implements Serializable {
         DataApi dataApi;
 
         try {
-            dataApi = this.loomClient.getDataApi();
+            dataApi = this.apiClient.getDataApi();
         } catch ( ExecutionException e ) {
             logger.error( "Failed to get DataApi" );
             return;
@@ -265,8 +265,8 @@ public class Shuttle implements Serializable {
                     EdmApi edmApi;
 
                     try {
-                        dataApi = this.loomClient.getDataApi();
-                        edmApi = this.loomClient.getEdmApi();
+                        dataApi = this.apiClient.getDataApi();
+                        edmApi = this.apiClient.getEdmApi();
                     } catch ( ExecutionException e ) {
                         logger.error( "Failed to retrieve apis." );
                         throw new IllegalStateException( "Unable to retrieve APIs for execution" );
@@ -386,7 +386,7 @@ public class Shuttle implements Serializable {
 
                     DataApi dataApi;
                     try {
-                        dataApi = this.loomClient.getDataApi();
+                        dataApi = this.apiClient.getDataApi();
                     } catch ( ExecutionException e ) {
                         logger.error( "Failed to retrieve apis." );
                         throw new IllegalStateException( "Unable to retrieve APIs for execution" );
@@ -407,7 +407,7 @@ public class Shuttle implements Serializable {
         remaining.ifPresent( r -> {
             DataApi dataApi;
             try {
-                dataApi = this.loomClient.getDataApi();
+                dataApi = this.apiClient.getDataApi();
                 dataApi.createEntityAndAssociationData( r );
             } catch ( ExecutionException e ) {
                 logger.error( "Failed to retrieve apis." );

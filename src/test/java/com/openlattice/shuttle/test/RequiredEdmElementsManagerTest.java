@@ -20,8 +20,8 @@
 package com.openlattice.shuttle.test;
 
 import com.dataloom.mappers.ObjectMappers;
-import com.openlattice.data.serializers.FullQualifedNameJacksonDeserializer;
-import com.openlattice.data.serializers.FullQualifedNameJacksonSerializer;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.shuttle.edm.RequiredEdmElements;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,8 +32,8 @@ import java.io.IOException;
 public class RequiredEdmElementsManagerTest {
 
     static {
-        FullQualifedNameJacksonDeserializer.registerWithMapper( ObjectMappers.getYamlMapper() );
-        FullQualifedNameJacksonSerializer.registerWithMapper( ObjectMappers.getYamlMapper() );
+        FullQualifiedNameJacksonDeserializer.registerWithMapper( ObjectMappers.getYamlMapper() );
+        FullQualifiedNameJacksonSerializer.registerWithMapper( ObjectMappers.getYamlMapper() );
     }
 
     @Test

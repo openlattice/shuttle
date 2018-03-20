@@ -19,9 +19,9 @@
 
 package com.openlattice.shuttle.test;
 
-import com.dataloom.serializer.AbstractJacksonSerializationTest;
-import com.openlattice.data.serializers.FullQualifedNameJacksonDeserializer;
-import com.openlattice.data.serializers.FullQualifedNameJacksonSerializer;
+import com.openlattice.serializer.AbstractJacksonSerializationTest;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.shuttle.Flight;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
@@ -29,8 +29,8 @@ import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
 public class FlightSerializerTest extends AbstractJacksonSerializationTest<Flight> {
 
     static {
-        registerModule( FullQualifedNameJacksonDeserializer::registerWithMapper );
-        registerModule( FullQualifedNameJacksonSerializer::registerWithMapper );
+        registerModule( FullQualifiedNameJacksonDeserializer::registerWithMapper );
+        registerModule( FullQualifiedNameJacksonSerializer::registerWithMapper );
         registerModule( JacksonLambdaSerializer::registerWithMapper );
         registerModule( JacksonLambdaDeserializer::registerWithMapper );
     }
