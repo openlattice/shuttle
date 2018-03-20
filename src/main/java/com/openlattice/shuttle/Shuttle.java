@@ -29,8 +29,8 @@ import com.openlattice.data.EntityKey;
 import com.openlattice.data.requests.Association;
 import com.openlattice.data.requests.BulkDataCreation;
 import com.openlattice.data.requests.Entity;
-import com.openlattice.data.serializers.FullQualifedNameJacksonDeserializer;
-import com.openlattice.data.serializers.FullQualifedNameJacksonSerializer;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.edm.EdmApi;
 import com.dataloom.mappers.ObjectMappers;
 import com.openlattice.sync.SyncApi;
@@ -71,9 +71,9 @@ public class Shuttle implements Serializable {
     static {
         ObjectMappers.foreach( mapper -> {
             JacksonLambdaSerializer.registerWithMapper( mapper );
-            FullQualifedNameJacksonSerializer.registerWithMapper( mapper );
+            FullQualifiedNameJacksonSerializer.registerWithMapper( mapper );
             JacksonLambdaDeserializer.registerWithMapper( mapper );
-            FullQualifedNameJacksonDeserializer.registerWithMapper( mapper );
+            FullQualifiedNameJacksonDeserializer.registerWithMapper( mapper );
         } );
     }
 
