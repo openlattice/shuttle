@@ -28,18 +28,18 @@ public class JavaDateTimeHelper {
                 .collect( Collectors.toList() );
     }
 
+    private boolean shouldIgnoreDate( String date ) {
+        return StringUtils.isBlank( date ) || date.equals( "NULL" );
+    }
+
     public String parseDate( String date ) {
-        if ( StringUtils.isBlank( date ) )
+        if ( shouldIgnoreDate( date ) )
             return null;
         LocalDate ld = parseLocalDate( date );
         return ld == null ? null : ld.toString();
     }
 
     private LocalDate parseLocalDate( String date ) {
-        if ( date == null || date.equals( "NULL" ) ) {
-            return null;
-        }
-
         for ( int i = 0; i < datePatterns.length; ++i ) {
             DateTimeFormatter formatter = formatters.get( i );
             if ( formatter == null ) {
@@ -57,17 +57,13 @@ public class JavaDateTimeHelper {
     }
 
     public String parseDateTime( String date ) {
-        if ( StringUtils.isBlank( date ) )
+        if ( shouldIgnoreDate( date ) )
             return null;
         OffsetDateTime odt = parseOffsetDateTime( date );
         return odt == null ? null : odt.toString();
     }
 
     private OffsetDateTime parseOffsetDateTime( String date ) {
-        if ( date == null || date.equals( "NULL" ) ) {
-            return null;
-        }
-
         for ( int i = 0; i < datePatterns.length; ++i ) {
             DateTimeFormatter formatter = formatters.get( i );
             if ( formatter == null ) {
@@ -88,17 +84,13 @@ public class JavaDateTimeHelper {
     }
 
     public String parseDateAsDateTime( String date ) {
-        if ( StringUtils.isBlank( date ) )
+        if ( shouldIgnoreDate( date ) )
             return null;
         OffsetDateTime odt = parseDateAsOffsetDateTime( date );
         return odt == null ? null : odt.toString();
     }
 
     private OffsetDateTime parseDateAsOffsetDateTime( String date ) {
-        if ( date == null || date.equals( "NULL" ) ) {
-            return null;
-        }
-
         for ( int i = 0; i < datePatterns.length; ++i ) {
             DateTimeFormatter formatter = formatters.get( i );
             if ( formatter == null ) {
@@ -119,16 +111,13 @@ public class JavaDateTimeHelper {
     }
 
     public String parseTime( String time ) {
-        if ( StringUtils.isBlank( time ) )
+        if ( shouldIgnoreDate( time ) )
             return null;
         LocalTime lt = parseLocalTime( time );
         return lt == null ? null : lt.toString();
     }
 
     private LocalTime parseLocalTime( String time ) {
-        if ( StringUtils.isBlank( time ) || time.equals( "NULL" ) )
-            return null;
-
         for ( int i = 0; i < datePatterns.length; ++i ) {
             DateTimeFormatter formatter = formatters.get( i );
             if ( formatter == null ) {
