@@ -17,9 +17,9 @@ import java.util.stream.Collectors;
 public class JavaDateTimeHelper {
     private static final Logger logger = LoggerFactory.getLogger( JavaDateTimeHelper.class );
 
-    private final     TimeZone                tz;
-    private final     String[]                datePatterns;
-    private transient List<DateTimeFormatter> formatters;
+    private final TimeZone                tz;
+    private final String[]                datePatterns;
+    private final List<DateTimeFormatter> formatters;
 
     public JavaDateTimeHelper( TimeZone tz, String... datePatterns ) {
         this.tz = tz;
@@ -28,24 +28,15 @@ public class JavaDateTimeHelper {
                 .collect( Collectors.toList() );
     }
 
-    private boolean shouldIgnoreDate( String date ) {
+    private boolean shouldIgnoreValue( String date ) {
         return StringUtils.isBlank( date ) || date.equals( "NULL" );
     }
 
-    public String parseDate( String date ) {
-        if ( shouldIgnoreDate( date ) )
+    public LocalDate parseDate( String date ) {
+        if ( shouldIgnoreValue( date ) )
             return null;
-        LocalDate ld = parseLocalDate( date );
-        return ld == null ? null : ld.toString();
-    }
-
-    private LocalDate parseLocalDate( String date ) {
         for ( int i = 0; i < datePatterns.length; ++i ) {
             DateTimeFormatter formatter = formatters.get( i );
-            if ( formatter == null ) {
-                formatter = DateTimeFormatter.ofPattern( datePatterns[ i ] );
-                formatters.set( i, formatter );
-            }
             try {
                 return LocalDate.parse( date, formatter );
             } catch ( Exception e ) {
@@ -56,21 +47,11 @@ public class JavaDateTimeHelper {
         return null;
     }
 
-    public String parseDateTime( String date ) {
-        if ( shouldIgnoreDate( date ) )
+    public OffsetDateTime parseDateTime( String date ) {
+        if ( shouldIgnoreValue( date ) )
             return null;
-        OffsetDateTime odt = parseOffsetDateTime( date );
-        return odt == null ? null : odt.toString();
-    }
-
-    private OffsetDateTime parseOffsetDateTime( String date ) {
         for ( int i = 0; i < datePatterns.length; ++i ) {
             DateTimeFormatter formatter = formatters.get( i );
-            if ( formatter == null ) {
-                formatter = DateTimeFormatter.ofPattern( datePatterns[ i ] );
-                formatters.set( i, formatter );
-            }
-
             try {
                 LocalDateTime ldt = LocalDateTime.parse( date, formatter );
 
@@ -83,21 +64,11 @@ public class JavaDateTimeHelper {
         return null;
     }
 
-    public String parseDateAsDateTime( String date ) {
-        if ( shouldIgnoreDate( date ) )
+    public OffsetDateTime parseDateAsDateTime( String date ) {
+        if ( shouldIgnoreValue( date ) )
             return null;
-        OffsetDateTime odt = parseDateAsOffsetDateTime( date );
-        return odt == null ? null : odt.toString();
-    }
-
-    private OffsetDateTime parseDateAsOffsetDateTime( String date ) {
         for ( int i = 0; i < datePatterns.length; ++i ) {
             DateTimeFormatter formatter = formatters.get( i );
-            if ( formatter == null ) {
-                formatter = DateTimeFormatter.ofPattern( datePatterns[ i ] );
-                formatters.set( i, formatter );
-            }
-
             try {
                 LocalDateTime ldt = LocalDate.parse( date, formatter ).atTime( 0, 0 );
 
@@ -110,21 +81,11 @@ public class JavaDateTimeHelper {
         return null;
     }
 
-    public String parseTime( String time ) {
-        if ( shouldIgnoreDate( time ) )
+    public LocalTime parseTime( String time ) {
+        if ( shouldIgnoreValue( time ) )
             return null;
-        LocalTime lt = parseLocalTime( time );
-        return lt == null ? null : lt.toString();
-    }
-
-    private LocalTime parseLocalTime( String time ) {
         for ( int i = 0; i < datePatterns.length; ++i ) {
             DateTimeFormatter formatter = formatters.get( i );
-            if ( formatter == null ) {
-                formatter = DateTimeFormatter.ofPattern( datePatterns[ i ] );
-                formatters.set( i, formatter );
-            }
-
             try {
                 return LocalTime.parse( time, formatter );
             } catch ( Exception e ) {
