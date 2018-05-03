@@ -74,10 +74,10 @@ public class JavaDateTimeHelper {
 
                 return ldt.atZone( tz.toZoneId() ).toOffsetDateTime();
             } catch ( Exception e ) {
-                logger.debug( "Unable to parse datetime {} with format string {}", date, datePatterns[ i ], e );
+                logger.debug( "Unable to parse date as datetime {} with format string {}", date, datePatterns[ i ], e );
             }
         }
-        logger.error( "Unable to parse datetime {}, please see debug log for additional information.", date );
+        logger.error( "Unable to parse date as datetime {}, please see debug log for additional information.", date );
         return null;
     }
 
