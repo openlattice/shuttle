@@ -39,13 +39,16 @@ public class JavaDateTimeHelper {
         for ( int i = 0; i < datePatterns.length; ++i ) {
             DateTimeFormatter formatter = formatters.get( i );
             try {
-                // transform to simpledateformat (to deal with eg. 95 --> should be 1995 not 2095)
-                SimpleDateFormat frm = new SimpleDateFormat( datePatterns[i] );
-                SimpleDateFormat to = new SimpleDateFormat("dd/MM/yyyy");
-                // transform to YYYY-string
-                String helpstring = to.format(frm.parse(date));
-                DateTimeFormatter frmtr = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-                return LocalDate.parse( helpstring, frmtr );
+                LocalDate ld = LocalDate.parse( date, formatter );
+                if (
+                        datePatterns[0].matches(".*yy.*") && !datePatterns[0].matches(".*yyyy.*") ||
+                                datePatterns[0].matches(".*YY.*") && !datePatterns[0].matches(".*YYYY.*")
+                        ){
+                    if((ld.getYear() - LocalDate.now().getYear())>20){
+                        ld = ld.withYear(ld.getYear()-100);
+                    }
+                }
+                return ld;
             } catch ( Exception e ) {
                 if (i == datePatterns.length - 1){
                   logger.error( "Unable to parse date {}, please see debug log for additional information.", date );
@@ -84,7 +87,7 @@ public class JavaDateTimeHelper {
                 return ldt.atZone( tz.toZoneId() ).toOffsetDateTime();
             } catch ( Exception e ) {
                 if (i == datePatterns.length - 1){
-                  logger.error( "Unable to parse date {}, please see debug log for additional information.", date );
+                  logger.error( "Unable to parse datetime {}, please see debug log for additional information.", date );
                 }
             }
         }
@@ -100,7 +103,7 @@ public class JavaDateTimeHelper {
                 return LocalTime.parse( time, formatter );
             } catch ( Exception e ) {
                 if (i == datePatterns.length - 1){
-                  logger.error( "Unable to parse tim {}, please see debug log for additional information.", time );
+                  logger.error( "Unable to parse time {}, please see debug log for additional information.", time );
                 }
             }
         }
