@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -59,17 +60,29 @@ public class EntityDefinition implements Serializable {
 
     @JsonCreator
     public EntityDefinition(
-            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
+            @JsonProperty( SerializationConstants.TYPE_FIELD ) String entityTypeFqn,
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
             @JsonProperty( SerializationConstants.KEY_FIELD ) List<FullQualifiedName> key,
             @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS )
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
-            @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
-                    Optional<SerializableFunction<Map<String, String>, String>> generator,
-            @JsonProperty( SerializationConstants.CURRENT_SYNC ) Optional<Boolean> useCurrentSync ) {
+            @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
 
-        this.entityTypeFqn = entityTypeFqn;
+        this.entityTypeFqn = new FullQualifiedName(entityTypeFqn);
+        this.entitySetName = entitySetName;
+        this.propertyDefinitions = propertyDefinitions;
+        this.key = key;
+        this.alias = alias;
+        this.generator = null;
+        this.useCurrentSync = useCurrentSync;
+    }
+
+    public EntityDefinition(String entityTypeFqn, String entitySetName, List<FullQualifiedName> key,
+            Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
+            Optional<SerializableFunction<Map<String, String>, String>> generator, String alias, Optional<Boolean> useCurrentSync
+            ) {
+
+        this.entityTypeFqn = new FullQualifiedName(entityTypeFqn);
         this.entitySetName = entitySetName;
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
@@ -261,16 +274,24 @@ public class EntityDefinition implements Serializable {
             return new PropertyDefinition.Builder<EntityDefinition.Builder>( propertyTypeFqn, this, onBuild );
         }
 
-        public Builder addProperty( String propertyFqn, String columnName ) {
-            return addProperty( new FullQualifiedName( propertyFqn ), columnName );
-        }
-
-        public Builder addProperty( FullQualifiedName propertyFqn, String columnName ) {
+        public Builder addProperty( String propertyString, String columnName ) {
+            // This function is for when flights are defined in java
+            // Useful for backwards compatibility
+            FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             SerializableFunction<Map<String, String>, ?> defaultMapper = row -> {
                 String value = row.get( columnName );
                 return ( value instanceof String && StringUtils.isBlank( value ) ) ? null : value;
             };
-            PropertyDefinition propertyDefinition = new PropertyDefinition( propertyFqn, defaultMapper );
+            PropertyDefinition propertyDefinition = new PropertyDefinition(
+                    propertyString, defaultMapper );
+            this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
+            return this;
+        }
+
+        public Builder addProperty( String propertyString, String columnName, String transformation ) {
+            FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
+            PropertyDefinition propertyDefinition = new PropertyDefinition(
+                    propertyString, transformation, columnName );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
