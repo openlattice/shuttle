@@ -19,42 +19,49 @@
 
 package com.openlattice.shuttle;
 
-import com.openlattice.ApiUtil;
-import com.openlattice.authorization.PermissionsApi;
-import com.openlattice.client.ApiClient;
-import com.openlattice.client.ApiFactoryFactory;
-import com.openlattice.client.RetrofitFactory.Environment;
-import com.openlattice.data.DataApi;
-import com.openlattice.data.EntityKey;
-import com.openlattice.data.requests.Association;
-import com.openlattice.data.requests.BulkDataCreation;
-import com.openlattice.data.requests.Entity;
-import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
-import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
-import com.openlattice.edm.EdmApi;
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.dataloom.mappers.ObjectMappers;
-import com.openlattice.sync.SyncApi;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
+import com.openlattice.ApiUtil;
+import com.openlattice.authorization.PermissionsApi;
+import com.openlattice.client.ApiClient;
+import com.openlattice.client.ApiFactoryFactory;
+import com.openlattice.client.RetrofitFactory.Environment;
+import com.openlattice.data.DataApi;
+import com.openlattice.data.DataIntegrationApi;
+import com.openlattice.data.EntityKey;
+import com.openlattice.data.integration.Association;
+import com.openlattice.data.integration.BulkDataCreation;
+import com.openlattice.data.integration.Entity;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
+import com.openlattice.edm.EdmApi;
 import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
+import com.openlattice.sync.SyncApi;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Shuttle implements Serializable {
 
@@ -65,7 +72,6 @@ public class Shuttle implements Serializable {
 
     private static transient LoadingCache<String, UUID>                             entitySetIdCache = null;
     private static transient LoadingCache<FullQualifiedName, UUID>                  propertyIdsCache = null;
-    private static transient LoadingCache<UUID, UUID>                               ticketCache      = null;
     private static transient LoadingCache<String, LinkedHashSet<FullQualifiedName>> keyCache         = null;
 
     static {
@@ -184,12 +190,6 @@ public class Shuttle implements Serializable {
             logger.error( "Failed to get DataApi" );
             return;
         }
-
-        if ( ticketCache != null ) {
-            ticketCache.asMap().keySet().stream().forEach( dataApi::releaseSyncTicket );
-        } else {
-            logger.info( "No data written." );
-        }
     }
 
     private void initializeEdmCaches( EdmApi edmApi ) {
@@ -261,11 +261,11 @@ public class Shuttle implements Serializable {
             throws InterruptedException {
         Optional<BulkDataCreation> remaining = payload
                 .map( row -> {
-                    DataApi dataApi;
+                    DataIntegrationApi dataApi;
                     EdmApi edmApi;
 
                     try {
-                        dataApi = this.apiClient.getDataApi();
+                        dataApi = this.apiClient.getDataIntegrationApi();
                         edmApi = this.apiClient.getEdmApi();
                     } catch ( ExecutionException e ) {
                         logger.error( "Failed to retrieve apis." );
@@ -273,23 +273,6 @@ public class Shuttle implements Serializable {
                     }
 
                     initializeEdmCaches( edmApi );
-
-                    if ( ticketCache == null ) {
-                        ticketCache = CacheBuilder
-                                .newBuilder()
-                                .maximumSize( 1000 )
-                                .build( new CacheLoader<UUID, UUID>() {
-                                    @Override
-                                    public UUID load( UUID entitySetId ) throws Exception {
-                                        final UUID syncId = syncIds.get( entitySetId );
-                                        if ( syncId == null ) {
-                                            logger.error( "Sync id for entity set id {} is null.", entitySetId );
-                                            throw new NullPointerException( "Sync id is null." );
-                                        }
-                                        return dataApi.acquireSyncTicket( entitySetId, syncId );
-                                    }
-                                } );
-                    }
 
                     Map<String, EntityKey> aliasesToEntityKey = new HashMap<>();
                     Set<UUID> syncTickets = Sets.newHashSet();
@@ -300,9 +283,6 @@ public class Shuttle implements Serializable {
                     for ( EntityDefinition entityDefinition : flight.getEntities() ) {
 
                         UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
-                        UUID syncId = syncIds.get( entitySetId );
-                        UUID ticket = ticketCache.getUnchecked( entitySetId );
-                        syncTickets.add( ticket );
                         SetMultimap<UUID, Object> properties = HashMultimap.create();
 
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
@@ -320,18 +300,18 @@ public class Shuttle implements Serializable {
                             }
                         }
 
-                /*
-                 * For entityId generation to work correctly it is very important that Stream remain ordered. Ordered !=
-                 * sequential vs parallel.
-                 */
+                        /*
+                         * For entityId generation to work correctly it is very important that Stream remain ordered. Ordered !=
+                         * sequential vs parallel.
+                         */
 
                         String entityId = ( entityDefinition.getGenerator().isPresent() )
                                 ? entityDefinition.getGenerator().get().apply( row )
                                 : generateDefaultEntityId( keyCache.getUnchecked( entityDefinition.getEntitySetName() ),
-                                properties );
+                                        properties );
 
                         if ( StringUtils.isNotBlank( entityId ) ) {
-                            EntityKey key = new EntityKey( entitySetId, entityId, syncId );
+                            EntityKey key = new EntityKey( entitySetId, entityId );
                             aliasesToEntityKey.put( entityDefinition.getAlias(), key );
                             entities.add( new Entity( key, properties ) );
                             wasCreated.put( entityDefinition.getAlias(), true );
@@ -349,9 +329,6 @@ public class Shuttle implements Serializable {
 
                             UUID entitySetId = entitySetIdCache
                                     .getUnchecked( associationDefinition.getEntitySetName() );
-                            UUID syncId = syncIds.get( entitySetId );
-                            UUID ticket = ticketCache.getUnchecked( entitySetId );
-                            syncTickets.add( ticket );
                             SetMultimap<UUID, Object> properties = HashMultimap.create();
 
                             for ( PropertyDefinition propertyDefinition : associationDefinition.getProperties() ) {
@@ -366,11 +343,11 @@ public class Shuttle implements Serializable {
                             String entityId = ( associationDefinition.getGenerator().isPresent() )
                                     ? associationDefinition.getGenerator().get().apply( row )
                                     : generateDefaultEntityId(
-                                    keyCache.getUnchecked( associationDefinition.getEntitySetName() ),
-                                    properties );
+                                            keyCache.getUnchecked( associationDefinition.getEntitySetName() ),
+                                            properties );
 
                             if ( StringUtils.isNotBlank( entityId ) ) {
-                                EntityKey key = new EntityKey( entitySetId, entityId, syncId );
+                                EntityKey key = new EntityKey( entitySetId, entityId );
                                 EntityKey src = aliasesToEntityKey.get( associationDefinition.getSrcAlias() );
                                 EntityKey dst = aliasesToEntityKey.get( associationDefinition.getDstAlias() );
                                 associations.add( new Association( key, src, dst, properties ) );
@@ -380,39 +357,28 @@ public class Shuttle implements Serializable {
                         MissionControl.signal();
                     }
 
-                    return new BulkDataCreation( syncTickets, entities, associations );
+                    return new BulkDataCreation( entities, associations );
                 } )
                 .reduce( ( BulkDataCreation a, BulkDataCreation b ) -> {
 
-                    DataApi dataApi;
-                    try {
-                        dataApi = this.apiClient.getDataApi();
-                    } catch ( ExecutionException e ) {
-                        logger.error( "Failed to retrieve apis." );
-                        throw new IllegalStateException( "Unable to retrieve APIs for execution" );
-                    }
+                    DataIntegrationApi dataApi;
+                    dataApi = this.apiClient.getDataIntegrationApi();
 
-                    a.getTickets().addAll( b.getTickets() );
                     a.getAssociations().addAll( b.getAssociations() );
                     a.getEntities().addAll( b.getEntities() );
 
                     if ( a.getAssociations().size() > 10000 || a.getEntities().size() > 10000 ) {
-                        dataApi.createEntityAndAssociationData( a );// );
-                        return new BulkDataCreation( new HashSet<>(), new HashSet<>(), new HashSet<>() );
+                        dataApi.integrateEntityAndAssociationData( a, false );
+                        return new BulkDataCreation( new HashSet<>(), new HashSet<>() );
                     }
 
                     return a;
                 } );
 
         remaining.ifPresent( r -> {
-            DataApi dataApi;
-            try {
-                dataApi = this.apiClient.getDataApi();
-                dataApi.createEntityAndAssociationData( r );
-            } catch ( ExecutionException e ) {
-                logger.error( "Failed to retrieve apis." );
-                throw new IllegalStateException( "Unable to retrieve APIs for execution" );
-            }
+            DataIntegrationApi dataApi;
+            dataApi = this.apiClient.getDataIntegrationApi();
+            dataApi.integrateEntityAndAssociationData( r, false );
         } );
     }
 
