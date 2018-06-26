@@ -60,7 +60,7 @@ public class AssociationDefinition implements Serializable {
 
     @JsonCreator
     public AssociationDefinition(
-            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
+            @JsonProperty( SerializationConstants.FQN ) String entityTypeFqn,
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
             @JsonProperty( SerializationConstants.KEY_FIELD ) List<FullQualifiedName> key,
             @JsonProperty( SerializationConstants.SRC ) String srcAlias,
@@ -72,7 +72,7 @@ public class AssociationDefinition implements Serializable {
                     Optional<SerializableFunction<Map<String, String>, String>> generator,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Optional<Boolean> useCurrentSync ) {
 
-        this.entityTypeFqn = entityTypeFqn;
+        this.entityTypeFqn = new FullQualifiedName(entityTypeFqn);
         this.entitySetName = entitySetName;
         this.srcAlias = srcAlias;
         this.dstAlias = dstAlias;
@@ -96,7 +96,7 @@ public class AssociationDefinition implements Serializable {
         this.useCurrentSync = builder.useCurrentSync;
     }
 
-    @JsonProperty( SerializationConstants.TYPE_FIELD )
+    @JsonProperty( SerializationConstants.FQN )
     public FullQualifiedName getEntityTypeFqn() {
         return this.entityTypeFqn;
     }
@@ -320,14 +320,20 @@ public class AssociationDefinition implements Serializable {
             return new PropertyDefinition.Builder<AssociationDefinition.Builder>( propertyTypeFqn, this, onBuild );
         }
 
-        public Builder addProperty( String propertyFqn, String columnName ) {
-            return addProperty( new FullQualifiedName( propertyFqn ), columnName );
+        public Builder addProperty( String propertyString, String columnName ) {
+            FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
+            SerializableFunction<Map<String, String>, ?> defaultMapper = row -> row.get( columnName );
+            PropertyDefinition propertyDefinition = new PropertyDefinition(
+                    propertyString, defaultMapper );
+            this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
+            return this;
         }
 
-        public Builder addProperty( FullQualifiedName propertyFqn, String columnName ) {
-            SerializableFunction<Map<String, String>, ?> defaultMapper = row -> row.get( columnName );
-            PropertyDefinition propertyDefinition = new PropertyDefinition( propertyFqn, defaultMapper );
-            this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
+        public Builder addProperty( String propertyString, String columnName, TransformationDefinition transformation, List<String> arguments ) {
+            FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
+            PropertyDefinition propertyDefinition = new PropertyDefinition(
+                    propertyString, transformation, columnName );
+            this.propertyDefinitionMap.put( propertyFqn, propertyDefinition);
             return this;
         }
 
