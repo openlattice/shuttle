@@ -60,7 +60,7 @@ public class EntityDefinition implements Serializable {
 
     @JsonCreator
     public EntityDefinition(
-            @JsonProperty( SerializationConstants.TYPE_FIELD ) String entityTypeFqn,
+            @JsonProperty( SerializationConstants.FQN ) String entityTypeFqn,
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
             @JsonProperty( SerializationConstants.KEY_FIELD ) List<FullQualifiedName> key,
             @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS )
@@ -73,7 +73,7 @@ public class EntityDefinition implements Serializable {
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
         this.alias = alias;
-        this.generator = null;
+        this.generator = Optional.absent();
         this.useCurrentSync = useCurrentSync;
     }
 
@@ -102,7 +102,7 @@ public class EntityDefinition implements Serializable {
         this.useCurrentSync = builder.useCurrentSync;
     }
 
-    @JsonProperty( SerializationConstants.TYPE_FIELD )
+    @JsonProperty( SerializationConstants.FQN )
     public FullQualifiedName getEntityTypeFqn() {
         return this.entityTypeFqn;
     }
@@ -288,7 +288,7 @@ public class EntityDefinition implements Serializable {
             return this;
         }
 
-        public Builder addProperty( String propertyString, String columnName, String transformation ) {
+        public Builder addProperty( String propertyString, String columnName, TransformationDefinition transformation ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
                     propertyString, transformation, columnName );
