@@ -19,56 +19,48 @@
 
 package com.openlattice.shuttle;
 
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.client.serialization.SerializationConstants;
-import com.openlattice.shuttle.util.Constants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Optional;
 import com.google.common.hash.Funnel;
 import com.google.common.hash.HashFunction;
+import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.client.serialization.SerializationConstants;
 import com.openlattice.shuttle.adapter.Row;
-import com.openlattice.shuttle.transformations.Transform;
-
+import com.openlattice.shuttle.transformations.TransformValueMapper;
+import com.openlattice.shuttle.util.Constants;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.commons.lang3.StringUtils;
+import java.util.Objects;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-
-import java.io.Serializable;
 
 public class PropertyDefinition implements Serializable {
 
     private static final long serialVersionUID = -6759550320515138785L;
 
-    private FullQualifiedName                                       propertyTypeFqn;
-    private SerializableFunction<Map<String,String>, ?>             valueMapper;
-    private TransformationDefinition                                transformationdefinition;
-    private String                                                  columnName;
-
-    private final Transform transformer = new Transform();
+    private FullQualifiedName                            propertyTypeFqn;
+    private SerializableFunction<Map<String, String>, ?> valueMapper;
+    private String                                       column;
 
     @JsonCreator
     public PropertyDefinition(
             @JsonProperty( SerializationConstants.FQN ) String propertyTypeFqn,
-            @JsonProperty( Constants.TRANSFORMATIONDEFINITION ) TransformationDefinition transformationdefinition,
-            @JsonProperty( Constants.COLUMN ) String columnName ) {
-            this.propertyTypeFqn = new FullQualifiedName(propertyTypeFqn);
-            this.columnName = columnName;
-            this.transformationdefinition = transformationdefinition;
-            this.valueMapper = transformer.getTransform( columnName, transformationdefinition );
+            @JsonProperty( Constants.TRANSFORMS ) List<Transformation<Object,Object>> transforms,
+            @JsonProperty( Constants.COLUMN ) String column ) {
+        this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
+        this.column = column;
+        this.valueMapper = TransformValueMapper.from( row -> row.get( column ), transforms );
     }
 
-    public PropertyDefinition(String propertyTypeFqn, SerializableFunction<Map<String,String>, ?> valueMapper) {
-        this.propertyTypeFqn = new FullQualifiedName(propertyTypeFqn);
+    public PropertyDefinition( String propertyTypeFqn, SerializableFunction<Map<String, String>, ?> valueMapper ) {
+        this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
         this.valueMapper = valueMapper;
     }
 
     private PropertyDefinition( PropertyDefinition.Builder builder ) {
         this.propertyTypeFqn = builder.propertyTypeFqn;
-        this.valueMapper = builder.valueMapper ;
+        this.valueMapper = builder.valueMapper;
     }
 
     @JsonProperty( SerializationConstants.FQN )
@@ -76,24 +68,40 @@ public class PropertyDefinition implements Serializable {
         return this.propertyTypeFqn;
     }
 
-    @JsonProperty( Constants.TRANSFORMATIONDEFINITION )
-    public TransformationDefinition getTransformation() {
-        return this.transformationdefinition;
-    }
-
     @JsonProperty( Constants.COLUMN )
-    public String getColumns() {
-        return this.columnName;
+    public String getColumn() {
+        return this.column;
     }
 
-    public SerializableFunction<Map<String,String>, ?> getPropertyValue() {
+    public SerializableFunction<Map<String, String>, ?> getPropertyValue() {
         return row -> this.valueMapper.apply( Preconditions.checkNotNull( row ) );
+    }
+
+    @Override public String toString() {
+        return "PropertyDefinition{" +
+                "propertyTypeFqn=" + propertyTypeFqn +
+                ", valueMapper=" + valueMapper +
+                ", column='" + column + '\'' +
+                '}';
+    }
+
+    @Override public boolean equals( Object o ) {
+        if ( this == o ) { return true; }
+        if ( !( o instanceof PropertyDefinition ) ) { return false; }
+        PropertyDefinition that = (PropertyDefinition) o;
+        return Objects.equals( propertyTypeFqn, that.propertyTypeFqn ) &&
+                Objects.equals( valueMapper, that.valueMapper ) &&
+                Objects.equals( column, that.column );
+    }
+
+    @Override public int hashCode() {
+        return Objects.hash( propertyTypeFqn, valueMapper, column );
     }
 
     public static class Builder<T extends BaseBuilder> extends BaseBuilder<T, PropertyDefinition> {
 
-        private FullQualifiedName            propertyTypeFqn;
-        private SerializableFunction<Map<String,String>, ?> valueMapper;
+        private FullQualifiedName                            propertyTypeFqn;
+        private SerializableFunction<Map<String, String>, ?> valueMapper;
 
         public Builder(
                 FullQualifiedName propertyTypeFqn,
@@ -104,17 +112,17 @@ public class PropertyDefinition implements Serializable {
             this.propertyTypeFqn = propertyTypeFqn;
         }
 
-        public Builder<T> value( Funnel<Map<String,String>> funnel ) {
+        public Builder<T> value( Funnel<Map<String, String>> funnel ) {
             this.valueMapper = HashingMapper.getMapper( funnel );
             return this;
         }
 
-        public Builder<T> value( Funnel<Map<String,String>> funnel, HashFunction hashFunction ) {
+        public Builder<T> value( Funnel<Map<String, String>> funnel, HashFunction hashFunction ) {
             this.valueMapper = HashingMapper.getMapper( funnel, hashFunction );
             return this;
         }
 
-        public Builder<T> extractor( SerializableFunction<Map<String,String>, Object> mapper ) {
+        public Builder<T> extractor( SerializableFunction<Map<String, String>, Object> mapper ) {
             this.valueMapper = mapper;
             return this;
         }
@@ -138,55 +146,5 @@ public class PropertyDefinition implements Serializable {
             return super.ok( new PropertyDefinition( this ) );
         }
     }
-
-    @Override
-    public String toString() {
-
-        return "PropertyDefinition [propertyTypeFqn=" + propertyTypeFqn + ", transformation=" + transformationdefinition + ", column=" + columnName + ", valueMapper=" + valueMapper + "]";
-    }
-
-    @Override
-    public int hashCode() {
-
-        int result = 1;
-        final int prime = 31;
-        result = prime * result + ( ( propertyTypeFqn == null ) ? 0 : propertyTypeFqn.hashCode() );
-        result = prime * result + ( ( valueMapper == null ) ? 0 : valueMapper.hashCode() );
-
-        return result;
-    }
-
-    @Override
-    public boolean equals( Object obj ) {
-
-        if ( this == obj ) {
-            return true;
-        }
-
-        if ( obj == null ) {
-            return false;
-        }
-
-        if ( !( obj instanceof PropertyDefinition ) ) {
-            return false;
-        }
-
-        PropertyDefinition other = (PropertyDefinition) obj;
-
-        if ( propertyTypeFqn == null && other.propertyTypeFqn != null ) {
-            return false;
-        } else if ( !propertyTypeFqn.equals( other.propertyTypeFqn ) ) {
-            return false;
-        }
-
-        if ( valueMapper == null && other.valueMapper != null ) {
-            return false;
-        } else if ( !SerializableFunction.class.isAssignableFrom( other.valueMapper.getClass() ) ) {
-            return false;
-        }
-
-        return true;
-    }
-
 
 }

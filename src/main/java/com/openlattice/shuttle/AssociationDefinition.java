@@ -22,14 +22,14 @@ package com.openlattice.shuttle;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.client.serialization.SerializationConstants;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -70,7 +70,7 @@ public class AssociationDefinition implements Serializable {
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
 
-        this.entityTypeFqn = new FullQualifiedName(entityTypeFqn);
+        this.entityTypeFqn = new FullQualifiedName( entityTypeFqn );
         this.entitySetName = entitySetName;
         this.srcAlias = srcAlias;
         this.dstAlias = dstAlias;
@@ -327,11 +327,15 @@ public class AssociationDefinition implements Serializable {
             return this;
         }
 
-        public Builder addProperty( String propertyString, String columnName, TransformationDefinition transformation, List<String> arguments ) {
+        public Builder addProperty(
+                String propertyString,
+                String columnName,
+                List<Transformation<Object, Object>> transformation,
+                List<String> arguments ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
-            PropertyDefinition propertyDefinition = new PropertyDefinition(
-                    propertyString, transformation, columnName );
-            this.propertyDefinitionMap.put( propertyFqn, propertyDefinition);
+            PropertyDefinition propertyDefinition =
+                    new PropertyDefinition( propertyString, transformation, columnName );
+            this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
 

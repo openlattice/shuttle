@@ -22,23 +22,20 @@ package com.openlattice.shuttle;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-
+import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.client.serialization.SerializationConstants;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
-
-import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -68,7 +65,7 @@ public class EntityDefinition implements Serializable {
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
 
-        this.entityTypeFqn = new FullQualifiedName(entityTypeFqn);
+        this.entityTypeFqn = new FullQualifiedName( entityTypeFqn );
         this.entitySetName = entitySetName;
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
@@ -77,12 +74,17 @@ public class EntityDefinition implements Serializable {
         this.useCurrentSync = useCurrentSync;
     }
 
-    public EntityDefinition(String entityTypeFqn, String entitySetName, List<FullQualifiedName> key,
+    public EntityDefinition(
+            String entityTypeFqn,
+            String entitySetName,
+            List<FullQualifiedName> key,
             Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
-            Optional<SerializableFunction<Map<String, String>, String>> generator, String alias, Optional<Boolean> useCurrentSync
-            ) {
+            Optional<SerializableFunction<Map<String, String>, String>> generator,
+            String alias,
+            Optional<Boolean> useCurrentSync
+    ) {
 
-        this.entityTypeFqn = new FullQualifiedName(entityTypeFqn);
+        this.entityTypeFqn = new FullQualifiedName( entityTypeFqn );
         this.entitySetName = entitySetName;
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
@@ -271,7 +273,7 @@ public class EntityDefinition implements Serializable {
                 propertyDefinitionMap.put( propertyDefFqn, propertyDefinition );
             };
 
-            return new PropertyDefinition.Builder<EntityDefinition.Builder>( propertyTypeFqn, this, onBuild );
+            return new PropertyDefinition.Builder<>( propertyTypeFqn, this, onBuild );
         }
 
         public Builder addProperty( String propertyString, String columnName ) {
@@ -288,7 +290,10 @@ public class EntityDefinition implements Serializable {
             return this;
         }
 
-        public Builder addProperty( String propertyString, String columnName, TransformationDefinition transformation ) {
+        public Builder addProperty(
+                String propertyString,
+                String columnName,
+                List<Transformation<Object, Object>> transformation ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
                     propertyString, transformation, columnName );
