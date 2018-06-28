@@ -1,5 +1,6 @@
 package com.openlattice.shuttle.transformations;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.shuttle.TransformationDefinition;
 import com.openlattice.shuttle.transformations.StringTransform;
@@ -15,6 +16,7 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Transform implements Serializable {
@@ -25,13 +27,21 @@ public class Transform implements Serializable {
         new LinkedHashMap<String, SerializableFunction<Map<String,String>, ?>>();
 
     public SerializableFunction<Map<String,String>, ?> getTransform( String columnName, TransformationDefinition transformation ) {
-        transformations.put("identity", StringTransform.Identity( columnName ));
         transformations.put("prefix", StringTransform.Prefixer( columnName, transformation.getPrefix() ));
 
-        // NEXXXTTTTTT
+//        Parsers.getAsString(  );
+//        Parsers.parseInt(  )
+//        // NEXXXTTTTTT
         // make getters for transformations and put them in here :-)
         // Look at how json stuff can be optional (or can it?)
-        return transformations.get(transformation.getFunction());
+//        return transformations.get(transformation.getFunction());
+        return null;
     }
+
+}
+
+@JsonTypeInfo(  )
+public class AbstractTransform implements Function<String, String> {
+
 
 }

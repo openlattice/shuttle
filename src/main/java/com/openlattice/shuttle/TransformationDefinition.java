@@ -15,28 +15,26 @@ import com.openlattice.shuttle.util.Constants;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class TransformationDefinition implements Serializable {
 
     private static final long serialVersionUID = -6632902808080642647L;
 
-    private String                           prefix;
-    private String                           transformation;
+    private String prefix;
 
     private final Transform transformer = new Transform();
 
+    // THIS SHOULD BE A LIST OF FUNCTIONS
     @JsonCreator
     public TransformationDefinition(
-            @JsonProperty( Constants.TRANSFORMATION ) String transformation,
-            @JsonProperty( Constants.PREFIX ) String prefix ) {
-        this.transformation = transformation;
+            @JsonProperty( value = Constants.PREFIX ) String prefix ) {
         this.prefix = prefix;
     }
 
-    @JsonProperty( Constants.TRANSFORMATION )
-    public String getFunction() {return this.transformation; }
-
     @JsonProperty( Constants.PREFIX )
-    public String getPrefix() {return this.prefix;}
+    public String getPrefix() {
+        return this.prefix;
+    }
 
 }
