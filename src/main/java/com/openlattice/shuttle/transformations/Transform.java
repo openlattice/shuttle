@@ -26,12 +26,12 @@ public class Transform implements Serializable {
 
     public SerializableFunction<Map<String,String>, ?> getTransform( String columnName, TransformationDefinition transformation ) {
         transformations.put("identity", StringTransform.Identity( columnName ));
-        transformations.put("prefix", StringTransform.Prefixer( columnName ) );
+        transformations.put("prefix", StringTransform.Prefixer( columnName, transformation.getPrefix() ));
 
         // NEXXXTTTTTT
         // make getters for transformations and put them in here :-)
         // Look at how json stuff can be optional (or can it?)
-        return transformations.get(transformation);
+        return transformations.get(transformation.getFunction());
     }
 
 }

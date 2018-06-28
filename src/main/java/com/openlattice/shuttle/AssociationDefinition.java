@@ -68,9 +68,7 @@ public class AssociationDefinition implements Serializable {
             @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS )
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
-            @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
-                    Optional<SerializableFunction<Map<String, String>, String>> generator,
-            @JsonProperty( SerializationConstants.CURRENT_SYNC ) Optional<Boolean> useCurrentSync ) {
+            @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
 
         this.entityTypeFqn = new FullQualifiedName(entityTypeFqn);
         this.entitySetName = entitySetName;
@@ -79,8 +77,8 @@ public class AssociationDefinition implements Serializable {
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
         this.alias = alias;
-        this.generator = generator;
-        this.useCurrentSync = useCurrentSync.or( false );
+        this.generator = Optional.absent();
+        this.useCurrentSync = useCurrentSync;
     }
 
     private AssociationDefinition( AssociationDefinition.Builder builder ) {

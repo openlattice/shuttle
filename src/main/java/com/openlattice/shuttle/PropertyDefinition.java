@@ -58,7 +58,6 @@ public class PropertyDefinition implements Serializable {
             this.propertyTypeFqn = new FullQualifiedName(propertyTypeFqn);
             this.columnName = columnName;
             this.transformationdefinition = transformationdefinition;
-
             this.valueMapper = transformer.getTransform( columnName, transformationdefinition );
     }
 

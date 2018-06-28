@@ -21,8 +21,8 @@ public class StringTransform implements Serializable {
         return valuemapper;
     }
 
-    public static SerializableFunction<Map<String,String>, ?> Prefixer( String columnName ) {
-        SerializableFunction<Map<String,String>, ?> valuemapper = row -> "lala_"+row.get( columnName );
+    public static SerializableFunction<Map<String,String>, ?> Prefixer( String columnName, String prefix ) {
+        SerializableFunction<Map<String,String>, ?> valuemapper = row -> prefix+row.get( columnName );
         return valuemapper;
     }
 
