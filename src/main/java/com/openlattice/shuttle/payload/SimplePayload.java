@@ -16,10 +16,15 @@ import static com.openlattice.shuttle.util.CsvUtil.newDefaultMapper;
 public class SimplePayload implements Payload {
     protected static final Logger logger = LoggerFactory.getLogger( SimplePayload.class );
 
-    private final Stream<Map<String, String>> payload;
+    private final String path;
 
     public SimplePayload( String path ) {
-        this.payload = StreamUtil.stream( () -> {
+        this.path = path;
+    }
+
+    @Override
+    public Stream<Map<String, String>> getPayload() {
+        return StreamUtil.stream( () -> {
             try {
                 return newDefaultMapper()
                         .readerFor( Map.class )
@@ -30,14 +35,5 @@ public class SimplePayload implements Payload {
                 return ImmutableList.<Map<String, String>>of().iterator();
             }
         } );
-    }
-
-    public SimplePayload( Stream<Map<String, String>> payload ) {
-        this.payload = payload;
-    }
-
-    @Override
-    public Stream<Map<String, String>> getPayload() {
-        return payload;
     }
 }
