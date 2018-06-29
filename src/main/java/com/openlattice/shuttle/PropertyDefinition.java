@@ -21,6 +21,8 @@ package com.openlattice.shuttle;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -38,6 +40,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import transforms.ColumnTransform;
 import transforms.HashTransform;
 
+@JsonInclude( value = Include.NON_EMPTY )
 public class PropertyDefinition implements Serializable {
 
     private static final long serialVersionUID = -6759550320515138785L;
@@ -137,6 +140,7 @@ public class PropertyDefinition implements Serializable {
 
         private FullQualifiedName                            propertyTypeFqn;
         private SerializableFunction<Map<String, String>, ?> valueMapper;
+        private List<Transformation>                         transforms;
 
         public Builder(
                 FullQualifiedName propertyTypeFqn,
@@ -146,10 +150,14 @@ public class PropertyDefinition implements Serializable {
             this.propertyTypeFqn = propertyTypeFqn;
         }
 
-        public Builder<T> value( List<String> columns, String hashFunction ) {
-            this.valueMapper = new TransformValueMapper( ImmutableList
-                    .of( new HashTransform( columns, hashFunction ) ) );
+        public Builder<T> value( List<Transformation> transforms ) {
+            this.transforms = transforms;
+            this.valueMapper = new TransformValueMapper( transforms );
             return this;
+        }
+
+        public Builder<T> value( List<String> columns, String hashFunction ) {
+            return value( ImmutableList.of( new HashTransform( columns, hashFunction ) ) );
         }
 
         public Builder<T> extractor( SerializableFunction<Map<String, String>, Object> mapper ) {
