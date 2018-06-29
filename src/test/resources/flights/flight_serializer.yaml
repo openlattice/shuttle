@@ -1,0 +1,49 @@
+entityDefinitions:
+  cyphers:
+    entitySetName: "XXSr4"
+    propertyDefinitions:
+      CoSoB.9BK4n:
+        type: "CoSoB.9BK4n"
+        transforms:
+        - !<transforms.HashTransform>
+          columns:
+          - "algo"
+          - "mode"
+          - "keySize"
+          hashFunction: "murmur128"
+      ZJEsE.WzSAN:
+        type: "ZJEsE.WzSAN"
+      2jMG7.l0ovJ:
+        type: "2jMG7.l0ovJ"
+        column: "mode"
+    name: "cyphers"
+    currentSync: false
+  moreCyphers:
+    entitySetName: "C0YVJ"
+    propertyDefinitions:
+      3rCBj.L4ZXE:
+        type: "3rCBj.L4ZXE"
+      ZJEsE.WzSAN:
+        type: "ZJEsE.WzSAN"
+        column: "algo"
+        transforms:
+        - !<transforms.PrefixTransform>
+          prefix: "COWBELL_"
+      2jMG7.l0ovJ:
+        type: "2jMG7.l0ovJ"
+    name: "moreCyphers"
+    currentSync: false
+associationDefinitions:
+  cypherToCypher:
+    fqn: null
+    entitySetName: "adjRv"
+    key: null
+    src: "cyphers"
+    dst: "moreCyphers"
+    propertyDefinitions:
+      MbX2C.Htjnc:
+        type: "MbX2C.Htjnc"
+    name: "cypherToCypher"
+    currentSync: false
+    entityIdGenerator: null
+name: "Anon"

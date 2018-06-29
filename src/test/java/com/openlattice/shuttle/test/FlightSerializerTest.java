@@ -20,8 +20,8 @@
 package com.openlattice.shuttle.test;
 
 import com.dataloom.mappers.ObjectMappers;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.Resources;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.serializer.AbstractJacksonSerializationTest;
@@ -33,6 +33,7 @@ import org.junit.Test;
 
 public class FlightSerializerTest extends AbstractJacksonSerializationTest<Flight> {
     private static ObjectMapper yaml = ObjectMappers.getYamlMapper();
+
     @Override
     protected Flight getSampleData() {
         return ShuttleTest.getFlight();
@@ -48,10 +49,17 @@ public class FlightSerializerTest extends AbstractJacksonSerializationTest<Fligh
         Flight expected = getSampleData();
 
         String yml = yaml.writeValueAsString( expected );
-        Flight actual = yaml.readValue( yml , getClazz());
-        logger.info("Yaml: {}", yml );
-        Assert.assertEquals( expected,actual );
+        Flight actual = yaml.readValue( yml, getClazz() );
+        logger.info( "Yaml: {}", yml );
+        Assert.assertEquals( expected, actual );
     }
+
+    @Test
+    public void testYamlFile() throws IOException {
+        Assert.assertNotNull( yaml
+                .readValue( Resources.getResource( "flights/flight_serializer.yaml" ), Flight.class ) );
+    }
+
     @BeforeClass
     public static void registerModules() {
         registerModule( FullQualifiedNameJacksonSerializer::registerWithMapper );
