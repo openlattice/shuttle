@@ -32,9 +32,4 @@ import java.util.function.Function;
 @JsonTypeInfo( use = Id.CLASS, include = As.PROPERTY,property = TRANSFORM)
 public abstract class Transformation<I extends Object> implements Function<I, Object> {
     public static final String TRANSFORM = "@transform";
-
-//    @JsonProperty( TRANSFORM )
-//    public String getTransform() {
-//        return getClass().getName();
-//    }
 }
