@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import transforms.ColumnTransform;
 import transforms.HashTransform;
 
 public class PropertyDefinition implements Serializable {
@@ -56,11 +57,11 @@ public class PropertyDefinition implements Serializable {
 
         if ( transforms.isPresent() ) {
             final List<Transformation> internalTransforms;
+            internalTransforms = new ArrayList<>( transforms.get().size() + 1 );
             if ( reader.isPresent() ) {
-                internalTransforms = new ArrayList<>( transforms.get().size() + 1 );
                 internalTransforms.add( reader.get() );
             } else {
-                internalTransforms = new ArrayList<>( transforms.get().size() );
+                internalTransforms.add( new ColumnTransform( column ) );
             }
             transforms.get().forEach( internalTransforms::add );
             this.valueMapper = new TransformValueMapper( internalTransforms );
