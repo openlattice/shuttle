@@ -146,4 +146,12 @@ public class Flight implements Serializable {
         result = 31 * result + name.hashCode();
         return result;
     }
+
+    @Override public String toString() {
+        return "Flight{" +
+                "entityDefinitions=" + entityDefinitions +
+                ", associationDefinitions=" + associationDefinitions +
+                ", name='" + name + '\'' +
+                '}';
+    }
 }

@@ -19,21 +19,13 @@
 
 package com.openlattice.shuttle.test;
 
-import com.openlattice.serializer.AbstractJacksonSerializationTest;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
+import com.openlattice.serializer.AbstractJacksonSerializationTest;
 import com.openlattice.shuttle.Flight;
-import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
-import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
+import org.junit.BeforeClass;
 
 public class FlightSerializerTest extends AbstractJacksonSerializationTest<Flight> {
-
-    static {
-        registerModule( FullQualifiedNameJacksonDeserializer::registerWithMapper );
-        registerModule( FullQualifiedNameJacksonSerializer::registerWithMapper );
-        registerModule( JacksonLambdaSerializer::registerWithMapper );
-        registerModule( JacksonLambdaDeserializer::registerWithMapper );
-    }
 
     @Override
     protected Flight getSampleData() {
@@ -43,5 +35,13 @@ public class FlightSerializerTest extends AbstractJacksonSerializationTest<Fligh
     @Override
     protected Class<Flight> getClazz() {
         return Flight.class;
+    }
+
+    @BeforeClass
+    public static void registerModules() {
+        registerModule( FullQualifiedNameJacksonSerializer::registerWithMapper );
+//        registerModule( FullQualifiedNameJacksonDeserializer::registerWithMapper );
+        //        registerModule( JacksonLambdaSerializer::registerWithMapper );
+        //        registerModule( JacksonLambdaDeserializer::registerWithMapper );
     }
 }

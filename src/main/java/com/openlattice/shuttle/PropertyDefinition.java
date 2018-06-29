@@ -20,11 +20,11 @@
 package com.openlattice.shuttle;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.client.serialization.SerializationConstants;
 import com.openlattice.shuttle.adapter.Row;
 import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.util.Constants;
@@ -42,22 +42,24 @@ public class PropertyDefinition implements Serializable {
 
     private static final long serialVersionUID = -6759550320515138785L;
 
-    private FullQualifiedName                            propertyTypeFqn;
-    private SerializableFunction<Map<String, String>, ?> valueMapper;
-    private String                                       column;
+    private final FullQualifiedName                            propertyTypeFqn;
+    private final SerializableFunction<Map<String, String>, ?> valueMapper;
+    private final String                                       column;
+    private final Optional<List<Transformation>>               transforms;
 
     @JsonCreator
     public PropertyDefinition(
-            @JsonProperty( SerializationConstants.FQN ) String propertyTypeFqn,
+            @JsonProperty( Constants.TYPE ) String propertyTypeFqn,
+            @JsonProperty( Constants.COLUMN ) String column,
             @JsonProperty( Constants.TRANSFORMS ) Optional<Transformation> reader,
-            @JsonProperty( Constants.READER ) Optional<List<Transformation>> transforms,
-            @JsonProperty( Constants.COLUMN ) String column ) {
-        this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
+            @JsonProperty( Constants.READER ) Optional<List<Transformation>> transforms ) {
+        this.propertyTypeFqn = propertyTypeFqn == null ? null : new FullQualifiedName( propertyTypeFqn );
         this.column = column;
+        this.transforms = transforms;
 
         if ( transforms.isPresent() ) {
             final List<Transformation> internalTransforms;
-            internalTransforms = new ArrayList<>( transforms.get().size() + 1 );
+            internalTransforms = new ArrayList<>( this.transforms.get().size() + 1 );
             if ( reader.isPresent() ) {
                 internalTransforms.add( reader.get() );
             } else {
@@ -73,17 +75,28 @@ public class PropertyDefinition implements Serializable {
     public PropertyDefinition( String propertyTypeFqn, SerializableFunction<Map<String, String>, ?> valueMapper ) {
         this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
         this.valueMapper = valueMapper;
+        this.column = "";
+        this.transforms = Optional.empty();
     }
 
     private PropertyDefinition( PropertyDefinition.Builder builder ) {
         this.propertyTypeFqn = builder.propertyTypeFqn;
         this.valueMapper = builder.valueMapper;
+        this.column = "";
+        this.transforms = Optional.empty();
     }
 
-    private void checkState( boolean b ) {
+    @JsonProperty( Constants.TRANSFORMS )
+    public Optional<List<Transformation>> getTransforms() {
+        return transforms;
     }
 
-    @JsonProperty( SerializationConstants.FQN )
+    @JsonProperty( Constants.TYPE )
+    public String getType() {
+        return this.propertyTypeFqn.getFullQualifiedNameAsString();
+    }
+
+    @JsonIgnore
     public FullQualifiedName getFullQualifiedName() {
         return this.propertyTypeFqn;
     }
@@ -93,16 +106,9 @@ public class PropertyDefinition implements Serializable {
         return this.column;
     }
 
+    @JsonIgnore
     public SerializableFunction<Map<String, String>, ?> getPropertyValue() {
         return row -> this.valueMapper.apply( Preconditions.checkNotNull( row ) );
-    }
-
-    @Override public String toString() {
-        return "PropertyDefinition{" +
-                "propertyTypeFqn=" + propertyTypeFqn +
-                ", valueMapper=" + valueMapper +
-                ", column='" + column + '\'' +
-                '}';
     }
 
     @Override public boolean equals( Object o ) {
@@ -110,12 +116,21 @@ public class PropertyDefinition implements Serializable {
         if ( !( o instanceof PropertyDefinition ) ) { return false; }
         PropertyDefinition that = (PropertyDefinition) o;
         return Objects.equals( propertyTypeFqn, that.propertyTypeFqn ) &&
-                Objects.equals( valueMapper, that.valueMapper ) &&
-                Objects.equals( column, that.column );
+                Objects.equals( column, that.column ) &&
+                Objects.equals( transforms, that.transforms );
+    }
+
+    @Override public String toString() {
+        return "PropertyDefinition{" +
+                "propertyTypeFqn=" + propertyTypeFqn +
+                ", column='" + column + '\'' +
+                ", transforms=" + transforms +
+                '}';
     }
 
     @Override public int hashCode() {
-        return Objects.hash( propertyTypeFqn, valueMapper, column );
+
+        return Objects.hash( propertyTypeFqn, column, transforms );
     }
 
     public static class Builder<T extends BaseBuilder> extends BaseBuilder<T, PropertyDefinition> {

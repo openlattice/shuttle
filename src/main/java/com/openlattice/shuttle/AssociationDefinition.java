@@ -70,7 +70,7 @@ public class AssociationDefinition implements Serializable {
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
 
-        this.entityTypeFqn = new FullQualifiedName( entityTypeFqn );
+        this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
         this.entitySetName = entitySetName;
         this.srcAlias = srcAlias;
         this.dstAlias = dstAlias;
@@ -335,9 +335,9 @@ public class AssociationDefinition implements Serializable {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             PropertyDefinition propertyDefinition =
                     new PropertyDefinition( propertyString,
+                            columnName,
                             Optional.empty(),
-                            Optional.of( transformation ),
-                            columnName );
+                            Optional.of( transformation ) );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
