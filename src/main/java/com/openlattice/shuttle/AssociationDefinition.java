@@ -29,6 +29,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
+import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.transformations.Transformations;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -330,7 +332,7 @@ public class AssociationDefinition implements Serializable {
         public Builder addProperty(
                 String propertyString,
                 String columnName,
-                List<Transformation> transformation,
+                Transformations transformation,
                 List<String> arguments ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             PropertyDefinition propertyDefinition =

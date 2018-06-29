@@ -29,6 +29,8 @@ import com.google.common.collect.ImmutableList;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.shuttle.adapter.Row;
 import com.openlattice.shuttle.transformations.TransformValueMapper;
+import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.Constants;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -48,16 +50,16 @@ public class PropertyDefinition implements Serializable {
     private final FullQualifiedName                            propertyTypeFqn;
     private final SerializableFunction<Map<String, String>, ?> valueMapper;
     private final String                                       column;
-    private final Optional<List<Transformation>>               transforms;
+    private final Optional<Transformations>               transforms;
 
     @JsonCreator
     public PropertyDefinition(
             @JsonProperty( Constants.TYPE ) String propertyTypeFqn,
             @JsonProperty( Constants.COLUMN ) String column,
-            @JsonProperty( Constants.TRANSFORMS ) Optional<Transformation> reader,
-            @JsonProperty( Constants.READER ) Optional<List<Transformation>> transforms ) {
+            @JsonProperty( Constants.READER ) Optional<Transformation> reader,
+            @JsonProperty( Constants.TRANSFORMS ) Optional<Transformations> transforms ) {
         this.propertyTypeFqn = propertyTypeFqn == null ? null : new FullQualifiedName( propertyTypeFqn );
-        this.column = column;
+        this.column = column == null ? "" : column ;
         this.transforms = transforms;
 
         if ( transforms.isPresent() ) {
@@ -85,12 +87,12 @@ public class PropertyDefinition implements Serializable {
     private PropertyDefinition( PropertyDefinition.Builder builder ) {
         this.propertyTypeFqn = builder.propertyTypeFqn;
         this.valueMapper = builder.valueMapper;
-        this.column = "";
-        this.transforms = Optional.empty();
+        this.column = builder.column;
+        this.transforms = Optional.ofNullable( builder.transforms );
     }
 
     @JsonProperty( Constants.TRANSFORMS )
-    public Optional<List<Transformation>> getTransforms() {
+    public Optional<Transformations> getTransforms() {
         return transforms;
     }
 
@@ -140,7 +142,8 @@ public class PropertyDefinition implements Serializable {
 
         private FullQualifiedName                            propertyTypeFqn;
         private SerializableFunction<Map<String, String>, ?> valueMapper;
-        private List<Transformation>                         transforms;
+        private Transformations                        transforms;
+        private String column = "";
 
         public Builder(
                 FullQualifiedName propertyTypeFqn,
@@ -151,7 +154,7 @@ public class PropertyDefinition implements Serializable {
         }
 
         public Builder<T> value( List<Transformation> transforms ) {
-            this.transforms = transforms;
+            this.transforms = new Transformations( transforms );
             this.valueMapper = new TransformValueMapper( transforms );
             return this;
         }
@@ -171,6 +174,7 @@ public class PropertyDefinition implements Serializable {
         }
 
         public Builder<T> value( String column ) {
+            this.column = column;
             this.valueMapper = row -> row.get( column );
             return this;
         }

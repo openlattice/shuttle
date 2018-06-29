@@ -19,14 +19,17 @@
 
 package com.openlattice.shuttle.test;
 
+import static com.openlattice.shuttle.util.CsvUtil.newDefaultMapper;
+import static com.openlattice.shuttle.util.CsvUtil.newDefaultSchemaFromHeader;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.dataloom.streams.StreamUtil;
 import com.datastax.driver.core.utils.UUIDs;
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.hash.Funnel;
-import com.google.common.hash.PrimitiveSink;
 import com.google.common.io.Resources;
 import com.openlattice.authorization.PermissionsApi;
 import com.openlattice.client.ApiFactory;
@@ -40,14 +43,9 @@ import com.openlattice.edm.type.PropertyType;
 import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.shuttle.Flight;
 import com.openlattice.shuttle.Shuttle;
+import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.sync.SyncApi;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.mockito.Mockito;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
@@ -55,10 +53,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static com.openlattice.shuttle.util.CsvUtil.newDefaultMapper;
-import static com.openlattice.shuttle.util.CsvUtil.newDefaultSchemaFromHeader;
-import static org.mockito.Mockito.*;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import transforms.PrefixTransform;
 
 public class ShuttleTest extends ShuttleTestBootstrap {
     private static final Logger logger = LoggerFactory.getLogger( ShuttleTest.class );
@@ -258,7 +259,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                     .addEntity( CYPHERS_ALIAS )
                         .to( CYPHERS_ES.getName() )
                         .addProperty( ALGO_PT.getType() ).extractor( row -> row.get( "algo" ) ).ok()
-                        .addProperty( MODE_PT.getType() ).extractor( row -> row.get( "mode" ) ).ok()
+                        .addProperty( MODE_PT.getType() ).value( "mode" ).ok()
                         .addProperty( CYPHER_HASH_PT.getType() )
                             .value( ImmutableList.of("algo", "mode", "keySize"), "murmur128" )
                             .ok()
@@ -267,6 +268,10 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .to( MORE_CYPHERS_ES.getName() )
                         .addProperty( KEY_SIZE_PT.getType() ).extractor( row -> row.get( "keySize" ) ).ok()
                         .addProperty( MODE_PT.getType() ).extractor( row -> row.get( "mode" ) ).ok()
+                        .addProperty(
+                                ALGO_PT.getType().getFullQualifiedNameAsString(),
+                                "algo",
+                                Transformations.of(new PrefixTransform( "COWBELL_" ))  )
                         .endEntity()
                     .endEntities()
                 .createAssociations()

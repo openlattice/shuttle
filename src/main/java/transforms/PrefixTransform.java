@@ -21,13 +21,17 @@
 
 package transforms;
 
+import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.openlattice.shuttle.Transformation;
+import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import java.util.Objects;
 
-public class PrefixTransform extends Transformation<String, String> {
+@JsonIgnoreProperties(value = {TRANSFORM} )
+public class PrefixTransform extends Transformation<String> {
 
     private final String prefix;
 
@@ -36,12 +40,12 @@ public class PrefixTransform extends Transformation<String, String> {
         this.prefix = prefix;
     }
 
-    @JsonProperty( Constants.PREFIX )
+    @JsonProperty( value = Constants.PREFIX,required = false)
     public String getPrefix() {
         return prefix;
     }
 
-    @Override public String apply( String o ) {
+    @Override public Object apply( String o ) {
         return prefix + o;
     }
 

@@ -19,32 +19,35 @@
  *
  */
 
-package transforms;
+package com.openlattice.shuttle.transformations;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.SetMultimap;
-import com.openlattice.shuttle.transformations.Transformation;
-import com.openlattice.shuttle.util.Constants;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collection;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class ColumnTransform extends Transformation<Map<String, String>> {
-    private final String column;
-
-    @JsonCreator
-    public ColumnTransform( @JsonProperty( Constants.COLUMN ) String column ) {
-        this.column = column;
+public class Transformations extends ArrayList<Transformation> {
+    public Transformations( int initialCapacity ) {
+        super( initialCapacity );
     }
 
-    @Override public Object apply( Map<String, String> row ) {
-        return row.get( column );
+    public Transformations() {
+        super();
     }
 
-    @JsonProperty( Constants.COLUMN )
-    public String getColumn() {
-        return column;
+    public Transformations(
+            @NotNull
+                    Collection<? extends Transformation> c ) {
+        super( c );
+    }
+
+    public static Transformations of( Transformation... transformations ) {
+        Transformations t = new Transformations( transformations.length );
+        for ( Transformation transform : transformations ) {
+            t.add( transform );
+        }
+        return t;
     }
 }

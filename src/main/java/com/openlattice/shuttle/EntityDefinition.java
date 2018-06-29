@@ -31,6 +31,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
+import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.transformations.Transformations;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
@@ -296,7 +298,7 @@ public class EntityDefinition implements Serializable {
         public Builder addProperty(
                 String propertyString,
                 String columnName,
-                List<Transformation> transformation ) {
+                Transformations transformation ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
                     propertyString, columnName, Optional.empty(), Optional.of( transformation ) );

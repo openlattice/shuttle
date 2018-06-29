@@ -19,32 +19,24 @@
  *
  */
 
-package transforms;
+package com.openlattice.shuttle.transforms;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.SetMultimap;
+import com.openlattice.serializer.AbstractJacksonSerializationTest;
 import com.openlattice.shuttle.transformations.Transformation;
-import com.openlattice.shuttle.util.Constants;
-import java.util.Map;
+import transforms.PrefixTransform;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class ColumnTransform extends Transformation<Map<String, String>> {
-    private final String column;
-
-    @JsonCreator
-    public ColumnTransform( @JsonProperty( Constants.COLUMN ) String column ) {
-        this.column = column;
+public class TransformSerializerTest extends AbstractJacksonSerializationTest<Transformation> {
+    @Override protected PrefixTransform getSampleData() {
+        return new PrefixTransform( "STRIKE FIRST. STRIKE HARD. NO MERCY." );
     }
 
-    @Override public Object apply( Map<String, String> row ) {
-        return row.get( column );
+
+    @Override protected Class<Transformation> getClazz() {
+        return Transformation.class;
     }
 
-    @JsonProperty( Constants.COLUMN )
-    public String getColumn() {
-        return column;
-    }
+
 }
