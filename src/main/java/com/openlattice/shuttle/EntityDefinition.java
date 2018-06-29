@@ -109,9 +109,15 @@ public class EntityDefinition implements Serializable {
         this.useCurrentSync = builder.useCurrentSync;
     }
 
-    @JsonProperty( SerializationConstants.FQN )
+    @JsonIgnore
+//    @JsonProperty( SerializationConstants.FQN )
     public FullQualifiedName getEntityTypeFqn() {
         return this.entityTypeFqn;
+    }
+
+    @JsonProperty( SerializationConstants.FQN )
+    public String getFqn() {
+        return this.entityTypeFqn.getFullQualifiedNameAsString();
     }
 
     @JsonProperty( SerializationConstants.ENTITY_SET_NAME )
