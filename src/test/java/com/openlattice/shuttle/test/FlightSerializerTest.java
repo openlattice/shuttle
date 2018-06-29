@@ -40,8 +40,6 @@ public class FlightSerializerTest extends AbstractJacksonSerializationTest<Fligh
     @BeforeClass
     public static void registerModules() {
         registerModule( FullQualifiedNameJacksonSerializer::registerWithMapper );
-//        registerModule( FullQualifiedNameJacksonDeserializer::registerWithMapper );
-        //        registerModule( JacksonLambdaSerializer::registerWithMapper );
-        //        registerModule( JacksonLambdaDeserializer::registerWithMapper );
+        registerModule( FullQualifiedNameJacksonDeserializer::registerWithMapper );
     }
 }
