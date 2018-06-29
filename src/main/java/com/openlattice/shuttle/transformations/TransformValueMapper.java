@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017. OpenLattice, Inc
+ * Copyright (C) 2018. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,29 +15,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * You can contact the owner of the copyright at support@openlattice.com
+ *
+ *
  */
 
-package com.openlattice.shuttle;
+package com.openlattice.shuttle.transformations;
 
-import com.google.common.hash.Funnel;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
 import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.shuttle.Transformation;
+import java.util.List;
 import java.util.Map;
 
-public class HashingMapper {
-    public static SerializableFunction<Map<String, String>, Object> getMapper( Funnel<Map<String, String>> funnel ) {
-        return getMapper( funnel, Hashing.sha256() );
+/**
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+public class TransformValueMapper implements SerializableFunction<Map<String, String>, Object> {
+    private final List<Transformation> transforms;
+
+    public TransformValueMapper( List<Transformation> transforms ) {
+        this.transforms = transforms;
     }
 
-    public static SerializableFunction<Map<String, String>, Object> getMapper(
-            Funnel<Map<String, String>> funnel,
-            HashFunction hashFunction ) {
-        return row -> {
-            Hasher hasher = hashFunction.newHasher();
-            funnel.funnel( row, hasher );
-            return hasher.hash().toString();
-        };
+    @Override public Object apply( Map<String, String> input ) {
+        Object value = input;
+        for ( Transformation t : transforms ) {
+            value = t.apply( value );
+        }
+        return value;
     }
 }

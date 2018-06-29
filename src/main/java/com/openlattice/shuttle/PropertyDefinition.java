@@ -22,18 +22,20 @@ package com.openlattice.shuttle;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
-import com.google.common.hash.Funnel;
-import com.google.common.hash.HashFunction;
+import com.google.common.collect.ImmutableList;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
 import com.openlattice.shuttle.adapter.Row;
 import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.util.Constants;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import transforms.HashTransform;
 
 public class PropertyDefinition implements Serializable {
 
@@ -46,11 +48,25 @@ public class PropertyDefinition implements Serializable {
     @JsonCreator
     public PropertyDefinition(
             @JsonProperty( SerializationConstants.FQN ) String propertyTypeFqn,
-            @JsonProperty( Constants.TRANSFORMS ) List<Transformation<Object,Object>> transforms,
+            @JsonProperty( Constants.TRANSFORMS ) Optional<Transformation> reader,
+            @JsonProperty( Constants.READER ) Optional<List<Transformation>> transforms,
             @JsonProperty( Constants.COLUMN ) String column ) {
         this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
         this.column = column;
-        this.valueMapper = TransformValueMapper.from( row -> row.get( column ), transforms );
+
+        if ( transforms.isPresent() ) {
+            final List<Transformation> internalTransforms;
+            if ( reader.isPresent() ) {
+                internalTransforms = new ArrayList<>( transforms.get().size() + 1 );
+                internalTransforms.add( reader.get() );
+            } else {
+                internalTransforms = new ArrayList<>( transforms.get().size() );
+            }
+            transforms.get().forEach( internalTransforms::add );
+            this.valueMapper = new TransformValueMapper( internalTransforms );
+        } else {
+            this.valueMapper = row -> row.get( column );
+        }
     }
 
     public PropertyDefinition( String propertyTypeFqn, SerializableFunction<Map<String, String>, ?> valueMapper ) {
@@ -61,6 +77,9 @@ public class PropertyDefinition implements Serializable {
     private PropertyDefinition( PropertyDefinition.Builder builder ) {
         this.propertyTypeFqn = builder.propertyTypeFqn;
         this.valueMapper = builder.valueMapper;
+    }
+
+    private void checkState( boolean b ) {
     }
 
     @JsonProperty( SerializationConstants.FQN )
@@ -107,18 +126,13 @@ public class PropertyDefinition implements Serializable {
                 FullQualifiedName propertyTypeFqn,
                 T builder,
                 BuilderCallback<PropertyDefinition> builderCallback ) {
-
             super( builder, builderCallback );
             this.propertyTypeFqn = propertyTypeFqn;
         }
 
-        public Builder<T> value( Funnel<Map<String, String>> funnel ) {
-            this.valueMapper = HashingMapper.getMapper( funnel );
-            return this;
-        }
-
-        public Builder<T> value( Funnel<Map<String, String>> funnel, HashFunction hashFunction ) {
-            this.valueMapper = HashingMapper.getMapper( funnel, hashFunction );
+        public Builder<T> value( List<String> columns, String hashFunction ) {
+            this.valueMapper = new TransformValueMapper( ImmutableList
+                    .of( new HashTransform( columns, hashFunction ) ) );
             return this;
         }
 

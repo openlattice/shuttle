@@ -25,6 +25,8 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.hash.Funnel;
+import com.google.common.hash.PrimitiveSink;
 import com.google.common.io.Resources;
 import com.openlattice.authorization.PermissionsApi;
 import com.openlattice.client.ApiFactory;
@@ -258,11 +260,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .addProperty( ALGO_PT.getType() ).extractor( row -> row.get( "algo" ) ).ok()
                         .addProperty( MODE_PT.getType() ).extractor( row -> row.get( "mode" ) ).ok()
                         .addProperty( CYPHER_HASH_PT.getType() )
-                            .value( ( row, hasher ) -> {
-                                hasher.putString( row.get( "algo" ), Charsets.UTF_8 );
-                                hasher.putString( row.get( "mode" ), Charsets.UTF_8 );
-                                hasher.putString( row.get( "keySize" ), Charsets.UTF_8 );
-                            } )
+                            .value( ImmutableList.of("algo", "mode", "keySize"), "murmur128" )
                             .ok()
                         .endEntity()
                     .addEntity( MORE_CYPHERS_ALIAS )
