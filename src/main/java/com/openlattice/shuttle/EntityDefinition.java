@@ -117,7 +117,7 @@ public class EntityDefinition implements Serializable {
 
     @JsonProperty( SerializationConstants.FQN )
     public String getFqn() {
-        return this.entityTypeFqn.getFullQualifiedNameAsString();
+        return this.entityTypeFqn == null ? null : this.entityTypeFqn.getFullQualifiedNameAsString();
     }
 
     @JsonProperty( SerializationConstants.ENTITY_SET_NAME )
