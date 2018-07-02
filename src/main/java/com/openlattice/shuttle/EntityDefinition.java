@@ -296,7 +296,7 @@ public class EntityDefinition implements Serializable {
                 return ( value instanceof String && StringUtils.isBlank( value ) ) ? null : value;
             };
             PropertyDefinition propertyDefinition = new PropertyDefinition(
-                    propertyString, defaultMapper );
+                    propertyString, columnName, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }

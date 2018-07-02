@@ -324,7 +324,7 @@ public class AssociationDefinition implements Serializable {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             SerializableFunction<Map<String, String>, ?> defaultMapper = row -> row.get( columnName );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
-                    propertyString, defaultMapper );
+                    propertyString, columnName, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }

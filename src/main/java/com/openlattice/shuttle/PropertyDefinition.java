@@ -77,10 +77,10 @@ public class PropertyDefinition implements Serializable {
         }
     }
 
-    public PropertyDefinition( String propertyTypeFqn, SerializableFunction<Map<String, String>, ?> valueMapper ) {
+    public PropertyDefinition( String propertyTypeFqn, String columnName, SerializableFunction<Map<String, String>, ?> valueMapper ) {
         this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
         this.valueMapper = valueMapper;
-        this.column = "";
+        this.column = columnName;
         this.transforms = Optional.empty();
     }
 
