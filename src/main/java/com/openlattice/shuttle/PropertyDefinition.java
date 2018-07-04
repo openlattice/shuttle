@@ -67,7 +67,7 @@ public class PropertyDefinition implements Serializable {
             internalTransforms = new ArrayList<>( this.transforms.get().size() + 1 );
             if ( reader.isPresent() ) {
                 internalTransforms.add( reader.get() );
-            } else {
+            } else if (column != null ) {
                 internalTransforms.add( new ColumnTransform( column ) );
             }
             transforms.get().forEach( internalTransforms::add );
