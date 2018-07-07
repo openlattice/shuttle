@@ -1,6 +1,7 @@
 plugins {
     id "application"
     id "java"
+    id "org.jetbrains.kotlin.jvm" version "1.2.30"
     id "eclipse"
     id "idea"
     id "jacoco"
@@ -56,6 +57,7 @@ jar {
 dependencies {
 
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:${jackson_version}"
+//    compile "com.fasterxml.jackson.module:jackson-module-kotlin:${jackson_version}"
 //    compile "com.datastax.spark:spark-cassandra-connector_2.11:${spark_cassandra_connector_version}"
 //    compile "org.apache.spark:spark-core_2.11:${spark_version}"
 //    compile "org.apache.spark:spark-sql_2.11:${spark_version}"
@@ -108,3 +110,16 @@ eclipse {
 }
 
 eclipse.classpath.plusConfigurations += [configurations.provided]
+
+
+compileKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+compileTestKotlin {
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+

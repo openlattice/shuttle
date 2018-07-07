@@ -22,27 +22,30 @@ package com.openlattice.shuttle;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
-
+import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.client.serialization.SerializationConstants;
+import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.transformations.Transformations;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@JsonInclude(value = Include.NON_EMPTY)
 public class EntityDefinition implements Serializable {
 
     private static final long serialVersionUID = -3565689091187367622L;
@@ -59,23 +62,40 @@ public class EntityDefinition implements Serializable {
 
     @JsonCreator
     public EntityDefinition(
-            @JsonProperty( SerializationConstants.TYPE_FIELD ) FullQualifiedName entityTypeFqn,
+            @JsonProperty( SerializationConstants.FQN ) String entityTypeFqn,
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
             @JsonProperty( SerializationConstants.KEY_FIELD ) List<FullQualifiedName> key,
             @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS )
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
-            @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
-                    Optional<SerializableFunction<Map<String, String>, String>> generator,
-            @JsonProperty( SerializationConstants.CURRENT_SYNC ) Optional<Boolean> useCurrentSync ) {
+            @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
 
-        this.entityTypeFqn = entityTypeFqn;
+        this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
+        this.entitySetName = entitySetName;
+        this.propertyDefinitions = propertyDefinitions;
+        this.key = key;
+        this.alias = alias;
+        this.generator = Optional.empty();
+        this.useCurrentSync = useCurrentSync;
+    }
+
+    public EntityDefinition(
+            String entityTypeFqn,
+            String entitySetName,
+            List<FullQualifiedName> key,
+            Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
+            Optional<SerializableFunction<Map<String, String>, String>> generator,
+            String alias,
+            Optional<Boolean> useCurrentSync
+    ) {
+
+        this.entityTypeFqn = new FullQualifiedName( entityTypeFqn );
         this.entitySetName = entitySetName;
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
         this.alias = alias;
         this.generator = generator;
-        this.useCurrentSync = useCurrentSync.or( false );
+        this.useCurrentSync = useCurrentSync.orElse( false );
     }
 
     private EntityDefinition( EntityDefinition.Builder builder ) {
@@ -85,13 +105,19 @@ public class EntityDefinition implements Serializable {
         this.propertyDefinitions = builder.propertyDefinitionMap;
         this.key = builder.key;
         this.alias = builder.alias;
-        this.generator = Optional.fromNullable( builder.entityIdGenerator );
+        this.generator = Optional.ofNullable( builder.entityIdGenerator );
         this.useCurrentSync = builder.useCurrentSync;
     }
 
-    @JsonProperty( SerializationConstants.TYPE_FIELD )
+    @JsonIgnore
+//    @JsonProperty( SerializationConstants.FQN )
     public FullQualifiedName getEntityTypeFqn() {
         return this.entityTypeFqn;
+    }
+
+    @JsonProperty( SerializationConstants.FQN )
+    public String getFqn() {
+        return this.entityTypeFqn == null ? null : this.entityTypeFqn.getFullQualifiedNameAsString();
     }
 
     @JsonProperty( SerializationConstants.ENTITY_SET_NAME )
@@ -258,19 +284,30 @@ public class EntityDefinition implements Serializable {
                 propertyDefinitionMap.put( propertyDefFqn, propertyDefinition );
             };
 
-            return new PropertyDefinition.Builder<EntityDefinition.Builder>( propertyTypeFqn, this, onBuild );
+            return new PropertyDefinition.Builder<>( propertyTypeFqn, this, onBuild );
         }
 
-        public Builder addProperty( String propertyFqn, String columnName ) {
-            return addProperty( new FullQualifiedName( propertyFqn ), columnName );
-        }
-
-        public Builder addProperty( FullQualifiedName propertyFqn, String columnName ) {
+        public Builder addProperty( String propertyString, String columnName ) {
+            // This function is for when flights are defined in java
+            // Useful for backwards compatibility
+            FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             SerializableFunction<Map<String, String>, ?> defaultMapper = row -> {
                 String value = row.get( columnName );
                 return ( value instanceof String && StringUtils.isBlank( value ) ) ? null : value;
             };
-            PropertyDefinition propertyDefinition = new PropertyDefinition( propertyFqn, defaultMapper );
+            PropertyDefinition propertyDefinition = new PropertyDefinition(
+                    propertyString, columnName, defaultMapper );
+            this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
+            return this;
+        }
+
+        public Builder addProperty(
+                String propertyString,
+                String columnName,
+                Transformations transformation ) {
+            FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
+            PropertyDefinition propertyDefinition = new PropertyDefinition(
+                    propertyString, columnName, Optional.empty(), Optional.of( transformation ) );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }

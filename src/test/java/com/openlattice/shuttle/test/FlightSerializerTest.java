@@ -19,21 +19,20 @@
 
 package com.openlattice.shuttle.test;
 
-import com.openlattice.serializer.AbstractJacksonSerializationTest;
+import com.dataloom.mappers.ObjectMappers;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.io.Resources;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
+import com.openlattice.serializer.AbstractJacksonSerializationTest;
 import com.openlattice.shuttle.Flight;
-import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
-import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
+import java.io.IOException;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class FlightSerializerTest extends AbstractJacksonSerializationTest<Flight> {
-
-    static {
-        registerModule( FullQualifiedNameJacksonDeserializer::registerWithMapper );
-        registerModule( FullQualifiedNameJacksonSerializer::registerWithMapper );
-        registerModule( JacksonLambdaSerializer::registerWithMapper );
-        registerModule( JacksonLambdaDeserializer::registerWithMapper );
-    }
+    private static ObjectMapper yaml = ObjectMappers.getYamlMapper();
 
     @Override
     protected Flight getSampleData() {
@@ -43,5 +42,29 @@ public class FlightSerializerTest extends AbstractJacksonSerializationTest<Fligh
     @Override
     protected Class<Flight> getClazz() {
         return Flight.class;
+    }
+
+    @Test
+    public void testYaml() throws IOException {
+        Flight expected = getSampleData();
+
+        String yml = yaml.writeValueAsString( expected );
+        Flight actual = yaml.readValue( yml, getClazz() );
+        logger.info( "Yaml: {}", yml );
+        Assert.assertEquals( expected, actual );
+    }
+
+    @Test
+    public void testYamlFile() throws IOException {
+        Assert.assertNotNull( yaml
+                .readValue( Resources.getResource( "flights/flight_serializer.yaml" ), Flight.class ) );
+    }
+
+    @BeforeClass
+    public static void registerModules() {
+        registerModule( FullQualifiedNameJacksonSerializer::registerWithMapper );
+        registerModule( FullQualifiedNameJacksonDeserializer::registerWithMapper );
+        FullQualifiedNameJacksonSerializer.registerWithMapper( yaml );
+        FullQualifiedNameJacksonDeserializer.registerWithMapper( yaml );
     }
 }
