@@ -22,7 +22,7 @@ package com.openlattice.shuttle.edm;
 import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Optional;
+import java.util.Optional;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import java.util.LinkedHashSet;
@@ -47,10 +47,10 @@ public class EntityTypeModel {
 
         this.type = new FullQualifiedName( type );
         this.title = title;
-        this.description = description.or( "" );
+        this.description = description.orElse( "" );
         this.key = new LinkedHashSet<>( key.size() );
         this.properties = new LinkedHashSet<>( properties.size() );
-        this.baseType = baseType.transform( FullQualifiedName::new );
+        this.baseType = baseType.map( FullQualifiedName::new );
 
         key.stream().map( FullQualifiedName::new ).forEachOrdered( this.key::add );
         properties.stream().map( FullQualifiedName::new ).forEachOrdered( this.properties::add );

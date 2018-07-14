@@ -35,7 +35,6 @@ import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.type.AssociationType;
 import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -47,6 +46,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -312,7 +312,7 @@ public class RequiredEdmElementsManager {
                 ImmutableSet.of(),
                 key,
                 properties,
-                model.getBaseType().transform( bt -> edmApi.getEntityTypeId( bt.getNamespace(), bt.getName() ) ),
+                model.getBaseType().map( bt -> edmApi.getEntityTypeId( bt.getNamespace(), bt.getName() ) ),
                 Optional.of( objectType )
         );
     }
