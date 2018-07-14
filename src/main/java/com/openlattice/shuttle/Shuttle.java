@@ -79,7 +79,7 @@ public class Shuttle implements Serializable {
             JacksonLambdaSerializer.registerWithMapper( mapper );
             FullQualifiedNameJacksonSerializer.registerWithMapper( mapper );
             JacksonLambdaDeserializer.registerWithMapper( mapper );
-            FullQualifiedNameJacksonDeserializer.registerWithMapper( mapper );
+
         } );
     }
 
