@@ -11,5 +11,9 @@ public final class Constants {
     public static final String TYPE          = "type";
     public static final String SEP           = "separator";
     public static final String PATTERN       = "pattern";
+    public static final String VALUE         = "value";
+    public static final String ELSE          = "else";
+    public static final String LOC           = "location";
+    public static final String TEMP          = "temp";
 
 }
