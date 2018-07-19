@@ -28,46 +28,27 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+
+import java.util.List;
 import java.util.Objects;
 
 @JsonIgnoreProperties(value = {TRANSFORM} )
-public class PrefixTransform extends Transformation<String> {
-
-    private final String prefix;
+public class RemoveDigitsTransform extends Transformation<String>  {
+    private final String tmp;
 
     /**
-     * Represents a transformation to add a prefix.
-     * @param prefix: prefix to add
+     * Represents a transformation to remove digits in a string.
+     * @param tmp: this is a bug, but a random string should be included
      */
-    @JsonCreator
-    public PrefixTransform( @JsonProperty( Constants.PREFIX ) String prefix ) {
-        this.prefix = prefix;
+    public RemoveDigitsTransform(
+            @JsonProperty( Constants.TEMP ) String tmp
+            ) {
+        this.tmp = tmp;
     }
 
-    @JsonProperty( value = Constants.PREFIX,required = false)
-    public String getPrefix() {
-        return prefix;
+    @Override
+    public Object apply( String o ) {
+         return o.replaceAll( "[\\d]+", "" );
     }
 
-    @Override public Object apply( String o ) {
-        return prefix + o;
-    }
-
-    @Override public boolean equals( Object o ) {
-        if ( this == o ) { return true; }
-        if ( !( o instanceof PrefixTransform ) ) { return false; }
-        PrefixTransform that = (PrefixTransform) o;
-        return Objects.equals( prefix, that.prefix );
-    }
-
-    @Override public int hashCode() {
-
-        return Objects.hash( prefix );
-    }
-
-    @Override public String toString() {
-        return "PrefixTransform{" +
-                "prefix='" + prefix + '\'' +
-                '}';
-    }
 }

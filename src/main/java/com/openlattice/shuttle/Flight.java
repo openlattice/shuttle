@@ -142,7 +142,9 @@ public class Flight implements Serializable {
 
     @Override public int hashCode() {
         int result = entityDefinitions.hashCode();
-        result = 31 * result + associationDefinitions.hashCode();
+        if (associationDefinitions != null) {
+            result = 31 * result + associationDefinitions.hashCode();
+        }
         result = 31 * result + name.hashCode();
         return result;
     }

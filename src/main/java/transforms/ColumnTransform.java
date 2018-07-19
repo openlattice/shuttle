@@ -34,6 +34,10 @@ import java.util.Map;
 public class ColumnTransform extends Transformation<Map<String, String>> {
     private final String column;
 
+    /**
+     * Represents a transformation to select a column in the original data (i.e. no transform)
+     * @param column: column name to collect
+     */
     @JsonCreator
     public ColumnTransform( @JsonProperty( Constants.COLUMN ) String column ) {
         this.column = column;

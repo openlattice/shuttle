@@ -28,46 +28,43 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @JsonIgnoreProperties(value = {TRANSFORM} )
-public class PrefixTransform extends Transformation<String> {
-
-    private final String prefix;
+public class ConditionalColumnTransform extends Transformation<Map<String, String>> {
+    private final List<String> columns;
 
     /**
-     * Represents a transformation to add a prefix.
-     * @param prefix: prefix to add
+     * Represents a transformation to select columns based on non-empty cells.
+     * Function goes over columns until a non-zero input is found.
+     * @param columns: list of columns to go over in sequential order
      */
-    @JsonCreator
-    public PrefixTransform( @JsonProperty( Constants.PREFIX ) String prefix ) {
-        this.prefix = prefix;
+     @JsonCreator
+     public ConditionalColumnTransform(
+            @JsonProperty( Constants.COLUMNS ) List<String> columns) {
+        this.columns = columns;
     }
 
-    @JsonProperty( value = Constants.PREFIX,required = false)
-    public String getPrefix() {
-        return prefix;
+    @JsonProperty( Constants.COLUMNS )
+    public List<String> getColumns() {
+        return columns;
     }
 
-    @Override public Object apply( String o ) {
-        return prefix + o;
+    @Override public Object apply( Map<String, String> row ) {
+        for ( String s : columns ) {
+            String thiscol = row.get(s);
+            if ( StringUtils.isNotBlank(thiscol)) {
+                return thiscol;
+            }
+        }
+        return "";
     }
 
-    @Override public boolean equals( Object o ) {
-        if ( this == o ) { return true; }
-        if ( !( o instanceof PrefixTransform ) ) { return false; }
-        PrefixTransform that = (PrefixTransform) o;
-        return Objects.equals( prefix, that.prefix );
-    }
-
-    @Override public int hashCode() {
-
-        return Objects.hash( prefix );
-    }
-
-    @Override public String toString() {
-        return "PrefixTransform{" +
-                "prefix='" + prefix + '\'' +
-                '}';
-    }
 }
+

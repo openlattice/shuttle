@@ -80,7 +80,7 @@ public class AssociationDefinition implements Serializable {
         this.key = key;
         this.alias = alias;
         this.generator = Optional.empty();
-        this.useCurrentSync = useCurrentSync;
+        this.useCurrentSync = useCurrentSync == null ? false : useCurrentSync;
     }
 
     private AssociationDefinition( AssociationDefinition.Builder builder ) {
@@ -96,9 +96,15 @@ public class AssociationDefinition implements Serializable {
         this.useCurrentSync = builder.useCurrentSync;
     }
 
-    @JsonProperty( SerializationConstants.FQN )
+    @JsonIgnore
+    //    @JsonProperty( SerializationConstants.FQN )
     public FullQualifiedName getEntityTypeFqn() {
         return this.entityTypeFqn;
+    }
+
+    @JsonProperty( SerializationConstants.FQN )
+    public String getFqn() {
+        return this.entityTypeFqn == null ? null : this.entityTypeFqn.getFullQualifiedNameAsString();
     }
 
     @JsonProperty( SerializationConstants.ENTITY_SET_NAME )

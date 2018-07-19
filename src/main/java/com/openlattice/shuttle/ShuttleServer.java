@@ -19,9 +19,59 @@
 
 package com.openlattice.shuttle;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openlattice.client.RetrofitFactory;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
+import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
+import com.openlattice.shuttle.payload.Payload;
+import com.openlattice.shuttle.payload.SimplePayload;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.dataloom.mappers.ObjectMappers;
+
+import java.io.File;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 public class ShuttleServer {
 
-    public static void main( String[] args ) {
-        System.out.println( "Hello, Shuttle!" );
+    private static final Logger                      logger      = LoggerFactory.getLogger( ShuttleServer.class );
+    private static final RetrofitFactory.Environment environment = RetrofitFactory.Environment.LOCAL;
+
+    public static void main( String[] args )  throws InterruptedException, JsonProcessingException {
+        if (args.length < 3)
+        {
+            System.out.println( "Hello, Shuttle!" );
+        } else {
+
+            final String arpath = args[1];
+            logger.info(arpath);
+            final String jwtToken = args[2];
+            final String yamlfile = args[3];
+
+            SimplePayload arPayload = new SimplePayload( arpath );
+
+            ObjectMapper yaml = ObjectMappers.getYamlMapper();
+            FullQualifiedNameJacksonSerializer.registerWithMapper( yaml );
+            FullQualifiedNameJacksonDeserializer.registerWithMapper( yaml );
+
+            Flight arFlight = null;
+            try {
+                arFlight = yaml.readValue( new File( yamlfile ), Flight.class );
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            Map<Flight, Payload> flights = new LinkedHashMap<>( 2 );
+            logger.info("This is the JSON for the flight. {}", yaml.writeValueAsString(arFlight));
+            flights.put( arFlight, arPayload );
+            Shuttle shuttle = new Shuttle( environment, jwtToken );
+            shuttle.launchPayloadFlight( flights );
+
+            System.out.println( "Hello, Big Shuttle!" );
+
+        }
+
     }
 }

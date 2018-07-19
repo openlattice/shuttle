@@ -29,45 +29,32 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import java.util.Objects;
+import com.openlattice.shuttle.dates.DateTimeHelper;
+import com.openlattice.shuttle.dates.TimeZones;
 
 @JsonIgnoreProperties(value = {TRANSFORM} )
-public class PrefixTransform extends Transformation<String> {
-
-    private final String prefix;
+public class DateTransform extends Transformation<String> {
+    private final String pattern;
 
     /**
-     * Represents a transformation to add a prefix.
-     * @param prefix: prefix to add
+     * Represents a transformation from string to date.
+     * @param pattern: pattern of date (eg. "MM/dd/YY")
      */
     @JsonCreator
-    public PrefixTransform( @JsonProperty( Constants.PREFIX ) String prefix ) {
-        this.prefix = prefix;
+    public DateTransform( @JsonProperty( Constants.PATTERN ) String pattern ) {
+        this.pattern = pattern;
     }
 
-    @JsonProperty( value = Constants.PREFIX,required = false)
-    public String getPrefix() {
-        return prefix;
+    @JsonProperty( value = Constants.PATTERN,required = false)
+    public String getPattern() {
+        return pattern;
     }
 
     @Override public Object apply( String o ) {
-        return prefix + o;
+        final DateTimeHelper dtHelper = new DateTimeHelper( TimeZones.America_NewYork,
+                pattern );
+        return dtHelper.parseDate( o );
     }
 
-    @Override public boolean equals( Object o ) {
-        if ( this == o ) { return true; }
-        if ( !( o instanceof PrefixTransform ) ) { return false; }
-        PrefixTransform that = (PrefixTransform) o;
-        return Objects.equals( prefix, that.prefix );
-    }
 
-    @Override public int hashCode() {
-
-        return Objects.hash( prefix );
-    }
-
-    @Override public String toString() {
-        return "PrefixTransform{" +
-                "prefix='" + prefix + '\'' +
-                '}';
-    }
 }

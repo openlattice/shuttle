@@ -28,46 +28,40 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+
+import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @JsonIgnoreProperties(value = {TRANSFORM} )
-public class PrefixTransform extends Transformation<String> {
 
-    private final String prefix;
+
+public class SplitTransform extends Transformation<String>  {
+
+    private final String separator;
+    private final int index;
 
     /**
-     * Represents a transformation to add a prefix.
-     * @param prefix: prefix to add
+     * Represents a transformation to split a string
+     * @param separator: separate by what?
+     * @param index: index in separated list (starts at 0!)
      */
     @JsonCreator
-    public PrefixTransform( @JsonProperty( Constants.PREFIX ) String prefix ) {
-        this.prefix = prefix;
-    }
-
-    @JsonProperty( value = Constants.PREFIX,required = false)
-    public String getPrefix() {
-        return prefix;
+    public SplitTransform(
+            @JsonProperty( Constants.SEP ) String separator ,
+            @JsonProperty (Constants.INDEX) int index
+    ) {
+        this.separator = separator;
+        this.index = index;
     }
 
     @Override public Object apply( String o ) {
-        return prefix + o;
+        String[] strNames = o.split( separator );
+        if ( strNames.length > index ) {
+            return strNames[ index ].trim();
+        }
+        return "";
     }
 
-    @Override public boolean equals( Object o ) {
-        if ( this == o ) { return true; }
-        if ( !( o instanceof PrefixTransform ) ) { return false; }
-        PrefixTransform that = (PrefixTransform) o;
-        return Objects.equals( prefix, that.prefix );
-    }
-
-    @Override public int hashCode() {
-
-        return Objects.hash( prefix );
-    }
-
-    @Override public String toString() {
-        return "PrefixTransform{" +
-                "prefix='" + prefix + '\'' +
-                '}';
-    }
 }
