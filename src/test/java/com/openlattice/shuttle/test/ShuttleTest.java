@@ -150,7 +150,6 @@ public class ShuttleTest extends ShuttleTestBootstrap {
             doAnswer( Answers.incrementCreateDataInvocationCount() )
                     .when( mockDataApi ).createEntityAndAssociationData( Mockito.any() );
 
-            when( mockDataApi.acquireSyncTicket( Mockito.any(), Mockito.any() ) ).thenReturn( new UUID( 1, 1 ) );
             // Mockito.verify( mockDataApi, Mockito.atLeastOnce() ).releaseSyncTicket( new UUID( 1, 1 ) );
             return mockApiFactory;
         };

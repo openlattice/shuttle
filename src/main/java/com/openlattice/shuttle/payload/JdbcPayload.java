@@ -79,7 +79,7 @@ public class JdbcPayload implements Payload {
                 }
                 hasNext.set( rs.next() );
             } catch ( SQLException e ) {
-                throw new IllegalStateException( "Result Set Iterator initialization failed" );
+                throw new IllegalStateException( "ResultSummary Set Iterator initialization failed" );
             }
         }
 
@@ -146,7 +146,7 @@ public class JdbcPayload implements Payload {
                 }
                 hasNext.set( rs.next() );
             } catch ( SQLException e ) {
-                throw new IllegalStateException( "Result Set Iterator initialization failed" );
+                throw new IllegalStateException( "ResultSummary Set Iterator initialization failed" );
             }
         }
 

@@ -22,7 +22,6 @@ package com.openlattice.shuttle.test;
 import com.dataloom.mappers.ObjectMappers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
-import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.serializer.AbstractJacksonSerializationTest;
 import com.openlattice.shuttle.Flight;
@@ -63,8 +62,5 @@ public class FlightSerializerTest extends AbstractJacksonSerializationTest<Fligh
     @BeforeClass
     public static void registerModules() {
         registerModule( FullQualifiedNameJacksonSerializer::registerWithMapper );
-        registerModule( FullQualifiedNameJacksonDeserializer::registerWithMapper );
-        FullQualifiedNameJacksonSerializer.registerWithMapper( yaml );
-        FullQualifiedNameJacksonDeserializer.registerWithMapper( yaml );
     }
 }
