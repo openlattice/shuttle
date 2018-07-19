@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -38,12 +39,22 @@ public class JavaDateTimeHelper {
         for ( int i = 0; i < datePatterns.length; ++i ) {
             DateTimeFormatter formatter = formatters.get( i );
             try {
-                return LocalDate.parse( date, formatter );
+                LocalDate ld = LocalDate.parse( date, formatter );
+                if (
+                        datePatterns[ 0 ].matches( ".*yy.*" ) && !datePatterns[ 0 ].matches( ".*yyyy.*" ) ||
+                                datePatterns[ 0 ].matches( ".*YY.*" ) && !datePatterns[ 0 ].matches( ".*YYYY.*" )
+                        ) {
+                    if ( ( ld.getYear() - LocalDate.now().getYear() ) > 20 ) {
+                        ld = ld.withYear( ld.getYear() - 100 );
+                    }
+                }
+                return ld;
             } catch ( Exception e ) {
-                logger.error( "Unable to parse date {}, please see debug log for additional information.", date );
+                if ( i == datePatterns.length - 1 ) {
+                    logger.error( "Unable to parse date {}, please see debug log for additional information.", date );
+                }
             }
         }
-        logger.error( "Unable to parse date {}, please see debug log for additional information.", date );
         return null;
     }
 
@@ -57,10 +68,12 @@ public class JavaDateTimeHelper {
 
                 return ldt.atZone( tz.toZoneId() ).toOffsetDateTime();
             } catch ( Exception e ) {
-                logger.debug( "Unable to parse datetime {} with format string {}", date, datePatterns[ i ], e );
+                if ( i == datePatterns.length - 1 ) {
+                    logger.error( "Unable to parse datetime {}, please see debug log for additional information.",
+                            date );
+                }
             }
         }
-        logger.error( "Unable to parse datetime {}, please see debug log for additional information.", date );
         return null;
     }
 
@@ -74,10 +87,12 @@ public class JavaDateTimeHelper {
 
                 return ldt.atZone( tz.toZoneId() ).toOffsetDateTime();
             } catch ( Exception e ) {
-                logger.debug( "Unable to parse date as datetime {} with format string {}", date, datePatterns[ i ], e );
+                if ( i == datePatterns.length - 1 ) {
+                    logger.error( "Unable to parse datetime {}, please see debug log for additional information.",
+                            date );
+                }
             }
         }
-        logger.error( "Unable to parse date as datetime {}, please see debug log for additional information.", date );
         return null;
     }
 
@@ -89,10 +104,11 @@ public class JavaDateTimeHelper {
             try {
                 return LocalTime.parse( time, formatter );
             } catch ( Exception e ) {
-                logger.debug( "Unable to parse time {} with format string {}", time, datePatterns[ i ], e );
+                if ( i == datePatterns.length - 1 ) {
+                    logger.error( "Unable to parse time {}, please see debug log for additional information.", time );
+                }
             }
         }
-        logger.error( "Unable to parse time {}, please see debug log for additional information.", time );
         return null;
     }
 
