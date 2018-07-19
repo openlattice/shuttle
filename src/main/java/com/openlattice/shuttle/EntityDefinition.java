@@ -76,7 +76,7 @@ public class EntityDefinition implements Serializable {
         this.key = key;
         this.alias = alias;
         this.generator = Optional.empty();
-        this.useCurrentSync = useCurrentSync;
+        this.useCurrentSync = useCurrentSync == null ? false : useCurrentSync;
     }
 
     public EntityDefinition(
