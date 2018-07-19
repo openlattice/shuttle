@@ -12,17 +12,21 @@ import java.util.Map;
 import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 
 @JsonIgnoreProperties( value = { TRANSFORM } )
-
 public class ConditionalPrefixSubstringTransform extends Transformation<String> {
     private final String prefix;
-    private final int substringlocation;
+    private final int index;
 
+    /**
+     * Represents a transformation to get a substring *if* there is a certain prefix.
+     * @param prefix: string to present conditional
+     * @param index: where to start subsetting if prefix is found
+     */
     @JsonCreator
     public ConditionalPrefixSubstringTransform(
             @JsonProperty( Constants.PREFIX ) String prefix,
-            @JsonProperty( Constants.LOC ) int substringlocation ) {
+            @JsonProperty( Constants.INDEX ) int index ) {
         this.prefix = prefix;
-        this.substringlocation = substringlocation;
+        this.index = index;
     }
 
     @JsonProperty( Constants.PREFIX )
@@ -32,13 +36,13 @@ public class ConditionalPrefixSubstringTransform extends Transformation<String> 
 
     @JsonProperty( Constants.LOC )
     public int getSubstringLocation() {
-        return substringlocation;
+        return index;
     }
 
     @Override
     public Object apply( String o ) {
         if ( o.startsWith(prefix) ) {
-            return o.substring( substringlocation );
+            return o.substring( index );
         }
         return o;
     }

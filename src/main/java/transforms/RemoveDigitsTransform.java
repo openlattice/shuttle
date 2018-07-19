@@ -36,7 +36,10 @@ import java.util.Objects;
 public class RemoveDigitsTransform extends Transformation<String>  {
     private final String tmp;
 
-    @JsonCreator
+    /**
+     * Represents a transformation to remove digits in a string.
+     * @param tmp: this is a bug, but a random string should be included
+     */
     public RemoveDigitsTransform(
             @JsonProperty( Constants.TEMP ) String tmp
             ) {

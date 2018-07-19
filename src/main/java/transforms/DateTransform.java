@@ -36,6 +36,10 @@ import com.openlattice.shuttle.dates.TimeZones;
 public class DateTransform extends Transformation<String> {
     private final String pattern;
 
+    /**
+     * Represents a transformation from string to date.
+     * @param pattern: pattern of date (eg. "MM/dd/YY")
+     */
     @JsonCreator
     public DateTransform( @JsonProperty( Constants.PATTERN ) String pattern ) {
         this.pattern = pattern;

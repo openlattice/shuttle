@@ -17,6 +17,12 @@ public class ConditionalPrefixValueTransform extends Transformation<String> {
     private final String valueelse;
     private final List<String> value;
 
+    /**
+     * Represents a transformation to get a value *if* there is a certain prefix.
+     * @param prefix: string to present conditional
+     * @param value: which value to set if prefix is found
+     * @param valueelse: which value to set if prefix is *not* found
+     */
     @JsonCreator
     public ConditionalPrefixValueTransform(
             @JsonProperty( Constants.PREFIX ) List<String> prefix,

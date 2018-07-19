@@ -16,6 +16,12 @@ public class ConcatTransform extends Transformation<Map<String, String>> {
     private final List<String> columns;
     private final String       separator;
 
+    /**
+     * Represents a transformation to concatenate values.
+     * Function selects all columns and concatenates them with the separator
+     * @param columns: list of column names to go over in sequential order
+     * @param separator: separator to concatenate the values
+     */
     @JsonCreator
     public ConcatTransform(
             @JsonProperty( Constants.COLUMNS ) List<String> columns,

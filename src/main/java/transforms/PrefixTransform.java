@@ -35,6 +35,10 @@ public class PrefixTransform extends Transformation<String> {
 
     private final String prefix;
 
+    /**
+     * Represents a transformation to add a prefix.
+     * @param prefix: prefix to add
+     */
     @JsonCreator
     public PrefixTransform( @JsonProperty( Constants.PREFIX ) String prefix ) {
         this.prefix = prefix;
