@@ -78,7 +78,7 @@ public class AssociationDefinition implements Serializable {
         this.dstAlias = dstAlias;
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
-        this.alias = alias;
+        this.alias = alias == null ? entitySetName : alias;
         this.generator = Optional.empty();
         this.useCurrentSync = useCurrentSync == null ? false : useCurrentSync;
     }

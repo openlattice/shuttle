@@ -74,7 +74,7 @@ public class EntityDefinition implements Serializable {
         this.entitySetName = entitySetName;
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
-        this.alias = alias;
+        this.alias = alias == null ? entitySetName : alias;
         this.generator = Optional.empty();
         this.useCurrentSync = useCurrentSync == null ? false : useCurrentSync;
     }
