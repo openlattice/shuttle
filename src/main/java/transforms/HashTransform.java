@@ -21,8 +21,6 @@
 
 package transforms;
 
-import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -32,15 +30,18 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @JsonIgnoreProperties(value = {TRANSFORM})
-        public class HashTransform extends Transformation<Map<String, String>> {
+public class HashTransform extends Transformation<Map<String, String>> {
     private final List<String> columns;
     private final String       hashFunction;
     private final HashFunction hf;

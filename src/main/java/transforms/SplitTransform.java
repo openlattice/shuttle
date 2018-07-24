@@ -28,18 +28,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@JsonIgnoreProperties(value = {TRANSFORM} )
-
-
 public class SplitTransform extends Transformation<String>  {
 
     private final String separator;
+    private final String valueelse;
     private final int index;
 
     /**
@@ -50,18 +49,22 @@ public class SplitTransform extends Transformation<String>  {
     @JsonCreator
     public SplitTransform(
             @JsonProperty( Constants.SEP ) String separator ,
-            @JsonProperty (Constants.INDEX) int index
+            @JsonProperty (Constants.INDEX) int index ,
+            @JsonProperty (Constants.ELSE ) String valueelse
     ) {
         this.separator = separator;
         this.index = index;
+        this.valueelse = valueelse == null ? "" : valueelse ;
     }
 
     @Override public Object apply( String o ) {
-        String[] strNames = o.split( separator );
+        if ( StringUtils.isBlank(o)) {return ""; }
+        String[] strNames = o.trim().split( separator );
         if ( strNames.length > index ) {
             return strNames[ index ].trim();
         }
-        return "";
+        if ( !StringUtils.isBlank(valueelse)) {return valueelse; }
+        return o;
     }
 
 }

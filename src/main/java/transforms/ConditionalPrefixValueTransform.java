@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -45,6 +46,7 @@ public class ConditionalPrefixValueTransform extends Transformation<String> {
 
     @Override
     public Object apply( String o ) {
+        if ( StringUtils.isBlank(o)) {return ""; }
         for ( int i = 0; i<prefix.size(); ++i ) {
             if ( o.startsWith(prefix.get(i))) {
                 return value.get(i);

@@ -31,8 +31,8 @@ import com.openlattice.shuttle.util.Constants;
 import java.util.Objects;
 import com.openlattice.shuttle.dates.DateTimeHelper;
 import com.openlattice.shuttle.dates.TimeZones;
+import org.apache.commons.lang3.StringUtils;
 
-@JsonIgnoreProperties(value = {TRANSFORM} )
 public class DateTransform extends Transformation<String> {
     private final String pattern;
 
@@ -51,6 +51,7 @@ public class DateTransform extends Transformation<String> {
     }
 
     @Override public Object apply( String o ) {
+        if ( StringUtils.isBlank(o)) {return ""; }
         final DateTimeHelper dtHelper = new DateTimeHelper( TimeZones.America_NewYork,
                 pattern );
         return dtHelper.parseDate( o );
