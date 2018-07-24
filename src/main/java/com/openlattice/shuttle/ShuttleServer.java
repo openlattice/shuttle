@@ -43,12 +43,12 @@ public class ShuttleServer {
         if (args.length < 3)
         {
             System.out.println( "Hello, Shuttle!" );
+
         } else {
 
-            final String arpath = args[1];
-            logger.info(arpath);
-            final String jwtToken = args[2];
-            final String yamlfile = args[3];
+            final String arpath = args[0];
+            final String jwtToken = args[1];
+            final String yamlfile = args[2];
 
             SimplePayload arPayload = new SimplePayload( arpath );
 
@@ -68,10 +68,6 @@ public class ShuttleServer {
             flights.put( arFlight, arPayload );
             Shuttle shuttle = new Shuttle( environment, jwtToken );
             shuttle.launchPayloadFlight( flights );
-
-            System.out.println( "Hello, Big Shuttle!" );
-
         }
-
     }
 }
