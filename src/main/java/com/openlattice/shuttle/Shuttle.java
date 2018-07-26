@@ -44,7 +44,6 @@ import com.openlattice.edm.EdmApi;
 import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
-import com.openlattice.sync.SyncApi;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
@@ -106,12 +105,10 @@ public class Shuttle implements Serializable {
     public void launch( Map<Flight, Stream<Map<String, String>>> flightsToPayloads ) throws InterruptedException {
 
         EdmApi edmApi;
-        SyncApi syncApi;
         PermissionsApi permissionsApi;
 
         try {
             edmApi = this.apiClient.getEdmApi();
-            syncApi = this.apiClient.getSyncApi();
             permissionsApi = this.apiClient.getPermissionsApi();
         } catch ( ExecutionException e ) {
             logger.error( "Failed to retrieve apis." );
@@ -119,8 +116,6 @@ public class Shuttle implements Serializable {
         }
 
         initializeEdmCaches( edmApi );
-
-        Map<UUID, Boolean> entitySetIdsToSyncTypes = new HashMap<>();
 
         flightsToPayloads.keySet().forEach( flight -> {
 
@@ -132,9 +127,6 @@ public class Shuttle implements Serializable {
                                 entitySetId,
                                 entityDefinition.getProperties(),
                                 edmApi );
-                        entitySetIdsToSyncTypes.put(
-                                entitySetId,
-                                entityDefinition.useCurrentSync() );
                     } );
 
             flight
@@ -145,41 +137,14 @@ public class Shuttle implements Serializable {
                                 entitySetId,
                                 associationDefinition.getProperties(),
                                 edmApi );
-                        entitySetIdsToSyncTypes.put(
-                                entitySetId,
-                                associationDefinition.useCurrentSync() );
                     } );
         } );
 
-        Map<UUID, UUID> syncIds = new HashMap<>();
-
-        entitySetIdsToSyncTypes.entrySet().forEach( entry -> {
-            UUID entitySetId = entry.getKey();
-
-            UUID syncId = ( entry.getValue() )
-                    ? syncApi.getCurrentSyncId( entitySetId )
-                    : syncApi.acquireSyncId( entitySetId );
-
-            if ( syncId == null ) {
-                logger.error( "Sync id was null for entity set id: {}", entitySetId );
-                throw new NullPointerException( "Sync id was null for entity set id: " + entitySetId );
-            }
-
-            syncIds.put( entitySetId, syncId );
-        } );
-
         flightsToPayloads.entrySet().forEach( entry -> {
-            try {
-                logger.info( "Launching flight: {}",
-                        entry.getKey().getName() );
-                launchFlight( entry.getKey(), entry.getValue(), syncIds );
-                logger.info( "Finished flight: {}", entry.getKey().getName() );
-            } catch ( InterruptedException e ) {
-                logger.debug( "unable to launch flight" );
-            }
+            logger.info( "Launching flight: {}", entry.getKey().getName() );
+            launchFlight( entry.getKey(), entry.getValue() );
+            logger.info( "Finished flight: {}", entry.getKey().getName() );
         } );
-
-        syncIds.entrySet().forEach( entry -> syncApi.setCurrentSyncId( entry.getKey(), entry.getValue() ) );
 
         DataApi dataApi;
 
@@ -256,8 +221,7 @@ public class Shuttle implements Serializable {
         }
     }
 
-    public void launchFlight( Flight flight, Stream<Map<String, String>> payload, Map<UUID, UUID> syncIds )
-            throws InterruptedException {
+    public void launchFlight( Flight flight, Stream<Map<String, String>> payload ) {
         Optional<BulkDataCreation> remaining = payload
                 .map( row -> {
                     DataIntegrationApi dataApi;
@@ -274,7 +238,6 @@ public class Shuttle implements Serializable {
                     initializeEdmCaches( edmApi );
 
                     Map<String, EntityKey> aliasesToEntityKey = new HashMap<>();
-                    Set<UUID> syncTickets = Sets.newHashSet();
                     Set<Entity> entities = Sets.newHashSet();
                     Set<Association> associations = Sets.newHashSet();
                     Map<String, Boolean> wasCreated = new HashMap<>();
