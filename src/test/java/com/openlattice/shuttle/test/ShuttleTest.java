@@ -45,7 +45,6 @@ import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.shuttle.Flight;
 import com.openlattice.shuttle.Shuttle;
 import com.openlattice.shuttle.transformations.Transformations;
-import com.openlattice.sync.SyncApi;
 
 import java.io.IOException;
 import java.net.URL;
@@ -108,7 +107,6 @@ public class ShuttleTest extends ShuttleTestBootstrap {
             DataApi mockDataApi = mock( DataApi.class );
             PermissionsApi mockPermissionsApi = mock( PermissionsApi.class );
             DataIntegrationApi mockDataIntegrationApi = mock( DataIntegrationApi.class );
-            SyncApi mockSyncApi = mock( SyncApi.class );
             ApiFactory mockApiFactory = mock( ApiFactory.class );
 
             when( mockApiFactory.create( DataApi.class ) )
@@ -119,9 +117,6 @@ public class ShuttleTest extends ShuttleTestBootstrap {
 
             when( mockApiFactory.create( PermissionsApi.class ) )
                     .thenReturn( mockPermissionsApi );
-
-            when( mockApiFactory.create( SyncApi.class ) )
-                    .thenReturn( mockSyncApi );
 
             when( mockApiFactory.create( DataIntegrationApi.class ) )
                     .thenAnswer( Answers.incrementCreateDataIntegrationApiCount( mockDataIntegrationApi ) );
