@@ -20,6 +20,7 @@
 package com.openlattice.shuttle.test;
 
 import com.openlattice.data.DataApi;
+import com.openlattice.data.DataIntegrationApi;
 import org.mockito.stubbing.Answer;
 
 import java.io.Serializable;
@@ -38,7 +39,7 @@ public class Answers implements Serializable {
         };
     }
 
-    public static Answer<DataApi> incrementCreateDataApiCount( final DataApi api ) {
+    public static Answer<DataIntegrationApi> incrementCreateDataIntegrationApiCount( final DataIntegrationApi api ) {
         return invocation -> {
             createDataApiInvocationCount++;
             return api;
@@ -49,7 +50,7 @@ public class Answers implements Serializable {
         return createDataInvocationCount;
     }
 
-    public static int getCreateDataApiInvocationCount() {
+    public static int getCreateDataIntegrationApiInvocationCount() {
         return createDataApiInvocationCount;
     }
 
