@@ -22,7 +22,6 @@ package com.openlattice.shuttle;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.client.RetrofitFactory;
-import com.openlattice.data.serializers.FullQualifiedNameJacksonDeserializer;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.payload.SimplePayload;
@@ -54,7 +53,6 @@ public class ShuttleServer {
 
             ObjectMapper yaml = ObjectMappers.getYamlMapper();
             FullQualifiedNameJacksonSerializer.registerWithMapper( yaml );
-            FullQualifiedNameJacksonDeserializer.registerWithMapper( yaml );
 
             Flight arFlight = null;
             try {
