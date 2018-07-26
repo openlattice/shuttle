@@ -35,6 +35,7 @@ import com.openlattice.authorization.PermissionsApi;
 import com.openlattice.client.ApiFactory;
 import com.openlattice.client.ApiFactoryFactory;
 import com.openlattice.data.DataApi;
+import com.openlattice.data.DataIntegrationApi;
 import com.openlattice.edm.EdmApi;
 import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.type.AssociationType;
@@ -108,8 +109,8 @@ public class ShuttleTest extends ShuttleTestBootstrap {
 
             EdmApi edmApi = mock( EdmApi.class );
             DataApi mockDataApi = mock( DataApi.class );
-            SyncApi mockSyncApi = mock( SyncApi.class );
             PermissionsApi mockPermissionsApi = mock( PermissionsApi.class );
+            DataIntegrationApi mockDataIntegrationApi = mock( DataIntegrationApi.class );
             ApiFactory mockApiFactory = mock( ApiFactory.class );
 
             when( mockApiFactory.create( DataApi.class ) )
@@ -118,19 +119,15 @@ public class ShuttleTest extends ShuttleTestBootstrap {
             when( mockApiFactory.create( EdmApi.class ) )
                     .thenReturn( edmApi );
 
-            when( mockApiFactory.create( SyncApi.class ) )
-                    .thenReturn( mockSyncApi );
-
             when( mockApiFactory.create( PermissionsApi.class ) )
                     .thenReturn( mockPermissionsApi );
+
+            when( mockApiFactory.create( DataIntegrationApi.class ) )
+                    .thenReturn( mockDataIntegrationApi );
 
             when( edmApi.getEntitySetId( CYPHERS_ES.getName() ) ).thenReturn( CYPHERS_ES.getId() );
             when( edmApi.getEntitySetId( MORE_CYPHERS_ES.getName() ) ).thenReturn( MORE_CYPHERS_ES.getId() );
             when( edmApi.getEntitySetId( ASSOCIATION_ES.getName() ) ).thenReturn( ASSOCIATION_ES.getId() );
-            when( mockSyncApi.acquireSyncId( CYPHERS_ES.getId() ) ).thenReturn( CYPHER_ES_SYNC_ID );
-            when( mockSyncApi.acquireSyncId( MORE_CYPHERS_ES.getId() ) ).thenReturn( MORE_CYPHERS_ES_SYNC_ID );
-            when( mockSyncApi.acquireSyncId( ASSOCIATION_ES.getId() ) ).thenReturn( ASSOCIATION_ES_SYNC_ID );
-
             PTS.forEach( pt -> {
                 when( edmApi.getPropertyTypeId( pt.getType().getNamespace(), pt.getType().getName() ) )
                         .thenReturn( pt.getId() );
@@ -150,7 +147,6 @@ public class ShuttleTest extends ShuttleTestBootstrap {
             doAnswer( Answers.incrementCreateDataInvocationCount() )
                     .when( mockDataApi ).createEntityAndAssociationData( Mockito.any() );
 
-            // Mockito.verify( mockDataApi, Mockito.atLeastOnce() ).releaseSyncTicket( new UUID( 1, 1 ) );
             return mockApiFactory;
         };
 
