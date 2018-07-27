@@ -36,6 +36,7 @@ import com.openlattice.client.RetrofitFactory.Environment;
 import com.openlattice.data.DataApi;
 import com.openlattice.data.DataIntegrationApi;
 import com.openlattice.data.EntityKey;
+import com.openlattice.data.IntegrationResults;
 import com.openlattice.data.integration.Association;
 import com.openlattice.data.integration.BulkDataCreation;
 import com.openlattice.data.integration.Entity;
@@ -330,7 +331,8 @@ public class Shuttle implements Serializable {
                     a.getEntities().addAll( b.getEntities() );
 
                     if ( a.getAssociations().size() > 10000 || a.getEntities().size() > 10000 ) {
-                        dataApi.integrateEntityAndAssociationData( a, false );
+                        IntegrationResults results = dataApi.integrateEntityAndAssociationData( a, false );
+                        logger.info("Results: {}", results);
                         return new BulkDataCreation( new HashSet<>(), new HashSet<>() );
                     }
 
