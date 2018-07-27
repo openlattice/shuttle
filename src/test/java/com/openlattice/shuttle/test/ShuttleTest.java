@@ -35,6 +35,7 @@ import com.openlattice.authorization.PermissionsApi;
 import com.openlattice.client.ApiFactory;
 import com.openlattice.client.ApiFactoryFactory;
 import com.openlattice.data.DataApi;
+import com.openlattice.data.DataIntegrationApi;
 import com.openlattice.edm.EdmApi;
 import com.openlattice.edm.EntitySet;
 import com.openlattice.edm.type.AssociationType;
@@ -43,9 +44,8 @@ import com.openlattice.edm.type.PropertyType;
 import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.shuttle.Flight;
 import com.openlattice.shuttle.Shuttle;
-import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transformations.Transformations;
-import com.openlattice.sync.SyncApi;
+
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,16 +63,12 @@ import org.slf4j.LoggerFactory;
 import transforms.PrefixTransform;
 
 public class ShuttleTest extends ShuttleTestBootstrap {
-    private static final Logger logger = LoggerFactory.getLogger( ShuttleTest.class );
-    private static Stream<Map<String, String>> payload;
+    private static final Logger                      logger = LoggerFactory.getLogger( ShuttleTest.class );
+    private static       Stream<Map<String, String>> payload;
 
     private static String CYPHERS_ALIAS      = "cyphers";
     private static String MORE_CYPHERS_ALIAS = "moreCyphers";
     private static String ASSOCIATION_ALIAS  = "cypherToCypher";
-
-    private static UUID CYPHER_ES_SYNC_ID       = UUIDs.timeBased();
-    private static UUID MORE_CYPHERS_ES_SYNC_ID = UUIDs.timeBased();
-    private static UUID ASSOCIATION_ES_SYNC_ID  = UUIDs.timeBased();
 
     private static PropertyType ALGO_PT        = TestDataFactory.propertyType();
     private static PropertyType MODE_PT        = TestDataFactory.propertyType();
@@ -108,28 +105,25 @@ public class ShuttleTest extends ShuttleTestBootstrap {
 
             EdmApi edmApi = mock( EdmApi.class );
             DataApi mockDataApi = mock( DataApi.class );
-            SyncApi mockSyncApi = mock( SyncApi.class );
             PermissionsApi mockPermissionsApi = mock( PermissionsApi.class );
+            DataIntegrationApi mockDataIntegrationApi = mock( DataIntegrationApi.class );
             ApiFactory mockApiFactory = mock( ApiFactory.class );
 
             when( mockApiFactory.create( DataApi.class ) )
-                    .thenAnswer( Answers.incrementCreateDataApiCount( mockDataApi ) );
+                    .thenReturn( mockDataApi );
 
             when( mockApiFactory.create( EdmApi.class ) )
                     .thenReturn( edmApi );
 
-            when( mockApiFactory.create( SyncApi.class ) )
-                    .thenReturn( mockSyncApi );
-
             when( mockApiFactory.create( PermissionsApi.class ) )
                     .thenReturn( mockPermissionsApi );
+
+            when( mockApiFactory.create( DataIntegrationApi.class ) )
+                    .thenAnswer( Answers.incrementCreateDataIntegrationApiCount( mockDataIntegrationApi ) );
 
             when( edmApi.getEntitySetId( CYPHERS_ES.getName() ) ).thenReturn( CYPHERS_ES.getId() );
             when( edmApi.getEntitySetId( MORE_CYPHERS_ES.getName() ) ).thenReturn( MORE_CYPHERS_ES.getId() );
             when( edmApi.getEntitySetId( ASSOCIATION_ES.getName() ) ).thenReturn( ASSOCIATION_ES.getId() );
-            when( mockSyncApi.acquireSyncId( CYPHERS_ES.getId() ) ).thenReturn( CYPHER_ES_SYNC_ID );
-            when( mockSyncApi.acquireSyncId( MORE_CYPHERS_ES.getId() ) ).thenReturn( MORE_CYPHERS_ES_SYNC_ID );
-            when( mockSyncApi.acquireSyncId( ASSOCIATION_ES.getId() ) ).thenReturn( ASSOCIATION_ES_SYNC_ID );
 
             PTS.forEach( pt -> {
                 when( edmApi.getPropertyTypeId( pt.getType().getNamespace(), pt.getType().getName() ) )
@@ -148,10 +142,9 @@ public class ShuttleTest extends ShuttleTestBootstrap {
             // .thenReturn( e.getValue() ) );
 
             doAnswer( Answers.incrementCreateDataInvocationCount() )
-                    .when( mockDataApi ).createEntityAndAssociationData( Mockito.any() );
+                    .when( mockDataIntegrationApi )
+                    .integrateEntityAndAssociationData( Mockito.any(), Mockito.anyBoolean() );
 
-            when( mockDataApi.acquireSyncTicket( Mockito.any(), Mockito.any() ) ).thenReturn( new UUID( 1, 1 ) );
-            // Mockito.verify( mockDataApi, Mockito.atLeastOnce() ).releaseSyncTicket( new UUID( 1, 1 ) );
             return mockApiFactory;
         };
 
@@ -166,7 +159,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         shuttle.launch( flights );
 
         Assert.assertEquals( 1, Answers.getCreateDataInvocationCount() );
-        Assert.assertEquals( 1, Answers.getCreateDataApiInvocationCount() );
+        Assert.assertEquals( 1, Answers.getCreateDataIntegrationApiInvocationCount() );
     }
 
     @Test(
