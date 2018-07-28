@@ -35,35 +35,41 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SplitTransform extends Transformation<String>  {
+public class SplitTransform extends Transformation<String> {
 
     private final String separator;
     private final String valueelse;
-    private final int index;
+    private final int    index;
 
     /**
      * Represents a transformation to split a string
+     *
      * @param separator: separate by what?
-     * @param index: index in separated list (starts at 0!)
+     * @param index:     index in separated list (starts at 0!)
      */
     @JsonCreator
     public SplitTransform(
-            @JsonProperty( Constants.SEP ) String separator ,
-            @JsonProperty (Constants.INDEX) int index ,
-            @JsonProperty (Constants.ELSE ) String valueelse
+            @JsonProperty( Constants.SEP ) String separator,
+            @JsonProperty( Constants.INDEX ) int index,
+            @JsonProperty( Constants.ELSE ) String valueelse
     ) {
         this.separator = separator;
         this.index = index;
-        this.valueelse = valueelse == null ? "" : valueelse ;
+        this.valueelse = valueelse == null ? "" : valueelse;
     }
 
-    @Override public Object apply( String o ) {
-        if ( StringUtils.isBlank(o)) {return ""; }
+    @Override
+    public Object apply( String o ) {
+        if ( StringUtils.isBlank( o ) ) {
+            return "";
+        }
         String[] strNames = o.trim().split( separator );
         if ( strNames.length > index ) {
             return strNames[ index ].trim();
         }
-        if ( !StringUtils.isBlank(valueelse)) {return valueelse; }
+        if ( !StringUtils.isBlank( valueelse ) ) {
+            return valueelse;
+        }
         return o;
     }
 

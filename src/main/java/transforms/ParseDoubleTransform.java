@@ -14,11 +14,11 @@ public class ParseDoubleTransform extends Transformation<String> {
     /**
      * Represents a transformation to parse doubles from a string.
      */
-    public ParseDoubleTransform() {}
+    public ParseDoubleTransform() {
+    }
 
     @Override
-    public Object apply( String o )
-    {
+    public Object apply( String o ) {
         if ( StringUtils.isNotBlank( o ) ) {
             try {
                 return Double.parseDouble( o );

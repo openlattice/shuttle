@@ -28,7 +28,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+
 import java.util.Objects;
+
 import com.openlattice.shuttle.dates.DateTimeHelper;
 import com.openlattice.shuttle.dates.TimeZones;
 import org.apache.commons.lang3.StringUtils;
@@ -38,6 +40,7 @@ public class DateTransform extends Transformation<String> {
 
     /**
      * Represents a transformation from string to date.
+     *
      * @param pattern: pattern of date (eg. "MM/dd/YY")
      */
     @JsonCreator
@@ -45,17 +48,19 @@ public class DateTransform extends Transformation<String> {
         this.pattern = pattern;
     }
 
-    @JsonProperty( value = Constants.PATTERN,required = false)
+    @JsonProperty( value = Constants.PATTERN, required = false )
     public String getPattern() {
         return pattern;
     }
 
-    @Override public Object apply( String o ) {
-        if ( StringUtils.isBlank(o)) {return ""; }
+    @Override
+    public Object apply( String o ) {
+        if ( StringUtils.isBlank( o ) ) {
+            return null;
+        }
         final DateTimeHelper dtHelper = new DateTimeHelper( TimeZones.America_NewYork,
                 pattern );
         return dtHelper.parseDate( o );
     }
-
 
 }

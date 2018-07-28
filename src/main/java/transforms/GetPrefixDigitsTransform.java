@@ -33,18 +33,18 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Objects;
 
-public class GetPrefixDigitsTransform extends Transformation<String>  {
+public class GetPrefixDigitsTransform extends Transformation<String> {
     private final String separator;
-
 
     /**
      * Represents a transformation to get the digits at the start of a column (if starts with digits).
+     *
      * @param separator: separation between digits and
      */
     @JsonCreator
     public GetPrefixDigitsTransform(
             @JsonProperty( Constants.SEP ) String separator ) {
-            this.separator = separator;
+        this.separator = separator;
     }
 
     @JsonProperty( Constants.SEP )
@@ -53,9 +53,10 @@ public class GetPrefixDigitsTransform extends Transformation<String>  {
     }
 
     @Override
-    public Object apply( String o )
-    {
-        if ( StringUtils.isBlank(o)) {return null; }
+    public Object apply( String o ) {
+        if ( StringUtils.isBlank( o ) ) {
+            return null;
+        }
         if ( Character.isDigit( o.charAt( 0 ) ) ) {
             String[] strBadge = o.split( separator );
             return strBadge[ 0 ].trim();

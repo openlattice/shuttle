@@ -36,15 +36,16 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@JsonIgnoreProperties(value = {TRANSFORM} )
+@JsonIgnoreProperties( value = { TRANSFORM } )
 
-public class RemovePatternTransform extends Transformation<String>  {
+public class RemovePatternTransform extends Transformation<String> {
 
-    private final List<String> patterns;
+    private final List<String>  patterns;
     private final List<Pattern> rgx;
 
     /**
      * Represents a transformation to set values to "" if they appear.
+     *
      * @param patterns: list of patterns to remove if they appear (unisolated, so watch out !)
      */
     @JsonCreator
@@ -52,23 +53,24 @@ public class RemovePatternTransform extends Transformation<String>  {
         this.patterns = patterns;
 
         List<Pattern> rgx = new ArrayList<Pattern>();
-        for (String ptrn : patterns){
+        for ( String ptrn : patterns ) {
             rgx.add(
-                    Pattern.compile("\\b(?i)"+ptrn+"\\b", Pattern.CASE_INSENSITIVE)
+                    Pattern.compile( "\\b(?i)" + ptrn + "\\b", Pattern.CASE_INSENSITIVE )
             );
         }
         this.rgx = rgx;
 
     }
 
-    @JsonProperty( value = Constants.PATTERNS)
+    @JsonProperty( value = Constants.PATTERNS )
     public List<String> getPatterns() {
         return patterns;
     }
 
-
-    @Override public Object apply( String o ) {
+    @Override
+    public Object apply( String o ) {
         for ( Pattern rx : rgx ) {
+            if ( StringUtils.isBlank( o ) ) {return null;}
             if ( rx.matcher( o ).matches() ) {
                 return "";
             }

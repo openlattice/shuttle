@@ -17,21 +17,23 @@ public class ParseIntTransform extends Transformation<String> {
     /**
      * Represents a transformation to parse integers from a string.
      */
-    public ParseIntTransform() {}
+    public ParseIntTransform() {
+    }
 
     @Override
-    public Object apply( String o )
-    {
+    public Object apply( String o ) {
         if ( StringUtils.isNotBlank( o ) ) {
             try {
                 Integer i = Integer.parseInt( o );
                 return i.toString();
-            } catch ( NumberFormatException e ) { }
+            } catch ( NumberFormatException e ) {
+            }
             try {
                 Double d = Double.parseDouble( o );
-                BigInteger k = BigDecimal.valueOf(d).toBigInteger();
+                BigInteger k = BigDecimal.valueOf( d ).toBigInteger();
                 return k.toString();
-            } catch ( NumberFormatException f ) { }
+            } catch ( NumberFormatException f ) {
+            }
         }
         logger.error( "Unable to parse int from value {}", o );
         return null;

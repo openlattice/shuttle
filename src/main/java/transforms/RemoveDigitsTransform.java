@@ -33,18 +33,20 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Objects;
 
-@JsonIgnoreProperties(value = {TRANSFORM} )
-public class RemoveDigitsTransform extends Transformation<String>  {
+@JsonIgnoreProperties( value = { TRANSFORM } )
+public class RemoveDigitsTransform extends Transformation<String> {
 
     /**
      * Represents a transformation to remove digits in a string.
      */
-    public RemoveDigitsTransform() {}
+    public RemoveDigitsTransform() {
+    }
 
     @Override
-    public Object apply( String o )
-    {
-        if ( StringUtils.isBlank(o)) {return ""; }
+    public Object apply( String o ) {
+        if ( StringUtils.isBlank( o ) ) {
+            return "";
+        }
         return o.replaceAll( "[\\d]+", "" );
     }
 

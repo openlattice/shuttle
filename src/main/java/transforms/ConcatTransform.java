@@ -19,7 +19,8 @@ public class ConcatTransform extends Transformation<Map<String, String>> {
     /**
      * Represents a transformation to concatenate values.
      * Function selects all columns and concatenates them with the separator
-     * @param columns: list of column names to go over in sequential order
+     *
+     * @param columns:   list of column names to go over in sequential order
      * @param separator: separator to concatenate the values
      */
     @JsonCreator
@@ -40,7 +41,8 @@ public class ConcatTransform extends Transformation<Map<String, String>> {
         return columns;
     }
 
-    @Override public Object apply( Map<String, String> row ) {
+    @Override
+    public Object apply( Map<String, String> row ) {
         StringBuilder sb = new StringBuilder();
         String sep = "";
         for ( String s : columns ) {

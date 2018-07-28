@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.SetMultimap;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+
 import java.util.Map;
 
 /**
@@ -36,6 +37,7 @@ public class ColumnTransform extends Transformation<Map<String, String>> {
 
     /**
      * Represents a transformation to select a column in the original data (i.e. no transform)
+     *
      * @param column: column name to collect
      */
     @JsonCreator
@@ -43,7 +45,8 @@ public class ColumnTransform extends Transformation<Map<String, String>> {
         this.column = column;
     }
 
-    @Override public Object apply( Map<String, String> row ) {
+    @Override
+    public Object apply( Map<String, String> row ) {
         return row.get( column );
     }
 
