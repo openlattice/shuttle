@@ -25,15 +25,12 @@ import com.dataloom.mappers.ObjectMappers;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.openlattice.ApiUtil;
-import com.openlattice.authorization.PermissionsApi;
 import com.openlattice.client.ApiClient;
 import com.openlattice.client.ApiFactoryFactory;
 import com.openlattice.client.RetrofitFactory.Environment;
-import com.openlattice.data.DataApi;
 import com.openlattice.data.DataIntegrationApi;
 import com.openlattice.data.EntityKey;
 import com.openlattice.data.IntegrationResults;
@@ -139,7 +136,6 @@ public class Shuttle implements Serializable {
                     } );
         } );
 
-
         flightsToPayloads.entrySet().forEach( entry -> {
             logger.info( "Launching flight: {}", entry.getKey().getName() );
             launchFlight( entry.getKey(), entry.getValue() );
@@ -214,6 +210,11 @@ public class Shuttle implements Serializable {
         }
     }
 
+    private Set<Object> addAndReturn( Set<Object> s, Object o ) {
+        s.add( o );
+        return s;
+    }
+
     public void launchFlight( Flight flight, Stream<Map<String, String>> payload ) {
         Optional<BulkDataCreation> remaining = payload
                 .map( row -> {
@@ -238,7 +239,7 @@ public class Shuttle implements Serializable {
                     for ( EntityDefinition entityDefinition : flight.getEntities() ) {
 
                         UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
-                        SetMultimap<UUID, Object> properties = HashMultimap.create();
+                        Map<UUID, Set<Object>> properties = new HashMap<>();
 
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
@@ -246,11 +247,13 @@ public class Shuttle implements Serializable {
                                 UUID propertyId = propertyIdsCache
                                         .getUnchecked( propertyDefinition.getFullQualifiedName() );
                                 if ( propertyValue instanceof Iterable ) {
-                                    properties.putAll( propertyId, (Iterable) propertyValue );
+                                    properties
+                                            .putAll( ImmutableMap.of( propertyId, Sets.newHashSet( propertyValue ) ) );
                                 } else {
-                                    properties.put(
-                                            propertyId,
-                                            propertyValue );
+                                    properties.compute( propertyId,
+                                            ( k, v ) -> ( v == null )
+                                                    ? addAndReturn( new HashSet<>(), propertyValue )
+                                                    : addAndReturn( v, propertyValue ) );
                                 }
                             }
                         }
@@ -284,14 +287,23 @@ public class Shuttle implements Serializable {
 
                             UUID entitySetId = entitySetIdCache
                                     .getUnchecked( associationDefinition.getEntitySetName() );
-                            SetMultimap<UUID, Object> properties = HashMultimap.create();
+                            Map<UUID, Set<Object>> properties = new HashMap<>();
 
                             for ( PropertyDefinition propertyDefinition : associationDefinition.getProperties() ) {
                                 Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
                                 if ( propertyValue != null ) {
-                                    properties.put(
-                                            propertyIdsCache.getUnchecked( propertyDefinition.getFullQualifiedName() ),
-                                            propertyValue );
+                                    var propertyId = propertyIdsCache
+                                            .getUnchecked( propertyDefinition.getFullQualifiedName() );
+                                    if ( propertyValue instanceof Iterable ) {
+                                        properties
+                                                .putAll( ImmutableMap
+                                                        .of( propertyId, Sets.newHashSet( propertyValue ) ) );
+                                    } else {
+                                        properties.compute( propertyId,
+                                                ( k, v ) -> ( v == null )
+                                                        ? addAndReturn( new HashSet<>(), propertyValue )
+                                                        : addAndReturn( v, propertyValue ) );
+                                    }
                                 }
                             }
 
@@ -324,7 +336,7 @@ public class Shuttle implements Serializable {
 
                     if ( a.getAssociations().size() > 10000 || a.getEntities().size() > 10000 ) {
                         IntegrationResults results = dataApi.integrateEntityAndAssociationData( a, false );
-                        logger.info("Results: {}", results);
+                        logger.info( "Results: {}", results );
                         return new BulkDataCreation( new HashSet<>(), new HashSet<>() );
                     }
 
@@ -345,7 +357,7 @@ public class Shuttle implements Serializable {
      */
     private static String generateDefaultEntityId(
             LinkedHashSet<FullQualifiedName> key,
-            SetMultimap<UUID, Object> properties ) {
+            Map<UUID, Set<Object>> properties ) {
 
         return ApiUtil.generateDefaultEntityId(
                 checkNotNull( key, "Key properties must be configured for entity id generation." )
