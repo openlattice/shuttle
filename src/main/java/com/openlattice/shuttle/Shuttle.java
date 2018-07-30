@@ -237,6 +237,12 @@ public class Shuttle implements Serializable {
 
                     for ( EntityDefinition entityDefinition : flight.getEntities() ) {
 
+                        if (!(entityDefinition.condition==null)){
+                            Boolean skipper = entityDefinition.condition.apply(row);
+                            if (!skipper){
+                                continue;
+                            }
+                        }
                         UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
                         SetMultimap<UUID, Object> properties = HashMultimap.create();
 

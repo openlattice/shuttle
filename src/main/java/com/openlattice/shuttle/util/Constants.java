@@ -20,5 +20,8 @@ public final class Constants {
     public static final String INDEX             = "index";
     public static final String TARGET            = "target";
     public static final String GOAL              = "goal";
+    public static final String CONDITION   = "condition";
+    public static final String NOTNULL   = "notnull";
+    public static final String REVERSE   = "reverse";
 
 }
