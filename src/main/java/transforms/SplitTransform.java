@@ -22,6 +22,7 @@
 package transforms;
 
 import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
+import static java.lang.Integer.parseInt;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -39,18 +40,18 @@ public class SplitTransform extends Transformation<String> {
 
     private final String separator;
     private final String valueelse;
-    private final int    index;
+    private final String index;
 
     /**
      * Represents a transformation to split a string
      *
      * @param separator: separate by what?
-     * @param index:     index in separated list (starts at 0!)
+     * @param index:     index to grab (starts at 0!), can be 'last'
      */
     @JsonCreator
     public SplitTransform(
             @JsonProperty( Constants.SEP ) String separator,
-            @JsonProperty( Constants.INDEX ) int index,
+            @JsonProperty( Constants.INDEX ) String index,
             @JsonProperty( Constants.ELSE ) String valueelse
     ) {
         this.separator = separator;
@@ -61,11 +62,19 @@ public class SplitTransform extends Transformation<String> {
     @Override
     public Object apply( String o ) {
         if ( StringUtils.isBlank( o ) ) {
-            return "";
+            return null;
         }
         String[] strNames = o.trim().split( separator );
-        if ( strNames.length > index ) {
-            return strNames[ index ].trim();
+
+        int idx = 0;
+        if (index == "last"){
+            idx = strNames.length;
+        } else {
+            idx = parseInt(index);
+        }
+
+        if ( strNames.length > idx ) {
+            return strNames[ idx ].trim();
         }
         if ( !StringUtils.isBlank( valueelse ) ) {
             return valueelse;

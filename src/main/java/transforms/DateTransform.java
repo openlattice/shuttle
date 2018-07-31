@@ -31,7 +31,7 @@ import com.openlattice.shuttle.util.Constants;
 
 import java.util.Objects;
 
-import com.openlattice.shuttle.dates.DateTimeHelper;
+import com.openlattice.shuttle.dates.JavaDateTimeHelper;
 import com.openlattice.shuttle.dates.TimeZones;
 import org.apache.commons.lang3.StringUtils;
 
@@ -58,9 +58,9 @@ public class DateTransform extends Transformation<String> {
         if ( StringUtils.isBlank( o ) ) {
             return null;
         }
-        final DateTimeHelper dtHelper = new DateTimeHelper( TimeZones.America_NewYork,
+        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
                 pattern );
-        return dtHelper.parseDate( o );
+        return dtHelper.parseDateTime( o );
     }
 
 }
