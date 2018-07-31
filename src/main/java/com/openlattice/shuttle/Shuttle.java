@@ -237,12 +237,13 @@ public class Shuttle implements Serializable {
 
                     for ( EntityDefinition entityDefinition : flight.getEntities() ) {
 
-                        if (!(entityDefinition.condition==null)){
-                            Boolean skipper = entityDefinition.condition.apply(row);
-                            if (!skipper){
+                        if (entityDefinition.condition.isPresent()){
+                            Object out = entityDefinition.valueMapper.apply(row);
+                            if (!((Boolean) out).booleanValue()){
                                 continue;
                             }
-                        }
+                         }
+
                         UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
                         SetMultimap<UUID, Object> properties = HashMultimap.create();
 
@@ -284,6 +285,13 @@ public class Shuttle implements Serializable {
                     }
 
                     for ( AssociationDefinition associationDefinition : flight.getAssociations() ) {
+
+                        if (associationDefinition.condition.isPresent()){
+                            Object out = associationDefinition.valueMapper.apply(row);
+                            if (!((Boolean) out).booleanValue()){
+                                continue;
+                            }
+                        }
 
                         if ( wasCreated.get( associationDefinition.getSrcAlias() )
                                 && wasCreated.get( associationDefinition.getDstAlias() ) ) {
