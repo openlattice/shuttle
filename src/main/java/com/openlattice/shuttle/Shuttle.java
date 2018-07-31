@@ -236,6 +236,13 @@ public class Shuttle implements Serializable {
                     Set<Association> associations = Sets.newHashSet();
                     Map<String, Boolean> wasCreated = new HashMap<>();
 
+                    if (flight.condition.isPresent()){
+                        Object out = flight.valueMapper.apply(row);
+                        if (!((Boolean) out).booleanValue()){
+                            return new BulkDataCreation( entities, associations );
+                        }
+                    }
+
                     for ( EntityDefinition entityDefinition : flight.getEntities() ) {
 
                         if (entityDefinition.condition.isPresent()){
