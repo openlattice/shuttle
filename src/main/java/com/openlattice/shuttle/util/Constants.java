@@ -10,6 +10,8 @@ public final class Constants {
     public static final String TRANSFORMS        = "transforms";
     public static final String TRANSFORMSIFTRUE  = "transformsiftrue";
     public static final String TRANSFORMSIFFALSE = "transformsiffalse";
+    public static final String IFMORETHAN = "ifmorethan";
+    public static final String IGNORECASE = "ignorecase";
     public static final String TYPE              = "type";
     public static final String SEP               = "separator";
     public static final String PATTERN           = "pattern";
