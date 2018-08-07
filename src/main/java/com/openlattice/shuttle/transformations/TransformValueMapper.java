@@ -40,6 +40,6 @@ public class TransformValueMapper implements SerializableFunction<Map<String, St
         for ( Transformation t : transforms ) {
             value = t.apply( value );
         }
-        return value;
+        return value == "" ? null : value;
     }
 }
