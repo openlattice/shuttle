@@ -262,7 +262,7 @@ public class Shuttle implements Serializable {
                                         .getUnchecked( propertyDefinition.getFullQualifiedName() );
                                 if ( propertyValue instanceof Iterable ) {
                                     properties
-                                            .putAll( ImmutableMap.of( propertyId, Sets.newHashSet( propertyValue ) ) );
+                                            .putAll( ImmutableMap.of( propertyId, Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
                                 } else {
                                     properties.compute( propertyId,
                                             ( k, v ) -> ( v == null )
@@ -318,7 +318,7 @@ public class Shuttle implements Serializable {
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap
-                                                        .of( propertyId, Sets.newHashSet( propertyValue ) ) );
+                                                        .of( propertyId, Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
                                     } else {
                                         properties.compute( propertyId,
                                                 ( k, v ) -> ( v == null )
