@@ -15,63 +15,62 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class BooleanRegexCondition extends Condition<Map<String, String>> {
-    private final String                                       column;
-    private final String                                       pattern;
-    private final Boolean                                      reverse;
+    private final String column;
+    private final String pattern;
+    private final Boolean reverse;
 
     /**
-     * Represents a transformation to select columns based on non-empty cells.
-     * Function goes over columns until a non-zero input is found.
+     * Represents a condition to select columns based on a regular expression.
      *
-     * @param column:            column to test for pattern
-     * @param pattern:           pattern to test column against
-     * @param reverse:           if the condition needs to be reversed (not)
+     * @param column:  column to test for pattern
+     * @param pattern: regular expression to test column against
+     * @param reverse: if the condition needs to be reversed (i.e. true if pattern *not* present)
      */
     @JsonCreator
     public BooleanRegexCondition(
-            @JsonProperty( Constants.COLUMN ) String column,
-            @JsonProperty( Constants.PATTERN ) String pattern,
-            @JsonProperty( Constants.REVERSE ) Boolean reverse ) {
+            @JsonProperty(Constants.COLUMN) String column,
+            @JsonProperty(Constants.PATTERN) String pattern,
+            @JsonProperty(Constants.REVERSE) Boolean reverse) {
         this.column = column;
         this.pattern = pattern;
-        this.reverse = reverse == null ? false : reverse ;
+        this.reverse = reverse == null ? false : reverse;
 
     }
 
-    @JsonProperty( Constants.COLUMN )
+    @JsonProperty(Constants.COLUMN)
     public String getColumn() {
         return column;
     }
 
-    @JsonProperty( Constants.PATTERN )
+    @JsonProperty(Constants.PATTERN)
     public String getPattern() {
         return pattern;
     }
 
-    @JsonProperty( Constants.REVERSE )
+    @JsonProperty(Constants.REVERSE)
     public Boolean getReverse() {
         return reverse;
     }
 
     @Override
-    public Boolean apply( Map<String, String> row ) {
-        String o = row.get( column );
-        if ( StringUtils.isBlank( o )) {
+    public Boolean apply(Map<String, String> row) {
+        String o = row.get(column);
+        if (StringUtils.isBlank(o)) {
             return false;
         }
         Pattern p = Pattern
-                .compile( this.pattern, Pattern.CASE_INSENSITIVE );
-        Matcher m = p.matcher( o );
+                .compile(this.pattern, Pattern.CASE_INSENSITIVE);
+        Matcher m = p.matcher(o);
 
         Boolean out = false;
-        if ( StringUtils.isNotBlank( o ) ) {
-            if ( m.find() ) {
+        if (StringUtils.isNotBlank(o)) {
+            if (m.find()) {
                 out = true;
             }
         }
 
-        if (reverse == true){
-            if (out){
+        if (reverse == true) {
+            if (out) {
                 out = false;
             } else {
                 out = true;
@@ -81,5 +80,5 @@ public class BooleanRegexCondition extends Condition<Map<String, String>> {
         return out;
     }
 
- }
+}
 
