@@ -22,32 +22,48 @@
 package transforms;
 
 import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
+import static com.openlattice.shuttle.util.Parsers.getAsString;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
-@JsonIgnoreProperties(value = {TRANSFORM})
-public class RemoveDigitsTransform extends Transformation<String> {
+import com.openlattice.shuttle.dates.DateTimeHelper;
+import com.openlattice.shuttle.dates.TimeZones;
+import org.apache.commons.lang3.StringUtils;
 
+public class GetWeekdayTransform extends Transformation<String> {
     /**
-     * Represents a transformation to remove digits in a string.
+     * Represents a transformation to get weekday from a date field (! should be checked for datetime).
      */
-    public RemoveDigitsTransform() {
+    @JsonCreator
+    public GetWeekdayTransform() {
     }
 
     @Override
     public Object apply(String o) {
-        if (StringUtils.isBlank(o)) {
-            return "";
+        List<String> days = Arrays
+                .asList("SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY");
+        String dateStr = getAsString(o);
+        if (dateStr != null) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            Date date;
+            try {
+                date = dateFormat.parse(dateStr);
+                return days.get(date.getDay());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return dateStr;
         }
-        return o.replaceAll("[\\d]+", "");
+        return null;
     }
-
 }

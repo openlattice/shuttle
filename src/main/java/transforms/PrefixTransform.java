@@ -28,44 +28,59 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.Objects;
 
-@JsonIgnoreProperties(value = {TRANSFORM} )
+@JsonIgnoreProperties(value = {TRANSFORM})
 public class PrefixTransform extends Transformation<String> {
 
     private final String prefix;
 
     /**
      * Represents a transformation to add a prefix.
+     *
      * @param prefix: prefix to add
      */
     @JsonCreator
-    public PrefixTransform( @JsonProperty( Constants.PREFIX ) String prefix ) {
+    public PrefixTransform(
+            @JsonProperty(Constants.PREFIX) String prefix) {
         this.prefix = prefix;
     }
 
-    @JsonProperty( value = Constants.PREFIX,required = false)
+    @JsonProperty(value = Constants.PREFIX, required = false)
     public String getPrefix() {
         return prefix;
     }
 
-    @Override public Object apply( String o ) {
+    @Override
+    public Object apply(String o) {
+        if (StringUtils.isBlank(o)) {
+            return "";
+        }
         return prefix + o;
     }
 
-    @Override public boolean equals( Object o ) {
-        if ( this == o ) { return true; }
-        if ( !( o instanceof PrefixTransform ) ) { return false; }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof PrefixTransform)) {
+            return false;
+        }
         PrefixTransform that = (PrefixTransform) o;
-        return Objects.equals( prefix, that.prefix );
+        return Objects.equals(prefix, that.prefix);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
 
-        return Objects.hash( prefix );
+        return Objects.hash(prefix);
     }
 
-    @Override public String toString() {
+    @Override
+    public String toString() {
         return "PrefixTransform{" +
                 "prefix='" + prefix + '\'' +
                 '}';

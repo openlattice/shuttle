@@ -236,14 +236,28 @@ public class Shuttle implements Serializable {
                     Set<Association> associations = Sets.newHashSet();
                     Map<String, Boolean> wasCreated = new HashMap<>();
 
+                    if (!(flight.condition == null)){
+                        Object out = flight.valueMapper.apply(row);
+                        if (!((Boolean) out).booleanValue()){
+                            return new BulkDataCreation( entities, associations );
+                        }
+                    }
+
                     for ( EntityDefinition entityDefinition : flight.getEntities() ) {
+
+                        if (!(entityDefinition.condition == null)){
+                            Object out = entityDefinition.valueMapper.apply(row);
+                            if (!((Boolean) out).booleanValue()){
+                                continue;
+                            }
+                         }
 
                         UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
                         Map<UUID, Set<Object>> properties = new HashMap<>();
 
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
-                            if ( propertyValue != null ) {
+                            if ( propertyValue != null & propertyValue!= "" ) {
                                 UUID propertyId = propertyIdsCache
                                         .getUnchecked( propertyDefinition.getFullQualifiedName() );
                                 if ( propertyValue instanceof Iterable ) {
@@ -281,6 +295,13 @@ public class Shuttle implements Serializable {
                     }
 
                     for ( AssociationDefinition associationDefinition : flight.getAssociations() ) {
+
+                        if (!(associationDefinition.condition == null)){
+                            Object out = associationDefinition.valueMapper.apply(row);
+                            if (!((Boolean) out).booleanValue()){
+                                continue;
+                            }
+                        }
 
                         if ( wasCreated.get( associationDefinition.getSrcAlias() )
                                 && wasCreated.get( associationDefinition.getDstAlias() ) ) {

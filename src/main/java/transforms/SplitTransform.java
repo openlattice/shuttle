@@ -22,46 +22,73 @@
 package transforms;
 
 import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
+import static java.lang.Integer.parseInt;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@JsonIgnoreProperties(value = {TRANSFORM} )
-
-
-public class SplitTransform extends Transformation<String>  {
+public class SplitTransform extends Transformation<String> {
 
     private final String separator;
-    private final int index;
+    private final String valueelse;
+    private final String index;
+    private final Integer ifmorethan;
 
     /**
      * Represents a transformation to split a string
+     *
      * @param separator: separate by what?
-     * @param index: index in separated list (starts at 0!)
+     * @param index:     index to grab (starts at 0!), can be 'last'
      */
     @JsonCreator
     public SplitTransform(
-            @JsonProperty( Constants.SEP ) String separator ,
-            @JsonProperty (Constants.INDEX) int index
+            @JsonProperty(Constants.SEP) String separator,
+            @JsonProperty(Constants.INDEX) String index,
+            @JsonProperty(Constants.ELSE) String valueelse,
+            @JsonProperty(Constants.IFMORETHAN) Integer ifmorethan
     ) {
         this.separator = separator;
         this.index = index;
+        this.ifmorethan = ifmorethan;
+        this.valueelse = valueelse == null ? "" : valueelse;
     }
 
-    @Override public Object apply( String o ) {
-        String[] strNames = o.split( separator );
-        if ( strNames.length > index ) {
-            return strNames[ index ].trim();
+    @Override
+    public Object apply(String o) {
+        if (StringUtils.isBlank(o)) {
+            return null;
         }
-        return "";
+        String[] strNames = o.trim().split(separator);
+
+        int idx = 0;
+        if (index.equals("last")) {
+            idx = strNames.length - 1;
+        } else {
+            idx = parseInt(index);
+        }
+
+        if (!(ifmorethan == null)) {
+            if (!(ifmorethan < strNames.length)) {
+                return null;
+            }
+        }
+
+        if (strNames.length > idx) {
+            return strNames[idx].trim();
+        }
+        if (!StringUtils.isBlank(valueelse)) {
+            return valueelse;
+        }
+        return null;
     }
 
 }

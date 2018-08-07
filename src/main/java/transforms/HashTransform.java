@@ -21,8 +21,6 @@
 
 package transforms;
 
-import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -32,26 +30,29 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @JsonIgnoreProperties(value = {TRANSFORM})
-        public class HashTransform extends Transformation<Map<String, String>> {
+public class HashTransform extends Transformation<Map<String, String>> {
     private final List<String> columns;
-    private final String       hashFunction;
+    private final String hashFunction;
     private final HashFunction hf;
 
     @JsonCreator
     public HashTransform(
-            @JsonProperty( Constants.COLUMNS ) List<String> columns,
-            @JsonProperty( Constants.HASH_FUNCTION ) String hashFunction ) {
+            @JsonProperty(Constants.COLUMNS) List<String> columns,
+            @JsonProperty(Constants.HASH_FUNCTION) String hashFunction) {
         this.columns = columns;
         this.hashFunction = hashFunction;
-        switch ( hashFunction ) {
+        switch (hashFunction) {
             default:
             case "":
             case "murmur128":
@@ -63,33 +64,40 @@ import java.util.Objects;
         }
     }
 
-    @JsonProperty( Constants.HASH_FUNCTION )
+    @JsonProperty(Constants.HASH_FUNCTION)
     public String getHashFunction() {
         return hashFunction;
     }
 
-    @JsonProperty( Constants.COLUMNS )
+    @JsonProperty(Constants.COLUMNS)
     public List<String> getColumns() {
         return columns;
     }
 
-    @Override public Object apply( Map<String, String> row ) {
+    @Override
+    public Object apply(Map<String, String> row) {
         Hasher hasher = hf.newHasher();
-        columns.stream().map( row::get ).forEach( s -> hasher.putString( s, Charsets.UTF_8 ) );
+        columns.stream().map(row::get).forEach(s -> hasher.putString(s, Charsets.UTF_8));
         return hasher.hash().toString();
     }
 
-    @Override public boolean equals( Object o ) {
-        if ( this == o ) { return true; }
-        if ( !( o instanceof HashTransform ) ) { return false; }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof HashTransform)) {
+            return false;
+        }
         HashTransform that = (HashTransform) o;
-        return Objects.equals( columns, that.columns ) &&
-                Objects.equals( hashFunction, that.hashFunction ) &&
-                Objects.equals( hf, that.hf );
+        return Objects.equals(columns, that.columns) &&
+                Objects.equals(hashFunction, that.hashFunction) &&
+                Objects.equals(hf, that.hf);
     }
 
-    @Override public int hashCode() {
+    @Override
+    public int hashCode() {
 
-        return Objects.hash( columns, hashFunction, hf );
+        return Objects.hash(columns, hashFunction, hf);
     }
 }
