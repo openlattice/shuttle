@@ -236,7 +236,7 @@ public class Shuttle implements Serializable {
                     Set<Association> associations = Sets.newHashSet();
                     Map<String, Boolean> wasCreated = new HashMap<>();
 
-                    if (flight.condition.isPresent()){
+                    if (!(flight.condition == null)){
                         Object out = flight.valueMapper.apply(row);
                         if (!((Boolean) out).booleanValue()){
                             return new BulkDataCreation( entities, associations );
@@ -245,7 +245,7 @@ public class Shuttle implements Serializable {
 
                     for ( EntityDefinition entityDefinition : flight.getEntities() ) {
 
-                        if (entityDefinition.condition.isPresent()){
+                        if (!(entityDefinition.condition == null)){
                             Object out = entityDefinition.valueMapper.apply(row);
                             if (!((Boolean) out).booleanValue()){
                                 continue;
@@ -257,7 +257,7 @@ public class Shuttle implements Serializable {
 
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
-                            if ( propertyValue != null ) {
+                            if ( propertyValue != null & propertyValue!= "" ) {
                                 UUID propertyId = propertyIdsCache
                                         .getUnchecked( propertyDefinition.getFullQualifiedName() );
                                 if ( propertyValue instanceof Iterable ) {
@@ -296,7 +296,7 @@ public class Shuttle implements Serializable {
 
                     for ( AssociationDefinition associationDefinition : flight.getAssociations() ) {
 
-                        if (associationDefinition.condition.isPresent()){
+                        if (!(associationDefinition.condition == null)){
                             Object out = associationDefinition.valueMapper.apply(row);
                             if (!((Boolean) out).booleanValue()){
                                 continue;
