@@ -42,24 +42,24 @@ import org.apache.commons.lang3.StringUtils;
 
 public class GetWeekdayTransform extends Transformation<String> {
     /**
-     * Represents a transformation to get weekday from a date.
+     * Represents a transformation to get weekday from a date field (! should be checked for datetime).
      */
     @JsonCreator
     public GetWeekdayTransform() {
     }
 
     @Override
-    public Object apply( String o ) {
+    public Object apply(String o) {
         List<String> days = Arrays
-                .asList( "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY" );
-        String dateStr = getAsString( o );
-        if ( dateStr != null ) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
+                .asList("SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY");
+        String dateStr = getAsString(o);
+        if (dateStr != null) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
             Date date;
             try {
-                date = dateFormat.parse( dateStr );
-                return days.get( date.getDay() );
-            } catch ( Exception e ) {
+                date = dateFormat.parse(dateStr);
+                return days.get(date.getDay());
+            } catch (Exception e) {
                 e.printStackTrace();
             }
             return dateStr;

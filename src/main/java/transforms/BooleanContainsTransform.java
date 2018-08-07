@@ -15,78 +15,79 @@ import java.util.Map;
 import java.util.Optional;
 
 public class BooleanContainsTransform extends Transformation<Map<String, String>> {
-    private final String                                       column;
-    private final String                                       pattern;
+    private final String column;
+    private final String pattern;
     private final SerializableFunction<Map<String, String>, ?> truevalueMapper;
     private final SerializableFunction<Map<String, String>, ?> falsevalueMapper;
-    private final Optional<Transformations>                    transformsiftrue;
-    private final Optional<Transformations>                    transformsiffalse;
+    private final Optional<Transformations> transformsiftrue;
+    private final Optional<Transformations> transformsiffalse;
 
     /**
-     * Represents a transformation to select columns based on non-empty cells.
-     * Function goes over columns until a non-zero input is found.
+     * Represents a selection of transformations based on whether a column
+     * contains a specific value or not.  If either transformsiftrue or transformsiffalse are empty,
+     * the value of the tested column will be passed on.
      *
      * @param column:            column to test for pattern
      * @param pattern:           pattern to test column against
-     * @param transformsiftrue:  declare transformations to do on column value if exists
-     * @param transformsiffalse: declare transformations to do if does not exist (note ! define columntransform to choose column !)
+     * @param transformsiftrue:  transformations to do on column value if exists
+     * @param transformsiffalse: transformations to do if does not exist (note ! define columntransform to choose column !)
      */
     @JsonCreator
     public BooleanContainsTransform(
-            @JsonProperty( Constants.COLUMN ) String column,
-            @JsonProperty( Constants.PATTERN ) String pattern,
-            @JsonProperty( Constants.TRANSFORMSIFTRUE ) Optional<Transformations> transformsiftrue,
-            @JsonProperty( Constants.TRANSFORMSIFFALSE ) Optional<Transformations> transformsiffalse ) {
+            @JsonProperty(Constants.COLUMN) String column,
+            @JsonProperty(Constants.PATTERN) String pattern,
+            @JsonProperty(Constants.TRANSFORMSIFTRUE) Optional<Transformations> transformsiftrue,
+            @JsonProperty(Constants.TRANSFORMSIFFALSE) Optional<Transformations> transformsiffalse) {
         this.column = column;
         this.pattern = pattern;
         this.transformsiftrue = transformsiftrue;
         this.transformsiffalse = transformsiffalse;
 
         // true valuemapper
-        if ( transformsiftrue.isPresent() ) {
+        if (transformsiftrue.isPresent()) {
             final List<Transformation> internalTrueTransforms;
-            internalTrueTransforms = new ArrayList<>( this.transformsiftrue.get().size() + 1 );
-            transformsiftrue.get().forEach( internalTrueTransforms::add );
-            this.truevalueMapper = new TransformValueMapper( internalTrueTransforms );
+            internalTrueTransforms = new ArrayList<>(this.transformsiftrue.get().size() + 1);
+            transformsiftrue.get().forEach(internalTrueTransforms::add);
+            this.truevalueMapper = new TransformValueMapper(internalTrueTransforms);
         } else {
-            this.truevalueMapper = row -> row.get( column );
+            this.truevalueMapper = row -> row.get(column);
         }
 
         // false valuemapper
-        if ( transformsiffalse.isPresent() ) {
+        if (transformsiffalse.isPresent()) {
             final List<Transformation> internalFalseTransforms;
-            internalFalseTransforms = new ArrayList<>( this.transformsiffalse.get().size() + 1 );
-            transformsiffalse.get().forEach( internalFalseTransforms::add );
-            this.falsevalueMapper = new TransformValueMapper( internalFalseTransforms );
+            internalFalseTransforms = new ArrayList<>(this.transformsiffalse.get().size() + 1);
+            transformsiffalse.get().forEach(internalFalseTransforms::add);
+            this.falsevalueMapper = new TransformValueMapper(internalFalseTransforms);
         } else {
-            this.falsevalueMapper = row -> row.get( column );
+            this.falsevalueMapper = row -> row.get(column);
         }
     }
 
-    @JsonProperty( Constants.TRANSFORMSIFTRUE )
+    @JsonProperty(Constants.TRANSFORMSIFTRUE)
     public Optional<Transformations> getTransformsIfTrue() {
         return transformsiftrue;
     }
 
-    @JsonProperty( Constants.TRANSFORMSIFFALSE )
+    @JsonProperty(Constants.TRANSFORMSIFFALSE)
     public Optional<Transformations> getTransformsIfFalse() {
         return transformsiffalse;
     }
 
-    @JsonProperty( Constants.COLUMN )
+    @JsonProperty(Constants.COLUMN)
     public String getColumn() {
         return column;
     }
 
     @Override
-    public Object apply( Map<String, String> row ) {
-        String o = row.get( column );
-        if ( StringUtils.isNotBlank( o ) ) {
-            if ( o.contains( pattern ) ) {
-                return this.truevalueMapper.apply( row );
+    public Object apply(Map<String, String> row) {
+        String o = row.get(column);
+        if (StringUtils.isNotBlank(o)) {
+            if (o.contains(pattern)) {
+                return this.truevalueMapper.apply(row);
             }
         }
-        return this.falsevalueMapper.apply( row );
+        return this.falsevalueMapper.apply(row);
     }
 }
 

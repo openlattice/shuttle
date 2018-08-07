@@ -19,19 +19,19 @@ public class ReplaceRegexTransform extends Transformation<String> {
      */
     @JsonCreator
     public ReplaceRegexTransform(
-            @JsonProperty( Constants.TARGET ) String target,
-            @JsonProperty( Constants.GOAL ) String goal
+            @JsonProperty(Constants.TARGET) String target,
+            @JsonProperty(Constants.GOAL) String goal
     ) {
         this.target = target;
         this.goal = goal;
     }
 
     @Override
-    public Object apply( String o ) {
-        if ( StringUtils.isBlank( o ) ) {
+    public Object apply(String o) {
+        if (StringUtils.isBlank(o)) {
             return null;
         }
-        return o.replaceAll( target, "" );
+        return o.replaceAll(target, "");
     }
 
 }

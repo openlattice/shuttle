@@ -32,7 +32,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Objects;
 
-@JsonIgnoreProperties( value = { TRANSFORM } )
+@JsonIgnoreProperties(value = {TRANSFORM})
 public class PrefixTransform extends Transformation<String> {
 
     private final String prefix;
@@ -44,39 +44,39 @@ public class PrefixTransform extends Transformation<String> {
      */
     @JsonCreator
     public PrefixTransform(
-            @JsonProperty( Constants.PREFIX ) String prefix ) {
+            @JsonProperty(Constants.PREFIX) String prefix) {
         this.prefix = prefix;
     }
 
-    @JsonProperty( value = Constants.PREFIX, required = false )
+    @JsonProperty(value = Constants.PREFIX, required = false)
     public String getPrefix() {
         return prefix;
     }
 
     @Override
-    public Object apply( String o ) {
-        if ( StringUtils.isBlank( o ) ) {
+    public Object apply(String o) {
+        if (StringUtils.isBlank(o)) {
             return "";
         }
         return prefix + o;
     }
 
     @Override
-    public boolean equals( Object o ) {
-        if ( this == o ) {
+    public boolean equals(Object o) {
+        if (this == o) {
             return true;
         }
-        if ( !( o instanceof PrefixTransform ) ) {
+        if (!(o instanceof PrefixTransform)) {
             return false;
         }
         PrefixTransform that = (PrefixTransform) o;
-        return Objects.equals( prefix, that.prefix );
+        return Objects.equals(prefix, that.prefix);
     }
 
     @Override
     public int hashCode() {
 
-        return Objects.hash( prefix );
+        return Objects.hash(prefix);
     }
 
     @Override

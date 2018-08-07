@@ -33,7 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Objects;
 
-@JsonIgnoreProperties( value = { TRANSFORM } )
+@JsonIgnoreProperties(value = {TRANSFORM})
 public class RemoveDigitsTransform extends Transformation<String> {
 
     /**
@@ -43,11 +43,11 @@ public class RemoveDigitsTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply( String o ) {
-        if ( StringUtils.isBlank( o ) ) {
+    public Object apply(String o) {
+        if (StringUtils.isBlank(o)) {
             return "";
         }
-        return o.replaceAll( "[\\d]+", "" );
+        return o.replaceAll("[\\d]+", "");
     }
 
 }

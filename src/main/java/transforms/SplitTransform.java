@@ -41,6 +41,7 @@ public class SplitTransform extends Transformation<String> {
     private final String separator;
     private final String valueelse;
     private final String index;
+    private final Integer ifmorethan;
 
     /**
      * Represents a transformation to split a string
@@ -50,36 +51,44 @@ public class SplitTransform extends Transformation<String> {
      */
     @JsonCreator
     public SplitTransform(
-            @JsonProperty( Constants.SEP ) String separator,
-            @JsonProperty( Constants.INDEX ) String index,
-            @JsonProperty( Constants.ELSE ) String valueelse
+            @JsonProperty(Constants.SEP) String separator,
+            @JsonProperty(Constants.INDEX) String index,
+            @JsonProperty(Constants.ELSE) String valueelse,
+            @JsonProperty(Constants.IFMORETHAN) Integer ifmorethan
     ) {
         this.separator = separator;
         this.index = index;
+        this.ifmorethan = ifmorethan;
         this.valueelse = valueelse == null ? "" : valueelse;
     }
 
     @Override
-    public Object apply( String o ) {
-        if ( StringUtils.isBlank( o ) ) {
+    public Object apply(String o) {
+        if (StringUtils.isBlank(o)) {
             return null;
         }
-        String[] strNames = o.trim().split( separator );
+        String[] strNames = o.trim().split(separator);
 
         int idx = 0;
-        if (index == "last"){
-            idx = strNames.length;
+        if (index.equals("last")) {
+            idx = strNames.length - 1;
         } else {
             idx = parseInt(index);
         }
 
-        if ( strNames.length > idx ) {
-            return strNames[ idx ].trim();
+        if (!(ifmorethan == null)) {
+            if (!(ifmorethan < strNames.length)) {
+                return null;
+            }
         }
-        if ( !StringUtils.isBlank( valueelse ) ) {
+
+        if (strNames.length > idx) {
+            return strNames[idx].trim();
+        }
+        if (!StringUtils.isBlank(valueelse)) {
             return valueelse;
         }
-        return o;
+        return null;
     }
 
 }

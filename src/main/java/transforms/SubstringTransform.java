@@ -10,23 +10,23 @@ public class SubstringTransform extends Transformation<String> {
     private final int index;
 
     /**
-     * Represents a transformation to get a substring *if* there is a certain prefix.
+     * Represents a transformation to get a substring starting from a certain index (eg 3th character: index = 2).
      *
      * @param index: where to start subsetting if prefix is found
      */
     @JsonCreator
     public SubstringTransform(
-            @JsonProperty( Constants.INDEX ) int index ) {
+            @JsonProperty(Constants.INDEX) int index) {
         this.index = index;
     }
 
-    @JsonProperty( Constants.LOC )
+    @JsonProperty(Constants.LOC)
     public int getSubstringLocation() {
         return index;
     }
 
     @Override
-    public Object apply( String o ) {
-        return o.substring( index );
+    public Object apply(String o) {
+        return o.substring(index);
     }
 }
