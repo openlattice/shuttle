@@ -13,11 +13,28 @@ public class ConditionValueMapper implements SerializableFunction<Map<String, St
     }
 
     @Override public Object apply( Map<String, String> input ) {
-        Object out = false;
+        Boolean out=null;
+        String schedule = "and";
+
         for ( Condition t : conditions ) {
-            Object temp = t.apply( input );
-            if (((Boolean) out).booleanValue()){
-                out = true;
+
+            // get conditional logic (and or or)
+            if (t.toString().startsWith("conditions.ConditionalAnd")) {
+                schedule = "and";
+            } else if (t.toString().startsWith("conditions.ConditionalOr")) {
+                schedule = "or";
+            } else {
+                Boolean temp = ((Boolean) t.apply(input)).booleanValue();
+                if (schedule == "and") {
+                    if (out==null){out = temp;}
+                    else if (out){out = temp;}
+                    else if (!out){}
+                    }
+                else if (schedule == "or") {
+                    if (out == null ){out = temp;}
+                    else if (out){}
+                    else if (!out){out = temp;}
+                }
             }
         }
         return out;
