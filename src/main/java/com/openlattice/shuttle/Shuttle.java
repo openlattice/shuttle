@@ -236,7 +236,7 @@ public class Shuttle implements Serializable {
                     Set<Association> associations = Sets.newHashSet();
                     Map<String, Boolean> wasCreated = new HashMap<>();
 
-                    if (!(flight.condition == null)){
+                    if (flight.condition.isPresent()){
                         Object out = flight.valueMapper.apply(row);
                         if (!((Boolean) out).booleanValue()){
                             return new BulkDataCreation( entities, associations );
@@ -245,7 +245,7 @@ public class Shuttle implements Serializable {
 
                     for ( EntityDefinition entityDefinition : flight.getEntities() ) {
 
-                        if (!(entityDefinition.condition == null)){
+                        if (entityDefinition.condition.isPresent()){
                             Object out = entityDefinition.valueMapper.apply(row);
                             if (!((Boolean) out).booleanValue()){
                                 continue;
@@ -296,7 +296,7 @@ public class Shuttle implements Serializable {
 
                     for ( AssociationDefinition associationDefinition : flight.getAssociations() ) {
 
-                        if (!(associationDefinition.condition == null)){
+                        if (associationDefinition.condition.isPresent()){
                             Object out = associationDefinition.valueMapper.apply(row);
                             if (!((Boolean) out).booleanValue()){
                                 continue;
