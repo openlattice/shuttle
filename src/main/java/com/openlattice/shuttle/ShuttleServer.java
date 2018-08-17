@@ -23,13 +23,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.client.RetrofitFactory;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
+import com.openlattice.shuttle.config.IntegrationConfig;
+import com.openlattice.shuttle.payload.JdbcPayload;
 import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.payload.SimplePayload;
+import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.dataloom.mappers.ObjectMappers;
-
 import java.io.File;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -38,19 +41,18 @@ public class ShuttleServer {
     private static final Logger                      logger      = LoggerFactory.getLogger( ShuttleServer.class );
     private static final RetrofitFactory.Environment environment = RetrofitFactory.Environment.LOCAL;
 
-    public static void main( String[] args )  throws InterruptedException, JsonProcessingException {
-        if (args.length < 3)
+    public static void main( String[] args ) throws InterruptedException, IOException {
+
+        if (args.length < 1)
         {
             System.out.println( "Hello, Shuttle!" );
 
         } else {
 
-            final String arpath = args[0];
-            final String jwtToken = args[1];
-            final String yamlfile = args[2];
+            // get flight
+            System.out.println(args.toString());
 
-            SimplePayload arPayload = new SimplePayload( arpath );
-
+            final String yamlfile = args[0];
             ObjectMapper yaml = ObjectMappers.getYamlMapper();
             FullQualifiedNameJacksonSerializer.registerWithMapper( yaml );
 
@@ -60,12 +62,48 @@ public class ShuttleServer {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-
             Map<Flight, Payload> flights = new LinkedHashMap<>( 2 );
             logger.info("This is the JSON for the flight. {}", yaml.writeValueAsString(arFlight));
-            flights.put( arFlight, arPayload );
+
+            // get jwt
+
+            final String jwtToken;
+
+            if (args.length == 4 | args.length == 6){
+                jwtToken = MissionControl.getIdToken( args[1], args[2] );
+            } else {
+                jwtToken = args[1];
+            }
+            logger.info("JWT for this flight. {}", jwtToken);
+
             Shuttle shuttle = new Shuttle( environment, jwtToken );
-            shuttle.launchPayloadFlight( flights );
+
+            // get data
+
+            final String dataPath;
+            Integer offset = args.length-1; // offset for next args
+
+            if (args.length == 3 | args.length == 4) {
+
+                // get datapath (offset for username/pw vs jwt
+                dataPath = args[offset];
+
+                // get payload
+                Payload Payload = new SimplePayload( args[offset] );
+                logger.info("datafile: "+args[offset]);
+                flights.put( arFlight, Payload );
+                shuttle.launchPayloadFlight( flights );
+
+            } else {
+
+                HikariDataSource hds = ObjectMappers.getYamlMapper()
+                        .readValue(new File(args[offset+1]), IntegrationConfig.class)
+                        .getHikariDatasource(args[offset]);
+                Payload arPayload = new JdbcPayload(hds, args[offset+2]);
+                flights.put( arFlight, arPayload );
+                shuttle.launchPayloadFlight( flights );
+
+            }
         }
     }
 }
