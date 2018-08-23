@@ -21,20 +21,13 @@
 
 package transforms;
 
-import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 import static java.lang.Integer.parseInt;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
-
-import java.util.List;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class SplitTransform extends Transformation<String> {
 
@@ -54,7 +47,7 @@ public class SplitTransform extends Transformation<String> {
             @JsonProperty(Constants.SEP) String separator,
             @JsonProperty(Constants.INDEX) String index,
             @JsonProperty(Constants.ELSE) String valueelse,
-            @JsonProperty(Constants.IFMORETHAN) Integer ifmorethan
+            @JsonProperty(Constants.IF_MORE_THAN) Integer ifmorethan
     ) {
         this.separator = separator;
         this.index = index;

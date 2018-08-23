@@ -26,7 +26,7 @@ public class ReplaceTransform extends Transformation<String> {
     @JsonCreator
     public ReplaceTransform(
             @JsonProperty(Constants.TARGET) List<String> target,
-            @JsonProperty(Constants.IGNORECASE) Optional<Boolean> ignorecase,
+            @JsonProperty(Constants.IGNORE_CASE) Optional<Boolean> ignorecase,
             @JsonProperty(Constants.GOAL) List<String> goal
     ) {
         this.ignorecase = ignorecase == null ? false : true;

@@ -33,10 +33,10 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
      */
     @JsonCreator
     public CombineDateTimeTransform(
-            @JsonProperty(Constants.DATECOLUMN) String datecolumn,
-            @JsonProperty(Constants.DATEPATTERN) String[] datepattern,
-            @JsonProperty(Constants.TIMECOLUMN) String timecolumn,
-            @JsonProperty(Constants.TIMEPATTERN) String[] timepattern
+            @JsonProperty(Constants.DATE_COLUMN) String datecolumn,
+            @JsonProperty(Constants.DATE_PATTERN) String[] datepattern,
+            @JsonProperty(Constants.TIME_COLUMN) String timecolumn,
+            @JsonProperty(Constants.TIME_PATTERN) String[] timepattern
             ) {
         this.datecolumn = datecolumn;
         this.datepattern = datepattern;

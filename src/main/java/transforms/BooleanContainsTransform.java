@@ -36,8 +36,8 @@ public class BooleanContainsTransform extends Transformation<Map<String, String>
     public BooleanContainsTransform(
             @JsonProperty(Constants.COLUMN) String column,
             @JsonProperty(Constants.PATTERN) String pattern,
-            @JsonProperty(Constants.TRANSFORMSIFTRUE) Optional<Transformations> transformsiftrue,
-            @JsonProperty(Constants.TRANSFORMSIFFALSE) Optional<Transformations> transformsiffalse) {
+            @JsonProperty(Constants.TRANSFORMS_IF_TRUE) Optional<Transformations> transformsiftrue,
+            @JsonProperty(Constants.TRANSFORMS_IF_FALSE) Optional<Transformations> transformsiffalse) {
         this.column = column;
         this.pattern = pattern;
         this.transformsiftrue = transformsiftrue;
@@ -64,12 +64,12 @@ public class BooleanContainsTransform extends Transformation<Map<String, String>
         }
     }
 
-    @JsonProperty(Constants.TRANSFORMSIFTRUE)
+    @JsonProperty(Constants.TRANSFORMS_IF_TRUE)
     public Optional<Transformations> getTransformsIfTrue() {
         return transformsiftrue;
     }
 
-    @JsonProperty(Constants.TRANSFORMSIFFALSE)
+    @JsonProperty(Constants.TRANSFORMS_IF_FALSE)
     public Optional<Transformations> getTransformsIfFalse() {
         return transformsiffalse;
     }

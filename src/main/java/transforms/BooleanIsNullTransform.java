@@ -1,9 +1,7 @@
 package transforms;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Preconditions;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.Transformation;
@@ -34,8 +32,8 @@ public class BooleanIsNullTransform extends Transformation<Map<String, String>> 
     @JsonCreator
     public BooleanIsNullTransform(
             @JsonProperty(Constants.COLUMN) String column,
-            @JsonProperty(Constants.TRANSFORMSIFTRUE) Optional<Transformations> transformsiftrue,
-            @JsonProperty(Constants.TRANSFORMSIFFALSE) Optional<Transformations> transformsiffalse) {
+            @JsonProperty(Constants.TRANSFORMS_IF_TRUE) Optional<Transformations> transformsiftrue,
+            @JsonProperty(Constants.TRANSFORMS_IF_FALSE) Optional<Transformations> transformsiffalse) {
         this.column = column;
         this.transformsiftrue = transformsiftrue;
         this.transformsiffalse = transformsiffalse;
@@ -61,12 +59,12 @@ public class BooleanIsNullTransform extends Transformation<Map<String, String>> 
         }
     }
 
-    @JsonProperty(Constants.TRANSFORMSIFTRUE)
+    @JsonProperty(Constants.TRANSFORMS_IF_TRUE)
     public Optional<Transformations> getTransformsIfTrue() {
         return transformsiftrue;
     }
 
-    @JsonProperty(Constants.TRANSFORMSIFFALSE)
+    @JsonProperty(Constants.TRANSFORMS_IF_FALSE)
     public Optional<Transformations> getTransformsIfFalse() {
         return transformsiffalse;
     }
