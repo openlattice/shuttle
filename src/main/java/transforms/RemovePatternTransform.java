@@ -75,7 +75,7 @@ public class RemovePatternTransform extends Transformation<String> {
                 return null;
             }
             if (rx.matcher(o).matches()) {
-                return "";
+                return null;
             }
         }
         return o;

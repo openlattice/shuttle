@@ -28,10 +28,11 @@ public class ReplaceRegexTransform extends Transformation<String> {
 
     @Override
     public Object apply(String o) {
+        String outstring = o.replaceAll(target, "");
         if (StringUtils.isBlank(o)) {
             return null;
         }
-        return o.replaceAll(target, "");
+        return outstring;
     }
 
 }

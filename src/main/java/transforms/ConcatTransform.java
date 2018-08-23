@@ -53,7 +53,13 @@ public class ConcatTransform extends Transformation<Map<String, String>> {
                 sep = separator;
             }
         }
-        return sb.toString();
+        String outstring = sb.toString();
+        if ( StringUtils.isBlank(outstring) ) {
+            return outstring;
+        }
+        else {
+            return null;
+        }
     }
 
 }

@@ -19,45 +19,45 @@ public class BooleanContainsTransform extends Transformation<Map<String, String>
     private final String pattern;
     private final SerializableFunction<Map<String, String>, ?> truevalueMapper;
     private final SerializableFunction<Map<String, String>, ?> falsevalueMapper;
-    private final Optional<Transformations> transformsiftrue;
-    private final Optional<Transformations> transformsiffalse;
+    private final Optional<Transformations> transformsIfTrue;
+    private final Optional<Transformations> transformsIfFalse;
 
     /**
      * Represents a selection of transformations based on whether a column
-     * contains a specific value or not.  If either transformsiftrue or transformsiffalse are empty,
+     * contains a specific value or not.  If either transformsIfTrue or transformsIfFalse are empty,
      * the value of the tested column will be passed on.
      *
      * @param column:            column to test for pattern
      * @param pattern:           pattern to test column against
-     * @param transformsiftrue:  transformations to do on column value if exists
-     * @param transformsiffalse: transformations to do if does not exist (note ! define columntransform to choose column !)
+     * @param transformsIfTrue:  transformations to do on column value if exists
+     * @param transformsIfFalse: transformations to do if does not exist (note ! define columntransform to choose column !)
      */
     @JsonCreator
     public BooleanContainsTransform(
             @JsonProperty(Constants.COLUMN) String column,
             @JsonProperty(Constants.PATTERN) String pattern,
-            @JsonProperty(Constants.TRANSFORMS_IF_TRUE) Optional<Transformations> transformsiftrue,
-            @JsonProperty(Constants.TRANSFORMS_IF_FALSE) Optional<Transformations> transformsiffalse) {
+            @JsonProperty(Constants.TRANSFORMS_IF_TRUE) Optional<Transformations> transformsIfTrue,
+            @JsonProperty(Constants.TRANSFORMS_IF_FALSE) Optional<Transformations> transformsIfFalse) {
         this.column = column;
         this.pattern = pattern;
-        this.transformsiftrue = transformsiftrue;
-        this.transformsiffalse = transformsiffalse;
+        this.transformsIfTrue = transformsIfTrue;
+        this.transformsIfFalse = transformsIfFalse;
 
         // true valuemapper
-        if (transformsiftrue.isPresent()) {
+        if (transformsIfTrue.isPresent()) {
             final List<Transformation> internalTrueTransforms;
-            internalTrueTransforms = new ArrayList<>(this.transformsiftrue.get().size() + 1);
-            transformsiftrue.get().forEach(internalTrueTransforms::add);
+            internalTrueTransforms = new ArrayList<>(this.transformsIfTrue.get().size() + 1);
+            transformsIfTrue.get().forEach(internalTrueTransforms::add);
             this.truevalueMapper = new TransformValueMapper(internalTrueTransforms);
         } else {
             this.truevalueMapper = row -> row.get(column);
         }
 
         // false valuemapper
-        if (transformsiffalse.isPresent()) {
+        if (transformsIfFalse.isPresent()) {
             final List<Transformation> internalFalseTransforms;
-            internalFalseTransforms = new ArrayList<>(this.transformsiffalse.get().size() + 1);
-            transformsiffalse.get().forEach(internalFalseTransforms::add);
+            internalFalseTransforms = new ArrayList<>(this.transformsIfFalse.get().size() + 1);
+            transformsIfFalse.get().forEach(internalFalseTransforms::add);
             this.falsevalueMapper = new TransformValueMapper(internalFalseTransforms);
         } else {
             this.falsevalueMapper = row -> row.get(column);
@@ -66,12 +66,12 @@ public class BooleanContainsTransform extends Transformation<Map<String, String>
 
     @JsonProperty(Constants.TRANSFORMS_IF_TRUE)
     public Optional<Transformations> getTransformsIfTrue() {
-        return transformsiftrue;
+        return transformsIfTrue;
     }
 
     @JsonProperty(Constants.TRANSFORMS_IF_FALSE)
     public Optional<Transformations> getTransformsIfFalse() {
-        return transformsiffalse;
+        return transformsIfFalse;
     }
 
     @JsonProperty(Constants.COLUMN)

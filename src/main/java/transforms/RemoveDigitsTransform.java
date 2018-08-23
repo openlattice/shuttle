@@ -44,10 +44,12 @@ public class RemoveDigitsTransform extends Transformation<String> {
 
     @Override
     public Object apply(String o) {
-        if (StringUtils.isBlank(o)) {
-            return "";
+        String outstring = o.replaceAll("[\\d]+", "");
+        if (StringUtils.isBlank(outstring)) {
+            return null;
+        } else {
+            return outstring;
         }
-        return o.replaceAll("[\\d]+", "");
     }
 
 }
