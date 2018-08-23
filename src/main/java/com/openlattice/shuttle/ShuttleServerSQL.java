@@ -54,14 +54,14 @@ public class ShuttleServerSQL {
             ObjectMapper yaml = ObjectMappers.getYamlMapper();
             FullQualifiedNameJacksonSerializer.registerWithMapper( yaml );
 
-            Flight arFlight = null;
+            Flight flight = null;
             try {
-                arFlight = yaml.readValue( new File( yamlfile ), Flight.class );
+                flight = yaml.readValue( new File( yamlfile ), Flight.class );
             } catch (Exception e) {
                 e.printStackTrace();
             }
             Map<Flight, Payload> flights = new LinkedHashMap<>( 2 );
-            logger.info("This is the JSON for the flight. {}", yaml.writeValueAsString(arFlight));
+            logger.info("This is the JSON for the flight. {}", yaml.writeValueAsString(flight));
 
             // get jwt
 
@@ -85,7 +85,7 @@ public class ShuttleServerSQL {
                     .readValue(new File(args[offset]), IntegrationConfig.class)
                     .getHikariDatasource(args[offset+1]);
             Payload arPayload = new JdbcPayload(hds, args[offset+2]);
-            flights.put( arFlight, arPayload );
+            flights.put( flight, arPayload );
             shuttle.launchPayloadFlight( flights );
 
 
