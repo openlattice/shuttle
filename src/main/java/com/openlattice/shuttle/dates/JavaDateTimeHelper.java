@@ -65,7 +65,7 @@ public class JavaDateTimeHelper {
             DateTimeFormatter formatter = formatters.get( i );
             try {
                 LocalDateTime ldt = LocalDateTime.parse( date, formatter );
-
+//                if (ldt.isBefore(LocalDateTime.of(1900, 1, 1, 0, 0, 0))){return null;}
                 return ldt.atZone( tz.toZoneId() ).toOffsetDateTime();
             } catch ( Exception e ) {
                 if ( i == datePatterns.length - 1 ) {
