@@ -257,7 +257,7 @@ public class Shuttle implements Serializable {
 
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
-                            if ( propertyValue != null & propertyValue!= "" ) {
+                            if ( propertyValue != null ) {
                                 UUID propertyId = propertyIdsCache
                                         .getUnchecked( propertyDefinition.getFullQualifiedName() );
                                 if ( propertyValue instanceof Iterable ) {
