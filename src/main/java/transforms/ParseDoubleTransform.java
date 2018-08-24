@@ -2,6 +2,7 @@ package transforms;
 
 import com.openlattice.shuttle.Shuttle;
 import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.util.Parsers;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,14 +20,7 @@ public class ParseDoubleTransform extends Transformation<String> {
 
     @Override
     public Object apply(String o) {
-        if (StringUtils.isNotBlank(o)) {
-            try {
-                return Double.parseDouble(o);
-            } catch (NumberFormatException e) {
-                logger.error("Unable to parse double from value {}", o);
-            }
-        }
-        return null;
-    }
+        return Parsers.parseDouble(o);
+     }
 
 }

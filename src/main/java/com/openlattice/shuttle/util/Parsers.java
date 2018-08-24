@@ -7,6 +7,8 @@ import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.UUID;
 
 public class Parsers {
@@ -26,13 +28,21 @@ public class Parsers {
         String intStr = getAsString( obj );
         if ( StringUtils.isNotBlank( intStr ) ) {
             try {
-                return Integer.parseInt( intStr );
-            } catch ( NumberFormatException e ) {
-                logger.error( "Unable to parse int from value {}", intStr );
+                return Integer.parseInt(intStr);
+            } catch (NumberFormatException e) {
+                try {
+                    Double d = Double.parseDouble(intStr);
+                    BigInteger k = BigDecimal.valueOf(d).toBigInteger();
+                    return k.intValue();
+                } catch (NumberFormatException f) {
+                    logger.error("Unable to parse int from value {}", intStr);
+                }
             }
         }
         return null;
     }
+
+
 
     public static Short parseShort( Object obj ) {
         String shortStr = getAsString( obj );
