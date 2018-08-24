@@ -27,6 +27,15 @@ public class SubstringTransform extends Transformation<String> {
 
     @Override
     public Object apply(String o) {
-        return o.substring(index);
+        final String output;
+        if (StringUtils.isBlank(o)) {
+            return null;
+        } else {
+            output = o.substring(index);
+        }
+        if (!StringUtils.isBlank(output)) {
+            return null;
+        }
+        return output;
     }
 }
