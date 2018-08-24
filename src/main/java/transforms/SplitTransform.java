@@ -32,9 +32,9 @@ import org.apache.commons.lang3.StringUtils;
 public class SplitTransform extends Transformation<String> {
 
     private final String separator;
-    private final String valueelse;
+    private final String valueElse;
     private final String index;
-    private final Integer ifmorethan;
+    private final Integer ifMoreThan;
 
     /**
      * Represents a transformation to split a string
@@ -46,13 +46,13 @@ public class SplitTransform extends Transformation<String> {
     public SplitTransform(
             @JsonProperty(Constants.SEP) String separator,
             @JsonProperty(Constants.INDEX) String index,
-            @JsonProperty(Constants.ELSE) String valueelse,
-            @JsonProperty(Constants.IF_MORE_THAN) Integer ifmorethan
+            @JsonProperty(Constants.ELSE) String valueElse,
+            @JsonProperty(Constants.IF_MORE_THAN) Integer ifMoreThan
     ) {
         this.separator = separator;
         this.index = index;
-        this.ifmorethan = ifmorethan;
-        this.valueelse = valueelse == null ? "" : valueelse;
+        this.ifMoreThan = ifMoreThan;
+        this.valueElse = valueElse == null ? "" : valueElse;
     }
 
     @Override
@@ -69,8 +69,8 @@ public class SplitTransform extends Transformation<String> {
             idx = parseInt(index);
         }
 
-        if (!(ifmorethan == null)) {
-            if (!(ifmorethan < strNames.length)) {
+        if (!(ifMoreThan == null)) {
+            if (!(ifMoreThan < strNames.length)) {
                 return null;
             }
         }
@@ -78,8 +78,8 @@ public class SplitTransform extends Transformation<String> {
         if (strNames.length > idx) {
             return strNames[idx].trim();
         }
-        if (!StringUtils.isBlank(valueelse)) {
-            return valueelse;
+        if (!StringUtils.isBlank(valueElse)) {
+            return valueElse;
         }
         return null;
     }

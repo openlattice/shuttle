@@ -13,26 +13,26 @@ import java.util.stream.Collectors;
 public class ReplaceTransform extends Transformation<String> {
 
     private final List<String> target;
-    private final Boolean ignorecase;
+    private final Boolean ignoreCase;
     private final List<String> goal;
 
     /**
      * Represents a transformation to replace a string by a string.
      *
      * @param target:     list of string to replace
-     * @param ignorecase: if case should be ignored
+     * @param ignoreCase: if case should be ignored
      * @param goal:       list of string to replace target by
      */
     @JsonCreator
     public ReplaceTransform(
             @JsonProperty(Constants.TARGET) List<String> target,
-            @JsonProperty(Constants.IGNORE_CASE) Optional<Boolean> ignorecase,
+            @JsonProperty(Constants.IGNORE_CASE) Optional<Boolean> ignoreCase,
             @JsonProperty(Constants.GOAL) List<String> goal
     ) {
-        this.ignorecase = ignorecase == null ? false : true;
+        this.ignoreCase = ignoreCase == null ? false : true;
         this.goal = goal;
 
-        if (this.ignorecase) {
+        if (this.ignoreCase) {
             this.target = target.stream().map(value -> value.toLowerCase()).collect(Collectors.toList());
         } else {
             this.target = target;
@@ -46,7 +46,7 @@ public class ReplaceTransform extends Transformation<String> {
             return null;
         }
         int ind = -1;
-        if (ignorecase) {
+        if (ignoreCase) {
             ind = target.indexOf(o.toLowerCase());
         } else {
             ind = target.indexOf(o);

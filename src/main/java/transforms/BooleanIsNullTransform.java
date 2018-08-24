@@ -16,8 +16,8 @@ import java.util.Optional;
 
 public class BooleanIsNullTransform extends Transformation<Map<String, String>> {
     private final String column;
-    private final SerializableFunction<Map<String, String>, ?> truevalueMapper;
-    private final SerializableFunction<Map<String, String>, ?> falsevalueMapper;
+    private final SerializableFunction<Map<String, String>, ?> trueValueMapper;
+    private final SerializableFunction<Map<String, String>, ?> falseValueMapper;
     private final Optional<Transformations> transformsIfTrue;
     private final Optional<Transformations> transformsIfFalse;
 
@@ -43,9 +43,9 @@ public class BooleanIsNullTransform extends Transformation<Map<String, String>> 
             final List<Transformation> internalTrueTransforms;
             internalTrueTransforms = new ArrayList<>(this.transformsIfTrue.get().size() + 1);
             transformsIfTrue.get().forEach(internalTrueTransforms::add);
-            this.truevalueMapper = new TransformValueMapper(internalTrueTransforms);
+            this.trueValueMapper = new TransformValueMapper(internalTrueTransforms);
         } else {
-            this.truevalueMapper = row -> row.get(column);
+            this.trueValueMapper = row -> row.get(column);
         }
 
         // false valuemapper
@@ -53,9 +53,9 @@ public class BooleanIsNullTransform extends Transformation<Map<String, String>> 
             final List<Transformation> internalFalseTransforms;
             internalFalseTransforms = new ArrayList<>(this.transformsIfFalse.get().size() + 1);
             transformsIfFalse.get().forEach(internalFalseTransforms::add);
-            this.falsevalueMapper = new TransformValueMapper(internalFalseTransforms);
+            this.falseValueMapper = new TransformValueMapper(internalFalseTransforms);
         } else {
-            this.falsevalueMapper = row -> row.get(column);
+            this.falseValueMapper = row -> row.get(column);
         }
     }
 
@@ -77,9 +77,9 @@ public class BooleanIsNullTransform extends Transformation<Map<String, String>> 
     @Override
     public Object apply(Map<String, String> row) {
         if (StringUtils.isBlank(row.get(column))) {
-            return this.truevalueMapper.apply(row);
+            return this.trueValueMapper.apply(row);
         } else {
-            return this.falsevalueMapper.apply(row);
+            return this.falseValueMapper.apply(row);
         }
 
     }

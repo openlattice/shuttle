@@ -16,53 +16,53 @@ import java.util.Map;
 import java.util.TimeZone;
 
 public class CombineDateTimeTransform extends Transformation<Map<String, String>> {
-    private final String datecolumn;
-    private final String[] datepattern;
-    private final String timecolumn;
-    private final String[] timepattern;
+    private final String dateColumn;
+    private final String[] datePattern;
+    private final String timeColumn;
+    private final String[] timePattern;
 
 
     /**
      * Represents a transformation from string to datetime.
      *
-     * @param datecolumn: column of date
-     * @param datepattern: list of patterns of date
-     * @param timecolumn: column of time
-     * @param timepattern: list of patterns of time
+     * @param dateColumn: column of date
+     * @param datePattern: list of patterns of date
+     * @param timeColumn: column of time
+     * @param timePattern: list of patterns of time
      *
      */
     @JsonCreator
     public CombineDateTimeTransform(
-            @JsonProperty(Constants.DATE_COLUMN) String datecolumn,
-            @JsonProperty(Constants.DATE_PATTERN) String[] datepattern,
-            @JsonProperty(Constants.TIME_COLUMN) String timecolumn,
-            @JsonProperty(Constants.TIME_PATTERN) String[] timepattern
+            @JsonProperty(Constants.DATE_COLUMN) String dateColumn,
+            @JsonProperty(Constants.DATE_PATTERN) String[] datePattern,
+            @JsonProperty(Constants.TIME_COLUMN) String timeColumn,
+            @JsonProperty(Constants.TIME_PATTERN) String[] timePattern
             ) {
-        this.datecolumn = datecolumn;
-        this.datepattern = datepattern;
-        this.timecolumn = timecolumn;
-        this.timepattern = timepattern;
+        this.dateColumn = dateColumn;
+        this.datePattern = datePattern;
+        this.timeColumn = timeColumn;
+        this.timePattern = timePattern;
     }
 
     @Override
     public Object apply(Map<String, String> row) {
 
         // get date
-        String d = row.get(datecolumn);
+        String d = row.get(dateColumn);
         if (StringUtils.isBlank(d) | d==null) {
             return null;
         }
         final JavaDateTimeHelper dHelper = new JavaDateTimeHelper(TimeZones.America_NewYork,
-                datepattern);
+                datePattern);
         LocalDate date = dHelper.parseDate(d);
 
         // get time
-        String t = row.get(timecolumn);
+        String t = row.get(timeColumn);
         if (StringUtils.isBlank(t) | t==null) {
             return null;
         }
         final JavaDateTimeHelper tHelper = new JavaDateTimeHelper(TimeZones.America_NewYork,
-                timepattern);
+                timePattern);
         LocalTime time = tHelper.parseTime(t);
 
         // combine
