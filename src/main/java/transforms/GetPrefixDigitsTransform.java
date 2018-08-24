@@ -28,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import com.openlattice.shuttle.util.Parsers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -59,7 +60,7 @@ public class GetPrefixDigitsTransform extends Transformation<String> {
         }
         if (Character.isDigit(o.trim().charAt(0))) {
             String[] strBadge = o.split(separator);
-            return strBadge[0].trim();
+            return Parsers.parseInt(strBadge[0].trim());
         }
         return null;
     }
