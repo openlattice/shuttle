@@ -13,7 +13,7 @@ public class ValueTransform extends Transformation<Map<String, String>> {
     private final String value;
 
     /**
-     * Represents a transformation to remove digits in a string.
+     * Represents a transformation to always output the same certain value.
      */
     public ValueTransform(
             @JsonProperty(Constants.VALUE) String value) {
