@@ -55,7 +55,7 @@ public class BooleanPrefixTransform extends Transformation<Map<String, String>> 
         // true valuemapper
         if (transformsIfTrue.isPresent()) {
             final List<Transformation> internalTrueTransforms;
-            internalTrueTransforms = new ArrayList<>(this.transformsIfTrue.get().size() + 1);
+            internalTrueTransforms = new ArrayList<>(this.transformsIfTrue.get().size());
             transformsIfTrue.get().forEach(internalTrueTransforms::add);
             this.trueValueMapper = new TransformValueMapper(internalTrueTransforms);
         } else {
@@ -65,7 +65,7 @@ public class BooleanPrefixTransform extends Transformation<Map<String, String>> 
         // false valuemapper
         if (transformsIfFalse.isPresent()) {
             final List<Transformation> internalFalseTransforms;
-            internalFalseTransforms = new ArrayList<>(this.transformsIfFalse.get().size() + 1);
+            internalFalseTransforms = new ArrayList<>(this.transformsIfFalse.get().size());
             transformsIfFalse.get().forEach(internalFalseTransforms::add);
             this.falseValueMapper = new TransformValueMapper(internalFalseTransforms);
         } else {
