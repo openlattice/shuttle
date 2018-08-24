@@ -17,6 +17,7 @@ import java.util.Optional;
 public class BooleanPrefixTransform extends Transformation<Map<String, String>> {
     private final String prefix;
     private final String column;
+    private final Boolean ignoreCase;
     private final SerializableFunction<Map<String, String>, ?> trueValueMapper;
     private final SerializableFunction<Map<String, String>, ?> falseValueMapper;
     private final Optional<Transformations> transformsIfTrue;
@@ -30,6 +31,7 @@ public class BooleanPrefixTransform extends Transformation<Map<String, String>> 
      *
      * @param column:            column to test if starts with prefix
      * @param prefix:            prefix to test value
+     * @param ignoreCase:        whether to ignore case in string
      * @param transformsIfTrue:  transformations to do on column value if starts with prefix
      * @param transformsIfFalse: transformations to do if does not exist (note ! define columntransform to choose column !)
      */
@@ -37,10 +39,16 @@ public class BooleanPrefixTransform extends Transformation<Map<String, String>> 
     public BooleanPrefixTransform(
             @JsonProperty(Constants.PREFIX) String prefix,
             @JsonProperty(Constants.COLUMN) String column,
+            @JsonProperty(Constants.IGNORE_CASE) Optional<Boolean> ignoreCase,
             @JsonProperty(Constants.TRANSFORMS_IF_TRUE) Optional<Transformations> transformsIfTrue,
             @JsonProperty(Constants.TRANSFORMS_IF_FALSE) Optional<Transformations> transformsIfFalse) {
         this.column = column;
-        this.prefix = prefix;
+        this.ignoreCase = ignoreCase == null ? false : true;
+        if (this.ignoreCase) {
+            this.prefix = prefix.toLowerCase();
+        } else {
+            this.prefix = prefix;
+        }
         this.transformsIfTrue = transformsIfTrue;
         this.transformsIfFalse = transformsIfFalse;
 
@@ -82,7 +90,12 @@ public class BooleanPrefixTransform extends Transformation<Map<String, String>> 
 
     @Override
     public Object apply(Map<String, String> row) {
-        String o = row.get(column);
+        final String o;
+        if (this.ignoreCase) {
+            o = row.get(column).toLowerCase();
+        } else {
+            o = row.get(column);
+        }
         if (StringUtils.isNotBlank(o)) {
             if (o.startsWith(prefix)) {
                 return this.trueValueMapper.apply(row);

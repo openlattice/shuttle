@@ -57,7 +57,7 @@ public class GetPrefixDigitsTransform extends Transformation<String> {
         if (StringUtils.isBlank(o)) {
             return null;
         }
-        if (Character.isDigit(o.charAt(0))) {
+        if (Character.isDigit(o.trim().charAt(0))) {
             String[] strBadge = o.split(separator);
             return strBadge[0].trim();
         }
