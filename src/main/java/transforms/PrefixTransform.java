@@ -56,7 +56,7 @@ public class PrefixTransform extends Transformation<String> {
     @Override
     public Object apply(String o) {
         if (StringUtils.isBlank(o)) {
-            return "";
+            return null;
         }
         return prefix + o;
     }
