@@ -37,10 +37,17 @@ public class SplitTransform extends Transformation<String> {
     private final Integer ifMoreThan;
 
     /**
-     * Represents a transformation to split a string
+     * Represents a transformation to split a string. Example:
+     * MiddleName is a SplitTransform with arguments = {sep = " ", index = 1, ifMoreThan = 3}
+     * "Joke Christine Durnez" --> "Christine"
+     * "Joke Durnez" --> null
+     * "Joke" --> null
+     *
      *
      * @param separator: separate by what?
      * @param index:     index to grab (starts at 0!), can be 'last'
+     * @param valueElse:      string to return if there is no match based on the splitter
+     * @param ifMoreThan: if the i'th place should only be returned if there are more than x occurenced
      */
     @JsonCreator
     public SplitTransform(
