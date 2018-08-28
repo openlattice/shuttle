@@ -45,17 +45,16 @@ public class ReplaceTransform extends Transformation<String> {
         if (StringUtils.isBlank(o)) {
             return null;
         }
-        int ind = -1;
+        for ( int i = 0; i < target.size(); ++i ) {
+                o = o.replace(target.get(i),goal.get(i));
+         }
         if (ignorecase) {
-            ind = target.indexOf(o.toLowerCase());
-        } else {
-            ind = target.indexOf(o);
+            for ( int i = 0; i < target.size(); ++i ) {
+                o = o.toLowerCase().replace( target.get( i ).toLowerCase(), goal.get( i ) );
+            }
         }
-        if (ind == -1) {
-            return null;
-        } else {
-            return goal.get(ind);
-        }
+
+        return o;
     }
 
 }
