@@ -46,14 +46,13 @@ public class ReplaceTransform extends Transformation<String> {
             return null;
         }
         for ( int i = 0; i < target.size(); ++i ) {
-                o = o.replace(target.get(i),goal.get(i));
-         }
-        if (ignorecase) {
-            for ( int i = 0; i < target.size(); ++i ) {
-                o = o.toLowerCase().replace( target.get( i ).toLowerCase(), goal.get( i ) );
+            if (ignorecase) {
+                o = o.replaceAll("(?i)" + target.get(i), goal.get(i));
+            } else {
+                o = o.replaceAll(target.get(i), goal.get(i));
             }
-        }
 
+         }
         return o;
     }
 
