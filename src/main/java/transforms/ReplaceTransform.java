@@ -14,6 +14,7 @@ public class ReplaceTransform extends Transformation<String> {
 
     private final List<String> target;
     private final Boolean ignoreCase;
+    private final Boolean partial;
     private final List<String> goal;
 
     /**
@@ -21,16 +22,19 @@ public class ReplaceTransform extends Transformation<String> {
      *
      * @param target:     list of string to replace
      * @param ignoreCase: if case should be ignored
+     * @param partial: if strings should be replaced when only part of the column matches the pattern
      * @param goal:       list of string to replace target by
      */
     @JsonCreator
     public ReplaceTransform(
             @JsonProperty(Constants.TARGET) List<String> target,
             @JsonProperty(Constants.IGNORE_CASE) Optional<Boolean> ignoreCase,
+            @JsonProperty(Constants.PARTIAL) Optional<Boolean> partial,
             @JsonProperty(Constants.GOAL) List<String> goal
     ) {
         this.ignoreCase = ignoreCase == null ? false : true;
         this.goal = goal;
+        this.partial = partial == null ? false : true;
 
         if (this.ignoreCase) {
             this.target = target.stream().map(value -> value.toLowerCase()).collect(Collectors.toList());
@@ -45,17 +49,29 @@ public class ReplaceTransform extends Transformation<String> {
         if (StringUtils.isBlank(o)) {
             return null;
         }
-        int ind = -1;
-        if (ignoreCase) {
-            ind = target.indexOf(o.toLowerCase());
+        if (partial) {
+            for (int i = 0; i < target.size(); ++i) {
+                if (ignoreCase) {
+                    o = o.replaceAll("(?i)" + target.get(i), goal.get(i));
+                } else {
+                    o = o.replaceAll(target.get(i), goal.get(i));
+                }
+            }
         } else {
-            ind = target.indexOf(o);
+            int ind = -1;
+            if (ignoreCase) {
+                ind = target.indexOf(o.toLowerCase());
+            } else {
+                ind = target.indexOf(o);
+            }
+            if (ind == -1) {
+                return null;
+            } else {
+                return goal.get(ind);
+            }
         }
-        if (ind == -1) {
-            return null;
-        } else {
-            return goal.get(ind);
-        }
+
+        return o;
     }
 
 }
