@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BooleanTransformation implements SerializableFunction<Map<String, String>, Object>  {
+public class BooleanTransformation extends Transformation<Map<String, String>> {
     private final SerializableFunction<Map<String, String>, ?> trueValueMapper;
     private final SerializableFunction<Map<String, String>, ?> falseValueMapper;
     private final Optional<Transformations> transformsIfTrue;
@@ -61,11 +61,18 @@ public class BooleanTransformation implements SerializableFunction<Map<String, S
         return transformsIfFalse;
     }
 
-    public boolean applyCondition( Map<String, String> row ) {
+    public SerializableFunction<Map<String, String>, ?> getTrueValueMapper() {
+        return trueValueMapper;
+    }
+
+    public SerializableFunction<Map<String, String>, ?> getFalseValueMapper() {
+        return falseValueMapper;
+    }
+
+    public boolean applyCondition(Map<String, String> row ) {
         return true;
     }
 
-    @Override
     public Object apply(Map<String, String> row) {
         return applyCondition(row) ? this.trueValueMapper.apply(row) : this.falseValueMapper.apply(row);
     }
