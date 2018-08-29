@@ -28,6 +28,7 @@ public final class Constants {
     public static final String DATECOLUMN   = "datecolumn";
     public static final String TIMECOLUMN   = "timecolumn";
     public static final String DATEPATTERN   = "datepattern";
+    public static final String PARTIAL   = "partial";
     public static final String TIMEPATTERN   = "timepattern";
 
 }
