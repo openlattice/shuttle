@@ -8,7 +8,7 @@ public final class Constants {
     public static final String PREFIX            = "prefix";
     public static final String READER            = "reader";
     public static final String TRANSFORMS        = "transforms";
-    public static final String TRANSFORMS_IF_TRUE = "transformsIfTru";
+    public static final String TRANSFORMS_IF_TRUE = "transformsIfTrue";
     public static final String TRANSFORMS_IF_FALSE = "transformsIfFalse";
     public static final String IF_MORE_THAN = "ifMoreThan";
     public static final String IGNORE_CASE = "ignoreCase";
