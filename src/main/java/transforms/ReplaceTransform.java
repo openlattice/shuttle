@@ -32,7 +32,7 @@ public class ReplaceTransform extends Transformation<String> {
             @JsonProperty(Constants.PARTIAL) Optional<Boolean> partial,
             @JsonProperty(Constants.GOAL) List<String> goal
     ) {
-        this.ignorecase = ignorecase == null ? false : true;
+        this.ignorecase = ignorecase.orElse(false);
         this.goal = goal;
         this.partial = partial == null ? false : true;
 
@@ -54,7 +54,7 @@ public class ReplaceTransform extends Transformation<String> {
                 if (ignorecase) {
                     o = o.replaceAll("(?i)" + target.get(i), goal.get(i));
                 } else {
-                    o = o.replaceAll(target.get(i), goal.get(i));
+                    o = o.replace(target.get(i), goal.get(i));
                 }
             }
         } else {
