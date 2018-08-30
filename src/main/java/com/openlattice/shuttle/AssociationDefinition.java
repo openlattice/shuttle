@@ -105,7 +105,7 @@ public class AssociationDefinition implements Serializable {
         this.key = builder.key;
         this.alias = builder.alias;
         this.generator = Optional.ofNullable( builder.generator );
-        this.condition = null;
+        this.condition = Optional.empty();
         this.valueMapper = null;
         this.useCurrentSync = builder.useCurrentSync;
     }

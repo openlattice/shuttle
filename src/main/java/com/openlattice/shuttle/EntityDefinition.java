@@ -110,7 +110,7 @@ public class EntityDefinition implements Serializable {
         this.key = key;
         this.alias = alias;
         this.generator = generator;
-        this.condition = null;
+        this.condition = Optional.empty();
         this.valueMapper = null;
         this.useCurrentSync = useCurrentSync.orElse( false );
     }
@@ -121,7 +121,7 @@ public class EntityDefinition implements Serializable {
         this.entitySetName = builder.entitySetName;
         this.propertyDefinitions = builder.propertyDefinitionMap;
         this.key = builder.key;
-        this.condition = null;
+        this.condition = Optional.empty();
         this.valueMapper = null;
         this.alias = builder.alias;
         this.generator = Optional.ofNullable( builder.entityIdGenerator );

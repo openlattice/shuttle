@@ -66,7 +66,7 @@ public class Flight implements Serializable {
 
     private Flight( Flight.Builder builder ) {
         this.entityDefinitions = builder.entityDefinitionMap;
-        this.condition = null;
+        this.condition = Optional.empty();
         this.valueMapper = null;
         this.associationDefinitions = builder.associationDefinitionMap;
         this.name = builder.name;
