@@ -39,9 +39,9 @@ public class SplitTransform extends Transformation<String> {
     /**
      * Represents a transformation to split a string. Example:
      * MiddleName is a SplitTransform with arguments = {sep = " ", index = 1, ifMoreThan = 3}
-     * "Joke Christine Durnez" --> "Christine"
-     * "Joke Durnez" --> null
-     * "Joke" --> null
+     * "Joke Christine Durnez" -to- "Christine"
+     * "Joke Durnez" -to- null
+     * "Joke" -to- null
      *
      *
      * @param separator: separate by what?
