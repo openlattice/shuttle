@@ -60,7 +60,7 @@ public class GetPrefixDigitsTransform extends Transformation<String> {
         }
         if (Character.isDigit(o.trim().charAt(0))) {
             String[] strBadge = o.split(separator);
-            return Parsers.parseInt(strBadge[0].trim());
+            return strBadge[0].trim();
         }
         return null;
     }
