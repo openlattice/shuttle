@@ -64,7 +64,7 @@ public class SplitTransform extends Transformation<String> {
 
     @Override
     public Object apply(String o) {
-        if (StringUtils.isBlank(o)) {
+        if (StringUtils.isBlank(o) | o=="") {
             return null;
         }
         String[] strNames = o.trim().split(separator);
