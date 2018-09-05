@@ -131,4 +131,23 @@ public class JavaDateTimeHelper {
         return null;
     }
 
+    public LocalDateTime parseLocalDateTime( String date ) {
+        if ( shouldIgnoreValue( date ) )
+            return null;
+        for ( int i = 0; i < datePatterns.length; ++i ) {
+            DateTimeFormatter formatter = formatters.get( i );
+            try {
+                LocalDateTime ldt = LocalDateTime.parse( date, formatter );
+
+                return ldt;
+            } catch ( Exception e ) {
+                if ( i == datePatterns.length - 1 ) {
+                    logger.error( "Unable to parse datetime {}, please see debug log for additional information.",
+                            date );
+                }
+            }
+        }
+        return null;
+    }
+
 }
