@@ -54,18 +54,17 @@ public class BooleanContainsTransform extends BooleanTransformation {
 
     @Override
     public boolean applyCondition(Map<String, String> row) {
+        String o = row.get(column);
 
-        final String o;
+        if (StringUtils.isBlank(o)) {
+            return false;
+        }
+
         if (this.ignoreCase) {
-            o = row.get(column).toLowerCase();
-        } else {
-            o = row.get(column);
+            o = o.toLowerCase();
         }
 
-        if (StringUtils.isNotBlank(o)) {
-            return o.contains(string);
-        }
-        return false;
+        return o.contains(string);
 
       }
 }
