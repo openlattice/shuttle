@@ -55,9 +55,9 @@ public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
                 pattern);
         LocalDateTime date0 = dtHelper.parseLocalDateTime(row.get(columns.get(0)));
         LocalDateTime date1 = dtHelper.parseLocalDateTime(row.get(columns.get(1)));
-        long days = ChronoUnit.DAYS.between(date0,date1);
-        long hours = ChronoUnit.HOURS.between(date0,date1);
-        long minutes = ChronoUnit.MINUTES.between(date0,date1);
+        long days = ChronoUnit.DAYS.between(date1,date0);
+        long hours = ChronoUnit.HOURS.between(date1,date0);
+        long minutes = ChronoUnit.MINUTES.between(date1,date0);
 
         long diff = days*60*24+hours*60+minutes;
         int duration = new BigDecimal(diff).intValue();
