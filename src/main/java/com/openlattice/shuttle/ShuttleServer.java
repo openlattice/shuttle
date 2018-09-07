@@ -39,7 +39,7 @@ import java.util.Map;
 public class ShuttleServer {
 
     private static final Logger                      logger      = LoggerFactory.getLogger( ShuttleServer.class );
-    private static final RetrofitFactory.Environment environment = RetrofitFactory.Environment.LOCAL;
+    private static final RetrofitFactory.Environment environment = RetrofitFactory.Environment.PRODUCTION;
 
     public static void main( String[] args ) throws InterruptedException, IOException {
 
