@@ -60,7 +60,7 @@ public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
         long minutes = ChronoUnit.MINUTES.between(date0,date1);
 
         long diff = days*60*24+hours*60+minutes;
-        int duration = new BigDecimal(diff).intValueExact();
+        int duration = new BigDecimal(diff).intValue();
         return duration;
     }
 
