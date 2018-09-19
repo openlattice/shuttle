@@ -33,10 +33,8 @@ public class TransformSerializerTest extends AbstractJacksonSerializationTest<Tr
         return new PrefixTransform( "STRIKE FIRST. STRIKE HARD. NO MERCY." );
     }
 
-
     @Override protected Class<Transformation> getClazz() {
         return Transformation.class;
     }
-
 
 }

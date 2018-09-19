@@ -39,7 +39,7 @@ public class Flight implements Serializable {
 
     private final Map<String, EntityDefinition>                entityDefinitions;
     private final Map<String, AssociationDefinition>           associationDefinitions;
-    private       String                                       name ="Anon";
+    private       String                                       name = "Anon";
     public final  SerializableFunction<Map<String, String>, ?> valueMapper;
     public final  Optional<Conditions>                         condition;
 
@@ -76,8 +76,8 @@ public class Flight implements Serializable {
         return new Flight.Builder();
     }
 
-    public static Flight.Builder newFlight(String name) {
-        return new Flight.Builder(name);
+    public static Flight.Builder newFlight( String name ) {
+        return new Flight.Builder( name );
     }
 
     public String getName() {
@@ -113,19 +113,18 @@ public class Flight implements Serializable {
 
         private Map<String, EntityDefinition>      entityDefinitionMap;
         private Map<String, AssociationDefinition> associationDefinitionMap;
-        private String name = "Anon";
+        private String                             name = "Anon";
 
         public Builder() {
             this.entityDefinitionMap = Maps.newHashMap();
             this.associationDefinitionMap = Maps.newHashMap();
         }
 
-        public Builder(String name) {
+        public Builder( String name ) {
             this.entityDefinitionMap = Maps.newHashMap();
             this.associationDefinitionMap = Maps.newHashMap();
             this.name = name;
         }
-
 
         public EntityGroup.Builder createEntities() {
 
@@ -166,7 +165,7 @@ public class Flight implements Serializable {
 
     @Override public int hashCode() {
         int result = entityDefinitions.hashCode();
-        if (associationDefinitions != null) {
+        if ( associationDefinitions != null ) {
             result = 31 * result + associationDefinitions.hashCode();
         }
         result = 31 * result + name.hashCode();

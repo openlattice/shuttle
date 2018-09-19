@@ -15,8 +15,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public class BooleanPrefixTransform extends BooleanTransformation {
-    private final String prefix;
-    private final String column;
+    private final String  prefix;
+    private final String  column;
     private final Boolean ignoreCase;
 
     /**
@@ -33,36 +33,36 @@ public class BooleanPrefixTransform extends BooleanTransformation {
      */
     @JsonCreator
     public BooleanPrefixTransform(
-            @JsonProperty(Constants.PREFIX) String prefix,
-            @JsonProperty(Constants.COLUMN) String column,
-            @JsonProperty(Constants.IGNORE_CASE) Optional<Boolean> ignoreCase,
-            @JsonProperty(Constants.TRANSFORMS_IF_TRUE) Optional<Transformations> transformsIfTrue,
-            @JsonProperty(Constants.TRANSFORMS_IF_FALSE) Optional<Transformations> transformsIfFalse) {
-        super(transformsIfTrue, transformsIfFalse);
+            @JsonProperty( Constants.PREFIX ) String prefix,
+            @JsonProperty( Constants.COLUMN ) String column,
+            @JsonProperty( Constants.IGNORE_CASE ) Optional<Boolean> ignoreCase,
+            @JsonProperty( Constants.TRANSFORMS_IF_TRUE ) Optional<Transformations> transformsIfTrue,
+            @JsonProperty( Constants.TRANSFORMS_IF_FALSE ) Optional<Transformations> transformsIfFalse ) {
+        super( transformsIfTrue, transformsIfFalse );
         this.column = column;
         this.ignoreCase = ignoreCase == null ? false : true;
-        if (this.ignoreCase) {
+        if ( this.ignoreCase ) {
             this.prefix = prefix.toLowerCase();
         } else {
             this.prefix = prefix;
         }
     }
 
-    @JsonProperty(Constants.COLUMN)
+    @JsonProperty( Constants.COLUMN )
     public String getColumn() {
         return column;
     }
 
     @Override
-    public boolean applyCondition(Map<String, String> row) {
+    public boolean applyCondition( Map<String, String> row ) {
         final String o;
-        if (this.ignoreCase) {
-            o = row.get(column).toLowerCase();
+        if ( this.ignoreCase ) {
+            o = row.get( column ).toLowerCase();
         } else {
-            o = row.get(column);
+            o = row.get( column );
         }
-        if (StringUtils.isNotBlank(o)) {
-            if (o.startsWith(prefix)) {
+        if ( StringUtils.isNotBlank( o ) ) {
+            if ( o.startsWith( prefix ) ) {
                 return true;
             }
         }

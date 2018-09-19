@@ -38,16 +38,18 @@ import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.Constants;
+
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Stream;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import transforms.ColumnTransform;
 
-@JsonInclude(value = Include.NON_EMPTY)
+@JsonInclude( value = Include.NON_EMPTY )
 public class EntityDefinition implements Serializable {
 
     private static final long serialVersionUID = -3565689091187367622L;
@@ -62,7 +64,7 @@ public class EntityDefinition implements Serializable {
     public final  Optional<Conditions>                                        condition;
     private final Optional<SerializableFunction<Map<String, String>, String>> generator;
     private final boolean                                                     useCurrentSync;
-    public final SerializableFunction<Map<String, String>, ?>                valueMapper;
+    public final  SerializableFunction<Map<String, String>, ?>                valueMapper;
 
     @JsonCreator
     public EntityDefinition(
@@ -129,7 +131,7 @@ public class EntityDefinition implements Serializable {
     }
 
     @JsonIgnore
-//    @JsonProperty( SerializationConstants.FQN )
+    //    @JsonProperty( SerializationConstants.FQN )
     public FullQualifiedName getEntityTypeFqn() {
         return this.entityTypeFqn;
     }

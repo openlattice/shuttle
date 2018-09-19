@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
     private final List<String> columns;
-    private final String[] pattern;
+    private final String[]     pattern;
 
     /**
      * Represents a transformation from string to datetime.
@@ -27,40 +27,40 @@ public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
      */
     @JsonCreator
     public DateTimeDiffTransform(
-            @JsonProperty( Constants.PATTERN) String[] pattern,
-            @JsonProperty(Constants.COLUMNS) List<String> columns) {
+            @JsonProperty( Constants.PATTERN ) String[] pattern,
+            @JsonProperty( Constants.COLUMNS ) List<String> columns ) {
         this.pattern = pattern;
         this.columns = columns;
     }
 
-    @JsonProperty(value = Constants.PATTERN, required = false)
+    @JsonProperty( value = Constants.PATTERN, required = false )
     public String[] getPattern() {
         return pattern;
     }
 
-    @JsonProperty(Constants.COLUMNS)
+    @JsonProperty( Constants.COLUMNS )
     public List<String> getColumns() {
         return columns;
     }
 
     @Override
-    public Object apply(Map<String, String> row) {
+    public Object apply( Map<String, String> row ) {
         if (
-                StringUtils.isBlank(row.get(columns.get(0))) | StringUtils.isBlank(row.get(columns.get(1)))
-        ){
+                StringUtils.isBlank( row.get( columns.get( 0 ) ) ) | StringUtils.isBlank( row.get( columns.get( 1 ) ) )
+        ) {
             return null;
         }
 
         final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
-                pattern);
-        LocalDateTime date0 = dtHelper.parseLocalDateTime(row.get(columns.get(0)));
-        LocalDateTime date1 = dtHelper.parseLocalDateTime(row.get(columns.get(1)));
-        long days = ChronoUnit.DAYS.between(date1,date0);
-        long hours = ChronoUnit.HOURS.between(date1,date0);
-        long minutes = ChronoUnit.MINUTES.between(date1,date0);
+                pattern );
+        LocalDateTime date0 = dtHelper.parseLocalDateTime( row.get( columns.get( 0 ) ) );
+        LocalDateTime date1 = dtHelper.parseLocalDateTime( row.get( columns.get( 1 ) ) );
+        long days = ChronoUnit.DAYS.between( date1, date0 );
+        long hours = ChronoUnit.HOURS.between( date1, date0 );
+        long minutes = ChronoUnit.MINUTES.between( date1, date0 );
 
-        long diff = days*60*24+hours*60+minutes;
-        int duration = new BigDecimal(diff).intValue();
+        long diff = days * 60 * 24 + hours * 60 + minutes;
+        int duration = new BigDecimal( diff ).intValue();
         return duration;
     }
 

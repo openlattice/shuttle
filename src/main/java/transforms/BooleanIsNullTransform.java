@@ -27,22 +27,22 @@ public class BooleanIsNullTransform extends BooleanTransformation {
      */
     @JsonCreator
     public BooleanIsNullTransform(
-            @JsonProperty(Constants.COLUMN) String column,
-            @JsonProperty(Constants.TRANSFORMS_IF_TRUE) Optional<Transformations> transformsIfTrue,
-            @JsonProperty(Constants.TRANSFORMS_IF_FALSE) Optional<Transformations> transformsIfFalse) {
-        super(transformsIfTrue, transformsIfFalse);
+            @JsonProperty( Constants.COLUMN ) String column,
+            @JsonProperty( Constants.TRANSFORMS_IF_TRUE ) Optional<Transformations> transformsIfTrue,
+            @JsonProperty( Constants.TRANSFORMS_IF_FALSE ) Optional<Transformations> transformsIfFalse ) {
+        super( transformsIfTrue, transformsIfFalse );
         this.column = column;
 
     }
 
-    @JsonProperty(Constants.COLUMN)
+    @JsonProperty( Constants.COLUMN )
     public String getColumn() {
         return column;
     }
 
     @Override
-    public boolean applyCondition(Map<String, String> row) {
-        return StringUtils.isBlank(row.get(column));
+    public boolean applyCondition( Map<String, String> row ) {
+        return StringUtils.isBlank( row.get( column ) );
     }
 }
 

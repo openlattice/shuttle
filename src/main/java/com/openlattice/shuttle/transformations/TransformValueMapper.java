@@ -22,6 +22,7 @@
 package com.openlattice.shuttle.transformations;
 
 import com.openlattice.client.serialization.SerializableFunction;
+
 import java.util.List;
 import java.util.Map;
 

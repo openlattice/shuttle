@@ -16,7 +16,7 @@ public class RandomUuidTransform extends Transformation<Map<String, String>> {
     }
 
     @Override
-    public Object apply(Map<String, String> row) {
+    public Object apply( Map<String, String> row ) {
         return UUID.randomUUID().toString();
     }
 }

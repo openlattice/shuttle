@@ -18,12 +18,12 @@ public class ValueTransform extends Transformation<Map<String, String>> {
      * @param value: value to include
      */
     public ValueTransform(
-            @JsonProperty(Constants.VALUE) String value) {
+            @JsonProperty( Constants.VALUE ) String value ) {
         this.value = value;
     }
 
     @Override
-    public Object apply(Map<String, String> row) {
+    public Object apply( Map<String, String> row ) {
         return value;
     }
 }

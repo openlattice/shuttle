@@ -11,7 +11,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class BooleanIsNullCondition extends Condition<Map<String, String>> {
-    private final String column;
+    private final String  column;
     private final Boolean reverse;
 
     /**
@@ -22,33 +22,33 @@ public class BooleanIsNullCondition extends Condition<Map<String, String>> {
      */
     @JsonCreator
     public BooleanIsNullCondition(
-            @JsonProperty(Constants.COLUMN) String column,
-            @JsonProperty(Constants.REVERSE) Boolean reverse) {
+            @JsonProperty( Constants.COLUMN ) String column,
+            @JsonProperty( Constants.REVERSE ) Boolean reverse ) {
         this.column = column;
         this.reverse = reverse == null ? false : reverse;
 
     }
 
-    @JsonProperty(Constants.COLUMN)
+    @JsonProperty( Constants.COLUMN )
     public String getColumn() {
         return column;
     }
 
-    @JsonProperty(Constants.REVERSE)
+    @JsonProperty( Constants.REVERSE )
     public Boolean getReverse() {
         return reverse;
     }
 
     @Override
-    public Boolean apply(Map<String, String> row) {
-        if (StringUtils.isBlank(row.get(column))) {
-            if (reverse) {
+    public Boolean apply( Map<String, String> row ) {
+        if ( StringUtils.isBlank( row.get( column ) ) ) {
+            if ( reverse ) {
                 return false;
             } else {
                 return true;
             }
         } else {
-            if (reverse) {
+            if ( reverse ) {
                 return true;
             } else {
                 return false;

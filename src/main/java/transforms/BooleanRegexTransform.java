@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 public class BooleanRegexTransform extends BooleanTransformation {
     private final String column;
     private final String pattern;
+
     /**
      * Represents a selection of transformations based on whether a column
      * contains a specific value or not.  If either transformsIfTrue or transformsIfFalse are empty,
@@ -32,16 +33,16 @@ public class BooleanRegexTransform extends BooleanTransformation {
      */
     @JsonCreator
     public BooleanRegexTransform(
-            @JsonProperty(Constants.COLUMN) String column,
-            @JsonProperty(Constants.PATTERN) String pattern,
-            @JsonProperty(Constants.TRANSFORMS_IF_TRUE) Optional<Transformations> transformsIfTrue,
-            @JsonProperty(Constants.TRANSFORMS_IF_FALSE) Optional<Transformations> transformsIfFalse) {
-        super(transformsIfTrue, transformsIfFalse);
+            @JsonProperty( Constants.COLUMN ) String column,
+            @JsonProperty( Constants.PATTERN ) String pattern,
+            @JsonProperty( Constants.TRANSFORMS_IF_TRUE ) Optional<Transformations> transformsIfTrue,
+            @JsonProperty( Constants.TRANSFORMS_IF_FALSE ) Optional<Transformations> transformsIfFalse ) {
+        super( transformsIfTrue, transformsIfFalse );
         this.column = column;
         this.pattern = pattern;
     }
 
-    @JsonProperty(Constants.COLUMN)
+    @JsonProperty( Constants.COLUMN )
     public String getColumn() {
         return column;
     }
@@ -50,16 +51,15 @@ public class BooleanRegexTransform extends BooleanTransformation {
         return pattern;
     }
 
-
     @Override
-    public boolean applyCondition(Map<String, String> row) {
-        String o = row.get(column);
-        if (StringUtils.isBlank(o)) {
+    public boolean applyCondition( Map<String, String> row ) {
+        String o = row.get( column );
+        if ( StringUtils.isBlank( o ) ) {
             return false;
         }
         Pattern p = Pattern
-                .compile(this.pattern, Pattern.CASE_INSENSITIVE);
-        Matcher m = p.matcher(o);
+                .compile( this.pattern, Pattern.CASE_INSENSITIVE );
+        Matcher m = p.matcher( o );
         return m.find();
 
     }

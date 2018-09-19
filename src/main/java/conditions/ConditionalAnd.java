@@ -16,7 +16,7 @@ public class ConditionalAnd extends Condition<Map<String, String>> {
     }
 
     @Override
-    public Boolean apply(Map<String, String> row) {
+    public Boolean apply( Map<String, String> row ) {
         return false;
     }
 

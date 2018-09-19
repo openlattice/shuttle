@@ -44,23 +44,23 @@ public class GetPrefixDigitsTransform extends Transformation<String> {
      */
     @JsonCreator
     public GetPrefixDigitsTransform(
-            @JsonProperty(Constants.SEP) String separator) {
+            @JsonProperty( Constants.SEP ) String separator ) {
         this.separator = separator;
     }
 
-    @JsonProperty(Constants.SEP)
+    @JsonProperty( Constants.SEP )
     public String getSeparator() {
         return separator;
     }
 
     @Override
-    public Object apply(String o) {
-        if (StringUtils.isBlank(o)) {
+    public Object apply( String o ) {
+        if ( StringUtils.isBlank( o ) ) {
             return null;
         }
-        if (Character.isDigit(o.trim().charAt(0))) {
-            String[] strBadge = o.split(separator);
-            return strBadge[0].trim();
+        if ( Character.isDigit( o.trim().charAt( 0 ) ) ) {
+            String[] strBadge = o.split( separator );
+            return strBadge[ 0 ].trim();
         }
         return null;
     }

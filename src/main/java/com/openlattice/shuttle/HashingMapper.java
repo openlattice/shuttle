@@ -24,6 +24,7 @@ import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.openlattice.client.serialization.SerializableFunction;
+
 import java.util.Map;
 
 public class HashingMapper {

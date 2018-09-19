@@ -12,10 +12,10 @@ import java.util.Map;
 
 import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 
-@JsonIgnoreProperties(value = {TRANSFORM})
+@JsonIgnoreProperties( value = { TRANSFORM } )
 public class ConcatTransform extends Transformation<Map<String, String>> {
     private final List<String> columns;
-    private final String separator;
+    private final String       separator;
 
     /**
      * Represents a transformation to concatenate values.
@@ -27,37 +27,36 @@ public class ConcatTransform extends Transformation<Map<String, String>> {
      */
     @JsonCreator
     public ConcatTransform(
-            @JsonProperty(Constants.COLUMNS) List<String> columns,
-            @JsonProperty(Constants.SEP) String separator) {
+            @JsonProperty( Constants.COLUMNS ) List<String> columns,
+            @JsonProperty( Constants.SEP ) String separator ) {
         this.columns = columns;
         this.separator = separator;
     }
 
-    @JsonProperty(Constants.SEP)
+    @JsonProperty( Constants.SEP )
     public String getSeparator() {
         return separator;
     }
 
-    @JsonProperty(Constants.COLUMNS)
+    @JsonProperty( Constants.COLUMNS )
     public List<String> getColumns() {
         return columns;
     }
 
     @Override
-    public Object apply(Map<String, String> row) {
+    public Object apply( Map<String, String> row ) {
         StringBuilder sb = new StringBuilder();
         String sep = "";
-        for (String s : columns) {
-            if (!StringUtils.isBlank(row.get(s))) {
-                sb.append(sep).append(row.get(s));
+        for ( String s : columns ) {
+            if ( !StringUtils.isBlank( row.get( s ) ) ) {
+                sb.append( sep ).append( row.get( s ) );
                 sep = separator;
             }
         }
         String outstring = sb.toString();
-        if ( StringUtils.isBlank(outstring) ) {
+        if ( StringUtils.isBlank( outstring ) ) {
             return outstring;
-        }
-        else {
+        } else {
             return null;
         }
     }

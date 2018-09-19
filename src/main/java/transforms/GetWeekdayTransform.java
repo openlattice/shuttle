@@ -49,17 +49,17 @@ public class GetWeekdayTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply(String o) {
+    public Object apply( String o ) {
         List<String> days = Arrays
-                .asList("SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY");
-        String dateStr = getAsString(o);
-        if (dateStr != null) {
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+                .asList( "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY" );
+        String dateStr = getAsString( o );
+        if ( dateStr != null ) {
+            SimpleDateFormat dateFormat = new SimpleDateFormat( "yyyy-MM-dd" );
             Date date;
             try {
-                date = dateFormat.parse(dateStr);
-                return days.get(date.getDay());
-            } catch (Exception e) {
+                date = dateFormat.parse( dateStr );
+                return days.get( date.getDay() );
+            } catch ( Exception e ) {
                 e.printStackTrace();
             }
             return dateStr;

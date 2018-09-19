@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 public class ParseBoolTransform extends Transformation<String> {
 
     private static final Logger logger = LoggerFactory
-            .getLogger(Shuttle.class);
+            .getLogger( Shuttle.class );
 
     /**
      * Represents a transformation to parse booleans from a string.
@@ -18,12 +18,12 @@ public class ParseBoolTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply(String o) {
-        if (StringUtils.isNotBlank(o)) {
+    public Object apply( String o ) {
+        if ( StringUtils.isNotBlank( o ) ) {
             try {
-                return Boolean.valueOf(o);
-            } catch (IllegalArgumentException e) {
-                logger.error("Unable to parse boolean from value {}", o);
+                return Boolean.valueOf( o );
+            } catch ( IllegalArgumentException e ) {
+                logger.error( "Unable to parse boolean from value {}", o );
             }
         }
         return null;

@@ -31,6 +31,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.dataloom.mappers.ObjectMappers;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -43,63 +44,62 @@ public class ShuttleServer {
 
     public static void main( String[] args ) throws InterruptedException, IOException {
 
-        if (args.length < 1)
-        {
+        if ( args.length < 1 ) {
             System.out.println( "Hello, Shuttle!" );
 
         } else {
 
             // get flight
-            System.out.println(args.toString());
+            System.out.println( args.toString() );
 
-            final String yamlfile = args[0];
+            final String yamlfile = args[ 0 ];
             ObjectMapper yaml = ObjectMappers.getYamlMapper();
             FullQualifiedNameJacksonSerializer.registerWithMapper( yaml );
 
             Flight flight = null;
             try {
                 flight = yaml.readValue( new File( yamlfile ), Flight.class );
-            } catch (Exception e) {
+            } catch ( Exception e ) {
                 e.printStackTrace();
             }
             Map<Flight, Payload> flights = new LinkedHashMap<>( 2 );
-            logger.info("This is the JSON for the flight. {}", yaml.writeValueAsString(flight));
+            logger.info( "This is the JSON for the flight. {}", yaml.writeValueAsString( flight ) );
 
             // get jwt
 
             final String jwtToken;
 
-            if (args.length == 4 | args.length == 6){
-                jwtToken = MissionControl.getIdToken( args[1], args[2] );
+            if ( args.length == 4 | args.length == 6 ) {
+                jwtToken = MissionControl.getIdToken( args[ 1 ], args[ 2 ] );
             } else {
-                jwtToken = args[1];
+                jwtToken = args[ 1 ];
             }
-            logger.info("JWT for this flight. {}", jwtToken);
+            logger.info( "JWT for this flight. {}", jwtToken );
 
             Shuttle shuttle = new Shuttle( environment, jwtToken );
 
             // get data
 
             final String dataPath;
-            Integer offset = args.length-1; // offset for next args
+            Integer offset = args.length - 1; // offset for next args
 
-            if (args.length == 3 | args.length == 4) {
+            if ( args.length == 3 | args.length == 4 ) {
 
                 // get datapath (offset for username/pw vs jwt
-                dataPath = args[offset];
+                dataPath = args[ offset ];
 
                 // get payload
-                Payload Payload = new SimplePayload( args[offset] );
-                logger.info("datafile: "+args[offset]);
+                Payload Payload = new SimplePayload( args[ offset ] );
+                logger.info( "datafile: " + args[ offset ] );
                 flights.put( flight, Payload );
                 shuttle.launchPayloadFlight( flights );
 
             } else {
 
                 HikariDataSource hds = ObjectMappers.getYamlMapper()
-                        .readValue(new File(args[offset+1]), IntegrationConfig.class)
-                        .getHikariDatasource(args[offset]);
-                Payload arPayload = new JdbcPayload(hds, args[offset+2]);
+                        .readValue( new File( args[ offset + 1 ] ), IntegrationConfig.class )
+                        .getHikariDatasource( args[ offset ] );
+                Payload arPayload = new JdbcPayload( hds, args[ offset + 2 ] );
                 flights.put( flight, arPayload );
                 shuttle.launchPayloadFlight( flights );
 

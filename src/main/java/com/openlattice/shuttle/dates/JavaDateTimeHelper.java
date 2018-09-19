@@ -43,7 +43,7 @@ public class JavaDateTimeHelper {
                 if (
                         datePatterns[ 0 ].matches( ".*yy.*" ) && !datePatterns[ 0 ].matches( ".*yyyy.*" ) ||
                                 datePatterns[ 0 ].matches( ".*YY.*" ) && !datePatterns[ 0 ].matches( ".*YYYY.*" )
-                        ) {
+                ) {
                     if ( ( ld.getYear() - LocalDate.now().getYear() ) > 20 ) {
                         ld = ld.withYear( ld.getYear() - 100 );
                     }
@@ -84,7 +84,7 @@ public class JavaDateTimeHelper {
             DateTimeFormatter formatter = formatters.get( i );
             try {
                 LocalDateTime ldt = LocalDateTime.parse( date, formatter );
-//                if (ldt.isBefore(LocalDateTime.of(1900, 1, 1, 0, 0, 0))){return null;}
+                //                if (ldt.isBefore(LocalDateTime.of(1900, 1, 1, 0, 0, 0))){return null;}
                 return ldt.atZone( tz.toZoneId() ).toOffsetDateTime();
             } catch ( Exception e ) {
                 if ( i == datePatterns.length - 1 ) {

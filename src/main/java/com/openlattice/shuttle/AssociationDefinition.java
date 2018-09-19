@@ -33,6 +33,7 @@ import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.conditions.ConditionValueMapper;
 import com.openlattice.shuttle.conditions.Conditions;
 import com.openlattice.shuttle.transformations.Transformations;
+
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Stream;
@@ -59,7 +60,7 @@ public class AssociationDefinition implements Serializable {
     public final  Optional<Conditions>                                        condition;
     private final Optional<SerializableFunction<Map<String, String>, String>> generator;
     private final boolean                                                     useCurrentSync;
-    public final SerializableFunction<Map<String, String>, ?>                valueMapper;
+    public final  SerializableFunction<Map<String, String>, ?>                valueMapper;
 
     @JsonCreator
     public AssociationDefinition(

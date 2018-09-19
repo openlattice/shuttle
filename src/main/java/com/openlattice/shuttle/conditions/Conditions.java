@@ -4,6 +4,7 @@ import com.openlattice.shuttle.transformations.Transformation;
 
 import java.util.ArrayList;
 import java.util.Collection;
+
 import org.jetbrains.annotations.NotNull;
 
 /**

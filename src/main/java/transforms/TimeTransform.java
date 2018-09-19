@@ -17,23 +17,23 @@ public class TimeTransform extends Transformation<String> {
      * @param pattern: pattern of date (eg. "MM/dd/YY")
      */
     @JsonCreator
-    public TimeTransform(@JsonProperty(Constants.PATTERN) String[] pattern) {
+    public TimeTransform( @JsonProperty( Constants.PATTERN ) String[] pattern ) {
         this.pattern = pattern;
     }
 
-    @JsonProperty(value = Constants.PATTERN, required = false)
+    @JsonProperty( value = Constants.PATTERN, required = false )
     public String[] getPattern() {
         return pattern;
     }
 
     @Override
-    public Object apply(String o) {
-        if (StringUtils.isBlank(o) | o==null) {
+    public Object apply( String o ) {
+        if ( StringUtils.isBlank( o ) | o == null ) {
             return null;
         }
-        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper(TimeZones.America_NewYork,
-                pattern);
-        return dtHelper.parseTime(o);
+        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
+                pattern );
+        return dtHelper.parseTime( o );
     }
 
 }

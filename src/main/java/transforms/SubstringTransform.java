@@ -16,24 +16,24 @@ public class SubstringTransform extends Transformation<String> {
      */
     @JsonCreator
     public SubstringTransform(
-            @JsonProperty(Constants.INDEX) int index) {
+            @JsonProperty( Constants.INDEX ) int index ) {
         this.index = index;
     }
 
-    @JsonProperty(Constants.LOC)
+    @JsonProperty( Constants.LOC )
     public int getSubstringLocation() {
         return index;
     }
 
     @Override
-    public Object apply(String o) {
+    public Object apply( String o ) {
         final String output;
-        if (StringUtils.isBlank(o)) {
+        if ( StringUtils.isBlank( o ) ) {
             return null;
         } else {
-            output = o.substring(index);
+            output = o.substring( index );
         }
-        if (!StringUtils.isBlank(output)) {
+        if ( !StringUtils.isBlank( output ) ) {
             return null;
         }
         return output;

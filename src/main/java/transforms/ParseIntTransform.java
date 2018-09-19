@@ -13,7 +13,7 @@ import java.math.BigInteger;
 public class ParseIntTransform extends Transformation<String> {
 
     private static final Logger logger = LoggerFactory
-            .getLogger(Shuttle.class);
+            .getLogger( Shuttle.class );
 
     /**
      * Represents a transformation to parse integers from a string.
@@ -22,7 +22,7 @@ public class ParseIntTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply(String o) {
-        return Parsers.parseInt(o);
+    public Object apply( String o ) {
+        return Parsers.parseInt( o );
     }
 }

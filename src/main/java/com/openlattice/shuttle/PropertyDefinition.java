@@ -32,12 +32,14 @@ import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.Constants;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import transforms.ColumnTransform;
 import transforms.HashTransform;
@@ -50,7 +52,7 @@ public class PropertyDefinition implements Serializable {
     private final FullQualifiedName                            propertyTypeFqn;
     private final SerializableFunction<Map<String, String>, ?> valueMapper;
     private final String                                       column;
-    private final Optional<Transformations>               transforms;
+    private final Optional<Transformations>                    transforms;
 
     @JsonCreator
     public PropertyDefinition(
@@ -59,7 +61,7 @@ public class PropertyDefinition implements Serializable {
             @JsonProperty( Constants.READER ) Optional<Transformation> reader,
             @JsonProperty( Constants.TRANSFORMS ) Optional<Transformations> transforms ) {
         this.propertyTypeFqn = propertyTypeFqn == null ? null : new FullQualifiedName( propertyTypeFqn );
-        this.column = column == null ? "" : column ;
+        this.column = column == null ? "" : column;
         this.transforms = transforms;
 
         if ( transforms.isPresent() ) {
@@ -67,7 +69,7 @@ public class PropertyDefinition implements Serializable {
             internalTransforms = new ArrayList<>( this.transforms.get().size() + 1 );
             if ( reader.isPresent() ) {
                 internalTransforms.add( reader.get() );
-            } else if (column != null ) {
+            } else if ( column != null ) {
                 internalTransforms.add( new ColumnTransform( column ) );
             }
             transforms.get().forEach( internalTransforms::add );
@@ -77,7 +79,10 @@ public class PropertyDefinition implements Serializable {
         }
     }
 
-    public PropertyDefinition( String propertyTypeFqn, String columnName, SerializableFunction<Map<String, String>, ?> valueMapper ) {
+    public PropertyDefinition(
+            String propertyTypeFqn,
+            String columnName,
+            SerializableFunction<Map<String, String>, ?> valueMapper ) {
         this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
         this.valueMapper = valueMapper;
         this.column = columnName;
@@ -142,8 +147,8 @@ public class PropertyDefinition implements Serializable {
 
         private FullQualifiedName                            propertyTypeFqn;
         private SerializableFunction<Map<String, String>, ?> valueMapper;
-        private Transformations                        transforms;
-        private String column = "";
+        private Transformations                              transforms;
+        private String                                       column = "";
 
         public Builder(
                 FullQualifiedName propertyTypeFqn,

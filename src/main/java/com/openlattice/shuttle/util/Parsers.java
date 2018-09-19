@@ -28,21 +28,19 @@ public class Parsers {
         String intStr = getAsString( obj );
         if ( StringUtils.isNotBlank( intStr ) ) {
             try {
-                return Integer.parseInt(intStr);
-            } catch (NumberFormatException e) {
+                return Integer.parseInt( intStr );
+            } catch ( NumberFormatException e ) {
                 try {
-                    Double d = Double.parseDouble(intStr);
-                    BigInteger k = BigDecimal.valueOf(d).toBigInteger();
+                    Double d = Double.parseDouble( intStr );
+                    BigInteger k = BigDecimal.valueOf( d ).toBigInteger();
                     return k.intValue();
-                } catch (NumberFormatException f) {
-                    logger.error("Unable to parse int from value {}", intStr);
+                } catch ( NumberFormatException f ) {
+                    logger.error( "Unable to parse int from value {}", intStr );
                 }
             }
         }
         return null;
     }
-
-
 
     public static Short parseShort( Object obj ) {
         String shortStr = getAsString( obj );

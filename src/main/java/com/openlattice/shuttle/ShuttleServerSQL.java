@@ -31,6 +31,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.dataloom.mappers.ObjectMappers;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
@@ -43,51 +44,49 @@ public class ShuttleServerSQL {
 
     public static void main( String[] args ) throws InterruptedException, IOException {
 
-        if (args.length < 1)
-        {
+        if ( args.length < 1 ) {
             System.out.println( "Hello, ShuttleSQL!" );
 
         } else {
 
             // get flight
-            final String yamlfile = args[0];
+            final String yamlfile = args[ 0 ];
             ObjectMapper yaml = ObjectMappers.getYamlMapper();
             FullQualifiedNameJacksonSerializer.registerWithMapper( yaml );
 
             Flight flight = null;
             try {
                 flight = yaml.readValue( new File( yamlfile ), Flight.class );
-            } catch (Exception e) {
+            } catch ( Exception e ) {
                 e.printStackTrace();
             }
             Map<Flight, Payload> flights = new LinkedHashMap<>( 2 );
-            logger.info("This is the JSON for the flight. {}", yaml.writeValueAsString(flight));
+            logger.info( "This is the JSON for the flight. {}", yaml.writeValueAsString( flight ) );
 
             // get jwt
 
             final String jwtToken;
             final Integer offset;
 
-            if (args.length == 6){
-                jwtToken = MissionControl.getIdToken( args[1], args[2] );
+            if ( args.length == 6 ) {
+                jwtToken = MissionControl.getIdToken( args[ 1 ], args[ 2 ] );
                 offset = 3;
             } else {
-                jwtToken = args[1];
+                jwtToken = args[ 1 ];
                 offset = 2;
             }
-            logger.info("JWT for this flight. {}", jwtToken);
+            logger.info( "JWT for this flight. {}", jwtToken );
 
             Shuttle shuttle = new Shuttle( environment, jwtToken );
 
             // get data
 
             HikariDataSource hds = ObjectMappers.getYamlMapper()
-                    .readValue(new File(args[offset]), IntegrationConfig.class)
-                    .getHikariDatasource(args[offset+1]);
-            Payload arPayload = new JdbcPayload(hds, args[offset+2]);
+                    .readValue( new File( args[ offset ] ), IntegrationConfig.class )
+                    .getHikariDatasource( args[ offset + 1 ] );
+            Payload arPayload = new JdbcPayload( hds, args[ offset + 2 ] );
             flights.put( flight, arPayload );
             shuttle.launchPayloadFlight( flights );
-
 
         }
     }

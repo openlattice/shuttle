@@ -41,16 +41,16 @@ public class ColumnTransform extends Transformation<Map<String, String>> {
      * @param column: column name to collect
      */
     @JsonCreator
-    public ColumnTransform(@JsonProperty(Constants.COLUMN) String column) {
+    public ColumnTransform( @JsonProperty( Constants.COLUMN ) String column ) {
         this.column = column;
     }
 
     @Override
-    public Object apply(Map<String, String> row) {
-        return row.get(column);
+    public Object apply( Map<String, String> row ) {
+        return row.get( column );
     }
 
-    @JsonProperty(Constants.COLUMN)
+    @JsonProperty( Constants.COLUMN )
     public String getColumn() {
         return column;
     }

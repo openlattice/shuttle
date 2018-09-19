@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 public class ParseDoubleTransform extends Transformation<String> {
 
     private static final Logger logger = LoggerFactory
-            .getLogger(Shuttle.class);
+            .getLogger( Shuttle.class );
 
     /**
      * Represents a transformation to parse doubles from a string.
@@ -19,8 +19,8 @@ public class ParseDoubleTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply(String o) {
-        return Parsers.parseDouble(o);
-     }
+    public Object apply( String o ) {
+        return Parsers.parseDouble( o );
+    }
 
 }

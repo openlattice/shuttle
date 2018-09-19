@@ -22,6 +22,7 @@ package com.openlattice.shuttle.edm;
 import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Optional;
 
 public class PropertyMetadata {
