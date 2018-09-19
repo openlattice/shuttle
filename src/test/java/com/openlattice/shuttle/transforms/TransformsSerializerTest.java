@@ -25,8 +25,10 @@ import com.google.common.collect.ImmutableList;
 import com.openlattice.serializer.AbstractJacksonSerializationTest;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.transforms.TransformsSerializerTest.OptionalListOfTransforms;
+
 import java.util.Objects;
 import java.util.Optional;
+
 import transforms.HashTransform;
 import transforms.PrefixTransform;
 
@@ -39,7 +41,7 @@ public class TransformsSerializerTest extends AbstractJacksonSerializationTest<O
         Transformations transforms = new Transformations(
                 ImmutableList.of( new PrefixTransform( "COWBELL_" ),
                         new HashTransform( ImmutableList.of( "algo", "mode", "keySize" ), "murmur128" ) ) );
-                olt.field = Optional.of(transforms );
+        olt.field = Optional.of( transforms );
 
         return olt;
     }

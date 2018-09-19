@@ -7,8 +7,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.util.Map;
 import java.util.Properties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,8 +18,8 @@ import org.slf4j.LoggerFactory;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class IntegrationConfig {
-    private static final Logger logger = LoggerFactory.getLogger( IntegrationConfig.class );
-    private final Map<String, Properties> hikariConfigurations;
+    private static final Logger                  logger = LoggerFactory.getLogger( IntegrationConfig.class );
+    private final        Map<String, Properties> hikariConfigurations;
 
     @JsonCreator
     public IntegrationConfig(

@@ -22,6 +22,7 @@
 package com.openlattice.shuttle.transformations;
 
 import com.openlattice.client.serialization.SerializableFunction;
+
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +41,6 @@ public class TransformValueMapper implements SerializableFunction<Map<String, St
         for ( Transformation t : transforms ) {
             value = t.apply( value );
         }
-        return value;
+        return value == "" ? null : value;
     }
 }

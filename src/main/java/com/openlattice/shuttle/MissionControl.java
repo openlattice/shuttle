@@ -23,9 +23,11 @@ import com.auth0.client.auth.AuthAPI;
 import com.auth0.exception.Auth0Exception;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
+
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,10 +42,8 @@ public final class MissionControl {
 
     private static final AuthAPI client = buildClient( AUTH0_CLIENT_ID );
 
-
     private static final Stopwatch watch = Stopwatch.createStarted();
     private static final Lock      lock  = new ReentrantLock();
-
 
     @VisibleForTesting
     static String getIdToken( AuthAPI auth0, String realm, String username, String password )

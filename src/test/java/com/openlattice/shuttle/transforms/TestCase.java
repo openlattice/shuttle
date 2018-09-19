@@ -20,6 +20,7 @@
  */
 
 package com.openlattice.shuttle.transforms;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -29,12 +30,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.google.common.collect.Lists;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -73,7 +76,8 @@ public class TestCase {
         ex1.a = "another";
         ex2.b = 1;
         ListAbstractExamples lae = new ListAbstractExamples();
-        lae.add( ex1 ); lae.add( ex2 );
+        lae.add( ex1 );
+        lae.add( ex2 );
         String json = mapper.writeValueAsString( lae );
         List<AbstractExample> examples = mapper.readValue( json, ListAbstractExamples.class );
         Assert.assertEquals( ex1, examples.get( 0 ) );
@@ -120,7 +124,9 @@ public class TestCase {
     public static abstract class AbstractExample<T> implements Function<T, Object> {
     }
 
-    public static class ListAbstractExamples extends ArrayList<AbstractExample> {}
+    public static class ListAbstractExamples extends ArrayList<AbstractExample> {
+    }
+
     public static class ExampleList {
         public List<AbstractExample> examples;
     }

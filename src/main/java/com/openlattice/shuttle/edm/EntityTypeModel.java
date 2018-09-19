@@ -22,7 +22,9 @@ package com.openlattice.shuttle.edm;
 import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Optional;
+
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
 import java.util.LinkedHashSet;

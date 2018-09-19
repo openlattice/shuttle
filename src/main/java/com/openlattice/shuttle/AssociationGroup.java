@@ -117,7 +117,7 @@ public class AssociationGroup implements Serializable {
 
             return new AssociationDefinition.Builder( associationAlias, entityAliases, this, onBuild );
         }
-        
+
         public Flight.Builder ok() {
             return endAssociations();
         }

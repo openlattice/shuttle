@@ -42,6 +42,7 @@ import com.openlattice.edm.EdmApi;
 import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.HashMap;
@@ -54,6 +55,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
@@ -236,7 +238,22 @@ public class Shuttle implements Serializable {
                     Set<Association> associations = Sets.newHashSet();
                     Map<String, Boolean> wasCreated = new HashMap<>();
 
+                    if ( flight.condition.isPresent() ) {
+                        Object out = flight.valueMapper.apply( row );
+                        if ( !( (Boolean) out ).booleanValue() ) {
+                            return new BulkDataCreation( entities, associations );
+                        }
+                    }
+
                     for ( EntityDefinition entityDefinition : flight.getEntities() ) {
+
+                        Boolean condition = true;
+                        if ( entityDefinition.condition.isPresent() ) {
+                            Object out = entityDefinition.valueMapper.apply( row );
+                            if ( !( (Boolean) out ).booleanValue() ) {
+                                condition = false;
+                            }
+                        }
 
                         UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
                         Map<UUID, Set<Object>> properties = new HashMap<>();
@@ -244,16 +261,20 @@ public class Shuttle implements Serializable {
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
                             if ( propertyValue != null ) {
-                                UUID propertyId = propertyIdsCache
-                                        .getUnchecked( propertyDefinition.getFullQualifiedName() );
-                                if ( propertyValue instanceof Iterable ) {
-                                    properties
-                                            .putAll( ImmutableMap.of( propertyId, Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
-                                } else {
-                                    properties.compute( propertyId,
-                                            ( k, v ) -> ( v == null )
-                                                    ? addAndReturn( new HashSet<>(), propertyValue )
-                                                    : addAndReturn( v, propertyValue ) );
+                                String stringProp = propertyValue.toString();
+                                if ( !StringUtils.isBlank( stringProp ) ) {
+                                    UUID propertyId = propertyIdsCache
+                                            .getUnchecked( propertyDefinition.getFullQualifiedName() );
+                                    if ( propertyValue instanceof Iterable ) {
+                                        properties
+                                                .putAll( ImmutableMap.of( propertyId,
+                                                        Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
+                                    } else {
+                                        properties.compute( propertyId,
+                                                ( k, v ) -> ( v == null )
+                                                        ? addAndReturn( new HashSet<>(), propertyValue )
+                                                        : addAndReturn( v, propertyValue ) );
+                                    }
                                 }
                             }
                         }
@@ -266,9 +287,9 @@ public class Shuttle implements Serializable {
                         String entityId = ( entityDefinition.getGenerator().isPresent() )
                                 ? entityDefinition.getGenerator().get().apply( row )
                                 : generateDefaultEntityId( keyCache.getUnchecked( entityDefinition.getEntitySetName() ),
-                                        properties );
+                                properties );
 
-                        if ( StringUtils.isNotBlank( entityId ) ) {
+                        if ( StringUtils.isNotBlank( entityId ) & condition & properties.size() > 0 ) {
                             EntityKey key = new EntityKey( entitySetId, entityId );
                             aliasesToEntityKey.put( entityDefinition.getAlias(), key );
                             entities.add( new Entity( key, properties ) );
@@ -282,6 +303,22 @@ public class Shuttle implements Serializable {
 
                     for ( AssociationDefinition associationDefinition : flight.getAssociations() ) {
 
+                        if ( associationDefinition.condition.isPresent() ) {
+                            Object out = associationDefinition.valueMapper.apply( row );
+                            if ( !( (Boolean) out ).booleanValue() ) {
+                                continue;
+                            }
+                        }
+
+                        if ( !wasCreated.containsKey( associationDefinition.getDstAlias() ) ) {
+                            logger.error( "Destination " + associationDefinition.getDstAlias()
+                                    + " cannot be found to construct association " + associationDefinition.getAlias() );
+                        }
+
+                        if ( !wasCreated.containsKey( associationDefinition.getSrcAlias() ) ) {
+                            logger.error( "Source " + associationDefinition.getSrcAlias()
+                                    + " cannot be found to construct association " + associationDefinition.getAlias() );
+                        }
                         if ( wasCreated.get( associationDefinition.getSrcAlias() )
                                 && wasCreated.get( associationDefinition.getDstAlias() ) ) {
 
@@ -297,7 +334,8 @@ public class Shuttle implements Serializable {
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap
-                                                        .of( propertyId, Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
+                                                        .of( propertyId,
+                                                                Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
                                     } else {
                                         properties.compute( propertyId,
                                                 ( k, v ) -> ( v == null )
@@ -310,8 +348,8 @@ public class Shuttle implements Serializable {
                             String entityId = ( associationDefinition.getGenerator().isPresent() )
                                     ? associationDefinition.getGenerator().get().apply( row )
                                     : generateDefaultEntityId(
-                                            keyCache.getUnchecked( associationDefinition.getEntitySetName() ),
-                                            properties );
+                                    keyCache.getUnchecked( associationDefinition.getEntitySetName() ),
+                                    properties );
 
                             if ( StringUtils.isNotBlank( entityId ) ) {
                                 EntityKey key = new EntityKey( entitySetId, entityId );
@@ -336,7 +374,6 @@ public class Shuttle implements Serializable {
 
                     if ( a.getAssociations().size() > 10000 || a.getEntities().size() > 10000 ) {
                         IntegrationResults results = dataApi.integrateEntityAndAssociationData( a, false );
-                        logger.info( "Results: {}", results );
                         return new BulkDataCreation( new HashSet<>(), new HashSet<>() );
                     }
 
