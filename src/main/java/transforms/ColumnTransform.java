@@ -28,12 +28,12 @@ import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class ColumnTransform extends Transformation<Map<String, String>> {
-    private final String column;
 
     /**
      * Represents a transformation to select a column in the original data (i.e. no transform)
@@ -42,16 +42,6 @@ public class ColumnTransform extends Transformation<Map<String, String>> {
      */
     @JsonCreator
     public ColumnTransform( @JsonProperty( Constants.COLUMN ) String column ) {
-        this.column = column;
-    }
-
-    @Override
-    public Object apply( Map<String, String> row ) {
-        return row.get( column );
-    }
-
-    @JsonProperty( Constants.COLUMN )
-    public String getColumn() {
-        return column;
+        super( Optional.of(column));
     }
 }

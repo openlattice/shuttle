@@ -1,7 +1,6 @@
 package transforms;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
@@ -10,48 +9,40 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.List;
 import java.util.Map;
 
-import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
-
-public class ConcatTransform extends Transformation<Map<String, String>> {
-    private final List<String> columns;
+public class ConcatCombineTransform extends Transformation<Map<String, String>> {
+    private final List<Transformation> transforms;
     private final String       separator;
 
     /**
-     * Represents a transformation to concatenate values.
-     * Function selects all columns and concatenates them with the separator. Empty cells are skipped.  If all
+     * Represents a transformation to concatenate values *resulting from other transformations*.
+     * The difference with ConcatTransform is that the input is transformations, and the resulting string will be
+     * concatenated using the requested separator. Empty cells are skipped.  If all
      * are empty, null is returned.
      *
-     * @param columns:   list of column names to go over in sequential order
+     * @param transforms:   list of transformations
      * @param separator: separator to concatenate the values
      */
     @JsonCreator
-    public ConcatTransform(
-            @JsonProperty( Constants.COLUMNS ) List<String> columns,
+    public ConcatCombineTransform(
+            @JsonProperty( Constants.TRANSFORMS ) List<Transformation> transforms,
             @JsonProperty( Constants.SEP ) String separator ) {
-        this.columns = columns;
+        this.transforms = transforms;
         this.separator = separator;
-    }
-
-    @JsonProperty( Constants.SEP )
-    public String getSeparator() {
-        return separator;
-    }
-
-    @JsonProperty( Constants.COLUMNS )
-    public List<String> getColumns() {
-        return columns;
     }
 
     @Override
     public Object apply( Map<String, String> row ) {
         StringBuilder sb = new StringBuilder();
         String sep = "";
-        for ( String s : columns ) {
-            if ( !StringUtils.isBlank( row.get( s ) ) ) {
-                sb.append( sep ).append( row.get( s ) );
+        for ( Transformation s : transforms )
+        {
+            Object toadd = s.apply(row);
+            if ( !StringUtils.isBlank( toadd.toString() ) ) {
+                sb.append( sep ).append( toadd );
                 sep = separator;
             }
         }
+
         String outstring = sb.toString();
         if ( StringUtils.isBlank( outstring ) ) {
             return outstring;

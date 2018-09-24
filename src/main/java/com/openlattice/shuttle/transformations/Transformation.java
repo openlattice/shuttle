@@ -27,10 +27,51 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openlattice.shuttle.util.Constants;
 
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 
 @JsonTypeInfo( use = Id.CLASS, include = As.PROPERTY, property = TRANSFORM )
 public abstract class Transformation<I extends Object> implements Function<I, Object> {
     public static final String TRANSFORM = "@transform";
+
+    private final Optional<String> column;
+
+    public Transformation( Optional<String> column) {
+        this.column = column;
+    }
+
+    public Transformation() {
+        this.column = Optional.empty();
+    }
+
+    @JsonProperty( Constants.COLUMN )
+    public String getColumn() {
+        return column.orElse( null );
+    }
+
+    protected String getInputString( Object o, Optional<String> column ) {
+        final String input;
+        if (!(column.isPresent())) {
+            input = o.toString();
+        } else {
+            ObjectMapper m = new ObjectMapper();
+            Map<String, String> row = m.convertValue( o, Map.class );
+            input = row.get(column);
+        }
+
+        return input;
+    }
+
+    protected Object applyValue( String s ) {
+        return s;
+    }
+
+    @Override
+    public Object apply( I o ) {
+        return applyValue( getInputString( o, column ) );
+    }
 }
