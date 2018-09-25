@@ -27,7 +27,7 @@ public class ConcatCombineTransform extends Transformation<Map<String, String>> 
             @JsonProperty( Constants.TRANSFORMS ) List<Transformation> transforms,
             @JsonProperty( Constants.SEP ) String separator ) {
         this.transforms = transforms;
-        this.separator = separator;
+        this.separator = separator == null? "-": separator;
     }
 
     @Override
@@ -46,7 +46,7 @@ public class ConcatCombineTransform extends Transformation<Map<String, String>> 
         }
 
         String outstring = sb.toString();
-        if ( StringUtils.isBlank( outstring ) ) {
+        if ( !StringUtils.isBlank( outstring ) ) {
             return outstring;
         } else {
             return null;

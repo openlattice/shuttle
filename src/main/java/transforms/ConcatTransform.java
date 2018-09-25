@@ -29,7 +29,7 @@ public class ConcatTransform extends Transformation<Map<String, String>> {
             @JsonProperty( Constants.COLUMNS ) List<String> columns,
             @JsonProperty( Constants.SEP ) String separator ) {
         this.columns = columns;
-        this.separator = separator;
+        this.separator = separator == null? "-": separator;
     }
 
     @JsonProperty( Constants.SEP )
