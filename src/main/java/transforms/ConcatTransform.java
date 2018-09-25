@@ -53,7 +53,7 @@ public class ConcatTransform extends Transformation<Map<String, String>> {
             }
         }
         String outstring = sb.toString();
-        if ( StringUtils.isBlank( outstring ) ) {
+        if ( !StringUtils.isBlank( outstring ) ) {
             return outstring;
         } else {
             return null;

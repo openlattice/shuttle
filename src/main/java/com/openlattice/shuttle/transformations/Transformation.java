@@ -55,12 +55,15 @@ public abstract class Transformation<I extends Object> implements Function<I, Ob
 
     protected String getInputString( Object o, Optional<String> column ) {
         final String input;
+        if (o==null){
+            return null;
+        }
         if (!(column.isPresent())) {
             input = o.toString();
         } else {
             ObjectMapper m = new ObjectMapper();
             Map<String, String> row = m.convertValue( o, Map.class );
-            input = row.get(column);
+            input = row.get(getColumn());
         }
 
         return input;
