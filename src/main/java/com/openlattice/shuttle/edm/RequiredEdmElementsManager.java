@@ -314,6 +314,7 @@ public class RequiredEdmElementsManager {
                 ImmutableSet.of(),
                 key,
                 properties,
+                null,
                 model.getBaseType().map( bt -> edmApi.getEntityTypeId( bt.getNamespace(), bt.getName() ) ),
                 Optional.of( objectType )
         );
