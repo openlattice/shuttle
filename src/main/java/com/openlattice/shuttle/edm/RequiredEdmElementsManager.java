@@ -21,6 +21,7 @@ package com.openlattice.shuttle.edm;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.*;
 import com.openlattice.authorization.Ace;
 import com.openlattice.authorization.Acl;
 import com.openlattice.authorization.AclData;
@@ -314,7 +315,7 @@ public class RequiredEdmElementsManager {
                 ImmutableSet.of(),
                 key,
                 properties,
-                null,
+                 LinkedHashMultimap.create(),
                 model.getBaseType().map( bt -> edmApi.getEntityTypeId( bt.getNamespace(), bt.getName() ) ),
                 Optional.of( objectType )
         );
