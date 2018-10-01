@@ -21,6 +21,7 @@ package com.openlattice.shuttle.edm;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.google.common.collect.*;
 import com.openlattice.authorization.Ace;
 import com.openlattice.authorization.Acl;
 import com.openlattice.authorization.AclData;
@@ -36,10 +37,7 @@ import com.openlattice.edm.type.AssociationType;
 import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
+
 import java.security.InvalidParameterException;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -312,6 +310,7 @@ public class RequiredEdmElementsManager {
                 ImmutableSet.of(),
                 key,
                 properties,
+                LinkedHashMultimap.create(),
                 model.getBaseType().map( bt -> edmApi.getEntityTypeId( bt.getNamespace(), bt.getName() ) ),
                 Optional.of( objectType )
         );
