@@ -55,9 +55,9 @@ import org.slf4j.LoggerFactory;
 
 public class RequiredEdmElementsManager {
 
-    private static final Logger logger = LoggerFactory.getLogger( RequiredEdmElementsManager.class );
-    private final EdmApi         edmApi;
-    private final PermissionsApi permissionsApi;
+    private static final Logger         logger = LoggerFactory.getLogger( RequiredEdmElementsManager.class );
+    private final        EdmApi         edmApi;
+    private final        PermissionsApi permissionsApi;
 
     public RequiredEdmElementsManager( EdmApi edmApi, PermissionsApi permissionsApi ) {
 
