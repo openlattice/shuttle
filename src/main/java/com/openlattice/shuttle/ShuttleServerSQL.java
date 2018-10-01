@@ -84,8 +84,8 @@ public class ShuttleServerSQL {
             HikariDataSource hds = ObjectMappers.getYamlMapper()
                     .readValue( new File( args[ offset ] ), IntegrationConfig.class )
                     .getHikariDatasource( args[ offset + 1 ] );
-            Payload arPayload = new JdbcPayload( hds, args[ offset + 2 ] );
-            flights.put( flight, arPayload );
+            Payload Payload = new JdbcPayload( hds, args[ offset + 2 ] );
+            flights.put( flight, Payload );
             shuttle.launchPayloadFlight( flights );
 
         }

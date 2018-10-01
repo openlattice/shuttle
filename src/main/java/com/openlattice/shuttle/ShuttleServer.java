@@ -83,27 +83,15 @@ public class ShuttleServer {
             final String dataPath;
             Integer offset = args.length - 1; // offset for next args
 
-            if ( args.length == 3 | args.length == 4 ) {
+            // get datapath (offset for username/pw vs jwt
+            dataPath = args[ offset ];
 
-                // get datapath (offset for username/pw vs jwt
-                dataPath = args[ offset ];
+            // get payload
+            Payload Payload = new SimplePayload( args[ offset ] );
+            logger.info( "datafile: " + args[ offset ] );
+            flights.put( flight, Payload );
+            shuttle.launchPayloadFlight( flights );
 
-                // get payload
-                Payload Payload = new SimplePayload( args[ offset ] );
-                logger.info( "datafile: " + args[ offset ] );
-                flights.put( flight, Payload );
-                shuttle.launchPayloadFlight( flights );
-
-            } else {
-
-                HikariDataSource hds = ObjectMappers.getYamlMapper()
-                        .readValue( new File( args[ offset + 1 ] ), IntegrationConfig.class )
-                        .getHikariDatasource( args[ offset ] );
-                Payload arPayload = new JdbcPayload( hds, args[ offset + 2 ] );
-                flights.put( flight, arPayload );
-                shuttle.launchPayloadFlight( flights );
-
-            }
-        }
+         }
     }
 }
