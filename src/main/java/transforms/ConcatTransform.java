@@ -12,7 +12,6 @@ import java.util.Map;
 
 import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 
-@JsonIgnoreProperties( value = { TRANSFORM } )
 public class ConcatTransform extends Transformation<Map<String, String>> {
     private final List<String> columns;
     private final String       separator;
@@ -20,7 +19,7 @@ public class ConcatTransform extends Transformation<Map<String, String>> {
     /**
      * Represents a transformation to concatenate values.
      * Function selects all columns and concatenates them with the separator. Empty cells are skipped.  If all
-     * are empty, an empty string is returned.
+     * are empty, null is returned.
      *
      * @param columns:   list of column names to go over in sequential order
      * @param separator: separator to concatenate the values
