@@ -66,7 +66,7 @@ fun main(args: Array<String>) {
     }
 
     if (cl.hasOption(FLIGHT)) {
-        flight = ObjectMappers.getYamlMapper().readValue(cl.getOptionValue(FLIGHT), Flight::class.java)
+        flight = ObjectMappers.getYamlMapper().readValue(File(cl.getOptionValue(FLIGHT)), Flight::class.java)
 
     } else {
         System.err.println("A flight is required in order to run shuttle.")
@@ -78,41 +78,36 @@ fun main(args: Array<String>) {
     if (cl.hasOption(CONFIGURATION)) {
         configuration = ObjectMappers.getYamlMapper()
                 .readValue(File(cl.getOptionValue(CONFIGURATION)), IntegrationConfig::class.java)
-    } else {
-        System.err.println("Integration configuration is specified.")
-        ShuttleCli.printHelp()
-        return
-    }
-    //If a datasource is specified then CSV can't be specified and sql must be specified.
-    if (cl.hasOption(DATASOURCE)) {
+
+        if (!cl.hasOption(DATASOURCE)){
+            // check datasource presence
+            System.out.println("Datasource must be specified when doing a JDBC datasource based integration.")
+            ShuttleCli.printHelp()
+            return
+        }
+        if (!cl.hasOption(SQL)){
+            // check SQL presence
+            System.out.println("SQL expression must be specified when doing a JDBC datasource based integration.")
+            ShuttleCli.printHelp()
+            return
+        }
         if (cl.hasOption(CSV)) {
+            // check csv ABsence
             System.out.println("Cannot specify CSV datasource and JDBC datasource simultaneously.")
             ShuttleCli.printHelp()
             return
         }
+
+        // get JDBC payload
         val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
+        val sql = cl.getOptionValue(SQL)
+        payload = JdbcPayload(hds, sql)
 
-        if (cl.hasOption(SQL)) {
-            val sql = cl.getOptionValue(SQL)
-            payload = JdbcPayload(hds, sql)
-        } else {
-            System.err.println("SQL expression must be specified when doing a JDBC datasource based integration.")
-            ShuttleCli.printHelp()
-            return
-        }
     } else if (cl.hasOption(CSV)) {
-        if (cl.hasOption(DATASOURCE)) {
-            System.out.println("Cannot specify datasource without a configuration file.")
-            ShuttleCli.printHelp()
-            return
-        }
 
-        if (cl.hasOption(SQL)) {
-            System.out.println("Cannot specify SQL without a configured datasource")
-            ShuttleCli.printHelp()
-            return
-        }
+        // get csv payload
         payload = SimplePayload(cl.getOptionValue(CSV))
+
     } else {
         System.err.println("At least one valid data source must be specified.")
         ShuttleCli.printHelp()
