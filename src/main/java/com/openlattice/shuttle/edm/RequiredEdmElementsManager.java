@@ -21,11 +21,7 @@ package com.openlattice.shuttle.edm;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-<<<<<<< HEAD
-import com.google.common.collect.*;
-=======
 import com.google.common.collect.LinkedHashMultimap;
->>>>>>> 42fc26a0c8ace38b29c954e38cbd7ee107789dc5
 import com.openlattice.authorization.Ace;
 import com.openlattice.authorization.Acl;
 import com.openlattice.authorization.AclData;
