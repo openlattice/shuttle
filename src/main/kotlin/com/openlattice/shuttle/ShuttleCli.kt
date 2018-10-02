@@ -73,7 +73,7 @@ class ShuttleCli {
         private val datasourceOption = Option.builder()
                 .longOpt(DATASOURCE)
                 .hasArg()
-                .argName("name")
+                .argName("Name of the source in the configuration file ")
                 .build()
 
         private val userOption = Option.builder()
