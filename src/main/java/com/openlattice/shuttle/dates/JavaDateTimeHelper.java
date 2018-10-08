@@ -77,6 +77,25 @@ public class JavaDateTimeHelper {
         return null;
     }
 
+    public LocalTime parseDateTimeAsTime( String datetime ) {
+        if ( shouldIgnoreValue( datetime ) )
+            return null;
+        for ( int i = 0; i < datePatterns.length; ++i ) {
+            DateTimeFormatter formatter = formatters.get( i );
+            try {
+                LocalDateTime ldt = LocalDateTime.parse( datetime, formatter );
+                //                if (ldt.isBefore(LocalDateTime.of(1900, 1, 1, 0, 0, 0))){return null;}
+                return ldt.atZone( tz.toZoneId() ).toLocalTime();
+            } catch ( Exception e ) {
+                if ( i == datePatterns.length - 1 ) {
+                    logger.error( "Unable to parse datetime {}, please see debug log for additional information.",
+                            datetime );
+                }
+            }
+        }
+        return null;
+    }
+
     public OffsetDateTime parseDateTime( String date ) {
         if ( shouldIgnoreValue( date ) )
             return null;
