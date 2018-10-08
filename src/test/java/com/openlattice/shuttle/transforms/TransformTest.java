@@ -160,6 +160,18 @@ public class TransformTest {
     }
 
     @Test
+    public void testParseBooleanTransform() {
+        Object parseBoolTest1 = new ParseBoolTransform().apply( "1" );
+        Assert.assertEquals( true, parseBoolTest1 );
+        Object parseBoolTest2 = new ParseBoolTransform().apply( "0" );
+        Assert.assertEquals( false, parseBoolTest2 );
+        Object parseBoolTest3 = new ParseBoolTransform().apply( "true" );
+        Assert.assertEquals( true, parseBoolTest3 );
+        Object parseBoolTest4 = new ParseBoolTransform().apply( "false" );
+        Assert.assertEquals( false, parseBoolTest4 );
+    }
+
+    @Test
     public void testDateTimeTransform() {
         String[] patterns = { "MM/dd/yyyy HH:mm" };
         OffsetDateTime expected = OffsetDateTime
