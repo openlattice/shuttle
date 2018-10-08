@@ -52,7 +52,13 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
         }
         final JavaDateTimeHelper dHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
                 datePattern );
-        LocalDate date = dHelper.parseDate( d );
+
+        LocalDate date;
+        try {
+            date = dHelper.parseDate( d );
+        } catch ( Exception e ) {
+            date = dHelper.parseDateTimeAsDate( d );
+        }
 
         // get time
         String t = row.get( timeColumn );
@@ -61,7 +67,15 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
         }
         final JavaDateTimeHelper tHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
                 timePattern );
-        LocalTime time = tHelper.parseTime( t );
+
+        LocalTime time;
+        try {
+            time = tHelper.parseTime( t );
+        } catch ( Exception e ) {
+            time = dHelper.parseDateTimeAsTime( d );
+        }
+
+        if ((date == null) || (time == null)){return null;};
 
         // combine
         LocalDateTime dateTime = LocalDateTime.of( date, time );
