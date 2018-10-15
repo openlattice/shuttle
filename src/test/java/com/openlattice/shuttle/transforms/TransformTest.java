@@ -6,6 +6,7 @@ import org.junit.Test;
 import transforms.*;
 
 import javax.management.AttributeList;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -18,6 +19,8 @@ public class TransformTest {
         testrow.put("FirstName", "John");
         testrow.put("LastName", "Doe");
         testrow.put("DOB","03/05/1998 10:00" );
+        testrow.put("ArrestedDate","10/01/92" );
+        testrow.put("ReleasedDate","10-01-25" );
         testrow.put("SSN", null);
         return testrow;
     }
@@ -179,6 +182,18 @@ public class TransformTest {
         Object dateTimeTest1 = new DateTimeTransform( patterns ).apply( getTestRow().get("DOB") );
         Assert.assertEquals( expected, dateTimeTest1 );
     }
+
+    @Test
+    public void testDateTransform() {
+        String[] patterns = { "MM/dd/yy", "MM-dd-yy" };
+        LocalDate expected1 = LocalDate.of( 1992, 10, 01);
+        Object dateTimeTest1 = new DateTransform( patterns ).apply( getTestRow().get("ArrestedDate") );
+        Assert.assertEquals( expected1, dateTimeTest1 );
+        LocalDate expected2 = LocalDate.of( 2025, 10, 01);
+        Object dateTimeTest2 = new DateTransform( patterns ).apply( getTestRow().get("ReleasedDate") );
+        Assert.assertEquals( expected2, dateTimeTest2 );
+    }
+
 
     @Test
     public void testConcatTransform() {
