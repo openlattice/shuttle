@@ -37,6 +37,10 @@ import com.openlattice.edm.type.AssociationType;
 import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 
 import java.security.InvalidParameterException;
 import java.util.EnumSet;
@@ -49,15 +53,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RequiredEdmElementsManager {
 
-    private static final Logger logger = LoggerFactory.getLogger( RequiredEdmElementsManager.class );
-    private final EdmApi         edmApi;
-    private final PermissionsApi permissionsApi;
+    private static final Logger         logger = LoggerFactory.getLogger( RequiredEdmElementsManager.class );
+    private final        EdmApi         edmApi;
+    private final        PermissionsApi permissionsApi;
 
     public RequiredEdmElementsManager( EdmApi edmApi, PermissionsApi permissionsApi ) {
 

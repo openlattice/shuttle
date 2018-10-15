@@ -3,6 +3,7 @@ package com.openlattice.shuttle.payload;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.util.concurrent.RateLimiter;
 import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -16,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,10 +25,10 @@ import org.slf4j.LoggerFactory;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class JdbcPayload implements Payload {
-    private static final Logger logger = LoggerFactory.getLogger( JdbcPayload.class );
-    private final HikariDataSource hds;
-    private final String           sql;
-    private final RateLimiter      rateLimiter;
+    private static final Logger           logger = LoggerFactory.getLogger( JdbcPayload.class );
+    private final        HikariDataSource hds;
+    private final        String           sql;
+    private final        RateLimiter      rateLimiter;
 
     public JdbcPayload( HikariDataSource hds, String sql ) {
         this( hds, sql, 10000 );
@@ -52,13 +54,13 @@ public class JdbcPayload implements Payload {
     }
 
     static final class ResultSetStringIterator implements Iterator<Map<String, String>> {
-        private final Connection   connection;
-        private final Statement    stmt;
-        private final ResultSet    rs;
-        private final List<String> columns;
-        private final int          columnCount;
-        private final RateLimiter rateLimiter;
-        private AtomicBoolean hasNext = new AtomicBoolean( false );
+        private final Connection    connection;
+        private final Statement     stmt;
+        private final ResultSet     rs;
+        private final List<String>  columns;
+        private final int           columnCount;
+        private final RateLimiter   rateLimiter;
+        private       AtomicBoolean hasNext = new AtomicBoolean( false );
 
         public ResultSetStringIterator(
                 Connection connection,
@@ -119,13 +121,13 @@ public class JdbcPayload implements Payload {
     }
 
     static final class ResultSetIterator implements Iterator<Map<String, Object>> {
-        private final Connection   connection;
-        private final Statement    stmt;
-        private final ResultSet    rs;
-        private final List<String> columns;
-        private final int          columnCount;
-        private final RateLimiter  rateLimiter;
-        private AtomicBoolean hasNext = new AtomicBoolean( false );
+        private final Connection    connection;
+        private final Statement     stmt;
+        private final ResultSet     rs;
+        private final List<String>  columns;
+        private final int           columnCount;
+        private final RateLimiter   rateLimiter;
+        private       AtomicBoolean hasNext = new AtomicBoolean( false );
 
         public ResultSetIterator(
                 Connection connection,

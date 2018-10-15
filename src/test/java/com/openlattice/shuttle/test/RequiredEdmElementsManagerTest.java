@@ -22,8 +22,10 @@ package com.openlattice.shuttle.test;
 import com.dataloom.mappers.ObjectMappers;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.shuttle.edm.RequiredEdmElements;
+
 import java.io.FileInputStream;
 import java.io.IOException;
+
 import org.junit.Assert;
 import org.junit.Test;
 

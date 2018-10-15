@@ -19,36 +19,55 @@
 
 package com.openlattice.shuttle;
 
+import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Maps;
+import com.openlattice.shuttle.conditions.Condition;
+import com.openlattice.shuttle.conditions.ConditionValueMapper;
+import com.openlattice.shuttle.conditions.Conditions;
+import com.openlattice.shuttle.util.Constants;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 
 public class Flight implements Serializable {
 
     private static final long serialVersionUID = 2207339044078175121L;
 
-    private final Map<String, EntityDefinition>      entityDefinitions;
-    private final Map<String, AssociationDefinition> associationDefinitions;
-    private String name ="Anon";
+    private final Map<String, EntityDefinition>                entityDefinitions;
+    private final Map<String, AssociationDefinition>           associationDefinitions;
+    private       String                                       name = "Anon";
+    public final  SerializableFunction<Map<String, String>, ?> valueMapper;
+    public final  Optional<Conditions>                         condition;
 
     @JsonCreator
     public Flight(
             @JsonProperty( SerializationConstants.ENTITY_DEFINITIONS_FIELD )
                     Map<String, EntityDefinition> entityDefinitions,
+            @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.ASSOCIATION_DEFINITIONS_FIELD )
                     Map<String, AssociationDefinition> associationDefinitions ) {
+        this.condition = condition;
         this.entityDefinitions = entityDefinitions;
         this.associationDefinitions = associationDefinitions;
+
+        if ( condition.isPresent() ) {
+            final List<Condition> internalConditions;
+            internalConditions = new ArrayList<>( this.condition.get().size() + 1 );
+            condition.get().forEach( internalConditions::add );
+            this.valueMapper = new ConditionValueMapper( internalConditions );
+        } else {
+            this.valueMapper = null;
+        }
     }
 
     private Flight( Flight.Builder builder ) {
         this.entityDefinitions = builder.entityDefinitionMap;
+        this.condition = Optional.empty();
+        this.valueMapper = null;
         this.associationDefinitions = builder.associationDefinitionMap;
         this.name = builder.name;
     }
@@ -57,8 +76,8 @@ public class Flight implements Serializable {
         return new Flight.Builder();
     }
 
-    public static Flight.Builder newFlight(String name) {
-        return new Flight.Builder(name);
+    public static Flight.Builder newFlight( String name ) {
+        return new Flight.Builder( name );
     }
 
     public String getName() {
@@ -80,6 +99,11 @@ public class Flight implements Serializable {
         return this.associationDefinitions.values();
     }
 
+    @JsonProperty( Constants.CONDITIONS )
+    public Optional<Conditions> getCondition() {
+        return condition;
+    }
+
     @JsonProperty( SerializationConstants.ASSOCIATION_DEFINITIONS_FIELD )
     public Map<String, AssociationDefinition> getAssociationDefinitions() {
         return associationDefinitions;
@@ -89,19 +113,18 @@ public class Flight implements Serializable {
 
         private Map<String, EntityDefinition>      entityDefinitionMap;
         private Map<String, AssociationDefinition> associationDefinitionMap;
-        private String name = "Anon";
+        private String                             name = "Anon";
 
         public Builder() {
             this.entityDefinitionMap = Maps.newHashMap();
             this.associationDefinitionMap = Maps.newHashMap();
         }
 
-        public Builder(String name) {
+        public Builder( String name ) {
             this.entityDefinitionMap = Maps.newHashMap();
             this.associationDefinitionMap = Maps.newHashMap();
             this.name = name;
         }
-
 
         public EntityGroup.Builder createEntities() {
 
@@ -142,7 +165,7 @@ public class Flight implements Serializable {
 
     @Override public int hashCode() {
         int result = entityDefinitions.hashCode();
-        if (associationDefinitions != null) {
+        if ( associationDefinitions != null ) {
             result = 31 * result + associationDefinitions.hashCode();
         }
         result = 31 * result + name.hashCode();

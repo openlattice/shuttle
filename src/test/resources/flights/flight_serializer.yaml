@@ -5,12 +5,12 @@ entityDefinitions:
       CoSoB.9BK4n:
         type: "CoSoB.9BK4n"
         transforms:
-        - !<transforms.HashTransform>
-          columns:
-          - "algo"
-          - "mode"
-          - "keySize"
-          hashFunction: "murmur128"
+          - !<transforms.HashTransform>
+            columns:
+              - "algo"
+              - "mode"
+              - "keySize"
+            hashFunction: "murmur128"
       ZJEsE.WzSAN:
         type: "ZJEsE.WzSAN"
       2jMG7.l0ovJ:
@@ -27,8 +27,8 @@ entityDefinitions:
         type: "ZJEsE.WzSAN"
         column: "algo"
         transforms:
-        - !<transforms.PrefixTransform>
-          prefix: "COWBELL_"
+          - !<transforms.PrefixTransform>
+            prefix: "COWBELL_"
       2jMG7.l0ovJ:
         type: "2jMG7.l0ovJ"
     name: "moreCyphers"

@@ -22,6 +22,7 @@ package com.openlattice.shuttle;
 
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.shuttle.adapter.Row;
+
 import java.util.Map;
 
 /**
@@ -29,6 +30,7 @@ import java.util.Map;
  */
 class RowAdapter implements SerializableFunction<Map<String, String>, Object> {
     private final SerializableFunction<Row, Object> extractor;
+
     RowAdapter( SerializableFunction<Row, Object> extractor ) {
         this.extractor = extractor;
     }
@@ -38,8 +40,7 @@ class RowAdapter implements SerializableFunction<Map<String, String>, Object> {
             @Override public <T> T getAs( String column ) {
                 return (T) row.get( column );
             }
-        });
+        } );
     }
-
 
 }
