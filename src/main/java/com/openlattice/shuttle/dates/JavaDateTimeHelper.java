@@ -16,153 +16,134 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 public class JavaDateTimeHelper {
-    private static final Logger logger = LoggerFactory.getLogger( JavaDateTimeHelper.class );
+    private static final Logger logger = LoggerFactory.getLogger(JavaDateTimeHelper.class);
 
-    private final TimeZone                tz;
-    private final String[]                datePatterns;
+    private final TimeZone tz;
+    private final String[] datePatterns;
     private final List<DateTimeFormatter> formatters;
 
-    public JavaDateTimeHelper( TimeZone tz, String... datePatterns ) {
+    public JavaDateTimeHelper(TimeZone tz, String... datePatterns) {
         this.tz = tz;
         this.datePatterns = datePatterns;
-        this.formatters = Arrays.stream( datePatterns ).map( pattern -> DateTimeFormatter.ofPattern( pattern ) )
-                .collect( Collectors.toList() );
+        this.formatters = Arrays.stream(datePatterns).map(pattern -> DateTimeFormatter.ofPattern(pattern))
+                .collect(Collectors.toList());
     }
 
-    private boolean shouldIgnoreValue( String date ) {
-        return StringUtils.isBlank( date ) || date.equals( "NULL" );
+    private boolean shouldIgnoreValue(String date) {
+        return StringUtils.isBlank(date) || date.equals("NULL");
     }
 
-    public LocalDate parseDate( String date ) {
-        if ( shouldIgnoreValue( date ) )
+    public LocalDate parseDate(String date) {
+        if (shouldIgnoreValue(date))
             return null;
-        for ( int i = 0; i < datePatterns.length; ++i ) {
-            DateTimeFormatter formatter = formatters.get( i );
+        for (int i = 0; i < datePatterns.length; ++i) {
+            DateTimeFormatter formatter = formatters.get(i);
             try {
-                LocalDate ld = LocalDate.parse( date, formatter );
+                LocalDate ld = LocalDate.parse(date, formatter);
                 if (
-                        datePatterns[ 0 ].matches( ".*yy.*" ) && !datePatterns[ 0 ].matches( ".*yyyy.*" ) ||
-                                datePatterns[ 0 ].matches( ".*YY.*" ) && !datePatterns[ 0 ].matches( ".*YYYY.*" )
+                        datePatterns[0].matches(".*yy.*") && !datePatterns[0].matches(".*yyyy.*") ||
+                                datePatterns[0].matches(".*YY.*") && !datePatterns[0].matches(".*YYYY.*")
                 ) {
-                    if ( ( ld.getYear() - LocalDate.now().getYear() ) > 20 ) {
-                        ld = ld.withYear( ld.getYear() - 100 );
+                    if ((ld.getYear() - LocalDate.now().getYear()) > 20) {
+                        ld = ld.withYear(ld.getYear() - 100);
                     }
                 }
                 return ld;
-            } catch ( Exception e ) {
-                if ( i == datePatterns.length - 1 ) {
-                    logger.error( "Unable to parse date {}, please see debug log for additional information.", date );
+            } catch (Exception e) {
+                if (i == datePatterns.length - 1) {
+                    logger.error("Unable to parse date {}, please see debug log for additional information.", date);
                 }
             }
         }
         return null;
     }
 
-    public LocalDate parseDateTimeAsDate( String date ) {
-        if ( shouldIgnoreValue( date ) )
+    public OffsetDateTime parseDateTime(String date) {
+        if (shouldIgnoreValue(date))
             return null;
-        for ( int i = 0; i < datePatterns.length; ++i ) {
-            DateTimeFormatter formatter = formatters.get( i );
+        for (int i = 0; i < datePatterns.length; ++i) {
+            DateTimeFormatter formatter = formatters.get(i);
             try {
-                LocalDateTime ldt = LocalDateTime.parse( date, formatter );
-
-                return ldt.atZone( tz.toZoneId() ).toLocalDate();
-            } catch ( Exception e ) {
-                if ( i == datePatterns.length - 1 ) {
-                    logger.error( "Unable to parse datetime {}, please see debug log for additional information.",
-                            date );
-                }
-            }
-        }
-        return null;
-    }
-
-    public LocalTime parseDateTimeAsTime( String datetime ) {
-        if ( shouldIgnoreValue( datetime ) )
-            return null;
-        for ( int i = 0; i < datePatterns.length; ++i ) {
-            DateTimeFormatter formatter = formatters.get( i );
-            try {
-                LocalDateTime ldt = LocalDateTime.parse( datetime, formatter );
+                LocalDateTime ldt = LocalDateTime.parse(date, formatter);
                 //                if (ldt.isBefore(LocalDateTime.of(1900, 1, 1, 0, 0, 0))){return null;}
-                return ldt.atZone( tz.toZoneId() ).toLocalTime();
-            } catch ( Exception e ) {
-                if ( i == datePatterns.length - 1 ) {
-                    logger.error( "Unable to parse datetime {}, please see debug log for additional information.",
-                            datetime );
+                if (
+                        datePatterns[0].matches(".*yy.*") && !datePatterns[0].matches(".*yyyy.*") ||
+                                datePatterns[0].matches(".*YY.*") && !datePatterns[0].matches(".*YYYY.*")
+                ) {
+                    if ((ldt.getYear() - LocalDate.now().getYear()) > 20) {
+                        ldt = ldt.withYear(ldt.getYear() - 100);
+                    }
+                }
+                return ldt.atZone(tz.toZoneId()).toOffsetDateTime();
+            } catch (Exception e) {
+                if (i == datePatterns.length - 1) {
+                    logger.error("Unable to parse datetime {}, please see debug log for additional information.",
+                            date);
                 }
             }
         }
         return null;
     }
 
-    public OffsetDateTime parseDateTime( String date ) {
-        if ( shouldIgnoreValue( date ) )
+    public LocalDate parseDateTimeAsDate(String date) {
+        if (shouldIgnoreValue(date))
             return null;
-        for ( int i = 0; i < datePatterns.length; ++i ) {
-            DateTimeFormatter formatter = formatters.get( i );
+        LocalDateTime ldt = parseDateTime(date).toLocalDateTime();
+        if (ldt == null) {
+            return null;
+        }
+        return ldt.atZone(tz.toZoneId()).toLocalDate();
+    }
+
+    public LocalTime parseDateTimeAsTime(String datetime) {
+        if (shouldIgnoreValue(datetime))
+            return null;
+        LocalDateTime ldt = parseDateTime(datetime).toLocalDateTime();
+        if (ldt == null) {
+            return null;
+        }
+        return ldt.atZone(tz.toZoneId()).toLocalTime();
+    }
+
+    public OffsetDateTime parseDateAsDateTime(String date) {
+        LocalDate ld = parseDate(date);
+        if (ld == null) {
+            return null;
+        }
+        LocalDateTime ldt = ld.atTime(0, 0);
+        return ldt.atZone(tz.toZoneId()).toOffsetDateTime();
+    }
+
+    public LocalTime parseTime(String time) {
+
+        if (shouldIgnoreValue(time))
+            return null;
+        for (int i = 0; i < datePatterns.length; ++i) {
+            DateTimeFormatter formatter = formatters.get(i);
             try {
-                LocalDateTime ldt = LocalDateTime.parse( date, formatter );
-                //                if (ldt.isBefore(LocalDateTime.of(1900, 1, 1, 0, 0, 0))){return null;}
-                return ldt.atZone( tz.toZoneId() ).toOffsetDateTime();
-            } catch ( Exception e ) {
-                if ( i == datePatterns.length - 1 ) {
-                    logger.error( "Unable to parse datetime {}, please see debug log for additional information.",
-                            date );
+                return LocalTime.parse(time, formatter);
+            } catch (Exception e) {
+                if (i == datePatterns.length - 1) {
+                    logger.error("Unable to parse time {}, please see debug log for additional information.", time);
                 }
             }
         }
         return null;
     }
 
-    public OffsetDateTime parseDateAsDateTime( String date ) {
-        if ( shouldIgnoreValue( date ) )
+    public LocalDateTime parseLocalDateTime(String date) {
+        if (shouldIgnoreValue(date))
             return null;
-        for ( int i = 0; i < datePatterns.length; ++i ) {
-            DateTimeFormatter formatter = formatters.get( i );
+        for (int i = 0; i < datePatterns.length; ++i) {
+            DateTimeFormatter formatter = formatters.get(i);
             try {
-                LocalDateTime ldt = LocalDate.parse( date, formatter ).atTime( 0, 0 );
-
-                return ldt.atZone( tz.toZoneId() ).toOffsetDateTime();
-            } catch ( Exception e ) {
-                if ( i == datePatterns.length - 1 ) {
-                    logger.error( "Unable to parse datetime {}, please see debug log for additional information.",
-                            date );
-                }
-            }
-        }
-        return null;
-    }
-
-    public LocalTime parseTime( String time ) {
-        if ( shouldIgnoreValue( time ) )
-            return null;
-        for ( int i = 0; i < datePatterns.length; ++i ) {
-            DateTimeFormatter formatter = formatters.get( i );
-            try {
-                return LocalTime.parse( time, formatter );
-            } catch ( Exception e ) {
-                if ( i == datePatterns.length - 1 ) {
-                    logger.error( "Unable to parse time {}, please see debug log for additional information.", time );
-                }
-            }
-        }
-        return null;
-    }
-
-    public LocalDateTime parseLocalDateTime( String date ) {
-        if ( shouldIgnoreValue( date ) )
-            return null;
-        for ( int i = 0; i < datePatterns.length; ++i ) {
-            DateTimeFormatter formatter = formatters.get( i );
-            try {
-                LocalDateTime ldt = LocalDateTime.parse( date, formatter );
+                LocalDateTime ldt = LocalDateTime.parse(date, formatter);
 
                 return ldt;
-            } catch ( Exception e ) {
-                if ( i == datePatterns.length - 1 ) {
-                    logger.error( "Unable to parse datetime {}, please see debug log for additional information.",
-                            date );
+            } catch (Exception e) {
+                if (i == datePatterns.length - 1) {
+                    logger.error("Unable to parse datetime {}, please see debug log for additional information.",
+                            date);
                 }
             }
         }
