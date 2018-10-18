@@ -17,11 +17,18 @@ public class ParseBoolTransform extends Transformation<String> {
     public ParseBoolTransform() {
     }
 
+    private boolean convertToBoolean(String value) {
+        boolean returnValue = false;
+        if ("1".equalsIgnoreCase(value) || "yes".equalsIgnoreCase(value) ||
+                "true".equalsIgnoreCase(value) || "on".equalsIgnoreCase(value))
+            returnValue = true;
+        return returnValue;
+    }
     @Override
     public Object apply( String o ) {
         if ( StringUtils.isNotBlank( o ) ) {
             try {
-                return Boolean.valueOf( o );
+                return convertToBoolean( o );
             } catch ( IllegalArgumentException e ) {
                 logger.error( "Unable to parse boolean from value {}", o );
             }

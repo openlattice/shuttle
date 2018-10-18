@@ -31,5 +31,6 @@ public final class Constants {
     public static final String TIME_PATTERN        = "timePattern";
     public static final String STRING              = "string";
     public static final String PARTIAL             = "partial";
+    public static final String ADDRESS_OBJECT      = "addressObject";
 
 }
