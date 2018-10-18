@@ -22,6 +22,7 @@ public class TransformTest {
         testrow.put("ArrestedDate","10/01/92" );
         testrow.put("ReleasedDate","10-01-25" );
         testrow.put("SSN", null);
+        testrow.put("Address", "560 Scott Street, San Francisco, CA 94117");
         return testrow;
     }
 
@@ -201,6 +202,19 @@ public class TransformTest {
         List<String> cols = Arrays.asList("FirstName","LastName");
         Object concatTest1 = new ConcatTransform(cols, " ").apply(getTestRow());
         Assert.assertEquals( expected, concatTest1 );
+    }
+
+    @Test
+    public void testGeocoderTransform() {
+        String expectedStreet = "Scott Street";
+        Object geocoderTest1 = new GeocoderTransform("road", Optional.empty()).applyValue( getTestRow().get("Address") );
+        String expectedNo = "560";
+        Object geocoderTest2 = new GeocoderTransform("house_number", Optional.empty()).applyValue( getTestRow().get("Address") );
+        String expectedType = "house";
+        Object geocoderTest3 = new GeocoderTransform("type", Optional.empty()).applyValue( getTestRow().get("Address") );
+        Assert.assertEquals( expectedStreet, geocoderTest1 );
+        Assert.assertEquals( expectedNo, geocoderTest2 );
+        Assert.assertEquals( expectedType, geocoderTest3 );
     }
 
 }
