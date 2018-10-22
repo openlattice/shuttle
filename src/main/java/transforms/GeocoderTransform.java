@@ -18,13 +18,13 @@ import java.util.*;
 
 public class GeocoderTransform extends Transformation<Object> {
     private final String           addressObject;
-    protected String NOMINATIM_SERVICE_URL = "https://nominatim.openstreetmap.org/";
+    protected String NOMINATIM_SERVICE_URL = "http://ec2-160-1-30-195.us-gov-west-1.compute.amazonaws.com/nominatim/";
 
     /**
      * Represents a transformation to get the digits at the start of a column (if starts with digits).
      *
      * @param addressObject: which object from the address to choose, on of ['lat', 'lon', 'type', 'house_number'
-     *                                                          'road', 'neighbourhood', 'city', 'county', 'state',
+     *                                                          'road', 'neighbourhood', 'city', 'postcode', 'county', 'state',
      *                                                          'country', 'country_code']
      * @param column:   column name
      */
@@ -72,13 +72,21 @@ public class GeocoderTransform extends Transformation<Object> {
 
         ObjectMapper mapper = new ObjectMapper();
         List<Map<String, Object>> map = mapper.readValue(content.toString(), new TypeReference<List<Map<String, Object>>>(){});
+        if (map.size() == 0){
+            System.out.println("Can't parse address " + input);
+            return null;}
         Map<String, Object> address = map.get(0);
+        if (address.isEmpty()){
+            System.out.println("Can't parse address " + input);
+            return null;
+        }
 
         List<String> outercodes = Arrays.asList("lat", "lon", "type");
         if (outercodes.contains(addressObject)){
             return (String) address.get(addressObject);
         } else {
-            Map<String, Object> hlpr = mapper.convertValue(address.get("address"), Map.class);
+            Object hlp1 = address.get("address");
+            Map<String, Object> hlpr = mapper.convertValue(hlp1, Map.class);
             return (String) hlpr.get(addressObject);
         }
 
