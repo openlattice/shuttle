@@ -31,21 +31,25 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
+import com.openlattice.shuttle.conditions.Condition;
+import com.openlattice.shuttle.conditions.ConditionValueMapper;
+import com.openlattice.shuttle.conditions.Conditions;
+import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.util.Constants;
+
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Stream;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import transforms.ColumnTransform;
 
-@JsonInclude(value = Include.NON_EMPTY)
+@JsonInclude( value = Include.NON_EMPTY )
 public class EntityDefinition implements Serializable {
 
     private static final long serialVersionUID = -3565689091187367622L;
@@ -57,8 +61,10 @@ public class EntityDefinition implements Serializable {
     private final List<FullQualifiedName>                                     key;
     private final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
     private final String                                                      alias;
+    public final  Optional<Conditions>                                        condition;
     private final Optional<SerializableFunction<Map<String, String>, String>> generator;
     private final boolean                                                     useCurrentSync;
+    public final  SerializableFunction<Map<String, String>, ?>                valueMapper;
 
     @JsonCreator
     public EntityDefinition(
@@ -68,15 +74,26 @@ public class EntityDefinition implements Serializable {
             @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS )
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
+            @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
 
         this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
         this.entitySetName = entitySetName;
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
-        this.alias = alias;
+        this.alias = alias == null ? entitySetName : alias;
         this.generator = Optional.empty();
+        this.condition = condition;
         this.useCurrentSync = useCurrentSync == null ? false : useCurrentSync;
+
+        if ( condition.isPresent() ) {
+            final List<Condition> internalConditions;
+            internalConditions = new ArrayList<>( this.condition.get().size() + 1 );
+            condition.get().forEach( internalConditions::add );
+            this.valueMapper = new ConditionValueMapper( internalConditions );
+        } else {
+            this.valueMapper = null;
+        }
     }
 
     public EntityDefinition(
@@ -95,6 +112,8 @@ public class EntityDefinition implements Serializable {
         this.key = key;
         this.alias = alias;
         this.generator = generator;
+        this.condition = Optional.empty();
+        this.valueMapper = null;
         this.useCurrentSync = useCurrentSync.orElse( false );
     }
 
@@ -104,13 +123,15 @@ public class EntityDefinition implements Serializable {
         this.entitySetName = builder.entitySetName;
         this.propertyDefinitions = builder.propertyDefinitionMap;
         this.key = builder.key;
+        this.condition = Optional.empty();
+        this.valueMapper = null;
         this.alias = builder.alias;
         this.generator = Optional.ofNullable( builder.entityIdGenerator );
         this.useCurrentSync = builder.useCurrentSync;
     }
 
     @JsonIgnore
-//    @JsonProperty( SerializationConstants.FQN )
+    //    @JsonProperty( SerializationConstants.FQN )
     public FullQualifiedName getEntityTypeFqn() {
         return this.entityTypeFqn;
     }
@@ -148,6 +169,11 @@ public class EntityDefinition implements Serializable {
     @JsonProperty( SerializationConstants.CURRENT_SYNC )
     public boolean useCurrentSync() {
         return useCurrentSync;
+    }
+
+    @JsonProperty( Constants.CONDITIONS )
+    public Optional<Conditions> getCondition() {
+        return condition;
     }
 
     @JsonIgnore

@@ -28,33 +28,39 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import java.util.Objects;
-import com.openlattice.shuttle.dates.DateTimeHelper;
-import com.openlattice.shuttle.dates.TimeZones;
 
-@JsonIgnoreProperties(value = {TRANSFORM} )
+import java.util.Objects;
+
+import com.openlattice.shuttle.dates.JavaDateTimeHelper;
+import com.openlattice.shuttle.dates.TimeZones;
+import org.apache.commons.lang3.StringUtils;
+
 public class DateTransform extends Transformation<String> {
-    private final String pattern;
+    private final String[] pattern;
 
     /**
      * Represents a transformation from string to date.
+     *
      * @param pattern: pattern of date (eg. "MM/dd/YY")
      */
     @JsonCreator
-    public DateTransform( @JsonProperty( Constants.PATTERN ) String pattern ) {
+    public DateTransform( @JsonProperty( Constants.PATTERN ) String[] pattern ) {
         this.pattern = pattern;
     }
 
-    @JsonProperty( value = Constants.PATTERN,required = false)
-    public String getPattern() {
+    @JsonProperty( value = Constants.PATTERN, required = false )
+    public String[] getPattern() {
         return pattern;
     }
 
-    @Override public Object apply( String o ) {
-        final DateTimeHelper dtHelper = new DateTimeHelper( TimeZones.America_NewYork,
+    @Override
+    public Object apply( String o ) {
+        if ( StringUtils.isBlank( o ) | o == null ) {
+            return null;
+        }
+        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
                 pattern );
         return dtHelper.parseDate( o );
     }
-
 
 }

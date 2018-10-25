@@ -23,6 +23,7 @@ package com.openlattice.shuttle.transformations;
 
 import java.util.ArrayList;
 import java.util.Collection;
+
 import org.jetbrains.annotations.NotNull;
 
 /**

@@ -29,16 +29,16 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
-import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.conditions.Condition;
+import com.openlattice.shuttle.conditions.ConditionValueMapper;
+import com.openlattice.shuttle.conditions.Conditions;
 import com.openlattice.shuttle.transformations.Transformations;
+
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
+
+import com.openlattice.shuttle.util.Constants;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,8 +57,10 @@ public class AssociationDefinition implements Serializable {
     private final String                                                      dstAlias;
     private final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
     private final String                                                      alias;
+    public final  Optional<Conditions>                                        condition;
     private final Optional<SerializableFunction<Map<String, String>, String>> generator;
     private final boolean                                                     useCurrentSync;
+    public final  SerializableFunction<Map<String, String>, ?>                valueMapper;
 
     @JsonCreator
     public AssociationDefinition(
@@ -69,6 +71,7 @@ public class AssociationDefinition implements Serializable {
             @JsonProperty( SerializationConstants.DST ) String dstAlias,
             @JsonProperty( SerializationConstants.PROPERTY_DEFINITIONS )
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
+            @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
 
@@ -78,9 +81,19 @@ public class AssociationDefinition implements Serializable {
         this.dstAlias = dstAlias;
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
-        this.alias = alias;
+        this.alias = alias == null ? entitySetName : alias;
         this.generator = Optional.empty();
+        this.condition = condition;
         this.useCurrentSync = useCurrentSync == null ? false : useCurrentSync;
+
+        if ( condition.isPresent() ) {
+            final List<Condition> internalConditions;
+            internalConditions = new ArrayList<>( this.condition.get().size() + 1 );
+            condition.get().forEach( internalConditions::add );
+            this.valueMapper = new ConditionValueMapper( internalConditions );
+        } else {
+            this.valueMapper = null;
+        }
     }
 
     private AssociationDefinition( AssociationDefinition.Builder builder ) {
@@ -93,6 +106,8 @@ public class AssociationDefinition implements Serializable {
         this.key = builder.key;
         this.alias = builder.alias;
         this.generator = Optional.ofNullable( builder.generator );
+        this.condition = Optional.empty();
+        this.valueMapper = null;
         this.useCurrentSync = builder.useCurrentSync;
     }
 
@@ -145,6 +160,11 @@ public class AssociationDefinition implements Serializable {
     @JsonProperty( SerializationConstants.CURRENT_SYNC )
     public boolean useCurrentSync() {
         return useCurrentSync;
+    }
+
+    @JsonProperty( Constants.CONDITIONS )
+    public Optional<Conditions> getCondition() {
+        return condition;
     }
 
     @JsonIgnore
