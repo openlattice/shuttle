@@ -26,44 +26,44 @@ import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import com.openlattice.shuttle.util.Parsers;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Optional;
 
-@JsonIgnoreProperties(value = {TRANSFORM} )
-public class ConditionalColumnTransform extends Transformation<Map<String, String>> {
-    private final List<String> columns;
+public class GetPrefixDigitsTransform extends Transformation<Object> {
+    private final String           separator;
 
     /**
-     * Represents a transformation to select columns based on non-empty cells.
-     * Function goes over columns until a non-zero input is found.
-     * @param columns: list of columns to go over in sequential order
+     * Represents a transformation to get the digits at the start of a column (if starts with digits).
+     *
+     * @param separator: separation between digits and
+     * @param column:   column name
      */
-     @JsonCreator
-     public ConditionalColumnTransform(
-            @JsonProperty( Constants.COLUMNS ) List<String> columns) {
-        this.columns = columns;
-    }
-
-    @JsonProperty( Constants.COLUMNS )
-    public List<String> getColumns() {
-        return columns;
-    }
-
-    @Override public Object apply( Map<String, String> row ) {
-        for ( String s : columns ) {
-            String thiscol = row.get(s);
-            if ( StringUtils.isNotBlank(thiscol)) {
-                return thiscol;
-            }
+    @JsonCreator
+    public GetPrefixDigitsTransform(
+            @JsonProperty( Constants.SEP ) String separator,  @JsonProperty( Constants.COLUMN ) Optional<String> column  ) {
+        super( column );
+        this.separator = separator;
         }
-        return "";
+
+
+    @Override
+    public Object applyValue( String input ) {
+        if ( StringUtils.isBlank( input ) ) {
+            return null;
+        }
+        if ( Character.isDigit( input.trim().charAt( 0 ) ) ) {
+            String[] strBadge = input.split( separator );
+            return strBadge[ 0 ].trim();
+        }
+        return null;
     }
 
 }

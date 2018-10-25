@@ -28,27 +28,28 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Objects;
 
-@JsonIgnoreProperties(value = {TRANSFORM} )
-public class RemoveDigitsTransform extends Transformation<String>  {
-    private final String tmp;
+@JsonIgnoreProperties( value = { TRANSFORM } )
+public class RemoveDigitsTransform extends Transformation<String> {
 
     /**
      * Represents a transformation to remove digits in a string.
-     * @param tmp: this is a bug, but a random string should be included
      */
-    public RemoveDigitsTransform(
-            @JsonProperty( Constants.TEMP ) String tmp
-            ) {
-        this.tmp = tmp;
+    public RemoveDigitsTransform() {
     }
 
     @Override
     public Object apply( String o ) {
-         return o.replaceAll( "[\\d]+", "" );
+        String outstring = o.replaceAll( "[\\d]+", "" );
+        if ( StringUtils.isBlank( outstring ) ) {
+            return null;
+        } else {
+            return outstring;
+        }
     }
 
 }

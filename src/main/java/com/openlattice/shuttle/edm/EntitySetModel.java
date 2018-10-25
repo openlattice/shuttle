@@ -37,7 +37,6 @@ public class EntitySetModel {
     private final Set<String>       contacts;
     private final Set<String>       owners;
 
-
     @JsonCreator
     public EntitySetModel(
             @JsonProperty( SerializationConstants.TYPE_FIELD ) String type,
@@ -103,9 +102,9 @@ public class EntitySetModel {
             return false;
         if ( !description.equals( that.description ) )
             return false;
-        if (!contacts.equals( that.contacts ) )
+        if ( !contacts.equals( that.contacts ) )
             return false;
-        if (!owners.equals( that.owners ) )
+        if ( !owners.equals( that.owners ) )
             return false;
         return true;
     }

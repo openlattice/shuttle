@@ -36,5 +36,4 @@ public class PrefixTransformSerdes extends AbstractJacksonSerializationTest<Pref
         return PrefixTransform.class;
     }
 
-
 }
