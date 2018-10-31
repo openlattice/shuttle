@@ -34,7 +34,7 @@ public class DateTimeAsDateTransform extends Transformation<String> {
         final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
                 pattern );
         Object out = dtHelper.parseDateTimeAsDate( o );
-        if (o == null ){
+        if ( o == null ) {
             return null;
         }
         return out;
