@@ -24,6 +24,8 @@ public class TransformTest {
         testrow.put("SSN", null);
         testrow.put("Address", "560 Scott Street, San Francisco, CA 94117");
         testrow.put("CommittedDateTime", "03/05/00 10:00");
+        testrow.put("Latt", "36.23452");
+        testrow.put("Long", "30.34573");
         return testrow;
     }
 
@@ -37,6 +39,19 @@ public class TransformTest {
         Transformations transfos = new Transformations();
         transfos.add(new ValueTransform("nope"));
         return transfos;
+    }
+
+    @Test
+    public void testGeographyPointTransform() {
+        Transformations latTransfos = new Transformations();
+        latTransfos.add(new ColumnTransform("Latt"));
+        Transformations lonTransfos = new Transformations();
+        lonTransfos.add(new ColumnTransform("Long"));
+        Object geographypointTest1 = new GeographyPointTransform(
+                latTransfos, lonTransfos
+        ).apply(getTestRow());
+        Assert.assertEquals("36.23452,30.34573", geographypointTest1);
+
     }
 
     @Test
