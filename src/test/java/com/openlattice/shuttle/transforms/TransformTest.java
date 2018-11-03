@@ -22,10 +22,15 @@ public class TransformTest {
         testrow.put("ArrestedDate", "10/01/92");
         testrow.put("ReleasedDate", "10-01-25");
         testrow.put("SSN", null);
+        testrow.put("Sex", "f");
         testrow.put("Address", "560 Scott Street, San Francisco, CA 94117");
         testrow.put("CommittedDateTime", "03/05/00 10:00");
         return testrow;
     }
+
+    //==================//
+    // HELPER FUNCTIONS //
+    //==================//
 
     public Transformations getTrueTestTransforms() {
         Transformations transfos = new Transformations();
@@ -38,6 +43,10 @@ public class TransformTest {
         transfos.add(new ValueTransform("nope"));
         return transfos;
     }
+
+    //==================//
+    // BOOLEAN TESTS    //
+    //==================//
 
     @Test
     public void testBooleanContainsTransform() {
@@ -149,14 +158,9 @@ public class TransformTest {
         Assert.assertEquals("yup", booleanRegexTest1);
     }
 
-    @Test
-    public void testPrefixTransform() {
-        Object prefixTest1 = new PrefixTransform("prefix_").apply("name");
-        Assert.assertEquals("prefix_name", prefixTest1);
-
-        Object prefixTest2 = new PrefixTransform("prefix_").apply(null);
-        Assert.assertEquals(null, prefixTest2);
-    }
+    //==================//
+    // PARSING TESTS    //
+    //==================//
 
     @Test
     public void testParseIntTransform() {
@@ -175,6 +179,10 @@ public class TransformTest {
         Object parseBoolTest4 = new ParseBoolTransform().apply("false");
         Assert.assertEquals(false, parseBoolTest4);
     }
+
+    //==================//
+    // DATETIME TESTS   //
+    //==================//
 
     @Test
     public void testDateTimeTransform() {
@@ -202,12 +210,41 @@ public class TransformTest {
     }
 
 
+    //==================//
+    // OTHER TESTS      //
+    //==================//
+
+    @Test
+    public void testPrefixTransform() {
+        Object prefixTest1 = new PrefixTransform("prefix_").apply("name");
+        Assert.assertEquals("prefix_name", prefixTest1);
+
+        Object prefixTest2 = new PrefixTransform("prefix_").apply(null);
+        Assert.assertEquals(null, prefixTest2);
+    }
+
+
     @Test
     public void testConcatTransform() {
         String expected = "John Doe";
         List<String> cols = Arrays.asList("FirstName", "LastName");
         Object concatTest1 = new ConcatTransform(cols, " ").apply(getTestRow());
         Assert.assertEquals(expected, concatTest1);
+    }
+
+    @Test
+    public void testReplaceTransform() {
+        Optional<Boolean> optrue = Optional.of(true);
+        Optional<Boolean> opfals = Optional.of(false);
+
+        List<String> target = Arrays.asList("F");
+        List<String> goal = Arrays.asList("female");
+        Object replaceTest1 = new ReplaceTransform(target, optrue, opfals, goal,"null").apply(getTestRow().get("Sex"));
+        Assert.assertEquals("female", replaceTest1);
+        Object replaceTest2 = new ReplaceTransform(target, opfals, opfals, goal,"null").apply(getTestRow().get("Sex"));
+        Assert.assertEquals(null, replaceTest2);
+        Object replaceTest3 = new ReplaceTransform(target, opfals, opfals, goal,null).apply(getTestRow().get("Sex"));
+        Assert.assertEquals("f", replaceTest3);
     }
 
     @Test
