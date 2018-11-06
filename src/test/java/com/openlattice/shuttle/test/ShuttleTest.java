@@ -26,12 +26,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import com.openlattice.authorization.PermissionsApi;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.client.ApiFactory;
 import com.openlattice.client.ApiFactoryFactory;
 import com.openlattice.data.DataApi;
@@ -50,7 +50,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -85,6 +84,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
     private static EntityType CYPHERS_ET = TestDataFactory
             .childEntityTypeWithPropertyType( null,
                     PTS.stream().map( pt -> pt.getId() ).collect( Collectors.toSet() ),
+                    SecurableObjectType.EntityType,
                     ALGO_PT );
 
     private static AssociationType ASSOCIATION_TYPE = TestDataFactory
