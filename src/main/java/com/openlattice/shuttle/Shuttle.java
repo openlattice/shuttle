@@ -68,6 +68,7 @@ public class Shuttle implements Serializable {
     private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
 
+    private static final int UPLOAD_BATCH_SIZE = 100000;
     private static transient LoadingCache<String, UUID>                             entitySetIdCache = null;
     private static transient LoadingCache<FullQualifiedName, UUID>                  propertyIdsCache = null;
     private static transient LoadingCache<String, LinkedHashSet<FullQualifiedName>> keyCache         = null;
@@ -219,12 +220,11 @@ public class Shuttle implements Serializable {
 
     public void launchFlight( Flight flight, Stream<Map<String, String>> payload ) {
         Optional<BulkDataCreation> remaining = payload
+                .parallel()
                 .map( row -> {
-                    DataIntegrationApi dataApi;
                     EdmApi edmApi;
 
                     try {
-                        dataApi = this.apiClient.getDataIntegrationApi();
                         edmApi = this.apiClient.getEdmApi();
                     } catch ( ExecutionException e ) {
                         logger.error( "Failed to retrieve apis." );
@@ -372,7 +372,7 @@ public class Shuttle implements Serializable {
                     a.getAssociations().addAll( b.getAssociations() );
                     a.getEntities().addAll( b.getEntities() );
 
-                    if ( a.getAssociations().size() > 10000 || a.getEntities().size() > 10000 ) {
+                    if ( a.getAssociations().size() > 100000 || a.getEntities().size() > 100000 ) {
                         IntegrationResults results = dataApi.integrateEntityAndAssociationData( a, false );
                         return new BulkDataCreation( new HashSet<>(), new HashSet<>() );
                     }
