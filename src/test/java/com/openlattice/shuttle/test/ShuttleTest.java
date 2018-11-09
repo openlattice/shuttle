@@ -85,6 +85,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
     private static EntityType CYPHERS_ET = TestDataFactory
             .childEntityTypeWithPropertyType( null,
                     PTS.stream().map( pt -> pt.getId() ).collect( Collectors.toSet() ),
+                    null,
                     ALGO_PT );
 
     private static AssociationType ASSOCIATION_TYPE = TestDataFactory
