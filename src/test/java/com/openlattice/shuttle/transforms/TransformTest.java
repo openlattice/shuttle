@@ -239,12 +239,22 @@ public class TransformTest {
 
         List<String> target = Arrays.asList("F");
         List<String> goal = Arrays.asList("female");
+        // not case sensitive
         Object replaceTest1 = new ReplaceTransform(target, optrue, opfals, goal,"null").apply(getTestRow().get("Sex"));
         Assert.assertEquals("female", replaceTest1);
+
+        // case sensitive
         Object replaceTest2 = new ReplaceTransform(target, opfals, opfals, goal,"null").apply(getTestRow().get("Sex"));
         Assert.assertEquals(null, replaceTest2);
+
+        // return original when valueElse is not specified
         Object replaceTest3 = new ReplaceTransform(target, opfals, opfals, goal,null).apply(getTestRow().get("Sex"));
         Assert.assertEquals("f", replaceTest3);
+
+        List<String> target4 = Arrays.asList("F", "e");
+        List<String> goal4 = Arrays.asList("female", "erel");
+        Object replaceTest4 = new ReplaceTransform(target4, optrue, optrue, goal4,null).apply(getTestRow().get("Sex"));
+        Assert.assertEquals("female", replaceTest4);
     }
 
     @Test

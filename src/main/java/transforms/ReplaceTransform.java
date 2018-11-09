@@ -56,9 +56,9 @@ public class ReplaceTransform extends Transformation<String> {
         if (partial) {
             for (int i = 0; i < target.size(); ++i) {
                 if (ignoreCase) {
-                    o = o.replaceAll("(?i)" + target.get(i), goal.get(i));
+                    return o.replaceAll("(?i)" + target.get(i), goal.get(i));
                 } else {
-                    o = o.replace(target.get(i), goal.get(i));
+                    return o.replace(target.get(i), goal.get(i));
                 }
             }
         } else {
