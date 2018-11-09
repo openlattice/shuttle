@@ -24,6 +24,7 @@ public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
      * Represents a transformation from string to datetime.
      *
      * @param pattern: pattern of date (eg. "MM/dd/YY")
+     * @param columns: Columns to take difference
      */
     @JsonCreator
     public DateTimeDiffTransform(

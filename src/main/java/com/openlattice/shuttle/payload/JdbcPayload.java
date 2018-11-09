@@ -3,23 +3,15 @@ package com.openlattice.shuttle.payload;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.util.concurrent.RateLimiter;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.sql.*;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -61,6 +53,8 @@ public class JdbcPayload implements Payload {
         private final int           columnCount;
         private final RateLimiter   rateLimiter;
         private       AtomicBoolean hasNext = new AtomicBoolean( false );
+
+        private static Base64.Encoder encoder = java.util.Base64.getEncoder();
 
         public ResultSetStringIterator(
                 Connection connection,
@@ -111,7 +105,9 @@ public class JdbcPayload implements Payload {
                 String val = "";
                 try {
                     Object obj = rs.getObject( col );
-                    if ( obj != null ) { val = obj.toString(); }
+                    if (obj instanceof byte[]){
+                        val = encoder.encodeToString((byte[]) obj);
+                    } else if ( obj != null ) { val = obj.toString(); }
                 } catch ( SQLException e ) {
                     logger.error( "Unable to read col {}.", col, e );
                 }

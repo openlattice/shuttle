@@ -39,7 +39,7 @@ public class BooleanContainsTransform extends BooleanTransformation {
             @JsonProperty( Constants.TRANSFORMS_IF_FALSE ) Optional<Transformations> transformsIfFalse ) {
         super( transformsIfTrue, transformsIfFalse );
         this.column = column;
-        this.ignoreCase = ignoreCase == null ? false : true;
+        this.ignoreCase = ignoreCase.orElse(false);
         if ( this.ignoreCase ) {
             this.string = string.toLowerCase();
         } else {

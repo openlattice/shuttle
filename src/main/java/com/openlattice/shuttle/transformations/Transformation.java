@@ -75,6 +75,7 @@ public abstract class Transformation<I extends Object> implements Function<I, Ob
 
     @Override
     public Object apply( I o ) {
+
         return applyValue( getInputString( o, column ) );
     }
 }

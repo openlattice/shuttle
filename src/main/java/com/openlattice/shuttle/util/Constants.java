@@ -6,6 +6,7 @@ public final class Constants {
     public static final String COLUMNS             = "columns";
     public static final String HASH_FUNCTION       = "hashFunction";
     public static final String PREFIX              = "prefix";
+    public static final String SUFFIX              = "suffix";
     public static final String READER              = "reader";
     public static final String TRANSFORMS          = "transforms";
     public static final String TRANSFORMS_IF_TRUE  = "transformsIfTrue";
@@ -31,5 +32,6 @@ public final class Constants {
     public static final String TIME_PATTERN        = "timePattern";
     public static final String STRING              = "string";
     public static final String PARTIAL             = "partial";
+    public static final String ADDRESS_OBJECT      = "addressObject";
 
 }
