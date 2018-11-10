@@ -6,8 +6,12 @@ import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ReplaceTransform extends Transformation<String> {
@@ -45,7 +49,6 @@ public class ReplaceTransform extends Transformation<String> {
         } else {
             this.target = target;
         }
-
     }
 
     @Override
@@ -53,29 +56,65 @@ public class ReplaceTransform extends Transformation<String> {
         if (StringUtils.isBlank(o)) {
             return null;
         }
-        if (partial) {
-            for (int i = 0; i < target.size(); ++i) {
-                if (ignoreCase) {
-                    return o.replaceAll("(?i)" + target.get(i), goal.get(i));
+
+        Map<String, String> tokens = new HashMap<String, String>();
+        for (int i = 0; i < target.size(); ++i) {
+            tokens.put(target.get(i), goal.get(i));
+        }
+
+        // create pattern
+
+        StringBuilder sbuild = new StringBuilder();
+        if (!partial) {
+            sbuild.append("^");
+        }
+        if (ignoreCase) {
+            sbuild.append("(?i)");
+        }
+        String tokenlist = StringUtils.join(target, "|");
+        sbuild.append("(" + tokenlist + ")");
+        if (!partial) {
+            sbuild.append("$");
+        }
+        String patternString = sbuild.toString();
+
+        // get pattern and matcher
+
+        Pattern pattern = Pattern.compile(patternString);
+        Matcher matcher = pattern.matcher(o);
+
+        // create stringbuffer
+
+        StringBuffer sb = new StringBuffer();
+        int count = 0;
+        while (matcher.find()) {
+            if (ignoreCase) {
+                matcher.appendReplacement(sb, tokens.get(matcher.group(1).toLowerCase()));
+            } else {
+                matcher.appendReplacement(sb, tokens.get(matcher.group(1)));
+            }
+            count++;
+        }
+        matcher.appendTail(sb);
+
+        // if no replacements have been found
+
+        if (count == 0) {
+            if (valueElse == null) {
+                return o;
+            } else {
+                if (valueElse == "null") {
+                    return null;
                 } else {
-                    return o.replace(target.get(i), goal.get(i));
+                    return valueElse;
                 }
             }
-        } else {
-            int ind = -1;
-            if (ignoreCase) {
-                ind = target.indexOf(o.toLowerCase());
-            } else {
-                ind = target.indexOf(o);
-            }
-            if (!(ind == -1)) {
-                return goal.get(ind);
-            }
         }
-        if (valueElse == "null") {
-            return null;
-        }
-        return o;
+
+        return sb.toString();
     }
 
 }
+
+
+

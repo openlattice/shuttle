@@ -255,6 +255,12 @@ public class TransformTest {
         List<String> goal4 = Arrays.asList("female", "erel");
         Object replaceTest4 = new ReplaceTransform(target4, optrue, optrue, goal4,null).apply(getTestRow().get("Sex"));
         Assert.assertEquals("female", replaceTest4);
+
+        List<String> target5 = Arrays.asList("Android", "a");
+        List<String> goal5 = Arrays.asList("Windows", "u");
+        Object replaceTest5 = new ReplaceTransform(target5, optrue, optrue, goal5,null).apply("Android gave new life to java");
+        Assert.assertEquals("Windows guve new life to juvu", replaceTest5);
+
     }
 
     @Test
