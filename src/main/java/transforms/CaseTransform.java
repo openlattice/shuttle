@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 public class CaseTransform extends Transformation<String> {
 
     private static final Logger logger = LoggerFactory
-            .getLogger( Shuttle.class );
+            .getLogger(Shuttle.class);
 
     private final String type;
 
@@ -22,23 +22,23 @@ public class CaseTransform extends Transformation<String> {
      */
     @JsonCreator
     public CaseTransform(
-            @JsonProperty( Constants.TYPE) String type
+            @JsonProperty(Constants.TYPE) String type
     ) {
-        this.type = type == null? "name" : type ;
+        this.type = type == null ? "name" : type;
     }
 
     @Override
-    public Object apply( String o ) {
+    public Object apply(String o) {
         if (this.type == "name") {
             return o.substring(0, 1).toUpperCase() + o.substring(1).toLowerCase();
-        }  else if (this.type == "lower") {
-            return o.toLowerCase() ;
+        } else if (this.type == "lower") {
+            return o.toLowerCase();
         } else if (this.type == "upper") {
             return o.toUpperCase();
         } else {
-            logger.error("Unknown type of caseing: "+type);
+            logger.error("Unknown type of caseing: " + type);
         }
         return null;
     }
 
- }
+}
