@@ -226,11 +226,14 @@ public class TransformTest {
 
     @Test
     public void testCasingTransform() {
-        Object casingTest1 = new CaseTransform().apply("JANINE");
+        Object casingTest1 = new CaseTransform(null).apply("JANINE");
         Assert.assertEquals("Janine", casingTest1);
-
-        Object casingTest2 = new CaseTransform().apply("123JANINE");
+        Object casingTest2 = new CaseTransform(null).apply("123JANINE");
         Assert.assertEquals("123janine", casingTest2);
+        Object casingTest3 = new CaseTransform("lower").apply("JAniNE");
+        Assert.assertEquals("janine", casingTest3);
+        Object casingTest4 = new CaseTransform("upper").apply("JAniNE");
+        Assert.assertEquals("JANINE", casingTest4);
     }
 
     @Test

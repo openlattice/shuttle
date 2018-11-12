@@ -21,8 +21,10 @@ public class CaseTransform extends Transformation<String> {
      * @param type: how to case: name, lower, upper
      */
     @JsonCreator
-    public CaseTransform(@JsonProperty( Constants.TYPE) String type) {
-        this.type = type;
+    public CaseTransform(
+            @JsonProperty( Constants.TYPE) String type
+    ) {
+        this.type = type == null? "name" : type ;
     }
 
     @Override
