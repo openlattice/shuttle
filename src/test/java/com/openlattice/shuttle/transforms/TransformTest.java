@@ -17,6 +17,7 @@ public class TransformTest {
     public Map<String, String> getTestRow() {
         Map<String, String> testrow = new HashMap<String, String>();
         testrow.put("FirstName", "John");
+        testrow.put("MiddleName", "NICHOLAS");
         testrow.put("LastName", "Doe");
         testrow.put("DOB", "03/05/1998 10:00");
         testrow.put("ArrestedDate", "10/01/92");
@@ -223,6 +224,14 @@ public class TransformTest {
         Assert.assertEquals(null, prefixTest2);
     }
 
+    @Test
+    public void testCasingTransform() {
+        Object casingTest1 = new CaseTransform().apply("JANINE");
+        Assert.assertEquals("Janine", casingTest1);
+
+        Object casingTest2 = new CaseTransform().apply("123JANINE");
+        Assert.assertEquals("123janine", casingTest2);
+    }
 
     @Test
     public void testConcatTransform() {
