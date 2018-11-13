@@ -58,6 +58,8 @@ fun main(args: Array<String>) {
     val cl = ShuttleCli.parseCommandLine(args)
     val payload: Payload
     val flight: Flight
+    val createEntitySets: Boolean
+    val contacts: Set<String>
 
 
     if (cl.hasOption(HELP)) {
@@ -137,13 +139,25 @@ fun main(args: Array<String>) {
         return
     }
 
-    if (cl.hasOption(CREATE)) {
+    createEntitySets = cl.hasOption(CREATE)
+    if( createEntitySets ) {
+        if( environment == RetrofitFactory.Environment.PRODUCTION ) {
+            throw IllegalArgumentException( "It is not allowed to automatically create entity sets on " +
+                    "${RetrofitFactory.Environment.PRODUCTION} environment" )
+        }
 
+        contacts = cl.getOptionValues( CREATE ).toSet()
+        if( contacts.isEmpty() ) {
+            throw IllegalArgumentException( "Can't create entity sets automatically without contacts provided" )
+        }
+    } else {
+        contacts = setOf()
     }
+
     val flights = mapOf(flight to payload)
 
     val shuttle = Shuttle(environment, jwt)
 
-    shuttle.launchPayloadFlight(flights)
+    shuttle.launchPayloadFlight(flights, createEntitySets, contacts)
 }
 

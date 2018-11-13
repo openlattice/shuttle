@@ -49,6 +49,7 @@ import com.openlattice.shuttle.transformations.Transformations;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -83,6 +84,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
 
     private static EntityType CYPHERS_ET = TestDataFactory
             .childEntityTypeWithPropertyType( null,
+                    Optional.empty(),
                     PTS.stream().map( pt -> pt.getId() ).collect( Collectors.toSet() ),
                     SecurableObjectType.EntityType,
                     ALGO_PT );
@@ -156,7 +158,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         flights.put( flight, payload );
 
         Shuttle shuttle = new Shuttle( apiFactorySupplier );
-        shuttle.launch( flights );
+        shuttle.launch( flights, false, Set.of() );
 
         Assert.assertEquals( 1, Answers.getCreateDataInvocationCount() );
         Assert.assertEquals( 1, Answers.getCreateDataIntegrationApiInvocationCount() );

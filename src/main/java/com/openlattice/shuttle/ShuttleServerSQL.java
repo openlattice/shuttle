@@ -19,14 +19,12 @@
 
 package com.openlattice.shuttle;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.client.RetrofitFactory;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.shuttle.config.IntegrationConfig;
 import com.openlattice.shuttle.payload.JdbcPayload;
 import com.openlattice.shuttle.payload.Payload;
-import com.openlattice.shuttle.payload.SimplePayload;
 import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,23 +32,31 @@ import com.dataloom.mappers.ObjectMappers;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
+/**
+ * @deprecated Use {@link ShuttleKt} instead
+ */
+@Deprecated
 public class ShuttleServerSQL {
 
     private static final Logger                      logger      = LoggerFactory.getLogger( ShuttleServer.class );
     private static final RetrofitFactory.Environment environment = RetrofitFactory.Environment.PRODUCTION;
 
-    public static void main( String[] args ) throws InterruptedException, IOException {
+    public static void main( String[] args ) throws InterruptedException, IOException, ExecutionException {
 
         if ( args.length < 1 ) {
             System.out.println( "Hello, ShuttleSQL!" );
 
         } else {
+            int argIndex = 0;
 
             // get flight
-            final String yamlfile = args[ 0 ];
+            final String yamlfile = args[ argIndex++ ]; // 0
             ObjectMapper yaml = ObjectMappers.getYamlMapper();
             FullQualifiedNameJacksonSerializer.registerWithMapper( yaml );
 
@@ -64,30 +70,46 @@ public class ShuttleServerSQL {
             logger.info( "This is the JSON for the flight. {}", yaml.writeValueAsString( flight ) );
 
             // get jwt
-
             final String jwtToken;
-            final Integer offset;
 
-            if ( args.length == 6 ) {
-                jwtToken = MissionControl.getIdToken( args[ 1 ], args[ 2 ] );
-                offset = 3;
+            if ( args.length == 8 || ( args.length == 7 && args[6].equals( "false" ) ) ) {
+                jwtToken = MissionControl.getIdToken( args[ argIndex++ ], args[ argIndex++ ] ); // 1, 2
             } else {
-                jwtToken = args[ 1 ];
-                offset = 2;
+                jwtToken = args[ argIndex++ ]; // 1
             }
             logger.info( "JWT for this flight. {}", jwtToken );
 
             Shuttle shuttle = new Shuttle( environment, jwtToken );
 
             // get data
-
             HikariDataSource hds = ObjectMappers.getYamlMapper()
-                    .readValue( new File( args[ offset ] ), IntegrationConfig.class )
-                    .getHikariDatasource( args[ offset + 1 ] );
-            Payload Payload = new JdbcPayload( hds, args[ offset + 2 ] );
+                    .readValue( new File( args[ argIndex++ ] ), IntegrationConfig.class ) // 2 or 3
+                    .getHikariDatasource( args[ argIndex++ ] ); // 3 or 4
+            Payload Payload = new JdbcPayload( hds, args[ argIndex++ ] ); // 4 or 5
             flights.put( flight, Payload );
-            shuttle.launchPayloadFlight( flights );
 
+            // get whether to create entitysets automatically or not
+            final boolean createEntitySets = Boolean.valueOf( args[ argIndex++ ] ); // 5 or 6
+
+            // get the emails/contacts for automatic entity set creation
+            final Set<String> contacts;
+            if( createEntitySets ) {
+                if( environment == RetrofitFactory.Environment.PRODUCTION ) {
+                    throw new IllegalArgumentException(
+                            "It is not allowed to automatically create entity sets on " +
+                                    RetrofitFactory.Environment.PRODUCTION + " environment" );
+                }
+
+                if(argIndex == args.length) {
+                    throw new IllegalArgumentException(
+                            "Can't create entity sets automatically without contacts provided" );
+                }
+                contacts = Set.of( args[argIndex++].split( "," ) ); // 6 or 7
+            } else {
+                contacts = new HashSet<>(  );
+            }
+
+            shuttle.launchPayloadFlight( flights, createEntitySets, contacts );
         }
     }
 }

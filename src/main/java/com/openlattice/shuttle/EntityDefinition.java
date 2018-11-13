@@ -56,15 +56,15 @@ public class EntityDefinition implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger( EntityDefinition.class );
 
-    private final FullQualifiedName                                           entityTypeFqn;
-    private final String                                                      entitySetName;
-    private final List<FullQualifiedName>                                     key;
-    private final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
-    private final String                                                      alias;
-    public final  Optional<Conditions>                                        condition;
-    private final Optional<SerializableFunction<Map<String, String>, String>> generator;
-    private final boolean                                                     useCurrentSync;
-    public final  SerializableFunction<Map<String, String>, ?>                valueMapper;
+    protected final FullQualifiedName                                           entityTypeFqn;
+    protected final String                                                      entitySetName;
+    protected final List<FullQualifiedName>                                     key;
+    protected final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
+    protected final String                                                      alias;
+    public final  Optional<Conditions>                                          condition;
+    protected final Optional<SerializableFunction<Map<String, String>, String>> generator;
+    protected final boolean                                                     useCurrentSync;
+    public final  SerializableFunction<Map<String, String>, ?>                  valueMapper;
 
     @JsonCreator
     public EntityDefinition(
@@ -106,7 +106,7 @@ public class EntityDefinition implements Serializable {
             Optional<Boolean> useCurrentSync
     ) {
 
-        this.entityTypeFqn = new FullQualifiedName( entityTypeFqn );
+        this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
         this.entitySetName = entitySetName;
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;

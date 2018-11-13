@@ -21,6 +21,8 @@ package com.openlattice.shuttle;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.auth0.exception.Auth0Exception;
+import com.auth0.json.auth.UserInfo;
 import com.dataloom.mappers.ObjectMappers;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -28,6 +30,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.openlattice.ApiUtil;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.client.ApiClient;
 import com.openlattice.client.ApiFactoryFactory;
 import com.openlattice.client.RetrofitFactory.Environment;
@@ -39,19 +42,15 @@ import com.openlattice.data.integration.BulkDataCreation;
 import com.openlattice.data.integration.Entity;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.edm.EdmApi;
+import com.openlattice.edm.EntitySet;
 import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -83,28 +82,43 @@ public class Shuttle implements Serializable {
     }
 
     private final ApiClient apiClient;
+    private String authToken;
 
     public Shuttle( String authToken ) {
         // TODO: At some point we will have to handle mechanics of auth token expiration.
         this.apiClient = new ApiClient( () -> authToken );
+        this.authToken = authToken;
     }
 
     public Shuttle( Environment environment, String authToken ) {
         // TODO: At some point we will have to handle mechanics of auth token expiration.
         this.apiClient = new ApiClient( environment, () -> authToken );
+        this.authToken = authToken;
     }
 
+    /**
+     * Only used for testing
+     * @param apiFactorySupplier
+     */
     public Shuttle( ApiFactoryFactory apiFactorySupplier ) {
         this.apiClient = new ApiClient( apiFactorySupplier );
+
     }
 
-    public void launchPayloadFlight( Map<Flight, Payload> flightsToPayloads ) throws InterruptedException {
+    public void launchPayloadFlight(
+            Map<Flight, Payload> flightsToPayloads,
+            boolean createEntitySets,
+            Set<String> contacts ) throws InterruptedException {
         launch( flightsToPayloads.entrySet().stream()
-                .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue().getPayload() ) ) );
+                .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue().getPayload() ) ),
+                createEntitySets,
+                contacts );
     }
 
-    public void launch( Map<Flight, Stream<Map<String, String>>> flightsToPayloads ) throws InterruptedException {
-
+    public void launch(
+            Map<Flight, Stream<Map<String, String>>> flightsToPayloads,
+            boolean createEntitySets,
+            Set<String> contacts ) throws InterruptedException {
         EdmApi edmApi;
 
         try {
@@ -121,7 +135,7 @@ public class Shuttle implements Serializable {
             flight
                     .getEntities()
                     .forEach( entityDefinition -> {
-                        UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
+                        UUID entitySetId = getEntitySetId( entityDefinition, createEntitySets, edmApi, contacts );
                         assertPropertiesMatchEdm( entityDefinition.getEntitySetName(),
                                 entitySetId,
                                 entityDefinition.getProperties(),
@@ -131,7 +145,7 @@ public class Shuttle implements Serializable {
             flight
                     .getAssociations()
                     .forEach( associationDefinition -> {
-                        UUID entitySetId = entitySetIdCache.getUnchecked( associationDefinition.getEntitySetName() );
+                        UUID entitySetId = getEntitySetId( associationDefinition, createEntitySets, edmApi, contacts );
                         assertPropertiesMatchEdm( associationDefinition.getEntitySetName(),
                                 entitySetId,
                                 associationDefinition.getProperties(),
@@ -144,8 +158,6 @@ public class Shuttle implements Serializable {
             launchFlight( entry.getKey(), entry.getValue() );
             logger.info( "Finished flight: {}", entry.getKey().getName() );
         } );
-
-        System.exit( 0 );
     }
 
     private void initializeEdmCaches( EdmApi edmApi ) {
@@ -188,6 +200,33 @@ public class Shuttle implements Serializable {
                                     propertyTypeFqn.getName() );
                         }
                     } );
+        }
+    }
+
+    private UUID getEntitySetId(
+            EntityDefinition entityDefinition,
+            boolean createEntitySets,
+            EdmApi edmApi,
+            Set<String> contacts ) {
+        try {
+            return entitySetIdCache.get( entityDefinition.getEntitySetName() );
+        } catch( Exception e ) {
+            logger.warn( "Unable to retrieve entity set {}", entityDefinition.getEntitySetName() );
+            if(createEntitySets) {
+                logger.info("Creating entity set {}", entityDefinition.getEntitySetName() );
+                UUID entitySetId = edmApi.createEntitySets(
+                        Set.of(
+                                new EntitySet(
+                                        edmApi.getEntityTypeId( entityDefinition.getEntityTypeFqn() ),
+                                        entityDefinition.getEntitySetName(),
+                                        entityDefinition.getEntitySetName(),
+                                        Optional.of( entityDefinition.getEntitySetName() ),
+                                        contacts ) ) )
+                        .get( entityDefinition.getEntitySetName() );
+                entitySetIdCache.put( entityDefinition.getEntitySetName(), entitySetId );
+                return entitySetId;
+            }
+            return null;
         }
     }
 

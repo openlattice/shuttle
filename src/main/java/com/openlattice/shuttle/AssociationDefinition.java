@@ -43,24 +43,15 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AssociationDefinition implements Serializable {
+public class AssociationDefinition extends EntityDefinition implements Serializable {
 
     private static final long serialVersionUID = -6632902802080642647L;
 
     private static final Logger logger = LoggerFactory
             .getLogger( AssociationDefinition.class );
 
-    private final FullQualifiedName                                           entityTypeFqn;
-    private final String                                                      entitySetName;
-    private final List<FullQualifiedName>                                     key;
     private final String                                                      srcAlias;
     private final String                                                      dstAlias;
-    private final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
-    private final String                                                      alias;
-    public final  Optional<Conditions>                                        condition;
-    private final Optional<SerializableFunction<Map<String, String>, String>> generator;
-    private final boolean                                                     useCurrentSync;
-    public final  SerializableFunction<Map<String, String>, ?>                valueMapper;
 
     @JsonCreator
     public AssociationDefinition(
@@ -74,41 +65,22 @@ public class AssociationDefinition implements Serializable {
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
-
-        this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
-        this.entitySetName = entitySetName;
+        super(entityTypeFqn, entitySetName, key, propertyDefinitions, alias, condition, useCurrentSync);
         this.srcAlias = srcAlias;
         this.dstAlias = dstAlias;
-        this.propertyDefinitions = propertyDefinitions;
-        this.key = key;
-        this.alias = alias == null ? entitySetName : alias;
-        this.generator = Optional.empty();
-        this.condition = condition;
-        this.useCurrentSync = useCurrentSync == null ? false : useCurrentSync;
-
-        if ( condition.isPresent() ) {
-            final List<Condition> internalConditions;
-            internalConditions = new ArrayList<>( this.condition.get().size() + 1 );
-            condition.get().forEach( internalConditions::add );
-            this.valueMapper = new ConditionValueMapper( internalConditions );
-        } else {
-            this.valueMapper = null;
-        }
     }
 
     private AssociationDefinition( AssociationDefinition.Builder builder ) {
-
-        this.entityTypeFqn = builder.entityTypeFqn;
-        this.entitySetName = builder.entitySetName;
+        super(
+                (builder.entityTypeFqn == null) ? null : builder.entityTypeFqn.getFullQualifiedNameAsString(),
+                builder.entitySetName,
+                builder.key,
+                builder.propertyDefinitionMap,
+                Optional.ofNullable( builder.generator ),
+                builder.alias == null ? builder.entitySetName : builder.alias,
+                Optional.of( builder.useCurrentSync ) );
         this.srcAlias = builder.srcAlias;
         this.dstAlias = builder.dstAlias;
-        this.propertyDefinitions = builder.propertyDefinitionMap;
-        this.key = builder.key;
-        this.alias = builder.alias;
-        this.generator = Optional.ofNullable( builder.generator );
-        this.condition = Optional.empty();
-        this.valueMapper = null;
-        this.useCurrentSync = builder.useCurrentSync;
     }
 
     @JsonIgnore

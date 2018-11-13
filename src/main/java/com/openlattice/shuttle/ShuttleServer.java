@@ -19,28 +19,28 @@
 
 package com.openlattice.shuttle;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.client.RetrofitFactory;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
-import com.openlattice.shuttle.config.IntegrationConfig;
-import com.openlattice.shuttle.payload.JdbcPayload;
 import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.payload.SimplePayload;
-import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.dataloom.mappers.ObjectMappers;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
+
+/**
+ * @deprecated Use {@link ShuttleKt} instead
+ */
+@Deprecated
 public class ShuttleServer {
 
     private static final Logger                      logger      = LoggerFactory.getLogger( ShuttleServer.class );
-    private static final RetrofitFactory.Environment environment = RetrofitFactory.Environment.PRODUCTION;
+    private static final RetrofitFactory.Environment environment = RetrofitFactory.Environment.LOCAL;
 
     public static void main( String[] args ) throws InterruptedException, IOException {
 
@@ -52,7 +52,9 @@ public class ShuttleServer {
             // get flight
             System.out.println( args.toString() );
 
-            final String yamlfile = args[ 0 ];
+            int argIndex = 0;
+
+            final String yamlfile = args[ argIndex++ ]; // 0
             ObjectMapper yaml = ObjectMappers.getYamlMapper();
             FullQualifiedNameJacksonSerializer.registerWithMapper( yaml );
 
@@ -66,32 +68,46 @@ public class ShuttleServer {
             logger.info( "This is the JSON for the flight. {}", yaml.writeValueAsString( flight ) );
 
             // get jwt
-
             final String jwtToken;
 
-            if ( args.length == 4 | args.length == 6 ) {
-                jwtToken = MissionControl.getIdToken( args[ 1 ], args[ 2 ] );
+            if ( args.length == 6 || ( args.length == 5 && args[4].equals( "false" ) ) ) {
+                jwtToken = MissionControl.getIdToken( args[ argIndex++ ], args[ argIndex++ ] ); // 1, 2
             } else {
-                jwtToken = args[ 1 ];
+                jwtToken = args[ argIndex++ ]; // 1
             }
             logger.info( "JWT for this flight. {}", jwtToken );
 
             Shuttle shuttle = new Shuttle( environment, jwtToken );
 
-            // get data
+            // get datapath
+            final String dataPath = args[ argIndex++ ]; // 2 or 3
 
-            final String dataPath;
-            Integer offset = args.length - 1; // offset for next args
+            // get whether to create entitysets automatically or not
+            final boolean createEntitySets = Boolean.valueOf( args[ argIndex++ ] ); // 3 or 4
 
-            // get datapath (offset for username/pw vs jwt
-            dataPath = args[ offset ];
+            // get the emails/contacts for automatic entity set creation
+            final Set<String> contacts;
+            if( createEntitySets ) {
+                if( environment == RetrofitFactory.Environment.PRODUCTION ) {
+                    throw new IllegalArgumentException(
+                            "It is not allowed to automatically create entity sets on " +
+                                    RetrofitFactory.Environment.PRODUCTION + " environment" );
+                }
+
+                if(argIndex == args.length) {
+                    throw new IllegalArgumentException(
+                            "Can't create entity sets automatically without contacts provided" );
+                }
+                contacts = Set.of( args[argIndex++].split( "," ) ); // 4 or 5
+            } else {
+                contacts = new HashSet<>(  );
+            }
 
             // get payload
-            Payload Payload = new SimplePayload( args[ offset ] );
-            logger.info( "datafile: " + args[ offset ] );
+            Payload Payload = new SimplePayload( dataPath );
+            logger.info( "datafile: " + dataPath );
             flights.put( flight, Payload );
-            shuttle.launchPayloadFlight( flights );
-
+            shuttle.launchPayloadFlight( flights, createEntitySets, contacts );
          }
     }
 }
