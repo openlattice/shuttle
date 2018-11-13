@@ -62,9 +62,7 @@ public class CaseTransform extends Transformation<String> {
         if ( StringUtils.isBlank( o ) ) {
             return null;
         }
-
-        String outString = null;
-
+        
         switch ( type ) {
             case name:
                 return getTitleCasing( o );
@@ -74,9 +72,10 @@ public class CaseTransform extends Transformation<String> {
                 return o.toLowerCase();
             case upper:
                 return o.toUpperCase();
+            default:
+                return o;
         }
 
-        return outString;
     }
 
 }
