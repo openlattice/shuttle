@@ -16,10 +16,10 @@ public class CaseTransform extends Transformation<String> {
     private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
 
-    public enum Type {name, sentence, lower, upper}
+    public enum CaseType {name, sentence, lower, upper}
 
     ;
-    private final Type type;
+    private final CaseType type;
 
     /**
      * Represents a transformation to change the case.
@@ -28,9 +28,9 @@ public class CaseTransform extends Transformation<String> {
      */
     @JsonCreator
     public CaseTransform(
-            @JsonProperty( Constants.TYPE ) Type type
+            @JsonProperty( Constants.TYPE ) CaseType type
     ) {
-        this.type = type == null ? Type.name : type;
+        this.type = type == null ? CaseType.name : type;
     }
 
     public static String getTitleCasing( String text ) {
@@ -67,16 +67,13 @@ public class CaseTransform extends Transformation<String> {
 
         switch ( type ) {
             case name:
-                outString = getTitleCasing( o );
-                break;
+                return getTitleCasing( o );
             case sentence:
-                outString = o.substring( 0, 1 ).toUpperCase() + o.substring( 1 ).toLowerCase();
-                break;
+                return o.substring( 0, 1 ).toUpperCase() + o.substring( 1 ).toLowerCase();
             case lower:
-                outString = o.toLowerCase();
-                break;
+                return o.toLowerCase();
             case upper:
-                outString = o.toUpperCase();
+                return o.toUpperCase();
         }
 
         return outString;

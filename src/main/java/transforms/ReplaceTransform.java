@@ -26,10 +26,10 @@ public class ReplaceTransform extends Transformation<String> {
      * Represents a transformation to replace a string by a string.
      *
      * @param target:     list of string to replace
-     * @param ignoreCase: if case should be ignored
-     * @param partial:    if strings should be replaced when only part of the column matches the pattern
+     * @param ignoreCase: indicates whether case should be ignored
+     * @param partial:    indicates whether strings should be replaced when only part of the column matches the pattern
      * @param goal:       list of string to replace target by
-     * @param valueElse:  value to return if the value is not in the target (original value if not specified), can be null
+     * @param valueElse:  Value to return if no target string appears in the input string (if not specified, the input string will be returned unchanged)
      */
     @JsonCreator
     public ReplaceTransform(
