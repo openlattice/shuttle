@@ -25,32 +25,32 @@ public class GeographyPointTransform extends Transformation<Map<String, String>>
      */
     @JsonCreator
     public GeographyPointTransform(
-            @JsonProperty(Constants.LAT_TRANSFORMS) List<Transformation> latTransforms,
-            @JsonProperty(Constants.LON_TRANSFORMS) List<Transformation> lonTransforms) {
+            @JsonProperty( Constants.LAT_TRANSFORMS ) List<Transformation> latTransforms,
+            @JsonProperty( Constants.LON_TRANSFORMS ) List<Transformation> lonTransforms ) {
         this.latTransforms = latTransforms;
         this.lonTransforms = lonTransforms;
     }
 
     @Override
-    public Object apply(Map<String, String> row) {
+    public Object apply( Map<String, String> row ) {
 
         // LATITUDE TRANSFORMATIONS
         Object lat = row;
-        for (Transformation t : latTransforms) {
-            lat = t.apply(lat);
+        for ( Transformation t : latTransforms ) {
+            lat = t.apply( lat );
         }
         lat = lat == "" ? null : lat;
-        lat = Parsers.parseDouble(lat);
+        lat = Parsers.parseDouble( lat );
 
         // LATITUDE TRANSFORMATIONS
         Object lon = row;
-        for (Transformation t : lonTransforms) {
-            lon = t.apply(lon);
+        for ( Transformation t : lonTransforms ) {
+            lon = t.apply( lon );
         }
         lon = lon == "" ? null : lon;
-        lon = Parsers.parseDouble(lon);
+        lon = Parsers.parseDouble( lon );
 
-        if (!(lat == null && lon == null)) {
+        if ( !( lat == null && lon == null ) ) {
             return lat.toString() + "," + lon.toString();
         } else {
             return null;
