@@ -14,18 +14,28 @@ import java.util.*;
 
 public class TransformTest {
 
+    String lat = "36.23452";
+    String lon = "30.34573";
+    String first = "John";
+    String last = "Doe";
+    String DOB = "03/05/1998 10:00";
+    String address = "560 Scott Street, San Francisco, CA 94117";
+    String dateArrest = "10/01/92";
+    String dateRelease = "10-01-25";
+    String datetimeCommitted = "03/05/00 10:00";
+
     public Map<String, String> getTestRow() {
         Map<String, String> testrow = new HashMap<String, String>();
-        testrow.put("FirstName", "John");
-        testrow.put("LastName", "Doe");
-        testrow.put("DOB", "03/05/1998 10:00");
-        testrow.put("ArrestedDate", "10/01/92");
-        testrow.put("ReleasedDate", "10-01-25");
+        testrow.put("FirstName", first);
+        testrow.put("LastName", last);
+        testrow.put("DOB", DOB);
+        testrow.put("ArrestedDate", dateArrest);
+        testrow.put("ReleasedDate", dateRelease);
         testrow.put("SSN", null);
-        testrow.put("Address", "560 Scott Street, San Francisco, CA 94117");
-        testrow.put("CommittedDateTime", "03/05/00 10:00");
-        testrow.put("Latt", "36.23452");
-        testrow.put("Long", "30.34573");
+        testrow.put("Address", address);
+        testrow.put("CommittedDateTime", datetimeCommitted);
+        testrow.put("Latt", lat);
+        testrow.put("Long", lon);
         return testrow;
     }
 
@@ -50,7 +60,7 @@ public class TransformTest {
         Object geographypointTest1 = new GeographyPointTransform(
                 latTransfos, lonTransfos
         ).apply(getTestRow());
-        Assert.assertEquals("36.23452,30.34573", geographypointTest1);
+        Assert.assertEquals(lat + "," + lon, geographypointTest1);
 
     }
 

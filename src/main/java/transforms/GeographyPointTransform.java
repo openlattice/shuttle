@@ -50,7 +50,7 @@ public class GeographyPointTransform extends Transformation<Map<String, String>>
         lon = lon == "" ? null : lon;
         lon = Parsers.parseDouble(lon);
 
-        if (!(lat == null) && !(lon == null)) {
+        if (!(lat == null && lon == null)) {
             return lat.toString() + "," + lon.toString();
         } else {
             return null;
