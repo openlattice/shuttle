@@ -34,7 +34,7 @@ public class TransformTest {
         testrow.put( "SSN", null );
         testrow.put( "Address", address );
         testrow.put( "CommittedDateTime", datetimeCommitted );
-        testrow.put( "Latt", lat );
+        testrow.put( "Lat", lat );
         testrow.put( "Long", lon );
         return testrow;
     }
@@ -54,7 +54,7 @@ public class TransformTest {
     @Test
     public void testGeographyPointTransform() {
         Transformations latTransfos = new Transformations();
-        latTransfos.add( new ColumnTransform( "Latt" ) );
+        latTransfos.add( new ColumnTransform( "Lat" ) );
         Transformations lonTransfos = new Transformations();
         lonTransfos.add( new ColumnTransform( "Long" ) );
         Object geographypointTest1 = new GeographyPointTransform(
