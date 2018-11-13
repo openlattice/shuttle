@@ -16,6 +16,7 @@ public class TransformTest {
 
     String lat               = "36.23452";
     String lon               = "30.34573";
+    String sex               = "f";
     String first             = "John";
     String last              = "Doe";
     String DOB               = "03/05/1998 10:00";
@@ -32,6 +33,7 @@ public class TransformTest {
         testrow.put( "ArrestedDate", dateArrest );
         testrow.put( "ReleasedDate", dateRelease );
         testrow.put( "SSN", null );
+        testrow.put( "Sex", sex);
         testrow.put( "Address", address );
         testrow.put( "CommittedDateTime", datetimeCommitted );
         testrow.put( "Lat", lat );
@@ -252,13 +254,13 @@ public class TransformTest {
         Assert.assertEquals( "Janine", casingTest1 );
         Object casingTest2 = new CaseTransform( null ).apply( "123JANINE" );
         Assert.assertEquals( "123janine", casingTest2 );
-        Object casingTest3 = new CaseTransform( CaseTransform.Type.lower ).apply( "JAniNE" );
+        Object casingTest3 = new CaseTransform( CaseTransform.CaseType.lower ).apply( "JAniNE" );
         Assert.assertEquals( "janine", casingTest3 );
-        Object casingTest4 = new CaseTransform( CaseTransform.Type.upper ).apply( "JAniNE" );
+        Object casingTest4 = new CaseTransform( CaseTransform.CaseType.upper ).apply( "JAniNE" );
         Assert.assertEquals( "JANINE", casingTest4 );
-        Object casingTest5 = new CaseTransform( CaseTransform.Type.sentence ).apply( "janine vanderginst" );
+        Object casingTest5 = new CaseTransform( CaseTransform.CaseType.sentence ).apply( "janine vanderginst" );
         Assert.assertEquals( "Janine vanderginst", casingTest5 );
-        Object casingTest6 = new CaseTransform( CaseTransform.Type.name ).apply( "janine vanderginst" );
+        Object casingTest6 = new CaseTransform( CaseTransform.CaseType.name ).apply( "janine vanderginst" );
         Assert.assertEquals( "Janine Vanderginst", casingTest6 );
     }
 
