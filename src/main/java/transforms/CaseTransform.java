@@ -5,40 +5,81 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.Shuttle;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class CaseTransform extends Transformation<String> {
 
     private static final Logger logger = LoggerFactory
-            .getLogger(Shuttle.class);
+            .getLogger( Shuttle.class );
 
-    private final String type;
+    public enum Type {name, sentence, lower, upper}
+
+    ;
+    private final Type type;
 
     /**
-     * Represents a transformation to add a prefix.
+     * Represents a transformation to change the case.
      *
-     * @param type: how to case: name, lower, upper
+     * @param type: how to case: name (John Doe), sentence (John doe), lower (john doe), upper (JOHN DOE)
      */
     @JsonCreator
     public CaseTransform(
-            @JsonProperty(Constants.TYPE) String type
+            @JsonProperty( Constants.TYPE ) Type type
     ) {
-        this.type = type == null ? "name" : type;
+        this.type = type == null ? Type.name : type;
+    }
+
+    public static String getTitleCasing( String text ) {
+        if ( text == null || text.isEmpty() ) {
+            return text;
+        }
+
+        StringBuilder converted = new StringBuilder();
+
+        boolean convertNext = true;
+        for ( char ch : text.toCharArray() ) {
+            if ( Character.isSpaceChar( ch ) ) {
+                convertNext = true;
+            } else if ( convertNext ) {
+                ch = Character.toTitleCase( ch );
+                convertNext = false;
+            } else {
+                ch = Character.toLowerCase( ch );
+            }
+            converted.append( ch );
+        }
+
+        return converted.toString();
     }
 
     @Override
-    public Object apply(String o) {
-        if (this.type == "name") {
-            return o.substring(0, 1).toUpperCase() + o.substring(1).toLowerCase();
-        } else if (this.type == "lower") {
-            return o.toLowerCase();
-        } else if (this.type == "upper") {
-            return o.toUpperCase();
-        } else {
-            logger.error("Unknown type of caseing: " + type);
+    public Object apply( String o ) {
+
+        if ( StringUtils.isBlank( o ) ) {
+            return null;
         }
-        return null;
+
+        String outString = null;
+
+        switch ( type ) {
+            case name:
+                outString = getTitleCasing( o );
+                break;
+            case sentence:
+                outString = o.substring( 0, 1 ).toUpperCase() + o.substring( 1 ).toLowerCase();
+                break;
+            case lower:
+                outString = o.toLowerCase();
+                break;
+            case upper:
+                outString = o.toUpperCase();
+        }
+
+        return outString;
     }
 
 }
