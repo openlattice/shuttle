@@ -33,5 +33,7 @@ public final class Constants {
     public static final String STRING              = "string";
     public static final String PARTIAL             = "partial";
     public static final String ADDRESS_OBJECT      = "addressObject";
+    public static final String LAT_TRANSFORMS      = "latTransforms";
+    public static final String LON_TRANSFORMS      = "lonTransforms";
 
 }
