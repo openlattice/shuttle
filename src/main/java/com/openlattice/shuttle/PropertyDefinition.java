@@ -52,6 +52,7 @@ public class PropertyDefinition implements Serializable {
     private final FullQualifiedName                            propertyTypeFqn;
     private final SerializableFunction<Map<String, String>, ?> valueMapper;
     private final String                                       column;
+    private final String                                       storageDest;
     private final Optional<Transformations>                    transforms;
 
     @JsonCreator
@@ -59,9 +60,11 @@ public class PropertyDefinition implements Serializable {
             @JsonProperty( Constants.TYPE ) String propertyTypeFqn,
             @JsonProperty( Constants.COLUMN ) String column,
             @JsonProperty( Constants.READER ) Optional<Transformation> reader,
-            @JsonProperty( Constants.TRANSFORMS ) Optional<Transformations> transforms ) {
+            @JsonProperty( Constants.TRANSFORMS ) Optional<Transformations> transforms,
+            @JsonProperty( Constants.STORAGE_DESTINATION ) String storageDest ) {
         this.propertyTypeFqn = propertyTypeFqn == null ? null : new FullQualifiedName( propertyTypeFqn );
         this.column = column == null ? "" : column;
+        this.storageDest = storageDest == null ? "" : storageDest;
         this.transforms = transforms;
 
         if ( transforms.isPresent() ) {
@@ -77,6 +80,7 @@ public class PropertyDefinition implements Serializable {
         } else {
             this.valueMapper = row -> row.get( column );
         }
+
     }
 
     public PropertyDefinition(
@@ -86,6 +90,7 @@ public class PropertyDefinition implements Serializable {
         this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
         this.valueMapper = valueMapper;
         this.column = columnName;
+        this.storageDest = storageDest;
         this.transforms = Optional.empty();
     }
 
@@ -93,6 +98,7 @@ public class PropertyDefinition implements Serializable {
         this.propertyTypeFqn = builder.propertyTypeFqn;
         this.valueMapper = builder.valueMapper;
         this.column = builder.column;
+        this.storageDest = storageDest;
         this.transforms = Optional.ofNullable( builder.transforms );
     }
 
@@ -109,6 +115,10 @@ public class PropertyDefinition implements Serializable {
     @JsonIgnore
     public FullQualifiedName getFullQualifiedName() {
         return this.propertyTypeFqn;
+    }
+
+    public String getStorageDest() {
+        return storageDest;
     }
 
     @JsonProperty( Constants.COLUMN )
@@ -148,7 +158,8 @@ public class PropertyDefinition implements Serializable {
         private FullQualifiedName                            propertyTypeFqn;
         private SerializableFunction<Map<String, String>, ?> valueMapper;
         private Transformations                              transforms;
-        private String                                       column = "";
+        private String                                       column      = "";
+        private String                                       storageDest = "";
 
         public Builder(
                 FullQualifiedName propertyTypeFqn,
