@@ -86,6 +86,7 @@ public class PropertyDefinition implements Serializable {
     public PropertyDefinition(
             String propertyTypeFqn,
             String columnName,
+            String storageDest,
             SerializableFunction<Map<String, String>, ?> valueMapper ) {
         this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
         this.valueMapper = valueMapper;
@@ -98,7 +99,7 @@ public class PropertyDefinition implements Serializable {
         this.propertyTypeFqn = builder.propertyTypeFqn;
         this.valueMapper = builder.valueMapper;
         this.column = builder.column;
-        this.storageDest = storageDest;
+        this.storageDest = builder.storageDest;
         this.transforms = Optional.ofNullable( builder.transforms );
     }
 
@@ -192,6 +193,11 @@ public class PropertyDefinition implements Serializable {
         public Builder<T> value( String column ) {
             this.column = column;
             this.valueMapper = row -> row.get( column );
+            return this;
+        }
+
+        public Builder<T> setStorageDest( String storageDest ) {
+            this.storageDest = storageDest;
             return this;
         }
 
