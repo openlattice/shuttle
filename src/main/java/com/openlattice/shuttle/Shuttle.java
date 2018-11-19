@@ -33,25 +33,20 @@ import com.openlattice.client.ApiFactoryFactory;
 import com.openlattice.client.RetrofitFactory.Environment;
 import com.openlattice.data.DataIntegrationApi;
 import com.openlattice.data.EntityKey;
+import com.openlattice.data.EntityKeyIdService;
 import com.openlattice.data.IntegrationResults;
 import com.openlattice.data.integration.Association;
 import com.openlattice.data.integration.BulkDataCreation;
 import com.openlattice.data.integration.Entity;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
+import com.openlattice.data.storage.ByteBlobDataManager;
 import com.openlattice.edm.EdmApi;
 import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -61,7 +56,11 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+
 public class Shuttle implements Serializable {
+    @Inject ByteBlobDataManager byteBlobDataManager;
+    @Inject EntityKeyIdService  idService;
 
     private static final long serialVersionUID = -7356687761893337471L;
 
@@ -257,6 +256,18 @@ public class Shuttle implements Serializable {
 
                         UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
                         Map<UUID, Set<Object>> properties = new HashMap<>();
+
+                        Map<FullQualifiedName,PropertyDefinition> binaryPropertyDefinitions = entityDefinition.getPropertyDefinitions()
+                                .entrySet()
+                                .stream()
+                                .filter(entry -> entry.getValue().getStorageDest().equals("s3"))
+                                .collect(Collectors.toMap( e -> e.getKey(), e -> e.getValue()) );
+
+                        Map<FullQualifiedName,PropertyDefinition> nonbinaryPropertyDefinitions = entityDefinition.getPropertyDefinitions()
+                                .entrySet()
+                                .stream()
+                                .filter(entry -> !entry.getValue().getStorageDest().equals("s3"))
+                                .collect(Collectors.toMap( e -> e.getKey(), e -> e.getValue()) );
 
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
