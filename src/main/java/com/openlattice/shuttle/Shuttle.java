@@ -217,6 +217,7 @@ public class Shuttle implements Serializable {
                 UUID entitySetId = edmApi.createEntitySets(
                         Set.of(
                                 new EntitySet(
+                                        entityDefinition.getId().orElse( UUID.randomUUID() ),
                                         edmApi.getEntityTypeId( entityDefinition.getEntityTypeFqn() ),
                                         entityDefinition.getEntitySetName(),
                                         entityDefinition.getEntitySetName(),

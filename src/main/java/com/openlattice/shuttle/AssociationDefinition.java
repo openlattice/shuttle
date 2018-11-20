@@ -65,7 +65,7 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
-        super(entityTypeFqn, entitySetName, key, propertyDefinitions, alias, condition, useCurrentSync);
+        super(Optional.empty(), entityTypeFqn, entitySetName, key, propertyDefinitions, alias, condition, useCurrentSync);
         this.srcAlias = srcAlias;
         this.dstAlias = dstAlias;
     }
