@@ -312,7 +312,7 @@ public class EntityDefinition implements Serializable {
 
             return new PropertyDefinition.Builder<>( propertyTypeFqn, this, onBuild );
         }
-
+/*
         public Builder addProperty( String propertyString, String columnName ) {
             // This function is for when flights are defined in java
             // Useful for backwards compatibility
@@ -325,7 +325,7 @@ public class EntityDefinition implements Serializable {
                     propertyString, columnName, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
-        }
+        }*/
 
         public Builder addProperty(
                 String propertyString,
@@ -333,7 +333,7 @@ public class EntityDefinition implements Serializable {
                 Transformations transformation ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
-                    propertyString, columnName, Optional.empty(), Optional.of( transformation ) );
+                    propertyString, columnName, Optional.empty(), Optional.of( transformation ), "" );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
