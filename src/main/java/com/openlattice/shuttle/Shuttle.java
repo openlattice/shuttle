@@ -447,8 +447,10 @@ public class Shuttle implements Serializable {
 
         Map<UUID, String> propertyIdToDest = a.getPropertyTypeIdToStorageDest();
         a.getEntities().forEach( entity -> {
+            UUID entitySetId = entity.getEntitySetId();
+            
+            //for each property in the entity
             entity.getDetails().entrySet().forEach( e -> {
-                UUID entitySetId = entity.getEntitySetId();
                 if ( propertyIdToDest.get( e.getKey() ).equals( "s3" ) ) {
                     s3EntitySetIds.put( entitySetId, bulkEntitySetIds.get( entitySetId ) );
                     s3Properties.put( e.getKey(), e.getValue() );
