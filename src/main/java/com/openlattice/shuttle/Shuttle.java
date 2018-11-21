@@ -35,10 +35,7 @@ import com.openlattice.data.DataIntegrationApi;
 import com.openlattice.data.EntityKey;
 import com.openlattice.data.EntityKeyIdService;
 import com.openlattice.data.IntegrationResults;
-import com.openlattice.data.integration.Association;
-import com.openlattice.data.integration.BulkDataCreation;
-import com.openlattice.data.integration.BulkDataCreation2;
-import com.openlattice.data.integration.Entity;
+import com.openlattice.data.integration.*;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.data.storage.ByteBlobDataManager;
 import com.openlattice.edm.EdmApi;
@@ -60,17 +57,17 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 
 public class Shuttle implements Serializable {
-    @Inject EntityKeyIdService  idService;
+    @Inject EntityKeyIdService idService;
 
     private static final long serialVersionUID = -7356687761893337471L;
 
     private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
 
-    private static final int UPLOAD_BATCH_SIZE = 100000;
-    private static transient LoadingCache<String, UUID>                             entitySetIdCache = null;
-    private static transient LoadingCache<FullQualifiedName, UUID>                  propertyIdsCache = null;
-    private static transient LoadingCache<String, LinkedHashSet<FullQualifiedName>> keyCache         = null;
+    private static final     int                                                    UPLOAD_BATCH_SIZE = 100000;
+    private static transient LoadingCache<String, UUID>                             entitySetIdCache  = null;
+    private static transient LoadingCache<FullQualifiedName, UUID>                  propertyIdsCache  = null;
+    private static transient LoadingCache<String, LinkedHashSet<FullQualifiedName>> keyCache          = null;
 
     static {
         ObjectMappers.foreach( mapper -> {
@@ -221,7 +218,7 @@ public class Shuttle implements Serializable {
         Optional<BulkDataCreation2> remaining = payload
                 .parallel()
                 .map( row -> {
-                    System.out.println(row);
+                    System.out.println( row );
                     EdmApi edmApi;
 
                     try {
@@ -244,7 +241,8 @@ public class Shuttle implements Serializable {
                             return new BulkDataCreation( entities, associations );
                         }
                     }
-                    Map<UUID, Set<String>> entitySetIdToEntityIds = new HashMap<>(  );
+                    Map<UUID, Set<String>> entitySetIdToEntityIds = new HashMap<>();
+                    Map<UUID, String> propertyTypeIdToStorageDest = new HashMap<>();
 
                     for ( EntityDefinition entityDefinition : flight.getEntities() ) {
 
@@ -262,10 +260,13 @@ public class Shuttle implements Serializable {
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
                             if ( propertyValue != null ) {
+
                                 String stringProp = propertyValue.toString();
                                 if ( !StringUtils.isBlank( stringProp ) ) {
                                     UUID propertyId = propertyIdsCache
                                             .getUnchecked( propertyDefinition.getFullQualifiedName() );
+                                    String storageDest = propertyDefinition.getStorageDest();
+                                    propertyTypeIdToStorageDest.put( propertyId, storageDest );
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap.of( propertyId,
@@ -295,12 +296,12 @@ public class Shuttle implements Serializable {
                             aliasesToEntityKey.put( entityDefinition.getAlias(), key );
                             entities.add( new Entity( key, properties ) );
                             wasCreated.put( entityDefinition.getAlias(), true );
-                            if (entitySetIdToEntityIds.get(entitySetId) != null) {
-                                entitySetIdToEntityIds.get(entitySetId).add( entityId );
+                            if ( entitySetIdToEntityIds.get( entitySetId ) != null ) {
+                                entitySetIdToEntityIds.get( entitySetId ).add( entityId );
                             } else {
                                 Set<String> entityIds = new HashSet<String>();
-                                entityIds.add(entityId);
-                                entitySetIdToEntityIds.put( entitySetId, entityIds);
+                                entityIds.add( entityId );
+                                entitySetIdToEntityIds.put( entitySetId, entityIds );
                             }
                         } else {
                             wasCreated.put( entityDefinition.getAlias(), false );
@@ -339,6 +340,8 @@ public class Shuttle implements Serializable {
                                 if ( propertyValue != null ) {
                                     var propertyId = propertyIdsCache
                                             .getUnchecked( propertyDefinition.getFullQualifiedName() );
+                                    String storageDest = propertyDefinition.getStorageDest();
+                                    propertyTypeIdToStorageDest.put( propertyId, storageDest );
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap
@@ -364,12 +367,12 @@ public class Shuttle implements Serializable {
                                 EntityKey src = aliasesToEntityKey.get( associationDefinition.getSrcAlias() );
                                 EntityKey dst = aliasesToEntityKey.get( associationDefinition.getDstAlias() );
                                 associations.add( new Association( key, src, dst, properties ) );
-                                if (entitySetIdToEntityIds.get(entitySetId) != null) {
-                                    entitySetIdToEntityIds.get(entitySetId).add( entityId );
+                                if ( entitySetIdToEntityIds.get( entitySetId ) != null ) {
+                                    entitySetIdToEntityIds.get( entitySetId ).add( entityId );
                                 } else {
                                     Set<String> entityIds = new HashSet<String>();
-                                    entityIds.add(entityId);
-                                    entitySetIdToEntityIds.put( entitySetId, entityIds);
+                                    entityIds.add( entityId );
+                                    entitySetIdToEntityIds.put( entitySetId, entityIds );
                                 }
                             }
                         }
@@ -377,7 +380,10 @@ public class Shuttle implements Serializable {
                         MissionControl.signal();
                     }
 
-                    return new BulkDataCreation2( entities, associations, entitySetIdToEntityIds );
+                    return new BulkDataCreation2( entities,
+                            associations,
+                            entitySetIdToEntityIds,
+                            propertyTypeIdToStorageDest );
                 } )
                 .reduce( ( BulkDataCreation2 a, BulkDataCreation2 b ) -> {
 
@@ -386,14 +392,19 @@ public class Shuttle implements Serializable {
 
                     a.getAssociations().addAll( b.getAssociations() );
                     a.getEntities().addAll( b.getEntities() );
-                    a.getEntitySetIdToEntityIds().putAll(b.getEntitySetIdToEntityIds());
+                    a.getEntitySetIdToEntityIds().putAll( b.getEntitySetIdToEntityIds() );
+                    a.getPropertyTypeIdToStorageDest().putAll( b.getPropertyTypeIdToStorageDest() );
 
                     if ( a.getAssociations().size() > 100000 || a.getEntities().size() > 100000 ) {
 
-                        Map<UUID, Map<String, UUID>> bulkEntitySetIds = idService.getEntityKeyIds( a.getEntitySetIdToEntityIds() );
-                        //pass data object and new map to data sink
+                        Map<UUID, Map<String, UUID>> bulkEntitySetIds = idService
+                                .getEntityKeyIds( a.getEntitySetIdToEntityIds() );
+                        sendDataToDataSink( a, bulkEntitySetIds );
                         IntegrationResults results = dataApi.integrateEntityAndAssociationData( a, false );
-                        return new BulkDataCreation2( new HashSet<>(), new HashSet<>(), new HashMap<>(  ) );
+                        return new BulkDataCreation2( new HashSet<>(),
+                                new HashSet<>(),
+                                new HashMap<>(),
+                                new HashMap<>() );
                     }
 
                     return a;
@@ -403,7 +414,7 @@ public class Shuttle implements Serializable {
             DataIntegrationApi dataApi;
             dataApi = this.apiClient.getDataIntegrationApi();
             Map<UUID, Map<String, UUID>> bulkEntitySetIds = idService.getEntityKeyIds( r.getEntitySetIdToEntityIds() );
-            //pass data object and new map to data sink
+            sendDataToDataSink( r, bulkEntitySetIds );
             dataApi.integrateEntityAndAssociationData( r, false );
         } );
     }
@@ -422,5 +433,35 @@ public class Shuttle implements Serializable {
                         .stream()
                         .map( propertyIdsCache::getUnchecked ),
                 properties );
+    }
+
+    private static void sendDataToDataSink( BulkDataCreation2 a, Map<UUID, Map<String, UUID>> bulkEntitySetIds ) {
+        //create data structures to store data for s3 and postgres data sinks
+        Map<UUID, Map<String, UUID>> s3EntitySetIds = new HashMap<>();
+        Map<UUID, Set<Object>> s3Properties = new HashMap<>();
+        Set<EntityKeysAndData> s3Entities = new HashSet<>();
+
+        Map<UUID, Map<String, UUID>> postgresEntitySetIds = new HashMap<>();
+        Map<UUID, Set<Object>> postgresProperties = new HashMap<>();
+        Set<EntityKeysAndData> postgresEntities = new HashSet<>();
+
+        Map<UUID, String> propertyIdToDest = a.getPropertyTypeIdToStorageDest();
+        a.getEntities().forEach( entity -> {
+            entity.getDetails().entrySet().forEach( e -> {
+                UUID entitySetId = entity.getEntitySetId();
+                if ( propertyIdToDest.get( e.getKey() ).equals( "s3" ) ) {
+                    s3EntitySetIds.put( entitySetId, bulkEntitySetIds.get( entitySetId ) );
+                    s3Properties.put( e.getKey(), e.getValue() );
+                } else {
+                    postgresEntitySetIds.put( entitySetId, bulkEntitySetIds.get( entitySetId ) );
+                    postgresProperties.put( e.getKey(), e.getValue() );
+                }
+            } );
+            s3Entities.add( new EntityKeysAndData( s3EntitySetIds, s3Properties ) );
+            postgresEntities.add( new EntityKeysAndData( postgresEntitySetIds, postgresProperties ) );
+        } );
+        DataSinkObject s3DataSinkObject = new DataSinkObject( s3Entities );
+        DataSinkObject postgresDataSinkObject = new DataSinkObject( postgresEntities );
+        //send objects to their respective data sinks
     }
 }
