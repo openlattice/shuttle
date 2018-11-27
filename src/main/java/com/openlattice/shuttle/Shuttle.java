@@ -399,7 +399,6 @@ public class Shuttle implements Serializable {
                         Map<UUID, Map<String, UUID>> bulkEntitySetIds = idService
                                 .getEntityKeyIds( a.getEntitySetIdToEntityIds() );
                         sendDataToDataSink( a, bulkEntitySetIds, dataApi );
-                        IntegrationResults results = dataApi.integrateEntityAndAssociationData( a, false );
                         return new BulkDataCreation2( new HashSet<>(),
                                 new HashSet<>(),
                                 new HashMap<>(),
@@ -414,7 +413,6 @@ public class Shuttle implements Serializable {
             dataApi = this.apiClient.getDataIntegrationApi();
             Map<UUID, Map<String, UUID>> bulkEntitySetIds = idService.getEntityKeyIds( r.getEntitySetIdToEntityIds() );
             sendDataToDataSink( r, bulkEntitySetIds, dataApi );
-            dataApi.integrateEntityAndAssociationData( r, false );
         } );
     }
 
