@@ -18,7 +18,7 @@ import java.util.*;
 
 public class GeocoderTransform extends Transformation<Object> {
     private final String addressObject;
-    protected String NOMINATIM_SERVICE_URL = "http://ec2-160-1-30-195.us-gov-west-1.compute.amazonaws.com/nominatim/";
+    protected String NOMINATIM_SERVICE_URL = "https://osm.openlattice.com/nominatim/";
 
     /**
      * Represents a transformation to get the digits at the start of a column (if starts with digits).
