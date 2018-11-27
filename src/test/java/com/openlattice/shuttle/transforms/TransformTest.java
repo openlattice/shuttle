@@ -16,6 +16,7 @@ public class TransformTest {
 
     String lat               = "36.23452";
     String lon               = "30.34573";
+    String sex               = "f";
     String first             = "John";
     String last              = "Doe";
     String DOB               = "03/05/1998 10:00";
@@ -32,12 +33,17 @@ public class TransformTest {
         testrow.put( "ArrestedDate", dateArrest );
         testrow.put( "ReleasedDate", dateRelease );
         testrow.put( "SSN", null );
+        testrow.put( "Sex", sex);
         testrow.put( "Address", address );
         testrow.put( "CommittedDateTime", datetimeCommitted );
         testrow.put( "Lat", lat );
         testrow.put( "Long", lon );
         return testrow;
     }
+
+    //==================//
+    // HELPER FUNCTIONS //
+    //==================//
 
     public Transformations getTrueTestTransforms() {
         Transformations transfos = new Transformations();
@@ -50,6 +56,10 @@ public class TransformTest {
         transfos.add( new ValueTransform( "nope" ) );
         return transfos;
     }
+
+    //==================//
+    // BOOLEAN TESTS    //
+    //==================//
 
     @Test
     public void testGeographyPointTransform() {
@@ -174,14 +184,9 @@ public class TransformTest {
         Assert.assertEquals( "yup", booleanRegexTest1 );
     }
 
-    @Test
-    public void testPrefixTransform() {
-        Object prefixTest1 = new PrefixTransform( "prefix_" ).apply( "name" );
-        Assert.assertEquals( "prefix_name", prefixTest1 );
-
-        Object prefixTest2 = new PrefixTransform( "prefix_" ).apply( null );
-        Assert.assertEquals( null, prefixTest2 );
-    }
+    //==================//
+    // PARSING TESTS    //
+    //==================//
 
     @Test
     public void testParseIntTransform() {
@@ -200,6 +205,10 @@ public class TransformTest {
         Object parseBoolTest4 = new ParseBoolTransform().apply( "false" );
         Assert.assertEquals( false, parseBoolTest4 );
     }
+
+    //==================//
+    // DATETIME TESTS   //
+    //==================//
 
     @Test
     public void testDateTimeTransform() {
@@ -226,12 +235,78 @@ public class TransformTest {
         Assert.assertEquals( expected2, dateTimeTest2 );
     }
 
+    //==================//
+    // OTHER TESTS      //
+    //==================//
+
+    @Test
+    public void testPrefixTransform() {
+        Object prefixTest1 = new PrefixTransform( "prefix_" ).apply( "name" );
+        Assert.assertEquals( "prefix_name", prefixTest1 );
+
+        Object prefixTest2 = new PrefixTransform( "prefix_" ).apply( null );
+        Assert.assertEquals( null, prefixTest2 );
+    }
+
+    @Test
+    public void testCasingTransform() {
+        Object casingTest1 = new CaseTransform( null ).apply( "JANINE" );
+        Assert.assertEquals( "Janine", casingTest1 );
+        Object casingTest2 = new CaseTransform( null ).apply( "123JANINE" );
+        Assert.assertEquals( "123janine", casingTest2 );
+        Object casingTest3 = new CaseTransform( CaseTransform.CaseType.lower ).apply( "JAniNE" );
+        Assert.assertEquals( "janine", casingTest3 );
+        Object casingTest4 = new CaseTransform( CaseTransform.CaseType.upper ).apply( "JAniNE" );
+        Assert.assertEquals( "JANINE", casingTest4 );
+        Object casingTest5 = new CaseTransform( CaseTransform.CaseType.sentence ).apply( "janine vanderginst" );
+        Assert.assertEquals( "Janine vanderginst", casingTest5 );
+        Object casingTest6 = new CaseTransform( CaseTransform.CaseType.name ).apply( "janine vanderginst" );
+        Assert.assertEquals( "Janine Vanderginst", casingTest6 );
+    }
+
+
     @Test
     public void testConcatTransform() {
         String expected = "John Doe";
         List<String> cols = Arrays.asList( "FirstName", "LastName" );
         Object concatTest1 = new ConcatTransform( cols, " " ).apply( getTestRow() );
         Assert.assertEquals( expected, concatTest1 );
+    }
+
+    @Test
+    public void testReplaceTransform() {
+        Optional<Boolean> optrue = Optional.of( true );
+        Optional<Boolean> opfals = Optional.of( false );
+
+        List<String> target = Arrays.asList( "F" );
+        List<String> goal = Arrays.asList( "female" );
+        // not case sensitive
+        Object replaceTest1 = new ReplaceTransform( target, optrue, opfals, goal, "null" )
+                .apply( getTestRow().get( "Sex" ) );
+        Assert.assertEquals( "female", replaceTest1 );
+
+        // case sensitive
+        Object replaceTest2 = new ReplaceTransform( target, opfals, opfals, goal, "null" )
+                .apply( getTestRow().get( "Sex" ) );
+        Assert.assertEquals( null, replaceTest2 );
+
+        // return original when valueElse is not specified
+        Object replaceTest3 = new ReplaceTransform( target, opfals, opfals, goal, null )
+                .apply( getTestRow().get( "Sex" ) );
+        Assert.assertEquals( "f", replaceTest3 );
+
+        List<String> target4 = Arrays.asList( "F", "e" );
+        List<String> goal4 = Arrays.asList( "female", "erel" );
+        Object replaceTest4 = new ReplaceTransform( target4, optrue, optrue, goal4, null )
+                .apply( getTestRow().get( "Sex" ) );
+        Assert.assertEquals( "female", replaceTest4 );
+
+        List<String> target5 = Arrays.asList( "Android", "a" );
+        List<String> goal5 = Arrays.asList( "Windows", "u" );
+        Object replaceTest5 = new ReplaceTransform( target5, optrue, optrue, goal5, null )
+                .apply( "Android gave new life to java" );
+        Assert.assertEquals( "Windows guve new life to juvu", replaceTest5 );
+
     }
 
     @Test

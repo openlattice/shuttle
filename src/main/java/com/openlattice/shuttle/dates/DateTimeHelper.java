@@ -111,11 +111,11 @@ public class DateTimeHelper implements Serializable {
         return null;
     }
 
-    public LocalDate parseDate( String date ) {
+    public String parseDate( String date ) {
         if ( StringUtils.isBlank( date ) )
             return null;
         LocalDate dt = parseLocalDate( date );
-        return dt == null ? null : dt;
+        return dt == null ? null : dt.toString();
     }
 
     public LocalDate parseLocalDate( String date ) {
