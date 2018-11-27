@@ -56,8 +56,6 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 
 public class Shuttle implements Serializable {
-    @Inject EntityKeyIdService idService;
-
     private static final long serialVersionUID = -7356687761893337471L;
 
     private static final Logger logger = LoggerFactory
@@ -396,7 +394,7 @@ public class Shuttle implements Serializable {
 
                     if ( a.getAssociations().size() > 100000 || a.getEntities().size() > 100000 ) {
 
-                        Map<UUID, Map<String, UUID>> bulkEntitySetIds = idService
+                        Map<UUID, Map<String, UUID>> bulkEntitySetIds = dataApi
                                 .getEntityKeyIds( a.getEntitySetIdToEntityIds() );
                         sendDataToDataSink( a, bulkEntitySetIds, dataApi );
                         return new BulkDataCreation2( new HashSet<>(),
@@ -411,7 +409,7 @@ public class Shuttle implements Serializable {
         remaining.ifPresent( r -> {
             DataIntegrationApi dataApi;
             dataApi = this.apiClient.getDataIntegrationApi();
-            Map<UUID, Map<String, UUID>> bulkEntitySetIds = idService.getEntityKeyIds( r.getEntitySetIdToEntityIds() );
+            Map<UUID, Map<String, UUID>> bulkEntitySetIds = dataApi.getEntityKeyIds( r.getEntitySetIdToEntityIds() );
             sendDataToDataSink( r, bulkEntitySetIds, dataApi );
         } );
     }
