@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.data.integration.StorageDestination;
 import com.openlattice.shuttle.adapter.Row;
 import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.Transformation;
@@ -52,7 +53,7 @@ public class PropertyDefinition implements Serializable {
     private final FullQualifiedName                            propertyTypeFqn;
     private final SerializableFunction<Map<String, String>, ?> valueMapper;
     private final String                                       column;
-    private final String                                       storageDest;
+    private final StorageDestination                           storageDest;
     private final Optional<Transformations>                    transforms;
 
     @JsonCreator
@@ -61,10 +62,10 @@ public class PropertyDefinition implements Serializable {
             @JsonProperty( Constants.COLUMN ) String column,
             @JsonProperty( Constants.READER ) Optional<Transformation> reader,
             @JsonProperty( Constants.TRANSFORMS ) Optional<Transformations> transforms,
-            @JsonProperty( Constants.STORAGE_DESTINATION ) String storageDest ) {
+            @JsonProperty( Constants.STORAGE_DESTINATION ) StorageDestination storageDest ) {
         this.propertyTypeFqn = propertyTypeFqn == null ? null : new FullQualifiedName( propertyTypeFqn );
         this.column = column == null ? "" : column;
-        this.storageDest = storageDest == null ? "" : storageDest;
+        this.storageDest = storageDest == null ? StorageDestination.POSTGRES : storageDest;
         this.transforms = transforms;
 
         if ( transforms.isPresent() ) {
@@ -86,7 +87,7 @@ public class PropertyDefinition implements Serializable {
     public PropertyDefinition(
             String propertyTypeFqn,
             String columnName,
-            String storageDest,
+            StorageDestination storageDest,
             SerializableFunction<Map<String, String>, ?> valueMapper ) {
         this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
         this.valueMapper = valueMapper;
@@ -118,7 +119,7 @@ public class PropertyDefinition implements Serializable {
         return this.propertyTypeFqn;
     }
 
-    public String getStorageDest() {
+    public StorageDestination getStorageDest() {
         return storageDest;
     }
 
@@ -132,26 +133,31 @@ public class PropertyDefinition implements Serializable {
         return row -> this.valueMapper.apply( Preconditions.checkNotNull( row ) );
     }
 
-    @Override public boolean equals( Object o ) {
-        if ( this == o ) { return true; }
-        if ( !( o instanceof PropertyDefinition ) ) { return false; }
-        PropertyDefinition that = (PropertyDefinition) o;
-        return Objects.equals( propertyTypeFqn, that.propertyTypeFqn ) &&
-                Objects.equals( column, that.column ) &&
-                Objects.equals( transforms, that.transforms );
-    }
-
     @Override public String toString() {
         return "PropertyDefinition{" +
                 "propertyTypeFqn=" + propertyTypeFqn +
+                ", valueMapper=" + valueMapper +
                 ", column='" + column + '\'' +
+                ", storageDest=" + storageDest +
                 ", transforms=" + transforms +
                 '}';
     }
 
-    @Override public int hashCode() {
+    @Override public boolean equals( Object o ) {
+        if ( this == o )
+            return true;
+        if ( o == null || getClass() != o.getClass() )
+            return false;
+        PropertyDefinition that = (PropertyDefinition) o;
+        return Objects.equals( propertyTypeFqn, that.propertyTypeFqn ) &&
+                Objects.equals( valueMapper, that.valueMapper ) &&
+                Objects.equals( column, that.column ) &&
+                storageDest == that.storageDest &&
+                Objects.equals( transforms, that.transforms );
+    }
 
-        return Objects.hash( propertyTypeFqn, column, transforms );
+    @Override public int hashCode() {
+        return Objects.hash( propertyTypeFqn, valueMapper, column, storageDest, transforms );
     }
 
     public static class Builder<T extends BaseBuilder> extends BaseBuilder<T, PropertyDefinition> {
@@ -160,7 +166,7 @@ public class PropertyDefinition implements Serializable {
         private SerializableFunction<Map<String, String>, ?> valueMapper;
         private Transformations                              transforms;
         private String                                       column      = "";
-        private String                                       storageDest = "";
+        private StorageDestination                           storageDest = StorageDestination.POSTGRES;
 
         public Builder(
                 FullQualifiedName propertyTypeFqn,
@@ -196,7 +202,7 @@ public class PropertyDefinition implements Serializable {
             return this;
         }
 
-        public Builder<T> setStorageDest( String storageDest ) {
+        public Builder<T> value( StorageDestination storageDest ) {
             this.storageDest = storageDest;
             return this;
         }
