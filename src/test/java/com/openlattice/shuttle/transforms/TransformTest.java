@@ -275,6 +275,12 @@ public class TransformTest {
         Assert.assertEquals( expected, concatTest1 );
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testColumnAbsence() {
+        String unknownColumn = "thisdoesnotexist";
+        Object concatTest1 = new ColumnTransform( unknownColumn ).apply( getTestRow() );
+    }
+
     @Test
     public void testReplaceRegexTransform() {
         String target = ".*\\(|\\)";
