@@ -231,7 +231,7 @@ public class Shuttle implements Serializable {
 
                     if ( flight.condition.isPresent() ) {
                         Object out = flight.valueMapper.apply( row );
-                        if ( !( (Boolean) out ).booleanValue() ) {
+                        if ( !(Boolean) out ) {
                             return new BulkDataCreation( entities, associations, propertyTypeIdToStorageDest );
                         }
                     }
@@ -241,7 +241,7 @@ public class Shuttle implements Serializable {
                         Boolean condition = true;
                         if ( entityDefinition.condition.isPresent() ) {
                             Object out = entityDefinition.valueMapper.apply( row );
-                            if ( !( (Boolean) out ).booleanValue() ) {
+                            if ( !(Boolean) out ) {
                                 condition = false;
                             }
                         }
@@ -263,10 +263,8 @@ public class Shuttle implements Serializable {
                                                 .putAll( ImmutableMap.of( propertyId,
                                                         Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
                                     } else {
-                                        properties.compute( propertyId,
-                                                ( k, v ) -> ( v == null )
-                                                        ? addAndReturn( new HashSet<>(), propertyValue )
-                                                        : addAndReturn( v, propertyValue ) );
+                                        properties.computeIfAbsent( propertyId, ptId -> new HashSet<>() )
+                                                .add( propertyValue );
                                     }
                                 }
                             }
@@ -280,7 +278,7 @@ public class Shuttle implements Serializable {
                         String entityId = ( entityDefinition.getGenerator().isPresent() )
                                 ? entityDefinition.getGenerator().get().apply( row )
                                 : generateDefaultEntityId( keyCache.getUnchecked( entityDefinition.getEntitySetName() ),
-                                properties );
+                                        properties );
 
                         if ( StringUtils.isNotBlank( entityId ) & condition & properties.size() > 0 ) {
                             EntityKey key = new EntityKey( entitySetId, entityId );
@@ -298,7 +296,7 @@ public class Shuttle implements Serializable {
 
                         if ( associationDefinition.condition.isPresent() ) {
                             Object out = associationDefinition.valueMapper.apply( row );
-                            if ( !( (Boolean) out ).booleanValue() ) {
+                            if ( !(Boolean) out ) {
                                 continue;
                             }
                         }
@@ -332,19 +330,18 @@ public class Shuttle implements Serializable {
                                                         .of( propertyId,
                                                                 Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
                                     } else {
-                                        properties.compute( propertyId,
-                                                ( k, v ) -> ( v == null )
-                                                        ? addAndReturn( new HashSet<>(), propertyValue )
-                                                        : addAndReturn( v, propertyValue ) );
+                                        properties.computeIfAbsent( propertyId, ptId -> new HashSet<>() )
+                                                .add( propertyValue );
                                     }
                                 }
                             }
 
-                            String entityId = ( associationDefinition.getGenerator().isPresent() )
-                                    ? associationDefinition.getGenerator().get().apply( row )
-                                    : generateDefaultEntityId(
-                                    keyCache.getUnchecked( associationDefinition.getEntitySetName() ),
-                                    properties );
+                            String entityId = associationDefinition.getGenerator()
+                                    .map( g -> g.apply( row ) )
+                                    .orElseGet( () ->
+                                            generateDefaultEntityId(
+                                                    keyCache.getUnchecked( associationDefinition.getEntitySetName() ),
+                                                    properties ) );
 
                             if ( StringUtils.isNotBlank( entityId ) ) {
                                 EntityKey key = new EntityKey( entitySetId, entityId );
