@@ -19,6 +19,7 @@ public class TransformTest {
     String sex               = "f";
     String first             = "John";
     String last              = "Doe";
+    String family            = "Joanna Doe (mother)";
     String DOB               = "03/05/1998 10:00";
     String address           = "560 Scott Street, San Francisco, CA 94117";
     String dateArrest        = "10/01/92";
@@ -29,6 +30,7 @@ public class TransformTest {
         Map<String, String> testrow = new HashMap<String, String>();
         testrow.put( "FirstName", first );
         testrow.put( "LastName", last );
+        testrow.put( "Family", family );
         testrow.put( "DOB", DOB );
         testrow.put( "ArrestedDate", dateArrest );
         testrow.put( "ReleasedDate", dateRelease );
@@ -271,6 +273,16 @@ public class TransformTest {
         List<String> cols = Arrays.asList( "FirstName", "LastName" );
         Object concatTest1 = new ConcatTransform( cols, " " ).apply( getTestRow() );
         Assert.assertEquals( expected, concatTest1 );
+    }
+
+    @Test
+    public void testReplaceRegexTransform() {
+        String target = ".*\\(|\\)";
+        String goal = "";
+
+        Object replaceRegexTest1 = new ReplaceRegexTransform( target, goal )
+                .apply(getTestRow().get("Family"));
+        Assert.assertEquals( "mother", replaceRegexTest1);
     }
 
     @Test
