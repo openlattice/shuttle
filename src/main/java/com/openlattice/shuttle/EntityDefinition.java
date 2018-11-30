@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
+import com.openlattice.data.integration.StorageDestination;
 import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.conditions.ConditionValueMapper;
 import com.openlattice.shuttle.conditions.Conditions;
@@ -312,8 +313,7 @@ public class EntityDefinition implements Serializable {
 
             return new PropertyDefinition.Builder<>( propertyTypeFqn, this, onBuild );
         }
-/*
-        public Builder addProperty( String propertyString, String columnName ) {
+        public Builder addProperty( String propertyString, String columnName, StorageDestination storageDestination ) {
             // This function is for when flights are defined in java
             // Useful for backwards compatibility
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
@@ -322,18 +322,19 @@ public class EntityDefinition implements Serializable {
                 return ( value instanceof String && StringUtils.isBlank( value ) ) ? null : value;
             };
             PropertyDefinition propertyDefinition = new PropertyDefinition(
-                    propertyString, columnName, defaultMapper );
+                    propertyString, columnName, storageDestination, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
-        }*/
+        }
 
         public Builder addProperty(
                 String propertyString,
                 String columnName,
-                Transformations transformation ) {
+                Transformations transformation,
+                StorageDestination storageDest ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
-                    propertyString, columnName, Optional.empty(), Optional.of( transformation ), "" );
+                    propertyString, columnName, Optional.empty(), Optional.of( transformation ), storageDest );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
