@@ -33,7 +33,6 @@ class ShuttleCli {
         const val HELP = "help"
 
         const val FLIGHT = "flight"
-        const val TRANSFORMS = "transforms"
         const val USER = "user"
         const val PASSWORD = "password"
         const val TOKEN = "token"
