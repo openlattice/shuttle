@@ -68,7 +68,6 @@ public class Shuttle implements Serializable {
             JacksonLambdaSerializer.registerWithMapper( mapper );
             FullQualifiedNameJacksonSerializer.registerWithMapper( mapper );
             JacksonLambdaDeserializer.registerWithMapper( mapper );
-
         } );
     }
 
@@ -373,8 +372,7 @@ public class Shuttle implements Serializable {
                     if ( a.getAssociations().size() > 100000 || a.getEntities().size() > 100000 ) {
                         Set<EntityKey> entityKeys = a.getEntities().stream().map( entity -> entity.getKey() )
                                 .collect( Collectors.toSet() );
-                        Map<EntityKey, UUID> bulkEntitySetIds = dataApi.getEntityKeyIds( entityKeys ).stream()
-                                .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+                        Map<UUID, Map<String, UUID>> bulkEntitySetIds = dataApi.getEntityKeyIds( entityKeys );
                         sendDataToDataSink( a, bulkEntitySetIds, dataApi );
                         return new BulkDataCreation( new HashSet<>(),
                                 new HashSet<>(),
@@ -389,8 +387,7 @@ public class Shuttle implements Serializable {
             dataApi = this.apiClient.getDataIntegrationApi();
             Set<EntityKey> entityKeys = r.getEntities().stream().map( entity -> entity.getKey() )
                     .collect( Collectors.toSet() );
-            Map<EntityKey, UUID> bulkEntitySetIds = dataApi.getEntityKeyIds( entityKeys ).stream()
-                    .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+            Map<UUID, Map<String, UUID>> bulkEntitySetIds = dataApi.getEntityKeyIds( entityKeys );
             sendDataToDataSink( r, bulkEntitySetIds, dataApi );
         } );
     }
@@ -413,32 +410,36 @@ public class Shuttle implements Serializable {
 
     private static void sendDataToDataSink(
             BulkDataCreation a,
-            Map<EntityKey, UUID> bulkEntitySetIds,
+            Map<UUID, Map<String, UUID>> bulkEntitySetIds,
             DataIntegrationApi dataApi ) {
         //create data structures to store data for s3 and postgres data sinks
-        Map<UUID, Set<Object>> s3Properties = new HashMap<>();
         Set<EntityData> s3Entities = new HashSet<>();
-
-        Map<UUID, Set<Object>> postgresProperties = new HashMap<>();
         Set<EntityData> postgresEntities = new HashSet<>();
 
         Map<UUID, StorageDestination> propertyIdToDest = a.getPropertyTypeIdToStorageDest();
         a.getEntities().forEach( entity -> {
+            Map<UUID, Set<Object>> s3Properties = new HashMap<>();
+            Map<UUID, Set<Object>> postgresProperties = new HashMap<>();
             UUID entitySetId = entity.getEntitySetId();
             String entityId = entity.getEntityId();
-            UUID entityKeyId = bulkEntitySetIds.get( entity.getKey() );
+            Map<String, UUID> entityIdToKeyId= bulkEntitySetIds.get(entitySetId);
+            UUID entityKeyId = entityIdToKeyId.get( entityId );
 
             //for each property in the entity
             entity.getDetails().entrySet().forEach( e -> {
                 if ( propertyIdToDest.get( e.getKey() ).equals( StorageDestination.AWS ) ) {
                     s3Properties.put( e.getKey(), e.getValue() );
-                    postgresProperties.put( e.getKey(), e.getValue() ); //TODO generate the S3Key at this step
+                    postgresProperties.put( e.getKey(), e.getValue() ); //TODO try to generate the S3Key at this step
                 } else {
                     postgresProperties.put( e.getKey(), e.getValue() );
                 }
             } );
-            s3Entities.add( new EntityData( entitySetId, entityId, entityKeyId, s3Properties ) );
-            postgresEntities.add( new EntityData( entitySetId, entityId, entityKeyId, postgresProperties ) );
+            if (!s3Properties.isEmpty()) {
+                s3Entities.add( new EntityData( entitySetId, entityId, entityKeyId, s3Properties ) );
+            }
+            if (!postgresProperties.isEmpty()) {
+                postgresEntities.add( new EntityData( entitySetId, entityId, entityKeyId, postgresProperties ) );
+            }
         } );
 
         DataSinkObject s3DataSinkObject = new DataSinkObject( s3Entities );
