@@ -19,7 +19,7 @@ public class ParseDoubleTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply( String o ) {
+    public Object applyValue( String o ) {
         return Parsers.parseDouble( o );
     }
 

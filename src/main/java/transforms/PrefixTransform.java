@@ -54,7 +54,7 @@ public class PrefixTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply( String o ) {
+    public Object applyValue( String o ) {
         if ( StringUtils.isBlank( o ) ) {
             return null;
         }

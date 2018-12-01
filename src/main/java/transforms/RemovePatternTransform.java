@@ -69,7 +69,7 @@ public class RemovePatternTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply( String o ) {
+    public Object applyValue( String o ) {
         for ( Pattern rx : rgx ) {
             if ( StringUtils.isBlank( o ) ) {
                 return null;
