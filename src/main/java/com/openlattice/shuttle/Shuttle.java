@@ -31,29 +31,44 @@ import com.openlattice.ApiUtil;
 import com.openlattice.client.ApiClient;
 import com.openlattice.client.ApiFactoryFactory;
 import com.openlattice.client.RetrofitFactory.Environment;
-import com.openlattice.data.DataIntegrationApi;
-import com.openlattice.data.EntityKey;
+import com.openlattice.data.*;
 import com.openlattice.data.integration.*;
+import com.openlattice.data.integration.Entity;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
+import com.openlattice.data.storage.PostgresDataHasher;
 import com.openlattice.edm.EdmApi;
+import com.openlattice.graph.edge.EdgeKey;
+import com.openlattice.retrofit.RhizomeByteConverterFactory;
+import com.openlattice.retrofit.RhizomeCallAdapterFactory;
+import com.openlattice.retrofit.RhizomeJacksonConverterFactory;
+import com.openlattice.rhizome.proxy.RetrofitBuilders;
 import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
 
 import java.io.Serializable;
+import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.openlattice.data.integration.StorageDestination;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.RequestBody;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import retrofit2.Retrofit;
 
 public class Shuttle implements Serializable {
-    private static final long serialVersionUID = -7356687761893337471L;
+    private static final long                                    serialVersionUID      = -7356687761893337471L;
+    private static       ConcurrentMap<UUID, StorageDestination> propertyToStorageDest = new ConcurrentHashMap<>();
 
     private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
@@ -225,13 +240,12 @@ public class Shuttle implements Serializable {
                     Map<String, EntityKey> aliasesToEntityKey = new HashMap<>();
                     Set<Entity> entities = Sets.newHashSet();
                     Set<Association> associations = Sets.newHashSet();
-                    Map<UUID, StorageDestination> propertyTypeIdToStorageDest = new HashMap<>();
                     Map<String, Boolean> wasCreated = new HashMap<>();
 
                     if ( flight.condition.isPresent() ) {
                         Object out = flight.valueMapper.apply( row );
                         if ( !( (Boolean) out ).booleanValue() ) {
-                            return new BulkDataCreation( entities, associations, propertyTypeIdToStorageDest );
+                            return new BulkDataCreation( entities, associations );
                         }
                     }
 
@@ -249,14 +263,15 @@ public class Shuttle implements Serializable {
                         Map<UUID, Set<Object>> properties = new HashMap<>();
 
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
+                            StorageDestination storageDest;
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
                             if ( propertyValue != null ) {
                                 String stringProp = propertyValue.toString();
                                 if ( !StringUtils.isBlank( stringProp ) ) {
                                     UUID propertyId = propertyIdsCache
                                             .getUnchecked( propertyDefinition.getFullQualifiedName() );
-                                    StorageDestination storageDest = propertyDefinition.getStorageDest();
-                                    propertyTypeIdToStorageDest.put( propertyId, storageDest );
+                                    storageDest = propertyDefinition.getStorageDest();
+                                    propertyToStorageDest.put( propertyId, storageDest );
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap.of( propertyId,
@@ -324,7 +339,7 @@ public class Shuttle implements Serializable {
                                     var propertyId = propertyIdsCache
                                             .getUnchecked( propertyDefinition.getFullQualifiedName() );
                                     StorageDestination storageDest = propertyDefinition.getStorageDest();
-                                    propertyTypeIdToStorageDest.put( propertyId, storageDest );
+                                    propertyToStorageDest.put( propertyId, storageDest );
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap
@@ -357,8 +372,7 @@ public class Shuttle implements Serializable {
                     }
 
                     return new BulkDataCreation( entities,
-                            associations,
-                            propertyTypeIdToStorageDest );
+                            associations );
                 } )
                 .reduce( ( BulkDataCreation a, BulkDataCreation b ) -> {
 
@@ -367,16 +381,16 @@ public class Shuttle implements Serializable {
 
                     a.getAssociations().addAll( b.getAssociations() );
                     a.getEntities().addAll( b.getEntities() );
-                    a.getPropertyTypeIdToStorageDest().putAll( b.getPropertyTypeIdToStorageDest() );
 
                     if ( a.getAssociations().size() > 100000 || a.getEntities().size() > 100000 ) {
                         Set<EntityKey> entityKeys = a.getEntities().stream().map( entity -> entity.getKey() )
                                 .collect( Collectors.toSet() );
+                        entityKeys.addAll( a.getAssociations().stream().map( association -> association.getKey() ).collect(
+                                Collectors.toSet() ) );
                         Map<UUID, Map<String, UUID>> bulkEntitySetIds = dataApi.getEntityKeyIds( entityKeys );
                         sendDataToDataSink( a, bulkEntitySetIds, dataApi );
                         return new BulkDataCreation( new HashSet<>(),
-                                new HashSet<>(),
-                                new HashMap<>() );
+                                new HashSet<>() );
                     }
 
                     return a;
@@ -387,6 +401,8 @@ public class Shuttle implements Serializable {
             dataApi = this.apiClient.getDataIntegrationApi();
             Set<EntityKey> entityKeys = r.getEntities().stream().map( entity -> entity.getKey() )
                     .collect( Collectors.toSet() );
+            entityKeys.addAll( r.getAssociations().stream().map( association -> association.getKey() ).collect(
+                    Collectors.toSet() ) );
             Map<UUID, Map<String, UUID>> bulkEntitySetIds = dataApi.getEntityKeyIds( entityKeys );
             sendDataToDataSink( r, bulkEntitySetIds, dataApi );
         } );
@@ -413,40 +429,85 @@ public class Shuttle implements Serializable {
             Map<UUID, Map<String, UUID>> bulkEntitySetIds,
             DataIntegrationApi dataApi ) {
         //create data structures to store data for s3 and postgres data sinks
-        Set<EntityData> s3Entities = new HashSet<>();
-        Set<EntityData> postgresEntities = new HashSet<>();
+        Set<S3EntityData> s3Entities = Sets.newHashSet();
+        Set<EntityData> postgresEntities = Sets.newHashSet();
 
-        Map<UUID, StorageDestination> propertyIdToDest = a.getPropertyTypeIdToStorageDest();
+        //sort entities by storage dest
         a.getEntities().forEach( entity -> {
-            Map<UUID, Set<Object>> s3Properties = new HashMap<>();
             Map<UUID, Set<Object>> postgresProperties = new HashMap<>();
             UUID entitySetId = entity.getEntitySetId();
             String entityId = entity.getEntityId();
-            Map<String, UUID> entityIdToKeyId= bulkEntitySetIds.get(entitySetId);
-            UUID entityKeyId = entityIdToKeyId.get( entityId );
+            UUID entityKeyId = bulkEntitySetIds.get( entitySetId ).get( entityId );
 
-            //for each property in the entity
+            //for each set of properties in the entity
             entity.getDetails().entrySet().forEach( e -> {
-                if ( propertyIdToDest.get( e.getKey() ).equals( StorageDestination.AWS ) ) {
-                    s3Properties.put( e.getKey(), e.getValue() );
-                    postgresProperties.put( e.getKey(), e.getValue() ); //TODO try to generate the S3Key at this step
+                if ( propertyToStorageDest.get( e.getKey() ).equals( StorageDestination.AWS ) ) {
+                    for ( Object o : e.getValue() ) {
+                        String encodedProperty = (String) o;
+                        byte[] property = Base64.getEncoder().encode( encodedProperty.getBytes() );
+                        String propertyHash = PostgresDataHasher
+                                .hashObjectToHex( property, EdmPrimitiveTypeKind.Binary );
+                        s3Entities.add( new S3EntityData( entitySetId,
+                                entityKeyId,
+                                e.getKey(),
+                                propertyHash,
+                                property ) );
+                    }
                 } else {
                     postgresProperties.put( e.getKey(), e.getValue() );
                 }
             } );
-            if (!s3Properties.isEmpty()) {
-                s3Entities.add( new EntityData( entitySetId, entityId, entityKeyId, s3Properties ) );
-            }
-            if (!postgresProperties.isEmpty()) {
+            if ( !postgresProperties.isEmpty() ) {
                 postgresEntities.add( new EntityData( entitySetId, entityId, entityKeyId, postgresProperties ) );
             }
         } );
 
-        DataSinkObject s3DataSinkObject = new DataSinkObject( s3Entities );
-        DataSinkObject postgresDataSinkObject = new DataSinkObject( postgresEntities );
+        //write associations to postgres
+        Set<Association> associations= a.getAssociations();
+        Set<DataEdgeKey> edges = associations.stream().map( association -> {
+            UUID srcEntitySetId = association.getSrc().getEntitySetId();
+            String srcEntityId = association.getSrc().getEntityId();
+            UUID srcEntityKeyId = bulkEntitySetIds.get( srcEntitySetId ).get( srcEntityId );
 
-        dataApi.sinkData( StorageDestination.AWS, s3DataSinkObject );
-        dataApi.sinkData( StorageDestination.POSTGRES, postgresDataSinkObject );
+            UUID dstEntitySetId = association.getDst().getEntitySetId();
+            String dstEntityId = association.getDst().getEntityId();
+            UUID dstEntityKeyId = bulkEntitySetIds.get( dstEntitySetId ).get( dstEntityId );
+
+            UUID keyEntitySetId = association.getKey().getEntitySetId();
+            String keyEntityId = association.getKey().getEntityId();
+            UUID keyEntityKeyId = bulkEntitySetIds.get( keyEntitySetId ).get( keyEntityId );
+
+            postgresEntities.add(new EntityData(keyEntitySetId, keyEntityId, keyEntityKeyId, association.getDetails()));
+
+            return new DataEdgeKey( new EntityDataKey( srcEntitySetId, srcEntityKeyId ),
+                    new EntityDataKey( dstEntitySetId, dstEntityKeyId ),
+                    new EntityDataKey( keyEntitySetId, keyEntityKeyId ) );
+
+        } ).collect( Collectors.toSet());
+
+        dataApi.createEdges( edges );
+        dataApi.sinkToPostgres( postgresEntities );
+
+        Map<URL, byte[]> urls = dataApi.generatePresignedUrls( s3Entities );
+
+        OkHttpClient client = RetrofitBuilders.okHttpClient().build();
+
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl( "https://tempy-media-storage.s3.us-gov-west-1.amazonaws.com/" )
+                .addConverterFactory( new RhizomeByteConverterFactory() )
+                .addConverterFactory( new RhizomeJacksonConverterFactory( ObjectMappers.getJsonMapper() ) )
+                .addCallAdapterFactory( new RhizomeCallAdapterFactory() )
+                .client( client )
+                .build();
+        S3Api s3Api = retrofit.create( S3Api.class );
+        urls.forEach( ( k, v ) -> {
+            RequestBody body = RequestBody.create( MediaType.parse( "application/octet-stream" ), v );
+            s3Api.writeToS3( k.toString(), body );
+            System.out.println( k );
+            System.out.println( k.toString() );
+            System.out.println( "*************************************" );
+        } );
+
     }
 
 }
