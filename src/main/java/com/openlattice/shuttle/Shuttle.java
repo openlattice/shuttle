@@ -244,13 +244,8 @@ public class Shuttle implements Serializable {
 
                     if ( flight.condition.isPresent() ) {
                         Object out = flight.valueMapper.apply( row );
-<<<<<<< HEAD
                         if ( !( (Boolean) out ).booleanValue() ) {
                             return new BulkDataCreation( entities, associations );
-=======
-                        if ( !(Boolean) out ) {
-                            return new BulkDataCreation( entities, associations, propertyTypeIdToStorageDest );
->>>>>>> 2a8539367500c28f044e8f711a36579a788383bc
                         }
                     }
 
