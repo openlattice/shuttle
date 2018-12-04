@@ -40,7 +40,7 @@ public abstract class Transformation<I extends Object> implements Function<I, Ob
 
     private final Optional<String> column;
 
-    public Transformation( Optional<String> column) {
+    public Transformation( Optional<String> column ) {
         this.column = column;
     }
 
@@ -55,15 +55,19 @@ public abstract class Transformation<I extends Object> implements Function<I, Ob
 
     protected String getInputString( Object o, Optional<String> column ) {
         final String input;
-        if (o==null){
+        if ( o == null ) {
             return null;
         }
-        if (!(column.isPresent())) {
+        if ( !( column.isPresent() ) ) {
             input = o.toString();
         } else {
             ObjectMapper m = new ObjectMapper();
             Map<String, String> row = m.convertValue( o, Map.class );
-            input = row.get(getColumn());
+            String col = getColumn();
+            if ( !( row.containsKey( col ) ) ) {
+                throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
+            }
+            input = row.get( col );
         }
 
         return input;
