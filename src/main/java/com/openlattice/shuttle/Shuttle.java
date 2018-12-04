@@ -27,6 +27,7 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.google.common.net.HttpHeaders;
 import com.openlattice.ApiUtil;
 import com.openlattice.client.ApiClient;
 import com.openlattice.client.ApiFactoryFactory;
@@ -37,7 +38,6 @@ import com.openlattice.data.integration.Entity;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.data.storage.PostgresDataHasher;
 import com.openlattice.edm.EdmApi;
-import com.openlattice.graph.edge.EdgeKey;
 import com.openlattice.retrofit.RhizomeByteConverterFactory;
 import com.openlattice.retrofit.RhizomeCallAdapterFactory;
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory;
@@ -56,14 +56,16 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.openlattice.data.integration.StorageDestination;
-import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
+import okhttp3.MediaType;
+import okhttp3.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import retrofit2.Retrofit;
 
 public class Shuttle implements Serializable {
@@ -87,6 +89,7 @@ public class Shuttle implements Serializable {
     }
 
     private final ApiClient apiClient;
+    private static Retrofit adapter;
 
     public Shuttle( String authToken ) {
         // TODO: At some point we will have to handle mechanics of auth token expiration.
@@ -492,7 +495,7 @@ public class Shuttle implements Serializable {
             OkHttpClient client = RetrofitBuilders.okHttpClient().build();
 
             Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl( "https://tempy-media-storage.s3.us-gov-west-1.amazonaws.com/" )
+                    .baseUrl( "https://localhost:8080/datastore/integration/" )
                     .addConverterFactory( new RhizomeByteConverterFactory() )
                     .addConverterFactory( new RhizomeJacksonConverterFactory( ObjectMappers.getJsonMapper() ) )
                     .addCallAdapterFactory( new RhizomeCallAdapterFactory() )
@@ -500,12 +503,33 @@ public class Shuttle implements Serializable {
                     .build();
             S3Api s3Api = retrofit.create( S3Api.class );
             urlsToData.forEach( ( k, v ) -> {
+                //RequestBody body = RequestBody.create( MediaType.parse( "application/octet-stream" ), v, 0, v.length );
+                s3Api.writeToS3( k.toString(), v );
+            } );
+
+/*            OkHttpClient httpClient = new OkHttpClient.Builder()
+                    .addInterceptor( chain -> {
+                        Response response = chain.proceed( chain.request() );
+                        int responseCode = response.code();
+                        if ( responseCode > 300 ) {
+                            System.out.println("your shit is broken");
+                        }
+                        return response;
+                    } )
+                    .build();
+            adapter = new Retrofit.Builder().baseUrl( "http://localhost:8080/datastore/integration/" ).client( httpClient )
+                    .addConverterFactory( new RhizomeByteConverterFactory() )
+                    .addConverterFactory( new RhizomeJacksonConverterFactory() )
+                    .addCallAdapterFactory( new RhizomeCallAdapterFactory() ).build();
+
+            S3Api s3Api = adapter.create( S3Api.class );
+            urlsToData.forEach( ( k, v ) -> {
                 RequestBody body = RequestBody.create( MediaType.parse( "application/octet-stream" ), v );
                 s3Api.writeToS3( k.toString(), body );
                 System.out.println( k );
                 System.out.println( k.toString() );
                 System.out.println( "*************************************" );
-            } );
+            } );*/
         }
 
     }
