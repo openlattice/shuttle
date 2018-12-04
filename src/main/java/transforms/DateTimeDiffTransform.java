@@ -46,6 +46,11 @@ public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
 
     @Override
     public Object apply( Map<String, String> row ) {
+        if ( !( row.containsKey( columns.get(0) ) | row.containsKey( columns.get(1) ) ) ) {
+            throw new IllegalStateException( String
+                    .format( "One of the columns in %s is not found.", columns ) );
+        }
+
         if (
                 StringUtils.isBlank( row.get( columns.get( 0 ) ) ) | StringUtils.isBlank( row.get( columns.get( 1 ) ) )
         ) {
