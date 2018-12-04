@@ -26,7 +26,7 @@ public class SubstringTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply( String o ) {
+    public Object applyValue( String o ) {
         final String output;
         if ( StringUtils.isBlank( o ) ) {
             return null;
