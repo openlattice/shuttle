@@ -454,12 +454,12 @@ public class Shuttle implements Serializable {
                     postgresProperties.put( e.getKey(), e.getValue() );
                 }
             } );
-            if ( !postgresProperties.isEmpty() ) {
-                postgresEntities.add( new EntityData( entitySetId, entityId, entityKeyId, postgresProperties ) );
+            if ( !postgresProperties.isEmpty() ) {  //if this entity has properties to store in postgres
+                postgresEntities.add( new EntityData( entitySetId, entityKeyId, postgresProperties ) );
             }
         } );
 
-        //write associations to postgres
+
         Set<Association> associations= a.getAssociations();
         Set<DataEdgeKey> edges = associations.stream().map( association -> {
             UUID srcEntitySetId = association.getSrc().getEntitySetId();
@@ -474,7 +474,7 @@ public class Shuttle implements Serializable {
             String keyEntityId = association.getKey().getEntityId();
             UUID keyEntityKeyId = bulkEntitySetIds.get( keyEntitySetId ).get( keyEntityId );
 
-            postgresEntities.add(new EntityData(keyEntitySetId, keyEntityId, keyEntityKeyId, association.getDetails()));
+            postgresEntities.add(new EntityData(keyEntitySetId, keyEntityKeyId, association.getDetails()));
 
             return new DataEdgeKey( new EntityDataKey( srcEntitySetId, srcEntityKeyId ),
                     new EntityDataKey( dstEntitySetId, dstEntityKeyId ),
@@ -482,28 +482,31 @@ public class Shuttle implements Serializable {
 
         } ).collect( Collectors.toSet());
 
-        dataApi.createEdges( edges );
+        //write entity and association set data and edges to postgres
         dataApi.sinkToPostgres( postgresEntities );
+        dataApi.createEdges( edges );
 
-        Map<URL, byte[]> urls = dataApi.generatePresignedUrls( s3Entities );
+        if (!s3Entities.isEmpty()) {
+            Map<URL, byte[]> urlsToData = dataApi.generatePresignedUrls( s3Entities );
 
-        OkHttpClient client = RetrofitBuilders.okHttpClient().build();
+            OkHttpClient client = RetrofitBuilders.okHttpClient().build();
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl( "https://tempy-media-storage.s3.us-gov-west-1.amazonaws.com/" )
-                .addConverterFactory( new RhizomeByteConverterFactory() )
-                .addConverterFactory( new RhizomeJacksonConverterFactory( ObjectMappers.getJsonMapper() ) )
-                .addCallAdapterFactory( new RhizomeCallAdapterFactory() )
-                .client( client )
-                .build();
-        S3Api s3Api = retrofit.create( S3Api.class );
-        urls.forEach( ( k, v ) -> {
-            RequestBody body = RequestBody.create( MediaType.parse( "application/octet-stream" ), v );
-            s3Api.writeToS3( k.toString(), body );
-            System.out.println( k );
-            System.out.println( k.toString() );
-            System.out.println( "*************************************" );
-        } );
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl( "https://tempy-media-storage.s3.us-gov-west-1.amazonaws.com/" )
+                    .addConverterFactory( new RhizomeByteConverterFactory() )
+                    .addConverterFactory( new RhizomeJacksonConverterFactory( ObjectMappers.getJsonMapper() ) )
+                    .addCallAdapterFactory( new RhizomeCallAdapterFactory() )
+                    .client( client )
+                    .build();
+            S3Api s3Api = retrofit.create( S3Api.class );
+            urlsToData.forEach( ( k, v ) -> {
+                RequestBody body = RequestBody.create( MediaType.parse( "application/octet-stream" ), v );
+                s3Api.writeToS3( k.toString(), body );
+                System.out.println( k );
+                System.out.println( k.toString() );
+                System.out.println( "*************************************" );
+            } );
+        }
 
     }
 
