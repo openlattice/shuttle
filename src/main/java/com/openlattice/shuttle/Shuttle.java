@@ -20,6 +20,7 @@
 package com.openlattice.shuttle;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Base64.*;
 
 import com.dataloom.mappers.ObjectMappers;
 import com.google.common.cache.CacheBuilder;
@@ -46,8 +47,11 @@ import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
 
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -56,10 +60,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.openlattice.data.integration.StorageDestination;
+import java.util.Base64;
 import okhttp3.OkHttpClient;
 import okhttp3.RequestBody;
 import okhttp3.MediaType;
 import okhttp3.Response;
+import okio.ByteString;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
@@ -67,6 +73,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import retrofit2.Retrofit;
+
+import javax.imageio.ImageIO;
 
 public class Shuttle implements Serializable {
     private static final long                                    serialVersionUID      = -7356687761893337471L;
@@ -430,7 +438,9 @@ public class Shuttle implements Serializable {
             DataIntegrationApi dataApi ) {
         //create data structures to store data for s3 and postgres data sinks
         Set<S3EntityData> s3Entities = Sets.newHashSet();
+        Map<String, Object> propertyHashToBinaryData = new HashMap<>();
         Set<EntityData> postgresEntities = Sets.newHashSet();
+        Base64.Decoder decoder = Base64.getDecoder();
 
         //sort entities by storage dest
         a.getEntities().forEach( entity -> {
@@ -444,14 +454,15 @@ public class Shuttle implements Serializable {
                 if ( propertyToStorageDest.get( e.getKey() ).equals( StorageDestination.AWS ) ) {
                     for ( Object o : e.getValue() ) {
                         String encodedProperty = (String) o;
-                        byte[] property = Base64.getEncoder().encode( encodedProperty.getBytes() );
+                        byte[] property =  encodedProperty.getBytes();
                         String propertyHash = PostgresDataHasher
                                 .hashObjectToHex( property, EdmPrimitiveTypeKind.Binary );
                         s3Entities.add( new S3EntityData( entitySetId,
                                 entityKeyId,
                                 e.getKey(),
-                                propertyHash,
-                                property ) );
+                                propertyHash) );
+                        propertyHashToBinaryData.put(propertyHash, decoder.decode(property));
+
                     }
                 } else {
                     postgresProperties.put( e.getKey(), e.getValue() );
@@ -490,9 +501,9 @@ public class Shuttle implements Serializable {
         dataApi.createEdges( edges );
 
         if (!s3Entities.isEmpty()) {
-            Map<URL, byte[]> urlsToData = dataApi.generatePresignedUrls( s3Entities );
+            Set<URL> urls = dataApi.generatePresignedUrls( s3Entities );
 
-            OkHttpClient client = RetrofitBuilders.okHttpClient().build();
+/*            OkHttpClient client = RetrofitBuilders.okHttpClient().build();
 
             Retrofit retrofit = new Retrofit.Builder()
                     .baseUrl( "https://localhost:8080/datastore/integration/" )
@@ -503,11 +514,13 @@ public class Shuttle implements Serializable {
                     .build();
             S3Api s3Api = retrofit.create( S3Api.class );
             urlsToData.forEach( ( k, v ) -> {
-                //RequestBody body = RequestBody.create( MediaType.parse( "application/octet-stream" ), v, 0, v.length );
-                s3Api.writeToS3( k.toString(), v );
-            } );
+                System.out.println( k );
+                ByteString byteString = ByteString.of(v);
+                RequestBody body = RequestBody.create( MediaType.parse( "application/octet-stream" ), byteString);
+                s3Api.writeToS3( k.toString(), body );
+            } );*/
 
-/*            OkHttpClient httpClient = new OkHttpClient.Builder()
+            OkHttpClient httpClient = new OkHttpClient.Builder()
                     .addInterceptor( chain -> {
                         Response response = chain.proceed( chain.request() );
                         int responseCode = response.code();
@@ -523,13 +536,15 @@ public class Shuttle implements Serializable {
                     .addCallAdapterFactory( new RhizomeCallAdapterFactory() ).build();
 
             S3Api s3Api = adapter.create( S3Api.class );
-            urlsToData.forEach( ( k, v ) -> {
-                RequestBody body = RequestBody.create( MediaType.parse( "application/octet-stream" ), v );
-                s3Api.writeToS3( k.toString(), body );
-                System.out.println( k );
-                System.out.println( k.toString() );
-                System.out.println( "*************************************" );
-            } );*/
+            propertyHashToBinaryData.forEach( ( k, v ) -> {
+                for(URL url : urls) {
+                    String urlAsString = url.toString();
+                    if (urlAsString.contains( k )) {
+                        s3Api.writeToS3( urlAsString, (byte[]) v );
+                        System.out.println(urlAsString);
+                    }
+                }
+            } );
         }
 
     }
