@@ -20,7 +20,6 @@
 package com.openlattice.shuttle;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.Base64.*;
 
 import com.dataloom.mappers.ObjectMappers;
 import com.google.common.cache.CacheBuilder;
@@ -28,7 +27,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import com.google.common.net.HttpHeaders;
 import com.openlattice.ApiUtil;
 import com.openlattice.client.ApiClient;
 import com.openlattice.client.ApiFactoryFactory;
@@ -47,11 +45,8 @@ import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.Serializable;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -60,25 +55,21 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.openlattice.data.integration.StorageDestination;
+
 import java.util.Base64;
+
 import okhttp3.OkHttpClient;
-import okhttp3.RequestBody;
-import okhttp3.MediaType;
-import okhttp3.Response;
-import okio.ByteString;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import retrofit2.Retrofit;
-
-import javax.imageio.ImageIO;
 
 public class Shuttle implements Serializable {
     private static final long                                    serialVersionUID      = -7356687761893337471L;
-    private static       ConcurrentMap<UUID, StorageDestination> propertyToStorageDest = new ConcurrentHashMap<>();
+    private static       ConcurrentMap<UUID, StorageDestination> storageDestByProperty = new ConcurrentHashMap<>();
+    private static       Set<UUID>                               seenEntitySetIds      = Sets.newHashSet();
 
     private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
@@ -96,8 +87,7 @@ public class Shuttle implements Serializable {
         } );
     }
 
-    private final ApiClient apiClient;
-    private static Retrofit adapter;
+    private final  ApiClient apiClient;
 
     public Shuttle( String authToken ) {
         // TODO: At some point we will have to handle mechanics of auth token expiration.
@@ -234,6 +224,9 @@ public class Shuttle implements Serializable {
     }
 
     public void launchFlight( Flight flight, Stream<Map<String, String>> payload ) {
+        Long bulkDataTimeStart = System.currentTimeMillis();
+        DataIntegrationApi dataApi;
+        dataApi = this.apiClient.getDataIntegrationApi();
         Optional<BulkDataCreation> remaining = payload
                 .parallel()
                 .map( row -> {
@@ -273,16 +266,32 @@ public class Shuttle implements Serializable {
                         UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
                         Map<UUID, Set<Object>> properties = new HashMap<>();
 
+                        if ( !seenEntitySetIds.contains( entitySetId ) ) {
+                            storageDestByProperty
+                                    .putAll( dataApi.getPropertyTypesForEntitySet( entitySetId ).entrySet().stream()
+                                            .filter( entry -> {
+                                                if ( entry.getValue().getDatatype()
+                                                        .equals( EdmPrimitiveTypeKind.Binary ) ) {
+                                                    storageDestByProperty.put( entry.getKey(), StorageDestination.AWS );
+                                                    return false;
+                                                }
+                                                return true;
+                                            } ).collect( Collectors
+                                                    .toMap( entry -> entry.getKey(),
+                                                            entry -> StorageDestination.POSTGRES ) ) );
+                            seenEntitySetIds.add( entitySetId );
+                        }
+
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
-                            StorageDestination storageDest;
+                            //StorageDestination storageDest;
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
                             if ( propertyValue != null ) {
                                 String stringProp = propertyValue.toString();
                                 if ( !StringUtils.isBlank( stringProp ) ) {
                                     UUID propertyId = propertyIdsCache
                                             .getUnchecked( propertyDefinition.getFullQualifiedName() );
-                                    storageDest = propertyDefinition.getStorageDest();
-                                    propertyToStorageDest.put( propertyId, storageDest );
+/*                                    storageDest = propertyDefinition.getStorageDest();
+                                    propertyToStorageDest.put( propertyId, storageDest );*/
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap.of( propertyId,
@@ -303,7 +312,7 @@ public class Shuttle implements Serializable {
                         String entityId = ( entityDefinition.getGenerator().isPresent() )
                                 ? entityDefinition.getGenerator().get().apply( row )
                                 : generateDefaultEntityId( keyCache.getUnchecked( entityDefinition.getEntitySetName() ),
-                                        properties );
+                                properties );
 
                         if ( StringUtils.isNotBlank( entityId ) & condition & properties.size() > 0 ) {
                             EntityKey key = new EntityKey( entitySetId, entityId );
@@ -347,8 +356,8 @@ public class Shuttle implements Serializable {
                                 if ( propertyValue != null ) {
                                     var propertyId = propertyIdsCache
                                             .getUnchecked( propertyDefinition.getFullQualifiedName() );
-                                    StorageDestination storageDest = propertyDefinition.getStorageDest();
-                                    propertyToStorageDest.put( propertyId, storageDest );
+/*                                    StorageDestination storageDest = propertyDefinition.getStorageDest();
+                                    propertyToStorageDest.put( propertyId, storageDest );*/
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap
@@ -384,8 +393,8 @@ public class Shuttle implements Serializable {
                 } )
                 .reduce( ( BulkDataCreation a, BulkDataCreation b ) -> {
 
-                    DataIntegrationApi dataApi;
-                    dataApi = this.apiClient.getDataIntegrationApi();
+/*                    DataIntegrationApi dataApi;
+                    dataApi = this.apiClient.getDataIntegrationApi();*/
 
                     a.getAssociations().addAll( b.getAssociations() );
                     a.getEntities().addAll( b.getEntities() );
@@ -393,8 +402,9 @@ public class Shuttle implements Serializable {
                     if ( a.getAssociations().size() > 100000 || a.getEntities().size() > 100000 ) {
                         Set<EntityKey> entityKeys = a.getEntities().stream().map( entity -> entity.getKey() )
                                 .collect( Collectors.toSet() );
-                        entityKeys.addAll( a.getAssociations().stream().map( association -> association.getKey() ).collect(
-                                Collectors.toSet() ) );
+                        entityKeys.addAll( a.getAssociations().stream().map( association -> association.getKey() )
+                                .collect(
+                                        Collectors.toSet() ) );
                         Map<UUID, Map<String, UUID>> bulkEntitySetIds = dataApi.getEntityKeyIds( entityKeys );
                         sendDataToDataSink( a, bulkEntitySetIds, dataApi );
                         return new BulkDataCreation( new HashSet<>(),
@@ -405,14 +415,19 @@ public class Shuttle implements Serializable {
                 } );
 
         remaining.ifPresent( r -> {
-            DataIntegrationApi dataApi;
-            dataApi = this.apiClient.getDataIntegrationApi();
+/*            DataIntegrationApi dataApi;
+            dataApi = this.apiClient.getDataIntegrationApi();*/
             Set<EntityKey> entityKeys = r.getEntities().stream().map( entity -> entity.getKey() )
                     .collect( Collectors.toSet() );
             entityKeys.addAll( r.getAssociations().stream().map( association -> association.getKey() ).collect(
                     Collectors.toSet() ) );
             Map<UUID, Map<String, UUID>> bulkEntitySetIds = dataApi.getEntityKeyIds( entityKeys );
+            Long bulkDataTimeStop = System.currentTimeMillis();
+            logger.info( "Bulk data creation duration: {}", bulkDataTimeStop - bulkDataTimeStart );
+            Long sendToDataSinkStart = System.currentTimeMillis();
             sendDataToDataSink( r, bulkEntitySetIds, dataApi );
+            Long sendToDataSinkStop = System.currentTimeMillis();
+            logger.info( "SendToDataSink duration took: {}", sendToDataSinkStop - sendToDataSinkStart );
         } );
     }
 
@@ -443,6 +458,7 @@ public class Shuttle implements Serializable {
         Base64.Decoder decoder = Base64.getDecoder();
 
         //sort entities by storage dest
+        Long sortEntitiesStart = System.currentTimeMillis();
         a.getEntities().forEach( entity -> {
             Map<UUID, Set<Object>> postgresProperties = new HashMap<>();
             UUID entitySetId = entity.getEntitySetId();
@@ -451,17 +467,17 @@ public class Shuttle implements Serializable {
 
             //for each set of properties in the entity
             entity.getDetails().entrySet().forEach( e -> {
-                if ( propertyToStorageDest.get( e.getKey() ).equals( StorageDestination.AWS ) ) {
+                if ( storageDestByProperty.get( e.getKey() ).equals( StorageDestination.AWS ) ) {
                     for ( Object o : e.getValue() ) {
                         String encodedProperty = (String) o;
-                        byte[] property =  encodedProperty.getBytes();
+                        byte[] property = encodedProperty.getBytes();
                         String propertyHash = PostgresDataHasher
                                 .hashObjectToHex( property, EdmPrimitiveTypeKind.Binary );
                         s3Entities.add( new S3EntityData( entitySetId,
                                 entityKeyId,
                                 e.getKey(),
-                                propertyHash) );
-                        propertyHashToBinaryData.put(propertyHash, decoder.decode(property));
+                                propertyHash ) );
+                        propertyHashToBinaryData.put( propertyHash, decoder.decode( property ) );
 
                     }
                 } else {
@@ -472,9 +488,11 @@ public class Shuttle implements Serializable {
                 postgresEntities.add( new EntityData( entitySetId, entityKeyId, postgresProperties ) );
             }
         } );
+        Long sortEntitiesStop = System.currentTimeMillis();
+        logger.info( "Sorting entities duration: {}", sortEntitiesStop - sortEntitiesStart );
 
-
-        Set<Association> associations= a.getAssociations();
+        Long sortAssociationsStart = System.currentTimeMillis();
+        Set<Association> associations = a.getAssociations();
         Set<DataEdgeKey> edges = associations.stream().map( association -> {
             UUID srcEntitySetId = association.getSrc().getEntitySetId();
             String srcEntityId = association.getSrc().getEntityId();
@@ -488,23 +506,36 @@ public class Shuttle implements Serializable {
             String keyEntityId = association.getKey().getEntityId();
             UUID keyEntityKeyId = bulkEntitySetIds.get( keyEntitySetId ).get( keyEntityId );
 
-            postgresEntities.add(new EntityData(keyEntitySetId, keyEntityKeyId, association.getDetails()));
+            postgresEntities.add( new EntityData( keyEntitySetId, keyEntityKeyId, association.getDetails() ) );
 
             return new DataEdgeKey( new EntityDataKey( srcEntitySetId, srcEntityKeyId ),
                     new EntityDataKey( dstEntitySetId, dstEntityKeyId ),
                     new EntityDataKey( keyEntitySetId, keyEntityKeyId ) );
 
-        } ).collect( Collectors.toSet());
+        } ).collect( Collectors.toSet() );
+        Long sortAssociationsStop = System.currentTimeMillis();
+        logger.info( "Sorting associations duration: {}", sortAssociationsStop - sortAssociationsStart );
 
         //write entity and association set data and edges to postgres
+        Long writePropertiesStart = System.currentTimeMillis();
         dataApi.sinkToPostgres( postgresEntities );
+        Long writePropertiesStop = System.currentTimeMillis();
+        logger.info( "Writing  entities to postgres duration: {}", writePropertiesStop - writePropertiesStart );
+
+        Long writeEdgesStart = System.currentTimeMillis();
         dataApi.createEdges( edges );
+        Long writeEdgesStop = System.currentTimeMillis();
+        logger.info( "Writing edges to postgres duration: {}", writeEdgesStop - writeEdgesStart );
 
-        if (!s3Entities.isEmpty()) {
+        if ( !s3Entities.isEmpty() ) {
+            Long generateUrlsStart = System.currentTimeMillis();
             Set<URL> urls = dataApi.generatePresignedUrls( s3Entities );
+            Long generateUrlsStop = System.currentTimeMillis();
+            logger.info( "Url generation duration: {}", generateUrlsStop - generateUrlsStart );
 
-/*            OkHttpClient client = RetrofitBuilders.okHttpClient().build();
-
+            //create this only once
+            Long createClientStart = System.currentTimeMillis();
+            OkHttpClient client = RetrofitBuilders.okHttpClient().build();
             Retrofit retrofit = new Retrofit.Builder()
                     .baseUrl( "https://localhost:8080/datastore/integration/" )
                     .addConverterFactory( new RhizomeByteConverterFactory() )
@@ -512,39 +543,31 @@ public class Shuttle implements Serializable {
                     .addCallAdapterFactory( new RhizomeCallAdapterFactory() )
                     .client( client )
                     .build();
+
             S3Api s3Api = retrofit.create( S3Api.class );
-            urlsToData.forEach( ( k, v ) -> {
-                System.out.println( k );
-                ByteString byteString = ByteString.of(v);
-                RequestBody body = RequestBody.create( MediaType.parse( "application/octet-stream" ), byteString);
-                s3Api.writeToS3( k.toString(), body );
-            } );*/
+            Long createClientStop = System.currentTimeMillis();
+            logger.info( "Creating retrofit client duration: {}", createClientStop - createClientStart );
 
-            OkHttpClient httpClient = new OkHttpClient.Builder()
-                    .addInterceptor( chain -> {
-                        Response response = chain.proceed( chain.request() );
-                        int responseCode = response.code();
-                        if ( responseCode > 300 ) {
-                            System.out.println("your shit is broken");
-                        }
-                        return response;
-                    } )
-                    .build();
-            adapter = new Retrofit.Builder().baseUrl( "http://localhost:8080/datastore/integration/" ).client( httpClient )
-                    .addConverterFactory( new RhizomeByteConverterFactory() )
-                    .addConverterFactory( new RhizomeJacksonConverterFactory() )
-                    .addCallAdapterFactory( new RhizomeCallAdapterFactory() ).build();
-
-            S3Api s3Api = adapter.create( S3Api.class );
-            propertyHashToBinaryData.forEach( ( k, v ) -> {
-                for(URL url : urls) {
+            Long writeToS3Start = System.currentTimeMillis();
+/*            propertyHashToBinaryData.forEach( ( k, v ) -> {
+                for ( URL url : urls ) {
                     String urlAsString = url.toString();
-                    if (urlAsString.contains( k )) {
+                    if ( urlAsString.contains( k ) ) {
                         s3Api.writeToS3( urlAsString, (byte[]) v );
-                        System.out.println(urlAsString);
                     }
                 }
-            } );
+            } );*/
+            propertyHashToBinaryData.entrySet().stream().parallel().filter(entry -> {
+                for ( URL url : urls ) {
+                    String urlAsString = url.toString();
+                    if ( urlAsString.contains( entry.getKey() ) ) {
+                        s3Api.writeToS3( urlAsString, (byte[]) entry.getValue() );
+                    }
+                }
+                return true;
+            }).collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+            Long writeToS3Stop = System.currentTimeMillis();
+            logger.info( "Writing to S3 duration: {}", writeToS3Stop - writeToS3Start );
         }
 
     }
