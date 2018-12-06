@@ -534,16 +534,15 @@ public class Shuttle implements Serializable {
 
         if ( !s3Entities.isEmpty() ) {
             Long generateUrlsStart = System.currentTimeMillis();
-            Set<URL> urls = dataApi.generatePresignedUrls( s3Entities );
+            Set<String> urls = dataApi.generatePresignedUrls( s3Entities );
             Long generateUrlsStop = System.currentTimeMillis();
             logger.info( "Url generation duration: {}", generateUrlsStop - generateUrlsStart );
 
             Long writeToS3Start = System.currentTimeMillis();
             long integratedBinaryObjects = propertyHashToBinaryData.entrySet().stream().parallel().filter(entry -> {
-                for ( URL url : urls ) {
-                    String urlAsString = url.toString();
-                    if ( urlAsString.contains( entry.getKey() ) ) {
-                        s3Api.writeToS3( urlAsString, (byte[]) entry.getValue() );
+                for ( String url : urls ) {
+                    if ( url.contains( entry.getKey() ) ) {
+                        s3Api.writeToS3( url, (byte[]) entry.getValue() );
                     }
                 }
                 return true;
