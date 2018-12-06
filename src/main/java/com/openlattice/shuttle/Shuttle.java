@@ -297,15 +297,12 @@ public class Shuttle implements Serializable {
                         }
 
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
-                            //StorageDestination storageDest;
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
                             if ( propertyValue != null ) {
                                 String stringProp = propertyValue.toString();
                                 if ( !StringUtils.isBlank( stringProp ) ) {
                                     UUID propertyId = propertyIdsCache
                                             .getUnchecked( propertyDefinition.getFullQualifiedName() );
-/*                                    storageDest = propertyDefinition.getStorageDest();
-                                    propertyToStorageDest.put( propertyId, storageDest );*/
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap.of( propertyId,
@@ -370,8 +367,6 @@ public class Shuttle implements Serializable {
                                 if ( propertyValue != null ) {
                                     var propertyId = propertyIdsCache
                                             .getUnchecked( propertyDefinition.getFullQualifiedName() );
-/*                                    StorageDestination storageDest = propertyDefinition.getStorageDest();
-                                    propertyToStorageDest.put( propertyId, storageDest );*/
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap
@@ -407,9 +402,6 @@ public class Shuttle implements Serializable {
                 } )
                 .reduce( ( BulkDataCreation a, BulkDataCreation b ) -> {
 
-/*                    DataIntegrationApi dataApi;
-                    dataApi = this.apiClient.getDataIntegrationApi();*/
-
                     a.getAssociations().addAll( b.getAssociations() );
                     a.getEntities().addAll( b.getEntities() );
 
@@ -429,8 +421,6 @@ public class Shuttle implements Serializable {
                 } );
 
         remaining.ifPresent( r -> {
-/*            DataIntegrationApi dataApi;
-            dataApi = this.apiClient.getDataIntegrationApi();*/
             Set<EntityKey> entityKeys = r.getEntities().stream().map( entity -> entity.getKey() )
                     .collect( Collectors.toSet() );
             entityKeys.addAll( r.getAssociations().stream().map( association -> association.getKey() ).collect(
@@ -549,14 +539,6 @@ public class Shuttle implements Serializable {
             logger.info( "Url generation duration: {}", generateUrlsStop - generateUrlsStart );
 
             Long writeToS3Start = System.currentTimeMillis();
-/*            propertyHashToBinaryData.forEach( ( k, v ) -> {
-                for ( URL url : urls ) {
-                    String urlAsString = url.toString();
-                    if ( urlAsString.contains( k ) ) {
-                        s3Api.writeToS3( urlAsString, (byte[]) v );
-                    }
-                }
-            } );*/
             long integratedBinaryObjects = propertyHashToBinaryData.entrySet().stream().parallel().filter(entry -> {
                 for ( URL url : urls ) {
                     String urlAsString = url.toString();
