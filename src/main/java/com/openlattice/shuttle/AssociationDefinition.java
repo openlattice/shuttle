@@ -29,7 +29,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
-import com.openlattice.data.integration.StorageDestination;
 import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.conditions.ConditionValueMapper;
 import com.openlattice.shuttle.conditions.Conditions;
@@ -347,11 +346,11 @@ public class AssociationDefinition implements Serializable {
             return new PropertyDefinition.Builder<AssociationDefinition.Builder>( propertyTypeFqn, this, onBuild );
         }
 
-        public Builder addProperty( String propertyString, String columnName, StorageDestination storageDestination ) {
+        public Builder addProperty( String propertyString, String columnName ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             SerializableFunction<Map<String, String>, ?> defaultMapper = row -> row.get( columnName );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
-                    propertyString, columnName, storageDestination, defaultMapper );
+                    propertyString, columnName, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
@@ -359,7 +358,6 @@ public class AssociationDefinition implements Serializable {
         public Builder addProperty(
                 String propertyString,
                 String columnName,
-                StorageDestination storageDestination,
                 Transformations transformation,
                 List<String> arguments ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );

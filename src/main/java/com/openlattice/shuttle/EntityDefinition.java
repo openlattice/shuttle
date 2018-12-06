@@ -31,7 +31,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
-import com.openlattice.data.integration.StorageDestination;
 import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.conditions.ConditionValueMapper;
 import com.openlattice.shuttle.conditions.Conditions;
@@ -313,7 +312,7 @@ public class EntityDefinition implements Serializable {
 
             return new PropertyDefinition.Builder<>( propertyTypeFqn, this, onBuild );
         }
-        public Builder addProperty( String propertyString, String columnName, StorageDestination storageDestination ) {
+        public Builder addProperty( String propertyString, String columnName ) {
             // This function is for when flights are defined in java
             // Useful for backwards compatibility
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
