@@ -227,6 +227,20 @@ public class Shuttle implements Serializable {
         Long bulkDataTimeStart = System.currentTimeMillis();
         DataIntegrationApi dataApi;
         dataApi = this.apiClient.getDataIntegrationApi();
+
+        Long createClientStart = System.currentTimeMillis();
+        OkHttpClient client = RetrofitBuilders.okHttpClient().build();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl( "https://localhost:8080/datastore/integration/" )
+                .addConverterFactory( new RhizomeByteConverterFactory() )
+                .addConverterFactory( new RhizomeJacksonConverterFactory( ObjectMappers.getJsonMapper() ) )
+                .addCallAdapterFactory( new RhizomeCallAdapterFactory() )
+                .client( client )
+                .build();
+        S3Api s3Api = retrofit.create( S3Api.class );
+        Long createClientStop = System.currentTimeMillis();
+        logger.info( "Creating retrofit client duration: {}", createClientStop - createClientStart );
+
         Optional<BulkDataCreation> remaining = payload
                 .parallel()
                 .map( row -> {
@@ -406,7 +420,7 @@ public class Shuttle implements Serializable {
                                 .collect(
                                         Collectors.toSet() ) );
                         Map<UUID, Map<String, UUID>> bulkEntitySetIds = dataApi.getEntityKeyIds( entityKeys );
-                        sendDataToDataSink( a, bulkEntitySetIds, dataApi );
+                        sendDataToDataSink( a, bulkEntitySetIds, dataApi, s3Api );
                         return new BulkDataCreation( new HashSet<>(),
                                 new HashSet<>() );
                     }
@@ -425,7 +439,7 @@ public class Shuttle implements Serializable {
             Long bulkDataTimeStop = System.currentTimeMillis();
             logger.info( "Bulk data creation duration: {}", bulkDataTimeStop - bulkDataTimeStart );
             Long sendToDataSinkStart = System.currentTimeMillis();
-            sendDataToDataSink( r, bulkEntitySetIds, dataApi );
+            sendDataToDataSink( r, bulkEntitySetIds, dataApi, s3Api );
             Long sendToDataSinkStop = System.currentTimeMillis();
             logger.info( "SendToDataSink duration took: {}", sendToDataSinkStop - sendToDataSinkStart );
         } );
@@ -450,7 +464,8 @@ public class Shuttle implements Serializable {
     private static void sendDataToDataSink(
             BulkDataCreation a,
             Map<UUID, Map<String, UUID>> bulkEntitySetIds,
-            DataIntegrationApi dataApi ) {
+            DataIntegrationApi dataApi,
+            S3Api s3Api) {
         //create data structures to store data for s3 and postgres data sinks
         Set<S3EntityData> s3Entities = Sets.newHashSet();
         Map<String, Object> propertyHashToBinaryData = new HashMap<>();
@@ -532,21 +547,6 @@ public class Shuttle implements Serializable {
             Set<URL> urls = dataApi.generatePresignedUrls( s3Entities );
             Long generateUrlsStop = System.currentTimeMillis();
             logger.info( "Url generation duration: {}", generateUrlsStop - generateUrlsStart );
-
-            //create this only once
-            Long createClientStart = System.currentTimeMillis();
-            OkHttpClient client = RetrofitBuilders.okHttpClient().build();
-            Retrofit retrofit = new Retrofit.Builder()
-                    .baseUrl( "https://localhost:8080/datastore/integration/" )
-                    .addConverterFactory( new RhizomeByteConverterFactory() )
-                    .addConverterFactory( new RhizomeJacksonConverterFactory( ObjectMappers.getJsonMapper() ) )
-                    .addCallAdapterFactory( new RhizomeCallAdapterFactory() )
-                    .client( client )
-                    .build();
-
-            S3Api s3Api = retrofit.create( S3Api.class );
-            Long createClientStop = System.currentTimeMillis();
-            logger.info( "Creating retrofit client duration: {}", createClientStop - createClientStart );
 
             Long writeToS3Start = System.currentTimeMillis();
 /*            propertyHashToBinaryData.forEach( ( k, v ) -> {
