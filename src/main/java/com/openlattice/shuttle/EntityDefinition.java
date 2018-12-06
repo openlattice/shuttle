@@ -322,7 +322,7 @@ public class EntityDefinition implements Serializable {
                 return ( value instanceof String && StringUtils.isBlank( value ) ) ? null : value;
             };
             PropertyDefinition propertyDefinition = new PropertyDefinition(
-                    propertyString, columnName, storageDestination, defaultMapper );
+                    propertyString, columnName, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
@@ -330,11 +330,10 @@ public class EntityDefinition implements Serializable {
         public Builder addProperty(
                 String propertyString,
                 String columnName,
-                Transformations transformation,
-                StorageDestination storageDest ) {
+                Transformations transformation ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
-                    propertyString, columnName, Optional.empty(), Optional.of( transformation ), storageDest );
+                    propertyString, columnName, Optional.empty(), Optional.of( transformation ) );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }

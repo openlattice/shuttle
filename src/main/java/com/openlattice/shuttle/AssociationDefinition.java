@@ -367,8 +367,7 @@ public class AssociationDefinition implements Serializable {
                     new PropertyDefinition( propertyString,
                             columnName,
                             Optional.empty(),
-                            Optional.of( transformation ),
-                            storageDestination);
+                            Optional.of( transformation ));
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
