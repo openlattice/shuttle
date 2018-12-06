@@ -557,7 +557,7 @@ public class Shuttle implements Serializable {
                     }
                 }
             } );*/
-            propertyHashToBinaryData.entrySet().stream().parallel().filter(entry -> {
+            long integratedBinaryObjects = propertyHashToBinaryData.entrySet().stream().parallel().filter(entry -> {
                 for ( URL url : urls ) {
                     String urlAsString = url.toString();
                     if ( urlAsString.contains( entry.getKey() ) ) {
@@ -565,9 +565,10 @@ public class Shuttle implements Serializable {
                     }
                 }
                 return true;
-            }).collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+            }).count();
             Long writeToS3Stop = System.currentTimeMillis();
             logger.info( "Writing to S3 duration: {}", writeToS3Stop - writeToS3Start );
+            logger.info("{} objects written to S3", integratedBinaryObjects);
         }
 
     }
