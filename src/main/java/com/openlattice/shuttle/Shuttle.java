@@ -46,7 +46,6 @@ import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
 
 import java.io.Serializable;
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
