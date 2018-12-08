@@ -224,11 +224,9 @@ public class Shuttle implements Serializable {
     }
 
     public void launchFlight( Flight flight, Stream<Map<String, String>> payload ) {
-        Long bulkDataTimeStart = System.currentTimeMillis();
         DataIntegrationApi dataApi;
         dataApi = this.apiClient.getDataIntegrationApi();
 
-        Long createClientStart = System.currentTimeMillis();
         OkHttpClient client = RetrofitBuilders.okHttpClient().build();
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl( "https://localhost:8080/datastore/integration/" )
@@ -238,9 +236,8 @@ public class Shuttle implements Serializable {
                 .client( client )
                 .build();
         S3Api s3Api = retrofit.create( S3Api.class );
-        Long createClientStop = System.currentTimeMillis();
-        logger.info( "Creating retrofit client duration: {}", createClientStop - createClientStart );
 
+        logger.info("Sorting entities and associations.");
         Optional<BulkDataCreation> remaining = payload
                 .parallel()
                 .map( row -> {
@@ -426,12 +423,7 @@ public class Shuttle implements Serializable {
             entityKeys.addAll( r.getAssociations().stream().map( association -> association.getKey() ).collect(
                     Collectors.toSet() ) );
             Map<UUID, Map<String, UUID>> bulkEntitySetIds = dataApi.getEntityKeyIds( entityKeys );
-            Long bulkDataTimeStop = System.currentTimeMillis();
-            logger.info( "Bulk data creation duration: {}", bulkDataTimeStop - bulkDataTimeStart );
-            Long sendToDataSinkStart = System.currentTimeMillis();
             sendDataToDataSink( r, bulkEntitySetIds, dataApi, s3Api );
-            Long sendToDataSinkStop = System.currentTimeMillis();
-            logger.info( "SendToDataSink duration took: {}", sendToDataSinkStop - sendToDataSinkStart );
         } );
     }
 
@@ -463,7 +455,6 @@ public class Shuttle implements Serializable {
         Base64.Decoder decoder = Base64.getDecoder();
 
         //sort entities by storage dest
-        Long sortEntitiesStart = System.currentTimeMillis();
         a.getEntities().forEach( entity -> {
             Map<UUID, Set<Object>> postgresProperties = new HashMap<>();
             UUID entitySetId = entity.getEntitySetId();
@@ -493,10 +484,7 @@ public class Shuttle implements Serializable {
                 postgresEntities.add( new EntityData( entitySetId, entityKeyId, postgresProperties ) );
             }
         } );
-        Long sortEntitiesStop = System.currentTimeMillis();
-        logger.info( "Sorting entities duration: {}", sortEntitiesStop - sortEntitiesStart );
 
-        Long sortAssociationsStart = System.currentTimeMillis();
         Set<Association> associations = a.getAssociations();
         Set<DataEdgeKey> edges = associations.stream().map( association -> {
             UUID srcEntitySetId = association.getSrc().getEntitySetId();
@@ -518,27 +506,15 @@ public class Shuttle implements Serializable {
                     new EntityDataKey( keyEntitySetId, keyEntityKeyId ) );
 
         } ).collect( Collectors.toSet() );
-        Long sortAssociationsStop = System.currentTimeMillis();
-        logger.info( "Sorting associations duration: {}", sortAssociationsStop - sortAssociationsStart );
 
         //write entity and association set data and edges to postgres
-        Long writePropertiesStart = System.currentTimeMillis();
+        logger.info( "Writing  entities and associations to Postgres.");
         dataApi.sinkToPostgres( postgresEntities );
-        Long writePropertiesStop = System.currentTimeMillis();
-        logger.info( "Writing  entities to postgres duration: {}", writePropertiesStop - writePropertiesStart );
-
-        Long writeEdgesStart = System.currentTimeMillis();
         dataApi.createEdges( edges );
-        Long writeEdgesStop = System.currentTimeMillis();
-        logger.info( "Writing edges to postgres duration: {}", writeEdgesStop - writeEdgesStart );
 
         if ( !s3Entities.isEmpty() ) {
-            Long generateUrlsStart = System.currentTimeMillis();
+            logger.info( "Writing binary entities to S3.");
             Set<String> urls = dataApi.generatePresignedUrls( s3Entities );
-            Long generateUrlsStop = System.currentTimeMillis();
-            logger.info( "Url generation duration: {}", generateUrlsStop - generateUrlsStart );
-
-            Long writeToS3Start = System.currentTimeMillis();
             long integratedBinaryObjects = propertyHashToBinaryData.entrySet().stream().parallel().filter(entry -> {
                 for ( String url : urls ) {
                     if ( url.contains( entry.getKey() ) ) {
@@ -547,9 +523,6 @@ public class Shuttle implements Serializable {
                 }
                 return true;
             }).count();
-            Long writeToS3Stop = System.currentTimeMillis();
-            logger.info( "Writing to S3 duration: {}", writeToS3Stop - writeToS3Start );
-            logger.info("{} objects written to S3", integratedBinaryObjects);
         }
 
     }
