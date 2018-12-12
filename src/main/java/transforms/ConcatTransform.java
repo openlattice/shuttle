@@ -47,6 +47,9 @@ public class ConcatTransform extends Transformation<Map<String, String>> {
         StringBuilder sb = new StringBuilder();
         String sep = "";
         for ( String s : columns ) {
+            if ( !( row.containsKey( s ) ) ) {
+                throw new IllegalStateException( String.format( "The column %s is not found.", s ) );
+            }
             if ( !StringUtils.isBlank( row.get( s ) ) ) {
                 sb.append( sep ).append( row.get( s ) );
                 sep = separator;

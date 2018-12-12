@@ -27,7 +27,7 @@ public class DateTimeTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply( String o ) {
+    public Object applyValue( String o ) {
         if ( StringUtils.isBlank( o ) | o == null ) {
             return null;
         }

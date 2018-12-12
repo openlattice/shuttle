@@ -19,6 +19,7 @@ public class TransformTest {
     String sex               = "f";
     String first             = "John";
     String last              = "Doe";
+    String family            = "Joanna Doe (mother)";
     String DOB               = "03/05/1998 10:00";
     String address           = "560 Scott Street, San Francisco, CA 94117";
     String dateArrest        = "10/01/92";
@@ -29,6 +30,7 @@ public class TransformTest {
         Map<String, String> testrow = new HashMap<String, String>();
         testrow.put( "FirstName", first );
         testrow.put( "LastName", last );
+        testrow.put( "Family", family );
         testrow.put( "DOB", DOB );
         testrow.put( "ArrestedDate", dateArrest );
         testrow.put( "ReleasedDate", dateRelease );
@@ -273,6 +275,22 @@ public class TransformTest {
         Assert.assertEquals( expected, concatTest1 );
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void testColumnAbsence() {
+        String unknownColumn = "thisdoesnotexist";
+        Object concatTest1 = new ColumnTransform( unknownColumn ).apply( getTestRow() );
+    }
+
+    @Test
+    public void testReplaceRegexTransform() {
+        String target = ".*\\(|\\)";
+        String goal = "";
+
+        Object replaceRegexTest1 = new ReplaceRegexTransform( target, goal )
+                .apply(getTestRow().get("Family"));
+        Assert.assertEquals( "mother", replaceRegexTest1);
+    }
+
     @Test
     public void testReplaceTransform() {
         Optional<Boolean> optrue = Optional.of( true );
@@ -309,7 +327,7 @@ public class TransformTest {
 
     }
 
-    @Test
+    @Test(timeout=3000)
     public void testGeocoderTransform() {
         String expectedStreet = "Scott Street";
         Object geocoderTest1 = new GeocoderTransform( "road", Optional.empty() )
