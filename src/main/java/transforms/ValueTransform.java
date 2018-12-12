@@ -23,7 +23,7 @@ public class ValueTransform extends Transformation<Map<String, String>> {
     }
 
     @Override
-    public Object apply( Map<String, String> row ) {
+    public Object applyValue( String o ) {
         return value;
     }
 }
