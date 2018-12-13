@@ -103,6 +103,7 @@ public class Shuttle implements Serializable {
     }
 
     public void launchPayloadFlight( Map<Flight, Payload> flightsToPayloads ) throws InterruptedException {
+        logger.info( "Getting payload." );
         launch( flightsToPayloads.entrySet().stream()
                 .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue().getPayload() ) ) );
     }
