@@ -52,8 +52,8 @@ public class BooleanRegexTransform extends BooleanTransformation {
     }
 
     @Override
-    public boolean applyCondition( Map<String, String> row ) {
-        String o = row.get( column );
+    public boolean applyCondition( Map<String, Object> row ) {
+        String o = row.get( column ).toString();
         if ( StringUtils.isBlank( o ) ) {
             return false;
         }

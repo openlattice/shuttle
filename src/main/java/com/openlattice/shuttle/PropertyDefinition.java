@@ -50,7 +50,7 @@ public class PropertyDefinition implements Serializable {
     private static final long serialVersionUID = -6759550320515138785L;
 
     private final FullQualifiedName                            propertyTypeFqn;
-    private final SerializableFunction<Map<String, String>, ?> valueMapper;
+    private final SerializableFunction<Map<String, Object>, ?> valueMapper;
     private final String                                       column;
     private final Optional<Transformations>                    transforms;
 
@@ -83,7 +83,7 @@ public class PropertyDefinition implements Serializable {
     public PropertyDefinition(
             String propertyTypeFqn,
             String columnName,
-            SerializableFunction<Map<String, String>, ?> valueMapper ) {
+            SerializableFunction<Map<String, Object>, ?> valueMapper ) {
         this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
         this.valueMapper = valueMapper;
         this.column = columnName;
@@ -118,7 +118,7 @@ public class PropertyDefinition implements Serializable {
     }
 
     @JsonIgnore
-    public SerializableFunction<Map<String, String>, ?> getPropertyValue() {
+    public SerializableFunction<Map<String, Object>, ?> getPropertyValue() {
         return row -> this.valueMapper.apply( Preconditions.checkNotNull( row ) );
     }
 
@@ -150,7 +150,7 @@ public class PropertyDefinition implements Serializable {
     public static class Builder<T extends BaseBuilder> extends BaseBuilder<T, PropertyDefinition> {
 
         private FullQualifiedName                            propertyTypeFqn;
-        private SerializableFunction<Map<String, String>, ?> valueMapper;
+        private SerializableFunction<Map<String, Object>, ?> valueMapper;
         private Transformations                              transforms;
         private String                                       column      = "";
 
@@ -172,7 +172,7 @@ public class PropertyDefinition implements Serializable {
             return value( ImmutableList.of( new HashTransform( columns, hashFunction ) ) );
         }
 
-        public Builder<T> extractor( SerializableFunction<Map<String, String>, Object> mapper ) {
+        public Builder<T> extractor( SerializableFunction<Map<String, Object>, Object> mapper ) {
             this.valueMapper = mapper;
             return this;
         }

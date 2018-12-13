@@ -58,9 +58,9 @@ public class AssociationDefinition implements Serializable {
     private final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
     private final String                                                      alias;
     public final  Optional<Conditions>                                        condition;
-    private final Optional<SerializableFunction<Map<String, String>, String>> generator;
+    private final Optional<SerializableFunction<Map<String, Object>, String>> generator;
     private final boolean                                                     useCurrentSync;
-    public final  SerializableFunction<Map<String, String>, ?>                valueMapper;
+    public final  SerializableFunction<Map<String, Object>, ?>                valueMapper;
 
     @JsonCreator
     public AssociationDefinition(
@@ -153,7 +153,7 @@ public class AssociationDefinition implements Serializable {
     }
 
     @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
-    public Optional<SerializableFunction<Map<String, String>, String>> getGenerator() {
+    public Optional<SerializableFunction<Map<String, Object>, String>> getGenerator() {
         return generator;
     }
 
@@ -245,7 +245,7 @@ public class AssociationDefinition implements Serializable {
         private String                                            srcAlias;
         private String                                            dstAlias;
         private Map<FullQualifiedName, PropertyDefinition>        propertyDefinitionMap;
-        private SerializableFunction<Map<String, String>, String> generator;
+        private SerializableFunction<Map<String, Object>, String> generator;
         private List<FullQualifiedName>                           key;
         private String                                            alias;
         private Set<String>                                       entityAliases;
@@ -315,7 +315,7 @@ public class AssociationDefinition implements Serializable {
             return this;
         }
 
-        public Builder entityIdGenerator( SerializableFunction<Map<String, String>, String> generator ) {
+        public Builder entityIdGenerator( SerializableFunction<Map<String, Object>, String> generator ) {
 
             this.generator = generator;
             return this;
@@ -348,7 +348,7 @@ public class AssociationDefinition implements Serializable {
 
         public Builder addProperty( String propertyString, String columnName ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
-            SerializableFunction<Map<String, String>, ?> defaultMapper = row -> row.get( columnName );
+            SerializableFunction<Map<String, Object>, ?> defaultMapper = row -> row.get( columnName );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
                     propertyString, columnName, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );

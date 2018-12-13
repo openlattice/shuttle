@@ -41,8 +41,8 @@ public class BooleanIsNullTransform extends BooleanTransformation {
     }
 
     @Override
-    public boolean applyCondition( Map<String, String> row ) {
-        return StringUtils.isBlank( row.get( column ) );
+    public boolean applyCondition( Map<String, Object> row ) {
+        return StringUtils.isBlank( row.get( column ).toString() );
     }
 }
 

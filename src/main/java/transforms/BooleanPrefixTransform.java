@@ -54,12 +54,12 @@ public class BooleanPrefixTransform extends BooleanTransformation {
     }
 
     @Override
-    public boolean applyCondition( Map<String, String> row ) {
+    public boolean applyCondition( Map<String, Object> row ) {
         final String o;
         if ( this.ignoreCase ) {
-            o = row.get( column ).toLowerCase();
+            o = row.get( column ).toString().toLowerCase();
         } else {
-            o = row.get( column );
+            o = row.get( column ).toString();
         }
         if ( StringUtils.isNotBlank( o ) ) {
             if ( o.startsWith( prefix ) ) {

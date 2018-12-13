@@ -111,7 +111,7 @@ public class Shuttle implements Serializable {
                 .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue().getPayload() ) ) );
     }
 
-    public void launch( Map<Flight, Stream<Map<String, String>>> flightsToPayloads ) throws InterruptedException {
+    public void launch( Map<Flight, Stream<Map<String, Object>>> flightsToPayloads ) throws InterruptedException {
 
         EdmApi edmApi;
 
@@ -226,7 +226,7 @@ public class Shuttle implements Serializable {
         return s;
     }
 
-    public void launchFlight( Flight flight, Stream<Map<String, String>> payload ) {
+    public void launchFlight( Flight flight, Stream<Map<String, Object>> payload ) {
         DataIntegrationApi dataApi;
         dataApi = this.apiClient.getDataIntegrationApi();
 
@@ -455,7 +455,6 @@ public class Shuttle implements Serializable {
         List<S3EntityData> s3Entities = Lists.newArrayList();
         Map<String, Object> propertyHashToBinaryData = new HashMap<>();
         Set<EntityData> postgresEntities = Sets.newHashSet();
-        Base64.Decoder decoder = Base64.getDecoder();
 
         //sort entities by storage dest
         a.getEntities().forEach( entity -> {
@@ -468,16 +467,13 @@ public class Shuttle implements Serializable {
             entity.getDetails().entrySet().forEach( e -> {
                 if ( storageDestByProperty.get( e.getKey() ).equals( StorageDestination.AWS ) ) {
                     for ( Object o : e.getValue() ) {
-                        String encodedProperty = (String) o;
-                        byte[] property = encodedProperty.getBytes();
                         String propertyHash = PostgresDataHasher
-                                .hashObjectToHex( property, EdmPrimitiveTypeKind.Binary );
+                                .hashObjectToHex( o, EdmPrimitiveTypeKind.Binary );
                         s3Entities.add( new S3EntityData( entitySetId,
                                 entityKeyId,
                                 e.getKey(),
                                 propertyHash ) );
-                        propertyHashToBinaryData.put( propertyHash, decoder.decode( property ) );
-
+                        propertyHashToBinaryData.put( propertyHash, o );
                     }
                 } else {
                     postgresProperties.put( e.getKey(), e.getValue() );
@@ -518,7 +514,7 @@ public class Shuttle implements Serializable {
         if ( !s3Entities.isEmpty() ) {
             logger.info( "Writing binary entities to S3.");
             List<String> urls = dataApi.generatePresignedUrls( s3Entities );
-            List<Pair<String, S3EntityData>> urlToData = Streams.zip(urls.stream(), s3Entities.stream(), (url, data) -> new Pair(url, data)).collect( Collectors.toList() );
+            List<Pair<String, S3EntityData>> urlToData = Streams.zip(urls.stream(), s3Entities.stream(), (url, data) -> new Pair<String,S3EntityData>(url, data)).collect( Collectors.toList() );
             urlToData.stream().parallel().forEach( pair -> {
                 Object binaryData = propertyHashToBinaryData.get(pair.component2().getPropertyHash());
                 s3Api.writeToS3( pair.component1(), (byte[]) binaryData );
