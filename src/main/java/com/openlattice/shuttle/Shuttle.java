@@ -26,7 +26,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Streams;
 import com.openlattice.ApiUtil;
 import com.openlattice.client.ApiClient;
 import com.openlattice.client.ApiFactoryFactory;
@@ -57,6 +59,7 @@ import com.openlattice.data.integration.StorageDestination;
 
 import java.util.Base64;
 
+import kotlin.Pair;
 import okhttp3.OkHttpClient;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
@@ -449,7 +452,7 @@ public class Shuttle implements Serializable {
             DataIntegrationApi dataApi,
             S3Api s3Api) {
         //create data structures to store data for s3 and postgres data sinks
-        Set<S3EntityData> s3Entities = Sets.newHashSet();
+        List<S3EntityData> s3Entities = Lists.newArrayList();
         Map<String, Object> propertyHashToBinaryData = new HashMap<>();
         Set<EntityData> postgresEntities = Sets.newHashSet();
         Base64.Decoder decoder = Base64.getDecoder();
@@ -514,15 +517,13 @@ public class Shuttle implements Serializable {
 
         if ( !s3Entities.isEmpty() ) {
             logger.info( "Writing binary entities to S3.");
-            Set<String> urls = dataApi.generatePresignedUrls( s3Entities );
-            long integratedBinaryObjects = propertyHashToBinaryData.entrySet().stream().parallel().filter(entry -> {
-                for ( String url : urls ) {
-                    if ( url.contains( entry.getKey() ) ) {
-                        s3Api.writeToS3( url, (byte[]) entry.getValue() );
-                    }
-                }
-                return true;
-            }).count();
+            List<String> urls = dataApi.generatePresignedUrls( s3Entities );
+            List<Pair<String, S3EntityData>> urlToData = Streams.zip(urls.stream(), s3Entities.stream(), (url, data) -> new Pair(url, data)).collect( Collectors.toList() );
+            urlToData.stream().parallel().forEach( pair -> {
+                Object binaryData = propertyHashToBinaryData.get(pair.component2().getPropertyHash());
+                s3Api.writeToS3( pair.component1(), (byte[]) binaryData );
+            });
+
         }
 
     }
