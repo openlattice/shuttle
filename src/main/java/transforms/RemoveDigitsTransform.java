@@ -43,7 +43,7 @@ public class RemoveDigitsTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply( String o ) {
+    public Object applyValue( String o ) {
         String outstring = o.replaceAll( "[\\d]+", "" );
         if ( StringUtils.isBlank( outstring ) ) {
             return null;

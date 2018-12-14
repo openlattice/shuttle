@@ -49,7 +49,7 @@ public class GetWeekdayTransform extends Transformation<String> {
     }
 
     @Override
-    public Object apply( String o ) {
+    public Object applyValue( String o ) {
         List<String> days = Arrays
                 .asList( "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY" );
         String dateStr = getAsString( o );

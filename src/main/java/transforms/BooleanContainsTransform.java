@@ -24,7 +24,7 @@ public class BooleanContainsTransform extends BooleanTransformation {
      * contains a specific value or not.  If either transformsIfTrue or transformsIfFalse are empty,
      * the value of the tested column will be passed on.
      *
-     * @param column:            column to test for string
+     * @param column:            column to test if the string pattern is present
      * @param string:            string to test column against
      * @param ignoreCase:        whether to ignore case in string
      * @param transformsIfTrue:  transformations to do on column value if exists
@@ -55,6 +55,10 @@ public class BooleanContainsTransform extends BooleanTransformation {
 
     @Override
     public boolean applyCondition( Map<String, Object> row ) {
+        if ( !( row.containsKey( column ) ) ) {
+            throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
+        }
+  
         String o = row.get( column ).toString();
 
         if ( StringUtils.isBlank( o ) ) {
