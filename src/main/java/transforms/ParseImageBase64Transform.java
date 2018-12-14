@@ -20,7 +20,7 @@ public class ParseImageBase64Transform extends Transformation<String> {
     public ParseImageBase64Transform() {}
 
     @Override
-    public Object apply( String o ) {
+    public Object applyValue( String o ) {
         return Base64.getEncoder().encode(o.getBytes());
     }
 }

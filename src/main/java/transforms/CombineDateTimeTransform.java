@@ -46,6 +46,10 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
     @Override
     public Object apply( Map<String, String> row ) {
 
+        if ( !( row.containsKey( dateColumn ) || row.containsKey( timeColumn ) ) ) {
+            throw new IllegalStateException( String.format( "The column %s or %s is not found.", dateColumn, timeColumn ) );
+        }
+
         // get date
         String d = row.get( dateColumn );
         if ( StringUtils.isBlank( d ) | d == null ) {
