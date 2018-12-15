@@ -96,6 +96,7 @@ public class GeocoderTransform extends Transformation<Object> {
 
     @Override
     public String applyValue(String input) {
+        if (input==null) return null;
         try {
             return getAddress(input, this.addressObject);
         } catch (java.io.IOException e) {
