@@ -37,7 +37,7 @@ import com.openlattice.data.*;
 import com.openlattice.data.integration.*;
 import com.openlattice.data.integration.Entity;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
-import com.openlattice.data.storage.PostgresDataHasher;
+import com.openlattice.data.util.PostgresDataHasher;
 import com.openlattice.edm.EdmApi;
 import com.openlattice.retrofit.RhizomeByteConverterFactory;
 import com.openlattice.retrofit.RhizomeCallAdapterFactory;
@@ -56,8 +56,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.openlattice.data.integration.StorageDestination;
-
-import java.util.Base64;
 
 import kotlin.Pair;
 import okhttp3.OkHttpClient;
@@ -508,7 +506,7 @@ public class Shuttle implements Serializable {
 
         //write entity and association set data and edges to postgres
         logger.info( "Writing  entities and associations to Postgres.");
-        dataApi.sinkToPostgres( postgresEntities );
+//        dataApi.sinkToPostgres( postgresEntities );
         dataApi.createEdges( edges );
 
         if ( !s3Entities.isEmpty() ) {
