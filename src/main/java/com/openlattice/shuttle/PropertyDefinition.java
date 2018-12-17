@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.data.integration.StorageDestination;
 import com.openlattice.shuttle.adapter.Row;
 import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.Transformation;
@@ -58,6 +59,7 @@ public class PropertyDefinition implements Serializable {
     public PropertyDefinition(
             @JsonProperty( Constants.TYPE ) String propertyTypeFqn,
             @JsonProperty( Constants.COLUMN ) String column,
+            @JsonProperty( Constants.STORAGE_DESTINATION ) StorageDestination storageDestination,
             @JsonProperty( Constants.READER ) Optional<Transformation> reader,
             @JsonProperty( Constants.TRANSFORMS ) Optional<Transformations> transforms ) {
         this.propertyTypeFqn = propertyTypeFqn == null ? null : new FullQualifiedName( propertyTypeFqn );
