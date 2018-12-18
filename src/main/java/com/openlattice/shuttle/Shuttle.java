@@ -285,7 +285,7 @@ public class Shuttle implements Serializable {
                                             .filter( entry -> {
                                                 if ( entry.getValue().getDatatype()
                                                         .equals( EdmPrimitiveTypeKind.Binary ) ) {
-                                                    storageDestByProperty.put( entry.getKey(), StorageDestination.AWS );
+                                                    storageDestByProperty.put( entry.getKey(), StorageDestination.S3 );
                                                     return false;
                                                 }
                                                 return true;
@@ -464,7 +464,7 @@ public class Shuttle implements Serializable {
 
             //for each set of properties in the entity
             entity.getDetails().entrySet().forEach( e -> {
-                if ( storageDestByProperty.get( e.getKey() ).equals( StorageDestination.AWS ) ) {
+                if ( storageDestByProperty.get( e.getKey() ).equals( StorageDestination.S3 ) ) {
                     for ( Object o : e.getValue() ) {
                         String propertyHash = PostgresDataHasher
                                 .hashObjectToHex( o, EdmPrimitiveTypeKind.Binary );

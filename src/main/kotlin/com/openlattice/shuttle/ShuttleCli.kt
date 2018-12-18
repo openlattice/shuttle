@@ -49,7 +49,7 @@ class ShuttleCli {
 
         private val flightOption = Option.builder()
                 .longOpt(FLIGHT)
-                .desc("Attempt to load configuration from AWS.")
+                .desc("Attempt to load configuration from S3.")
                 .hasArg(true)
                 .argName("file")
                 .build()

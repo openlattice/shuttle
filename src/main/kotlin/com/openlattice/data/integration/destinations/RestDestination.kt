@@ -22,15 +22,24 @@
 package com.openlattice.data.integration.destinations
 
 import com.openlattice.client.RetrofitFactory
-import com.openlattice.data.integration.BulkDataCreation
-import com.openlattice.data.integration.IntegrationDestination
+import com.openlattice.data.EntityKey
+import com.openlattice.data.integration.*
+import java.util.*
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 class RestDestination( environment: RetrofitFactory.Environment , authToken: String ) : IntegrationDestination {
-    override fun submit(data: BulkDataCreation) {
+    override fun integrateEntities(data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>) {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun integrateAssociations(data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
+    override fun accepts(): StorageDestination {
+        return StorageDestination.REST
     }
 }

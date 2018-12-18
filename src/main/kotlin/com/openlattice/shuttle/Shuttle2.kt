@@ -21,35 +21,16 @@
 
 package com.openlattice.shuttle
 
-import com.amazonaws.services.ec2.model.Storage
-import com.dataloom.mappers.ObjectMappers
-import com.google.common.cache.CacheBuilder
-import com.google.common.cache.CacheLoader
-import com.google.common.cache.LoadingCache
-import com.google.common.collect.ImmutableMap
-import com.google.common.collect.Lists
-import com.google.common.collect.Sets
-import com.google.common.collect.Streams
 import com.openlattice.ApiUtil
 import com.openlattice.ApiUtil.generateDefaultEntityId
-import com.openlattice.client.ApiClient
-import com.openlattice.client.ApiFactoryFactory
 import com.openlattice.client.RetrofitFactory
-import com.openlattice.data.*
+import com.openlattice.data.DataIntegrationApi
+import com.openlattice.data.EntityKey
 import com.openlattice.data.integration.*
-import com.openlattice.data.integration.Entity
-import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
-import com.openlattice.data.util.PostgresDataHasher
-import com.openlattice.edm.EdmApi
-import com.openlattice.edm.EntityDataModel
 import com.openlattice.edm.EntitySet
-import com.openlattice.edm.type.AssociationType
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.shuttle.payload.Payload
-import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer
-import com.openlattice.shuttle.serialization.JacksonLambdaSerializer
-import com.zaxxer.hikari.HikariDataSource
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -57,11 +38,7 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
-import java.util.concurrent.ExecutionException
-import java.util.function.Supplier
-import java.util.stream.Collectors
 import java.util.stream.Stream
-import kotlin.collections.LinkedHashSet
 
 
 const val UPLOAD_BATCH_SIZE = 100000
@@ -113,13 +90,15 @@ class Shuttle2(
         return entityTypes[entitySets[entitySetName]!!.entityTypeId]!!.key
     }
 
-    /*
+    /**
      * By default, the entity id is generated as a concatenation of the entity set id and all the key property values.
      * This is guaranteed to be unique for each unique set of primary key values. For this to work correctly it is very
      * important that Stream remain ordered. Ordered != sequential vs parallel.
+     *
+     * @param key A stable set of ordered primary key property type ids to use for default entity key generation.
      */
     private fun generateDefaultEntityId(
-            key: LinkedHashSet<UUID>,
+            key: Set<UUID>,
             properties: Map<UUID, Set<Any>>
     ): String {
         return ApiUtil.generateDefaultEntityId(key.stream(), properties)
@@ -156,7 +135,7 @@ class Shuttle2(
                             ((propertyValue !is String) || (propertyValue is String) && propertyValue.isNotBlank())) {
                         val storageDestination = propertyDefinition.storageDestination.orElseGet {
                             when (propertyTypes[propertyDefinition.fullQualifiedName]!!.datatype) {
-                                EdmPrimitiveTypeKind.Binary -> StorageDestination.AWS
+                                EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
                                 else -> StorageDestination.REST
                             }
                         }
@@ -180,7 +159,7 @@ class Shuttle2(
                 val entityId = entityDefinition.generator
                         .map { it.apply(row) }
                         .orElseGet {
-                            generateDefaultEntityId(getKeys(entityDefinition.entitySetName).stream(), properties)
+                            generateDefaultEntityId(getKeys(entityDefinition.entitySetName), properties)
                         }
 
                 if (StringUtils.isNotBlank(entityId) and condition and properties.isNotEmpty()) {
@@ -233,7 +212,7 @@ class Shuttle2(
 
                             val storageDestination = propertyDefinition.storageDestination.orElseGet {
                                 when (propertyTypes[propertyDefinition.fullQualifiedName]!!.datatype) {
-                                    EdmPrimitiveTypeKind.Binary -> StorageDestination.AWS
+                                    EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
                                     else -> StorageDestination.REST
                                 }
                             }
@@ -280,43 +259,37 @@ class Shuttle2(
                 MissionControl.signal()
             }
             addressedDataHolder
+        }.reduce { a: AddressedDataHolder, b: AddressedDataHolder ->
+            b.associations.forEach { storageDestination, associations ->
+                a.associations.getOrPut(storageDestination) { mutableSetOf() }.addAll(associations)
+            }
 
-//            BulkDataCreation(
-//                    entities,
-//                    associations
-//            )
-        }
-                .reduce { a: AddressedDataHolder, b: AddressedDataHolder ->
-                    b.associations.forEach { storageDestination, associations ->
-                        a.associations.getOrPut(storageDestination) { mutableSetOf() }.addAll(associations)
-                    }
+            b.entities.forEach { storageDestination, entities ->
+                a.entities.getOrPut(storageDestination) { mutableSetOf() }.addAll(entities)
+            }
 
-                    b.entities.forEach { storageDestination, entities ->
-                        a.entities.getOrPut(storageDestination) { mutableSetOf() }.addAll(entities)
-                    }
+            if (a.associations.values.any { it.size > UPLOAD_BATCH_SIZE } ||
+                    a.entities.values.any { it.size > UPLOAD_BATCH_SIZE }) {
+                val entityKeys = (a.entities.flatMap { it.value.map { it.key } }
+                        + a.associations.flatMap { it.value.map { it.key } })
+                val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
 
-                    if (a.associations.values.any { it.size > UPLOAD_BATCH_SIZE } ||
-                            a.entities.values.any { it.size > UPLOAD_BATCH_SIZE }) {
-                        val entityKeys = (a.entities.flatMap { it.value.map { it.key } }
-                                + a.associations.flatMap { it.value.map { it.key } })
-                        val bulkEntitySetIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
-
-                        integrationDestinations.forEach {
-                            it.value.integrateEntities(a.entities[it.key]!!)
-                            it.value.integrateAssociations(a.associations[it.key]!!)
-                        }
-
-                        return@reduce AddressedDataHolder(mutableMapOf(), mutableMapOf())
-                    }
-                    a
+                integrationDestinations.forEach {
+                    it.value.integrateEntities(a.entities[it.key]!!, entityKeyIds)
+                    it.value.integrateAssociations(a.associations[it.key]!!, entityKeyIds)
                 }
+
+                return@reduce AddressedDataHolder(mutableMapOf(), mutableMapOf())
+            }
+            a
+        }
 
         remaining.ifPresent { r ->
             val entityKeys = r.entities.flatMap { it.value.map { it.key } } + r.associations.flatMap { it.value.map { it.key } }
-            val bulkEntitySetIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
+            val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
             integrationDestinations.forEach {
-                it.value.integrateEntities(r.entities[it.key]!!)
-                it.value.integrateAssociations(r.associations[it.key]!!)
+                it.value.integrateEntities(r.entities[it.key]!!, entityKeyIds)
+                it.value.integrateAssociations(r.associations[it.key]!!, entityKeyIds)
             }
         }
     }
