@@ -78,9 +78,6 @@ class Shuttle2(
             logger.info("Finished flight: {}", entry.key.name)
 
         }
-
-        System.exit(0)
-
     }
 
     /**
@@ -132,7 +129,7 @@ class Shuttle2(
                 for (propertyDefinition in entityDefinition.properties) {
                     val propertyValue = propertyDefinition.propertyValue.apply(row)
                     if (propertyValue != null &&
-                            ((propertyValue !is String) || (propertyValue is String) && propertyValue.isNotBlank())) {
+                            ((propertyValue !is String) || propertyValue.isNotBlank())) {
                         val storageDestination = propertyDefinition.storageDestination.orElseGet {
                             when (propertyTypes[propertyDefinition.fullQualifiedName]!!.datatype) {
                                 EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
@@ -165,10 +162,10 @@ class Shuttle2(
                 if (StringUtils.isNotBlank(entityId) and condition and properties.isNotEmpty()) {
                     val key = EntityKey(entitySetId, entityId)
                     aliasesToEntityKey[entityDefinition.alias] = key
-                    addressedProperties.forEach { storageDestination, properties ->
+                    addressedProperties.forEach { storageDestination, data ->
                         addressedDataHolder.entities
                                 .getOrPut(storageDestination) { mutableSetOf() }
-                                .add(Entity(key, properties))
+                                .add(Entity(key, data))
                     }
 //                    entities.add(Entity(key, properties))
                     wasCreated[entityDefinition.alias] = true
@@ -208,7 +205,7 @@ class Shuttle2(
                     for (propertyDefinition in associationDefinition.properties) {
                         val propertyValue = propertyDefinition.propertyValue.apply(row)
                         if (propertyValue != null &&
-                                ((propertyValue !is String) || (propertyValue is String) && propertyValue.isNotBlank())) {
+                                ((propertyValue !is String) || propertyValue.isNotBlank())) {
 
                             val storageDestination = propertyDefinition.storageDestination.orElseGet {
                                 when (propertyTypes[propertyDefinition.fullQualifiedName]!!.datatype) {
@@ -241,13 +238,12 @@ class Shuttle2(
                         val key = EntityKey(entitySetId, entityId)
                         val src = aliasesToEntityKey[associationDefinition.srcAlias]
                         val dst = aliasesToEntityKey[associationDefinition.dstAlias]
-                        addressedProperties.forEach { storageDestination, properties ->
+                        addressedProperties.forEach { storageDestination, data ->
                             addressedDataHolder.associations
                                     .getOrPut(storageDestination) { mutableSetOf() }
-                                    .add(Association(key, src, dst, properties))
+                                    .add(Association(key, src, dst, data))
 
                         }
-//                        associations.add(Association(key, src, dst, properties))
                     } else {
                         logger.error(
                                 "Encountered blank entity id for entity set {}",
@@ -255,8 +251,6 @@ class Shuttle2(
                         )
                     }
                 }
-
-                MissionControl.signal()
             }
             addressedDataHolder
         }.reduce { a: AddressedDataHolder, b: AddressedDataHolder ->
@@ -294,37 +288,5 @@ class Shuttle2(
         }
     }
 
-    private fun ensureValidIntegration(flightsToPayloads: Map<Flight, Payload>) {
-        flightsToPayloads.keys.forEach { flight ->
 
-            flight
-                    .entities
-                    .forEach { entityDefinition ->
-                        assertPropertiesMatchEdm(entityDefinition.entitySetName, entityDefinition.properties)
-                    }
-
-            flight
-                    .associations
-                    .forEach { associationDefinition ->
-                        assertPropertiesMatchEdm(associationDefinition.entitySetName, associationDefinition.properties)
-                    }
-        }
-    }
-
-    private fun assertPropertiesMatchEdm(entitySetName: String, properties: Collection<PropertyDefinition>) {
-        val requiredPropertyTypes = properties.map { propertyTypes[it.fullQualifiedName]!!.id }.toSet()
-        val actualPropertyTypes = entityTypes[entitySets[entitySetName]!!.entityTypeId]!!.properties
-
-        val missingPropertyTypes = requiredPropertyTypes - actualPropertyTypes
-        missingPropertyTypes.forEach {
-            logger.error(
-                    "Entity set {} does not contain any property type with FQN: {}",
-                    entitySetName,
-                    propertyTypesById[it]!!.type
-            )
-            throw IllegalStateException(
-                    "Property types $missingPropertyTypes not defined for entity set $entitySetName"
-            )
-        }
-    }
 }

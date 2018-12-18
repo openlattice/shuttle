@@ -39,7 +39,6 @@ import com.openlattice.shuttle.config.IntegrationConfig
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.openlattice.shuttle.payload.SimplePayload
-import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
 import java.io.File
 
@@ -154,10 +153,14 @@ fun main(args: Array<String>) {
         contacts = setOf()
     }
 
-    val flights = mapOf(flight to payload)
+    val flightPlan = mapOf(flight to payload)
 
     val shuttle = Shuttle(environment, jwt)
 
-    shuttle.launchPayloadFlight(flights, createEntitySets, contacts)
+    val missionControl = MissionControl(environment, jwt, flightPlan)
+
+    missionControl.startLaunch( createEntitySets )
+
+    shuttle.launchPayloadFlight(flightPlan, createEntitySets, contacts)
 }
 
