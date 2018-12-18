@@ -298,8 +298,8 @@ public class Shuttle implements Serializable {
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
                             Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
                             if ( propertyValue != null ) {
-                                String stringProp = propertyValue.toString();
-                                if ( !StringUtils.isBlank( stringProp ) ) {
+                                    String stringProp = propertyValue.toString();
+                                    if ( !StringUtils.isBlank( stringProp ) ) {
                                     UUID propertyId = propertyIdsCache
                                             .getUnchecked( propertyDefinition.getFullQualifiedName() );
                                     if ( propertyValue instanceof Iterable ) {
