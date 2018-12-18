@@ -54,13 +54,12 @@ public class BooleanContainsTransform extends BooleanTransformation {
     }
 
     @Override
-    public boolean applyCondition( Map<String, String> row ) {
-
+    public boolean applyCondition( Map<String, Object> row ) {
         if ( !( row.containsKey( column ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
-
-        String o = row.get( column );
+  
+        String o = row.get( column ).toString();
 
         if ( StringUtils.isBlank( o ) ) {
             return false;

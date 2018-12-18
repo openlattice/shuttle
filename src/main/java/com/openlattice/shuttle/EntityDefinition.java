@@ -56,16 +56,16 @@ public class EntityDefinition implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger( EntityDefinition.class );
 
-    private final Optional<UUID>                                                id;
+    protected final Optional<UUID>                                              id;
     protected final FullQualifiedName                                           entityTypeFqn;
     protected final String                                                      entitySetName;
     protected final List<FullQualifiedName>                                     key;
     protected final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
     protected final String                                                      alias;
     public final  Optional<Conditions>                                          condition;
-    protected final Optional<SerializableFunction<Map<String, String>, String>> generator;
+    protected final Optional<SerializableFunction<Map<String, Object>, String>> generator;
     protected final boolean                                                     useCurrentSync;
-    public final  SerializableFunction<Map<String, String>, ?>                  valueMapper;
+    public final  SerializableFunction<Map<String, Object>, ?>                  valueMapper;
 
     @JsonCreator
     public EntityDefinition(
@@ -104,7 +104,7 @@ public class EntityDefinition implements Serializable {
             String entitySetName,
             List<FullQualifiedName> key,
             Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
-            Optional<SerializableFunction<Map<String, String>, String>> generator,
+            Optional<SerializableFunction<Map<String, Object>, String>> generator,
             String alias,
             Optional<Boolean> useCurrentSync
     ) {
@@ -168,7 +168,7 @@ public class EntityDefinition implements Serializable {
     }
 
     @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
-    public Optional<SerializableFunction<Map<String, String>, String>> getGenerator() {
+    public Optional<SerializableFunction<Map<String, Object>, String>> getGenerator() {
         return generator;
     }
 
@@ -243,7 +243,7 @@ public class EntityDefinition implements Serializable {
         private List<FullQualifiedName>                           key;
         private Map<FullQualifiedName, PropertyDefinition>        propertyDefinitionMap;
         private String                                            alias;
-        private SerializableFunction<Map<String, String>, String> entityIdGenerator;
+        private SerializableFunction<Map<String, Object>, String> entityIdGenerator;
         private boolean                                           useCurrentSync;
 
         public Builder(
@@ -291,7 +291,7 @@ public class EntityDefinition implements Serializable {
         }
 
         public Builder entityIdGenerator(
-                SerializableFunction<Map<String, String>, String> generator ) {
+                SerializableFunction<Map<String, Object>, String> generator ) {
             this.entityIdGenerator = generator;
             return this;
         }
@@ -318,13 +318,12 @@ public class EntityDefinition implements Serializable {
 
             return new PropertyDefinition.Builder<>( propertyTypeFqn, this, onBuild );
         }
-
         public Builder addProperty( String propertyString, String columnName ) {
             // This function is for when flights are defined in java
             // Useful for backwards compatibility
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
-            SerializableFunction<Map<String, String>, ?> defaultMapper = row -> {
-                String value = row.get( columnName );
+            SerializableFunction<Map<String, Object>, ?> defaultMapper = row -> {
+                String value = row.get( columnName ).toString();
                 return ( value instanceof String && StringUtils.isBlank( value ) ) ? null : value;
             };
             PropertyDefinition propertyDefinition = new PropertyDefinition(

@@ -19,22 +19,17 @@
  *
  */
 
-package com.openlattice.shuttle.payload;
+package com.openlattice.data.integration.destinations
 
-import java.util.Map;
-import java.util.stream.Stream;
+import com.openlattice.data.integration.BulkDataCreation
+import com.openlattice.data.integration.IntegrationDestination
 
 /**
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class StreamPayload implements Payload {
-    private final Stream<Map<String, Object>> streamPayload;
-
-    public StreamPayload( Stream<Map<String, Object>> streamPayload ) {
-        this.streamPayload = streamPayload;
-    }
-
-    @Override public Stream<Map<String, Object>> getPayload() {
-        return null;
+class PostgresDestination : IntegrationDestination {
+    override fun submit(data: BulkDataCreation) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 }

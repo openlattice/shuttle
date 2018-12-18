@@ -11,8 +11,8 @@ import java.util.Map;
 import java.util.Optional;
 
 public class BooleanTransformation extends Transformation<Map<String, String>> {
-    private final SerializableFunction<Map<String, String>, ?> trueValueMapper;
-    private final SerializableFunction<Map<String, String>, ?> falseValueMapper;
+    private final SerializableFunction<Map<String, Object>, ?> trueValueMapper;
+    private final SerializableFunction<Map<String, Object>, ?> falseValueMapper;
     private final Optional<Transformations>                    transformsIfTrue;
     private final Optional<Transformations>                    transformsIfFalse;
 
@@ -61,19 +61,19 @@ public class BooleanTransformation extends Transformation<Map<String, String>> {
         return transformsIfFalse;
     }
 
-    public SerializableFunction<Map<String, String>, ?> getTrueValueMapper() {
+    public SerializableFunction<Map<String, Object>, ?> getTrueValueMapper() {
         return trueValueMapper;
     }
 
-    public SerializableFunction<Map<String, String>, ?> getFalseValueMapper() {
+    public SerializableFunction<Map<String, Object>, ?> getFalseValueMapper() {
         return falseValueMapper;
     }
 
-    public boolean applyCondition( Map<String, String> row ) {
+    public boolean applyCondition( Map<String, Object> row ) {
         return true;
     }
 
-    public Object apply( Map<String, String> row ) {
+    public Object apply( Map<String, Object> row ) {
         return applyCondition( row ) ? this.trueValueMapper.apply( row ) : this.falseValueMapper.apply( row );
     }
 }

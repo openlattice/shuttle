@@ -32,7 +32,7 @@ public class JdbcPayload implements Payload {
         this.sql = sql;
     }
 
-    @Override public Stream<Map<String, String>> getPayload() {
+    @Override public Stream<Map<String, Object>> getPayload() {
         try {
             Connection conn = hds.getConnection();
             Statement statement = conn.createStatement();
@@ -45,7 +45,7 @@ public class JdbcPayload implements Payload {
         return null;
     }
 
-    static final class ResultSetStringIterator implements Iterator<Map<String, String>> {
+    static final class ResultSetStringIterator implements Iterator<Map<String, Object>> {
         private final Connection    connection;
         private final Statement     stmt;
         private final ResultSet     rs;
@@ -53,8 +53,6 @@ public class JdbcPayload implements Payload {
         private final int           columnCount;
         private final RateLimiter   rateLimiter;
         private       AtomicBoolean hasNext = new AtomicBoolean( false );
-
-        private static Base64.Encoder encoder = java.util.Base64.getEncoder();
 
         public ResultSetStringIterator(
                 Connection connection,
@@ -83,9 +81,9 @@ public class JdbcPayload implements Payload {
             return hasNext.get();
         }
 
-        @Override public Map<String, String> next() {
+        @Override public Map<String, Object> next() {
             rateLimiter.acquire();
-            Map<String, String> data = read( columns, rs );
+            Map<String, Object> data = read( columns, rs );
             try {
                 boolean hn = rs.next();
                 hasNext.set( hn );
@@ -100,13 +98,13 @@ public class JdbcPayload implements Payload {
             return data;
         }
 
-        private static Map<String, String> read( List<String> columns, ResultSet rs ) {
+        private static Map<String, Object> read( List<String> columns, ResultSet rs ) {
             return columns.stream().collect( Collectors.toMap( Function.identity(), col -> {
-                String val = "";
+                Object val = "";
                 try {
                     Object obj = rs.getObject( col );
                     if (obj instanceof byte[]){
-                        val = encoder.encodeToString((byte[]) obj);
+                        val = obj;
                     } else if ( obj != null ) { val = obj.toString(); }
                 } catch ( SQLException e ) {
                     logger.error( "Unable to read col {}.", col, e );
