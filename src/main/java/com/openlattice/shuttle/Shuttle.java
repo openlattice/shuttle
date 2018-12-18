@@ -68,9 +68,9 @@ public class Shuttle implements Serializable {
             .getLogger( Shuttle.class );
 
     private static final int UPLOAD_BATCH_SIZE = 100000;
-    private static transient LoadingCache<String, UUID>                             entitySetIdCache = null;
-    private static transient LoadingCache<FullQualifiedName, UUID>                  propertyIdsCache = null;
-    private static transient LoadingCache<String, LinkedHashSet<FullQualifiedName>> keyCache         = null;
+    private static transient LoadingCache<FullQualifiedName, UUID> propertyIdsCache = null;
+    private static transient LoadingCache<String, LinkedHashSet<FullQualifiedName>> keyCache = null;
+    private static EntitySetIdCache entitySetIdCache = new EntitySetIdCache();
 
     static {
         ObjectMappers.foreach( mapper -> {
@@ -82,22 +82,20 @@ public class Shuttle implements Serializable {
     }
 
     private final ApiClient apiClient;
-    private String authToken;
 
     public Shuttle( String authToken ) {
         // TODO: At some point we will have to handle mechanics of auth token expiration.
         this.apiClient = new ApiClient( () -> authToken );
-        this.authToken = authToken;
     }
 
     public Shuttle( Environment environment, String authToken ) {
         // TODO: At some point we will have to handle mechanics of auth token expiration.
         this.apiClient = new ApiClient( environment, () -> authToken );
-        this.authToken = authToken;
     }
 
     /**
      * Only used for testing
+     *
      * @param apiFactorySupplier
      */
     public Shuttle( ApiFactoryFactory apiFactorySupplier ) {
@@ -110,7 +108,7 @@ public class Shuttle implements Serializable {
             boolean createEntitySets,
             Set<String> contacts ) throws InterruptedException {
         launch( flightsToPayloads.entrySet().stream()
-                .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue().getPayload() ) ),
+                        .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue().getPayload() ) ),
                 createEntitySets,
                 contacts );
     }
@@ -135,7 +133,7 @@ public class Shuttle implements Serializable {
             flight
                     .getEntities()
                     .forEach( entityDefinition -> {
-                        UUID entitySetId = getEntitySetId( entityDefinition, createEntitySets, edmApi, contacts );
+                        UUID entitySetId = entitySetIdCache.getEntitySetId( entityDefinition, createEntitySets, edmApi, contacts );
                         assertPropertiesMatchEdm( entityDefinition.getEntitySetName(),
                                 entitySetId,
                                 entityDefinition.getProperties(),
@@ -145,7 +143,7 @@ public class Shuttle implements Serializable {
             flight
                     .getAssociations()
                     .forEach( associationDefinition -> {
-                        UUID entitySetId = getEntitySetId( associationDefinition, createEntitySets, edmApi, contacts );
+                        UUID entitySetId = entitySetIdCache.getEntitySetId( associationDefinition, createEntitySets, edmApi, contacts );
                         assertPropertiesMatchEdm( associationDefinition.getEntitySetName(),
                                 entitySetId,
                                 associationDefinition.getProperties(),
@@ -161,17 +159,7 @@ public class Shuttle implements Serializable {
     }
 
     private void initializeEdmCaches( EdmApi edmApi ) {
-        if ( entitySetIdCache == null ) {
-            entitySetIdCache = CacheBuilder
-                    .newBuilder()
-                    .maximumSize( 1000 )
-                    .build( new CacheLoader<String, UUID>() {
-                        @Override
-                        public UUID load( String entitySetName ) throws Exception {
-                            return edmApi.getEntitySetId( entitySetName );
-                        }
-                    } );
-        }
+        entitySetIdCache.initializeEntitySetIdCache( edmApi );
 
         if ( keyCache == null ) {
             keyCache = CacheBuilder
@@ -200,34 +188,6 @@ public class Shuttle implements Serializable {
                                     propertyTypeFqn.getName() );
                         }
                     } );
-        }
-    }
-
-    private UUID getEntitySetId(
-            EntityDefinition entityDefinition,
-            boolean createEntitySets,
-            EdmApi edmApi,
-            Set<String> contacts ) {
-        try {
-            return entitySetIdCache.get( entityDefinition.getEntitySetName() );
-        } catch( Exception e ) {
-            logger.warn( "Unable to retrieve entity set {}", entityDefinition.getEntitySetName() );
-            if(createEntitySets) {
-                logger.info("Creating entity set {}", entityDefinition.getEntitySetName() );
-                UUID entitySetId = edmApi.createEntitySets(
-                        Set.of(
-                                new EntitySet(
-                                        entityDefinition.getId().orElse( UUID.randomUUID() ),
-                                        edmApi.getEntityTypeId( entityDefinition.getEntityTypeFqn() ),
-                                        entityDefinition.getEntitySetName(),
-                                        entityDefinition.getEntitySetName(),
-                                        Optional.of( entityDefinition.getEntitySetName() ),
-                                        contacts ) ) )
-                        .get( entityDefinition.getEntitySetName() );
-                entitySetIdCache.put( entityDefinition.getEntitySetName(), entitySetId );
-                return entitySetId;
-            }
-            return null;
         }
     }
 
@@ -280,7 +240,7 @@ public class Shuttle implements Serializable {
 
                     if ( flight.condition.isPresent() ) {
                         Object out = flight.valueMapper.apply( row );
-                        if ( !( (Boolean) out ).booleanValue() ) {
+                        if ( !( ( Boolean ) out ).booleanValue() ) {
                             return new BulkDataCreation( entities, associations );
                         }
                     }
@@ -290,12 +250,12 @@ public class Shuttle implements Serializable {
                         Boolean condition = true;
                         if ( entityDefinition.condition.isPresent() ) {
                             Object out = entityDefinition.valueMapper.apply( row );
-                            if ( !( (Boolean) out ).booleanValue() ) {
+                            if ( !( ( Boolean ) out ).booleanValue() ) {
                                 condition = false;
                             }
                         }
 
-                        UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
+                        UUID entitySetId = entitySetIdCache.getEntitySetIdUnchecked( entityDefinition );
                         Map<UUID, Set<Object>> properties = new HashMap<>();
 
                         for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
@@ -308,7 +268,7 @@ public class Shuttle implements Serializable {
                                     if ( propertyValue instanceof Iterable ) {
                                         properties
                                                 .putAll( ImmutableMap.of( propertyId,
-                                                        Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
+                                                        Sets.newHashSet( ( Iterable<?> ) propertyValue ) ) );
                                     } else {
                                         properties.compute( propertyId,
                                                 ( k, v ) -> ( v == null )
@@ -345,7 +305,7 @@ public class Shuttle implements Serializable {
 
                         if ( associationDefinition.condition.isPresent() ) {
                             Object out = associationDefinition.valueMapper.apply( row );
-                            if ( !( (Boolean) out ).booleanValue() ) {
+                            if ( !( ( Boolean ) out ).booleanValue() ) {
                                 continue;
                             }
                         }
@@ -362,8 +322,7 @@ public class Shuttle implements Serializable {
                         if ( wasCreated.get( associationDefinition.getSrcAlias() )
                                 && wasCreated.get( associationDefinition.getDstAlias() ) ) {
 
-                            UUID entitySetId = entitySetIdCache
-                                    .getUnchecked( associationDefinition.getEntitySetName() );
+                            UUID entitySetId = entitySetIdCache.getEntitySetIdUnchecked( associationDefinition );
                             Map<UUID, Set<Object>> properties = new HashMap<>();
 
                             for ( PropertyDefinition propertyDefinition : associationDefinition.getProperties() ) {
@@ -375,7 +334,7 @@ public class Shuttle implements Serializable {
                                         properties
                                                 .putAll( ImmutableMap
                                                         .of( propertyId,
-                                                                Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
+                                                                Sets.newHashSet( ( Iterable<?> ) propertyValue ) ) );
                                     } else {
                                         properties.compute( propertyId,
                                                 ( k, v ) -> ( v == null )
