@@ -26,12 +26,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.dataloom.streams.StreamUtil;
-import com.datastax.driver.core.utils.UUIDs;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import com.openlattice.authorization.PermissionsApi;
+import com.openlattice.authorization.securable.SecurableObjectType;
 import com.openlattice.client.ApiFactory;
 import com.openlattice.client.ApiFactoryFactory;
 import com.openlattice.data.DataApi;
@@ -49,8 +49,8 @@ import com.openlattice.shuttle.transformations.Transformations;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -84,8 +84,9 @@ public class ShuttleTest extends ShuttleTestBootstrap {
 
     private static EntityType CYPHERS_ET = TestDataFactory
             .childEntityTypeWithPropertyType( null,
+                    Optional.empty(),
                     PTS.stream().map( pt -> pt.getId() ).collect( Collectors.toSet() ),
-                    null,
+                    SecurableObjectType.EntityType,
                     ALGO_PT );
 
     private static AssociationType ASSOCIATION_TYPE = TestDataFactory
@@ -157,7 +158,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         flights.put( flight, payload );
 
         Shuttle shuttle = new Shuttle( apiFactorySupplier );
-        shuttle.launch( flights );
+        shuttle.launch( flights, false, Set.of() );
 
         Assert.assertEquals( 1, Answers.getCreateDataInvocationCount() );
         Assert.assertEquals( 1, Answers.getCreateDataIntegrationApiInvocationCount() );

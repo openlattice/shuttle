@@ -21,6 +21,8 @@ package com.openlattice.shuttle;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import com.auth0.exception.Auth0Exception;
+import com.auth0.json.auth.UserInfo;
 import com.dataloom.mappers.ObjectMappers;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -30,6 +32,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Streams;
 import com.openlattice.ApiUtil;
+import com.openlattice.authorization.AclKey;
 import com.openlattice.client.ApiClient;
 import com.openlattice.client.ApiFactoryFactory;
 import com.openlattice.client.RetrofitFactory.Environment;
@@ -37,12 +40,12 @@ import com.openlattice.data.*;
 import com.openlattice.data.integration.*;
 import com.openlattice.data.integration.Entity;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
-import com.openlattice.data.util.PostgresDataHasher;
 import com.openlattice.edm.EdmApi;
 import com.openlattice.retrofit.RhizomeByteConverterFactory;
 import com.openlattice.retrofit.RhizomeCallAdapterFactory;
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory;
 import com.openlattice.rhizome.proxy.RetrofitBuilders;
+import com.openlattice.edm.EntitySet;
 import com.openlattice.shuttle.payload.Payload;
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer;
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer;
@@ -51,6 +54,9 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -74,16 +80,17 @@ public class Shuttle implements Serializable {
     private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
 
-    private static final     int                                                    UPLOAD_BATCH_SIZE = 100000;
-    private static transient LoadingCache<String, UUID>                             entitySetIdCache  = null;
-    private static transient LoadingCache<FullQualifiedName, UUID>                  propertyIdsCache  = null;
-    private static transient LoadingCache<String, LinkedHashSet<FullQualifiedName>> keyCache          = null;
+    private static final int UPLOAD_BATCH_SIZE = 100000;
+    private static transient LoadingCache<FullQualifiedName, UUID> propertyIdsCache = null;
+    private static transient LoadingCache<String, LinkedHashSet<FullQualifiedName>> keyCache = null;
+    private static EntitySetIdCache entitySetIdCache = new EntitySetIdCache();
 
     static {
         ObjectMappers.foreach( mapper -> {
             JacksonLambdaSerializer.registerWithMapper( mapper );
             FullQualifiedNameJacksonSerializer.registerWithMapper( mapper );
             JacksonLambdaDeserializer.registerWithMapper( mapper );
+
         } );
     }
 
@@ -99,17 +106,29 @@ public class Shuttle implements Serializable {
         this.apiClient = new ApiClient( environment, () -> authToken );
     }
 
+    /**
+     * Only used for testing
+     *
+     * @param apiFactorySupplier
+     */
     public Shuttle( ApiFactoryFactory apiFactorySupplier ) {
         this.apiClient = new ApiClient( apiFactorySupplier );
     }
 
-    public void launchPayloadFlight( Map<Flight, Payload> flightsToPayloads ) throws InterruptedException {
+    public void launchPayloadFlight(
+            Map<Flight, Payload> flightsToPayloads,
+            boolean createEntitySets,
+            Set<String> contacts ) throws InterruptedException {
         logger.info( "Getting payload." );
         launch( flightsToPayloads.entrySet().stream()
-                .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue().getPayload() ) ) );
+                        .collect( Collectors.toMap( entry -> entry.getKey(), entry -> entry.getValue().getPayload() ) ),
+                createEntitySets,
+                contacts );
     }
 
-    public void launch( Map<Flight, Stream<Map<String, Object>>> flightsToPayloads ) throws InterruptedException {
+    public void launch( Map<Flight, Stream<Map<String, Object>>> flightsToPayloads,
+                        boolean createEntitySets,
+                        Set<String> contacts ) throws InterruptedException {
 
         EdmApi edmApi;
 
@@ -127,7 +146,7 @@ public class Shuttle implements Serializable {
             flight
                     .getEntities()
                     .forEach( entityDefinition -> {
-                        UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
+                        UUID entitySetId = entitySetIdCache.getEntitySetId( entityDefinition, createEntitySets, edmApi, contacts );
                         assertPropertiesMatchEdm( entityDefinition.getEntitySetName(),
                                 entitySetId,
                                 entityDefinition.getProperties(),
@@ -137,7 +156,7 @@ public class Shuttle implements Serializable {
             flight
                     .getAssociations()
                     .forEach( associationDefinition -> {
-                        UUID entitySetId = entitySetIdCache.getUnchecked( associationDefinition.getEntitySetName() );
+                        UUID entitySetId = entitySetIdCache.getEntitySetId( associationDefinition, createEntitySets, edmApi, contacts );
                         assertPropertiesMatchEdm( associationDefinition.getEntitySetName(),
                                 entitySetId,
                                 associationDefinition.getProperties(),
@@ -150,22 +169,10 @@ public class Shuttle implements Serializable {
             launchFlight( entry.getKey(), entry.getValue() );
             logger.info( "Finished flight: {}", entry.getKey().getName() );
         } );
-
-        System.exit( 0 );
     }
 
     private void initializeEdmCaches( EdmApi edmApi ) {
-        if ( entitySetIdCache == null ) {
-            entitySetIdCache = CacheBuilder
-                    .newBuilder()
-                    .maximumSize( 1000 )
-                    .build( new CacheLoader<String, UUID>() {
-                        @Override
-                        public UUID load( String entitySetName ) throws Exception {
-                            return edmApi.getEntitySetId( entitySetName );
-                        }
-                    } );
-        }
+        entitySetIdCache.initializeEntitySetIdCache( edmApi );
 
         if ( keyCache == null ) {
             keyCache = CacheBuilder
@@ -276,7 +283,7 @@ public class Shuttle implements Serializable {
                             }
                         }
 
-                        UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
+                        UUID entitySetId = entitySetIdCache.getEntitySetIdUnchecked( entityDefinition );
                         Map<UUID, Set<Object>> properties = new HashMap<>();
 
                         if ( !seenEntitySetIds.contains( entitySetId ) ) {
@@ -357,8 +364,7 @@ public class Shuttle implements Serializable {
                         if ( wasCreated.get( associationDefinition.getSrcAlias() )
                                 && wasCreated.get( associationDefinition.getDstAlias() ) ) {
 
-                            UUID entitySetId = entitySetIdCache
-                                    .getUnchecked( associationDefinition.getEntitySetName() );
+                            UUID entitySetId = entitySetIdCache.getEntitySetIdUnchecked( associationDefinition );
                             Map<UUID, Set<Object>> properties = new HashMap<>();
 
                             for ( PropertyDefinition propertyDefinition : associationDefinition.getProperties() ) {

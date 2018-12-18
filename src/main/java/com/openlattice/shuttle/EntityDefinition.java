@@ -56,18 +56,20 @@ public class EntityDefinition implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger( EntityDefinition.class );
 
-    private final FullQualifiedName                                           entityTypeFqn;
-    private final String                                                      entitySetName;
-    private final List<FullQualifiedName>                                     key;
-    private final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
-    private final String                                                      alias;
-    public final  Optional<Conditions>                                        condition;
-    private final Optional<SerializableFunction<Map<String, Object>, String>> generator;
-    private final boolean                                                     useCurrentSync;
-    public final  SerializableFunction<Map<String, Object>, ?>                valueMapper;
+    protected final Optional<UUID>                                              id;
+    protected final FullQualifiedName                                           entityTypeFqn;
+    protected final String                                                      entitySetName;
+    protected final List<FullQualifiedName>                                     key;
+    protected final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
+    protected final String                                                      alias;
+    public final  Optional<Conditions>                                          condition;
+    protected final Optional<SerializableFunction<Map<String, Object>, String>> generator;
+    protected final boolean                                                     useCurrentSync;
+    public final  SerializableFunction<Map<String, Object>, ?>                  valueMapper;
 
     @JsonCreator
     public EntityDefinition(
+            @JsonProperty( SerializationConstants.ID_FIELD ) Optional<UUID> id,
             @JsonProperty( SerializationConstants.FQN ) String entityTypeFqn,
             @JsonProperty( SerializationConstants.ENTITY_SET_NAME ) String entitySetName,
             @JsonProperty( SerializationConstants.KEY_FIELD ) List<FullQualifiedName> key,
@@ -77,6 +79,7 @@ public class EntityDefinition implements Serializable {
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
 
+        this.id = id;
         this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
         this.entitySetName = entitySetName;
         this.propertyDefinitions = propertyDefinitions;
@@ -105,8 +108,8 @@ public class EntityDefinition implements Serializable {
             String alias,
             Optional<Boolean> useCurrentSync
     ) {
-
-        this.entityTypeFqn = new FullQualifiedName( entityTypeFqn );
+        this.id = Optional.empty();
+        this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
         this.entitySetName = entitySetName;
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
@@ -118,7 +121,7 @@ public class EntityDefinition implements Serializable {
     }
 
     private EntityDefinition( EntityDefinition.Builder builder ) {
-
+        this.id = Optional.empty();
         this.entityTypeFqn = builder.entityTypeFqn;
         this.entitySetName = builder.entitySetName;
         this.propertyDefinitions = builder.propertyDefinitionMap;
@@ -129,6 +132,9 @@ public class EntityDefinition implements Serializable {
         this.generator = Optional.ofNullable( builder.entityIdGenerator );
         this.useCurrentSync = builder.useCurrentSync;
     }
+
+    @JsonProperty( SerializationConstants.ID_FIELD )
+    public Optional<UUID> getId() { return this.id; }
 
     @JsonIgnore
     //    @JsonProperty( SerializationConstants.FQN )
