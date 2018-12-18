@@ -27,6 +27,8 @@ import com.google.common.cache.CacheLoader
 import com.google.common.cache.LoadingCache
 import com.google.common.collect.ImmutableMap
 import com.google.common.collect.Sets
+import com.openlattice.ApiUtil
+import com.openlattice.ApiUtil.generateDefaultEntityId
 import com.openlattice.client.ApiClient
 import com.openlattice.client.ApiFactoryFactory
 import com.openlattice.client.RetrofitFactory
@@ -37,6 +39,9 @@ import com.openlattice.data.integration.Entity
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
 import com.openlattice.edm.EdmApi
+import com.openlattice.edm.EntitySet
+import com.openlattice.edm.type.AssociationType
+import com.openlattice.edm.type.PropertyType
 import com.openlattice.shuttle.payload.Payload
 import com.openlattice.shuttle.serialization.JacksonLambdaDeserializer
 import com.openlattice.shuttle.serialization.JacksonLambdaSerializer
@@ -46,6 +51,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentMap
 import java.util.concurrent.ExecutionException
 import java.util.function.Supplier
 import java.util.stream.Collectors
@@ -57,15 +63,17 @@ import java.util.stream.Stream
  */
 
 class Shuttle2(
+        flightPlan: Map<Flight, Payload>,
         authToken: String,
         environment: RetrofitFactory.Environment = RetrofitFactory.Environment.LOCAL
 ) {
     private val apiClient = ApiClient(environment) { authToken }
     private val edmApi = apiClient.edmApi
     private val dataApi = apiClient.dataApi
+    private val dataIntegrationApi = apiClient.dataIntegrationApi
     private val s3Api = apiClient.s3Api
 
-    private val storageDestByProperty = ConcurrentHashMap<UUID, StorageDestination>()
+    private val storageDestByProperty = ConcurrentHashMap<UUID, ConcurrentMap<UUID, StorageDestination>>()
     private val seenEntitySetIds = Sets.newHashSet<UUID>()
 
     private val logger = LoggerFactory
@@ -83,20 +91,13 @@ class Shuttle2(
                 }
             })
 
+    private val entitySets = getEntitySets(flightPlan.keys)
+    private val associationSets = getAssociations(flightPlan.keys)
 
-    private val propertyIdsCache = CacheBuilder
-            .newBuilder()
-            .maximumSize(1000)
-            .build(object : CacheLoader<FullQualifiedName, UUID>() {
-                @Throws(Exception::class)
-                override fun load(propertyTypeFqn: FullQualifiedName): UUID {
-                    return edmApi.getPropertyTypeId(
-                            propertyTypeFqn.namespace,
-                            propertyTypeFqn.name
-                    )
-                }
-            })
+    val propertiesCache = edmApi.propertyTypes.map { it.type to it }.toMap()
+    private val propertyIdsCache = propertiesCache.mapValues { it.value.id }
 
+    private val keyCache = edmApi.getEntityS
     private val keyCache = CacheBuilder
             .newBuilder()
             .maximumSize(1000)
@@ -113,6 +114,29 @@ class Shuttle2(
                         }
                     })
 
+    private fun getPropertyTypes( flights: Collection<Flight>) : Map<FullQualifiedName, PropertyType> {
+        flights.flatMap { it.entityDefinitions + it.associationDefinitions.values.map  }
+    }
+    private fun getAssociations(flights: Collection<Flight>): Map<String, EntitySet> {
+        return flights.flatMap {
+            it.associationDefinitions.map {
+                it.value.entitySetName to edmApi.getEntitySet(
+                        edmApi.getEntitySetId(it.value.entitySetName)
+                )
+            }
+        }.toMap()
+    }
+
+    private fun getEntitySets(flights: Collection<Flight>): Map<String, EntitySet> {
+        //TODO: Make this more efficient if startup is slow.
+        return flights.flatMap {
+            it.entityDefinitions.map {
+                it.value.entitySetName to edmApi.getEntitySet(
+                        edmApi.getEntitySetId(it.value.entitySetName)
+                )
+            }
+        }.toMap()
+    }
 
     @Throws(InterruptedException::class)
     fun launchPayloadFlight(flightsToPayloads: Map<Flight, Payload>) {
@@ -121,7 +145,7 @@ class Shuttle2(
         logger.info("Finished flight: {}", entry.key.name)
         flightsToPayloads.entries.forEach { entry ->
 
-            launchFlight(entry.key, entry.value)
+            launchFlight(entry.key, entry.value.payload)
 
         }
 
@@ -129,230 +153,241 @@ class Shuttle2(
 
     }
 
-    fun launchFlight(  flight:Flight, payload: Stream<Map<String, Any>>  ) {
-        logger.info("Launching flight: {}", flight.name )
-        val remaining = payload.parallel().map { row->
-
-    val aliasesToEntityKey = mutableMapOf<String, EntityKey>()
-    val entities = mutableSetOf<Entity>()
-    val associations = mutableSetOf<Association>()
-    val wasCreated = mutableMapOf<String, Boolean>()
-
-    if (flight.condition.isPresent) {
-        val out = flight.valueMapper.apply(row)
-        if (!(out as Boolean)) {
-            return@map BulkDataCreation(entities, associations)
-        }
+    /*
+     * By default, the entity id is generated as a concatenation of the entity set id and all the key property values.
+     * This is guaranteed to be unique for each unique set of primary key values. For this to work correctly it is very
+     * important that Stream remain ordered. Ordered != sequential vs parallel.
+     */
+    private fun generateDefaultEntityId(
+            key: LinkedHashSet<FullQualifiedName>,
+            properties: Map<UUID, Set<Any>>
+    ): String {
+        return ApiUtil.generateDefaultEntityId(key.stream().map { propertyIdsCache[it]!! }, properties)
     }
 
-    for (entityDefinition in flight.entities) {
+    fun launchFlight(flight: Flight, payload: Stream<Map<String, Any>>) {
+        logger.info("Launching flight: {}", flight.name)
+        val remaining = payload.parallel().map { row ->
 
-        val condition = entityDefinition.condition.map { entityDefinition.valueMapper.apply(row) }.orElse(true)
-        val entitySetId = entitySetIdCache.getUnchecked(entityDefinition.entitySetName)
-        val properties = HashMap<UUID, Set<Any>>()
+            val aliasesToEntityKey = mutableMapOf<String, EntityKey>()
+            val entities = mutableSetOf<Entity>()
+            val associations = mutableSetOf<Association>()
+            val wasCreated = mutableMapOf<String, Boolean>()
 
-        if (!seenEntitySetIds.contains(entitySetId)) {
-            storageDestByProperty.putAll(dataApi.getPropertyTypesForEntitySet(entitySetId).entries.stream()
-                                    .filter({ entry->
-                                                if (entry.value.getDatatype() == EdmPrimitiveTypeKind.Binary) {
-                                                    storageDestByProperty[entry.key] = StorageDestination.AWS
-                                                    return@dataApi.getPropertyTypesForEntitySet( entitySetId ).entrySet().stream()
-                                                            .filter false
-                                                }
-                                                true }).collect(Collectors
-                                                                        .toMap<Entry<UUID, PropertyType>, UUID, StorageDestination>({ entry-> entry.key },
-                                                                                                                                    { entry-> StorageDestination.POSTGRES })))
-            seenEntitySetIds.add(entitySetId)
-        }
-
-        for (propertyDefinition in entityDefinition.properties) {
-            val propertyValue = propertyDefinition.propertyValue.apply(row)
-            if (propertyValue != null) {
-                val stringProp = propertyValue!!.toString()
-                if (!StringUtils.isBlank(stringProp)) {
-                    val propertyId = propertyIdsCache
-                            .getUnchecked(propertyDefinition.fullQualifiedName)
-                    if (propertyValue is Iterable<*>) {
-                        properties
-                                .putAll(
-                                        ImmutableMap.of(propertyId,
-                                                        Sets.newHashSet<Any>((propertyValue as Iterable<*>)!!)))
-                    } else {
-                        (properties as java.util.Map<UUID, Set<Any>>).computeIfAbsent(propertyId) { ptId-> HashSet() }
-                                .add(propertyValue)
-                    }
+            if (flight.condition.isPresent) {
+                val out = flight.valueMapper.apply(row)
+                if (!(out as Boolean)) {
+                    return@map BulkDataCreation(entities, associations)
                 }
             }
-        }
 
-        /*
+            for (entityDefinition in flight.entities) {
+
+                val condition = entityDefinition.condition.map { entityDefinition.valueMapper.apply(row) }.orElse(true)
+                val entitySetId = entitySetIdCache.getUnchecked(entityDefinition.entitySetName)
+                val properties = HashMap<UUID, MutableSet<Any>>()
+
+                for (propertyDefinition in entityDefinition.properties) {
+                    val storageDestination = propertyDefinition.storageDestination.orElseGet { StorageDestination.REST }
+
+                    val propertyValue = propertyDefinition.propertyValue.apply(row)
+                    if (propertyValue != null) {
+                        val stringProp = propertyValue!!.toString()
+                        if (!StringUtils.isBlank(stringProp)) {
+                            val propertyId = propertyIdsCache[propertyDefinition.fullQualifiedName]!!
+                            properties.getOrPut(propertyId) { mutableSetOf() }.add(propertyValue)
+                        }
+                    }
+                }
+
+                /*
                  * For entityId generation to work correctly it is very important that Stream remain ordered. Ordered !=
                  * sequential vs parallel.
                  */
 
-        val entityId = if (entityDefinition.generator.isPresent)
-            entityDefinition.generator.get().apply(row)
-        else
-            generateDefaultEntityId(keyCache.getUnchecked(entityDefinition.entitySetName),
-                                    properties)
+                val entityId = entityDefinition.generator.map { it.apply(row) }
+                        .orElseGet {
+                            generateDefaultEntityId(
+                                    keyCache.getUnchecked(entityDefinition.entitySetName), properties
+                            )
+                        }
 
-        if (StringUtils.isNotBlank(entityId) and condition!! and (properties.size > 0)) {
-            val key = EntityKey(entitySetId, entityId)
-            aliasesToEntityKey[entityDefinition.alias] = key
-            entities.add(Entity(key, properties))
-            wasCreated[entityDefinition.alias] = true
-        } else {
-            wasCreated[entityDefinition.alias] = false
-        }
+                if (StringUtils.isNotBlank(entityId) and condition!! and (properties.size > 0)) {
+                    val key = EntityKey(entitySetId, entityId)
+                    aliasesToEntityKey[entityDefinition.alias] = key
+                    entities.add(Entity(key, properties))
+                    wasCreated[entityDefinition.alias] = true
+                } else {
+                    wasCreated[entityDefinition.alias] = false
+                }
 
-        MissionControl.signal()
-    }
-
-    for (associationDefinition in flight.associations) {
-
-        if (associationDefinition.condition.isPresent) {
-            val out = associationDefinition.valueMapper.apply(row)
-            if (!(out as Boolean)) {
-                continue
+                MissionControl.signal()
             }
-        }
 
-        if (!wasCreated.containsKey(associationDefinition.dstAlias)) {
-            com.openlattice.shuttle.logger.error(
-                    "Destination " + associationDefinition.dstAlias
-                            + " cannot be found to construct association " + associationDefinition.alias
-            )
-        }
+            for (associationDefinition in flight.associations) {
 
-        if (!wasCreated.containsKey(associationDefinition.srcAlias)) {
-            com.openlattice.shuttle.logger.error(("Source " + associationDefinition.srcAlias
-                    + " cannot be found to construct association " + associationDefinition.alias))
-        }
-        if ((wasCreated[associationDefinition.srcAlias] && wasCreated[associationDefinition.dstAlias])) {
-
-            val entitySetId = entitySetIdCache
-                    .getUnchecked(associationDefinition.entitySetName)
-            val properties = HashMap<UUID, Set<Any>>()
-
-            for (propertyDefinition in associationDefinition.properties) {
-                val propertyValue = propertyDefinition.propertyValue.apply(row)
-                if (propertyValue != null) {
-                    val propertyId = propertyIdsCache
-                            .getUnchecked(propertyDefinition.fullQualifiedName)
-                    if (propertyValue is Iterable<*>) {
-                        properties
-                                .putAll(
-                                        ImmutableMap
-                                                .of(propertyId,
-                                                    Sets.newHashSet<Any>((propertyValue as Iterable<*>)!!)))
-                    } else {
-                        (properties as java.util.Map<UUID, Set<Any>>).computeIfAbsent(propertyId) { ptId-> HashSet() }
-                                .add(propertyValue)
+                if (associationDefinition.condition.isPresent) {
+                    val out = associationDefinition.valueMapper.apply(row)
+                    if (!(out as Boolean)) {
+                        continue
                     }
                 }
+
+                if (!wasCreated.containsKey(associationDefinition.dstAlias)) {
+                    com.openlattice.shuttle.logger.error(
+                            "Destination " + associationDefinition.dstAlias
+                                    + " cannot be found to construct association " + associationDefinition.alias
+                    )
+                }
+
+                if (!wasCreated.containsKey(associationDefinition.srcAlias)) {
+                    com.openlattice.shuttle.logger.error(
+                            ("Source " + associationDefinition.srcAlias
+                                    + " cannot be found to construct association " + associationDefinition.alias)
+                    )
+                }
+                if ((wasCreated[associationDefinition.srcAlias] && wasCreated[associationDefinition.dstAlias])) {
+
+                    val entitySetId = entitySetIdCache
+                            .getUnchecked(associationDefinition.entitySetName)
+                    val properties = HashMap<UUID, Set<Any>>()
+
+                    for (propertyDefinition in associationDefinition.properties) {
+                        val propertyValue = propertyDefinition.propertyValue.apply(row)
+                        if (propertyValue != null) {
+                            val propertyId = propertyIdsCache
+                                    .getUnchecked(propertyDefinition.fullQualifiedName)
+                            if (propertyValue is Iterable<*>) {
+                                properties
+                                        .putAll(
+                                                ImmutableMap
+                                                        .of(
+                                                                propertyId,
+                                                                Sets.newHashSet<Any>((propertyValue as Iterable<*>)!!)
+                                                        )
+                                        )
+                            } else {
+                                (properties as java.util.Map<UUID, Set<Any>>).computeIfAbsent(
+                                        propertyId
+                                ) { ptId -> HashSet() }
+                                        .add(propertyValue)
+                            }
+                        }
+                    }
+
+                    val entityId = associationDefinition.generator
+                            .map { g -> g.apply(row) }
+                            .orElseGet {
+                                generateDefaultEntityId(
+                                        keyCache.getUnchecked(associationDefinition.entitySetName),
+                                        properties
+                                )
+                            }
+
+                    if (StringUtils.isNotBlank(entityId)) {
+                        val key = EntityKey(entitySetId, entityId)
+                        val src = aliasesToEntityKey[associationDefinition.srcAlias]
+                        val dst = aliasesToEntityKey[associationDefinition.dstAlias]
+                        associations.add(Association(key, src, dst, properties))
+                    }
+                }
+
+                MissionControl.signal()
             }
 
-            val entityId = associationDefinition.generator
-                    .map { g-> g.apply(row) }
-                    .orElseGet { generateDefaultEntityId(
-                            keyCache.getUnchecked(associationDefinition.entitySetName),
-                            properties) }
-
-            if (StringUtils.isNotBlank(entityId)) {
-                val key = EntityKey(entitySetId, entityId)
-                val src = aliasesToEntityKey[associationDefinition.srcAlias]
-                val dst = aliasesToEntityKey[associationDefinition.dstAlias]
-                associations.add(Association(key, src, dst, properties))
-            }
+            BulkDataCreation(
+                    entities,
+                    associations
+            )
         }
-
-        MissionControl.signal()
-    }
-
-    BulkDataCreation(entities,
-                     associations) }
                 .reduce { a: BulkDataCreation, b: BulkDataCreation ->
 
                     a.associations.addAll(b.associations)
                     a.entities.addAll(b.entities)
 
                     if (a.associations.size > 100000 || a.entities.size > 100000) {
-                        val entityKeys = a.entities.stream().map { entity-> entity.key }
+                        val entityKeys = a.entities.stream().map { entity -> entity.key }
                                 .collect<Set<EntityKey>, Any>(Collectors.toSet())
-                        entityKeys.addAll(a.associations.stream().map { association-> association.key }
+                        entityKeys.addAll(a.associations.stream().map { association -> association.key }
                                                   .collect<Set<EntityKey>, Any>(
-                                                          Collectors.toSet()))
+                                                          Collectors.toSet()
+                                                  ))
                         val bulkEntitySetIds = dataApi.getEntityKeyIds(entityKeys)
                         sendDataToDataSink(a, bulkEntitySetIds, dataApi, s3Api)
                         return@payload
                                 .parallel()
-                                .map( row -> {
+                                .map(row -> {
                             EdmApi edmApi;
 
                             try {
                                 edmApi = this.apiClient.edmApi;
-                            } catch ( ExecutionException e ) {
-                                com.openlattice.shuttle.logger.error("Failed to retrieve apis." );
-                                throw new IllegalStateException( "Unable to retrieve APIs for execution" );
+                            } catch (ExecutionException e) {
+                                com.openlattice.shuttle.logger.error("Failed to retrieve apis.");
+                                throw new IllegalStateException ("Unable to retrieve APIs for execution");
                             }
 
-                            initializeEdmCaches( edmApi );
+                            initializeEdmCaches(edmApi);
 
                             Map<String, EntityKey> aliasesToEntityKey = new HashMap<>();
-                            Set<Entity> entities = Sets.newHashSet();
-                            Set<Association> associations = Sets.newHashSet();
+                            Set<Entity> entities = Sets . newHashSet ();
+                            Set<Association> associations = Sets . newHashSet ();
                             Map<String, Boolean> wasCreated = new HashMap<>();
 
-                            if ( flight.condition.isPresent) {
-                                Object out = flight.valueMapper.apply( row );
-                                if ( !( (Boolean) out ).booleanValue() ) {
-                                    return new BulkDataCreation( entities, associations );
+                            if (flight.condition.isPresent) {
+                                Object out = flight . valueMapper . apply (row);
+                                if (!((Boolean) out).booleanValue()) {
+                                    return new BulkDataCreation (entities, associations);
                                 }
                             }
 
-                            for ( EntityDefinition entityDefinition : flight.getEntities() ) {
+                            for (EntityDefinition entityDefinition : flight.getEntities()) {
 
                             Boolean condition = true;
-                            if ( entityDefinition.condition.isPresent() ) {
-                                Object out = entityDefinition.valueMapper.apply( row );
-                                if ( !(Boolean) out ) {
+                            if (entityDefinition.condition.isPresent()) {
+                                Object out = entityDefinition . valueMapper . apply (row);
+                                if (!(Boolean) out) {
                                     condition = false;
                                 }
                             }
 
-                            UUID entitySetId = entitySetIdCache.getUnchecked( entityDefinition.getEntitySetName() );
+                            UUID entitySetId = entitySetIdCache . getUnchecked (entityDefinition.getEntitySetName());
                             Map<UUID, Set<Object>> properties = new HashMap<>();
 
-                            if ( !seenEntitySetIds.contains( entitySetId ) ) {
+                            if (!seenEntitySetIds.contains(entitySetId)) {
                                 storageDestByProperty
-                                        .putAll( dataApi.getPropertyTypesForEntitySet( entitySetId ).entrySet().stream()
-                                                         .filter( entry -> {
-                                    if ( entry.getValue().getDatatype()
-                                                    .equals( EdmPrimitiveTypeKind.Binary ) ) {
+                                        .putAll(
+                                                dataApi.getPropertyTypesForEntitySet(entitySetId).entrySet().stream()
+                                                        .filter(entry -> {
+                                    if (entry.getValue().getDatatype()
+                                                    .equals(EdmPrimitiveTypeKind.Binary)) {
                                         storageDestByProperty[entry.getKey()] = StorageDestination.AWS;
                                         return false;
                                     }
                                     return true;
-                                } ).collect( Collectors
-                                .toMap( entry -> entry.getKey(),
-                                entry -> StorageDestination.POSTGRES ) ) );
-                                seenEntitySetIds.add( entitySetId );
+                                } ).collect(Collectors
+                                .toMap(entry -> entry.getKey(),
+                                entry -> StorageDestination.POSTGRES)));
+                                seenEntitySetIds.add(entitySetId);
                             }
 
-                            for ( PropertyDefinition propertyDefinition : entityDefinition.getProperties() ) {
-                            Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
-                            if ( propertyValue != null ) {
-                                String stringProp = propertyValue.toString();
-                                if ( !StringUtils.isBlank(stringProp ) ) {
+                            for (PropertyDefinition propertyDefinition : entityDefinition.getProperties()) {
+                            Object propertyValue = propertyDefinition . getPropertyValue ().apply(row);
+                            if (propertyValue != null) {
+                                String stringProp = propertyValue . toString ();
+                                if (!StringUtils.isBlank(stringProp)) {
                                     UUID propertyId = propertyIdsCache
-                                            .getUnchecked( propertyDefinition.getFullQualifiedName() );
-                                    if ( propertyValue instanceof Iterable ) {
+                                            .getUnchecked(propertyDefinition.getFullQualifiedName());
+                                    if (propertyValue instanceof Iterable) {
                                         properties
-                                                .putAll( ImmutableMap.of(propertyId,
-                                                                         Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
+                                                .putAll(
+                                                        ImmutableMap.of(
+                                                                propertyId,
+                                                                Sets.newHashSet((Iterable<?>) propertyValue)
+                                                        )
+                                                );
                                     } else {
-                                        properties.computeIfAbsent( propertyId, ptId -> new HashSet<>() )
-                                        .add( propertyValue );
+                                        properties.computeIfAbsent(propertyId, ptId -> new HashSet<>())
+                                        .add(propertyValue);
                                     }
                                 }
                             }
@@ -363,99 +398,115 @@ class Shuttle2(
                                      * sequential vs parallel.
                                      */
 
-                            String entityId = ( entityDefinition.getGenerator().isPresent() )
-                            ? entityDefinition.getGenerator().get().apply( row )
-                            : generateDefaultEntityId( keyCache.getUnchecked( entityDefinition.getEntitySetName() ),
-                                                       properties );
+                            String entityId =(entityDefinition.getGenerator().isPresent())
+                            ? entityDefinition.getGenerator().get().apply(row)
+                            : generateDefaultEntityId(
+                                keyCache.getUnchecked(entityDefinition.getEntitySetName()),
+                                properties
+                        );
 
-                            if ( StringUtils.isNotBlank(entityId ) & condition & properties.size() > 0 ) {
-                            EntityKey key = new EntityKey( entitySetId, entityId );
-                            aliasesToEntityKey.put( entityDefinition.getAlias(), key );
-                            entities.add( new Entity( key, properties ) );
-                            wasCreated.put( entityDefinition.getAlias(), true );
+                            if (StringUtils.isNotBlank(entityId) & condition & properties.size() > 0) {
+                            EntityKey key = new EntityKey(entitySetId, entityId);
+                            aliasesToEntityKey.put(entityDefinition.getAlias(), key);
+                            entities.add(new Entity (key, properties) );
+                            wasCreated.put(entityDefinition.getAlias(), true);
                         } else {
-                            wasCreated.put( entityDefinition.getAlias(), false );
+                            wasCreated.put(entityDefinition.getAlias(), false);
                         }
 
                             MissionControl.signal();
                         }
 
-                            for ( AssociationDefinition associationDefinition : flight.getAssociations() ) {
+                            for (AssociationDefinition associationDefinition : flight.getAssociations()) {
 
-                            if ( associationDefinition.condition.isPresent() ) {
-                                Object out = associationDefinition.valueMapper.apply( row );
-                                if ( !(Boolean) out ) {
+                            if (associationDefinition.condition.isPresent()) {
+                                Object out = associationDefinition . valueMapper . apply (row);
+                                if (!(Boolean) out) {
                                     continue;
                                 }
                             }
 
-                            if ( !wasCreated.containsKey( associationDefinition.getDstAlias() ) ) {
-                                com.openlattice.shuttle.logger.error("Destination " + associationDefinition.getDstAlias()
-                                                                             + " cannot be found to construct association " + associationDefinition.getAlias() );
+                            if (!wasCreated.containsKey(associationDefinition.getDstAlias())) {
+                                com.openlattice.shuttle.logger.error(
+                                        "Destination " + associationDefinition.getDstAlias()
+                                                + " cannot be found to construct association " + associationDefinition.getAlias()
+                                );
                             }
 
-                            if ( !wasCreated.containsKey( associationDefinition.getSrcAlias() ) ) {
-                                com.openlattice.shuttle.logger.error("Source " + associationDefinition.getSrcAlias()
-                                                                             + " cannot be found to construct association " + associationDefinition.getAlias() );
+                            if (!wasCreated.containsKey(associationDefinition.getSrcAlias())) {
+                                com.openlattice.shuttle.logger.error(
+                                        "Source " + associationDefinition.getSrcAlias()
+                                                + " cannot be found to construct association " + associationDefinition.getAlias()
+                                );
                             }
-                            if ( wasCreated.get( associationDefinition.getSrcAlias() )
-                                    && wasCreated.get( associationDefinition.getDstAlias() ) ) {
+                            if (wasCreated.get(associationDefinition.getSrcAlias())
+                                    && wasCreated.get(associationDefinition.getDstAlias())) {
 
                                 UUID entitySetId = entitySetIdCache
-                                        .getUnchecked( associationDefinition.getEntitySetName() );
+                                        .getUnchecked(associationDefinition.getEntitySetName());
                                 Map<UUID, Set<Object>> properties = new HashMap<>();
 
-                                for ( PropertyDefinition propertyDefinition : associationDefinition.getProperties() ) {
-                                    Object propertyValue = propertyDefinition.getPropertyValue().apply( row );
-                                    if ( propertyValue != null ) {
+                                for (PropertyDefinition propertyDefinition : associationDefinition.getProperties()) {
+                                    Object propertyValue = propertyDefinition . getPropertyValue ().apply(row);
+                                    if (propertyValue != null) {
                                         var propertyId = propertyIdsCache
-                                                .getUnchecked( propertyDefinition.getFullQualifiedName() );
-                                        if ( propertyValue instanceof Iterable ) {
+                                                .getUnchecked(propertyDefinition.getFullQualifiedName());
+                                        if (propertyValue instanceof Iterable) {
                                             properties
-                                                    .putAll( ImmutableMap
-                                                                     .of( propertyId,
-                                                                          Sets.newHashSet( (Iterable<?>) propertyValue ) ) );
+                                                    .putAll(
+                                                            ImmutableMap
+                                                                    .of(
+                                                                            propertyId,
+                                                                            Sets.newHashSet((Iterable<?>) propertyValue)
+                                                                    )
+                                                    );
                                         } else {
-                                            properties.computeIfAbsent( propertyId, ptId -> new HashSet<>() )
-                                            .add( propertyValue );
+                                            properties.computeIfAbsent(propertyId, ptId -> new HashSet<>())
+                                            .add(propertyValue);
                                         }
                                     }
                                 }
 
-                                String entityId = associationDefinition.getGenerator()
-                                        .map( g -> g.apply( row ) )
-                                .orElseGet( () ->
+                                String entityId = associationDefinition . getGenerator ()
+                                        .map(g -> g.apply(row))
+                                .orElseGet(() ->
                                 generateDefaultEntityId(
-                                        keyCache.getUnchecked( associationDefinition.getEntitySetName() ),
-                                        properties ) );
+                                        keyCache.getUnchecked(associationDefinition.getEntitySetName()),
+                                        properties
+                                ) );
 
-                                if ( StringUtils.isNotBlank(entityId ) ) {
-                                    EntityKey key = new EntityKey( entitySetId, entityId );
-                                    EntityKey src = aliasesToEntityKey.get( associationDefinition.getSrcAlias() );
-                                    EntityKey dst = aliasesToEntityKey.get( associationDefinition.getDstAlias() );
-                                    associations.add( new Association( key, src, dst, properties ) );
+                                if (StringUtils.isNotBlank(entityId)) {
+                                    EntityKey key = new EntityKey(entitySetId, entityId);
+                                    EntityKey src = aliasesToEntityKey . get (associationDefinition.getSrcAlias());
+                                    EntityKey dst = aliasesToEntityKey . get (associationDefinition.getDstAlias());
+                                    associations.add(new Association (key, src, dst, properties) );
                                 }
                             }
 
                             MissionControl.signal();
                         }
 
-                            return new BulkDataCreation( entities,
+                            return new BulkDataCreation (entities,
                             associations );
                         } )
-                        .reduce BulkDataCreation(HashSet<Entity>(),
+                        .reduce BulkDataCreation (HashSet<Entity>(),
                         HashSet<Association>())
                     }
 
-                    a }
+                    a
+                }
 
-        remaining.ifPresent { r->
-            val entityKeys = r.entities.stream().map { entity-> entity.key }
+        remaining.ifPresent { r ->
+            val entityKeys = r.entities.stream().map { entity -> entity.key }
                     .collect<Set<EntityKey>, Any>(Collectors.toSet())
-            entityKeys.addAll(r.associations.stream().map { association-> association.key }.collect<Set<EntityKey>, Any>(
-                    Collectors.toSet()))
+            entityKeys.addAll(
+                    r.associations.stream().map { association -> association.key }.collect<Set<EntityKey>, Any>(
+                            Collectors.toSet()
+                    )
+            )
             val bulkEntitySetIds = dataApi.getEntityKeyIds(entityKeys)
-            sendDataToDataSink(r, bulkEntitySetIds, dataApi, s3Api) }
+            sendDataToDataSink(r, bulkEntitySetIds, dataApi, s3Api)
+        }
     }
 
     private fun ensureValidIntegration(flightsToPayloads: Map<Flight, Payload>) {

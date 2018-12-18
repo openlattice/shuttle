@@ -19,7 +19,6 @@
 
 package com.openlattice.shuttle;
 
-import com.amazonaws.services.ec2.model.Storage;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -55,7 +54,7 @@ public class PropertyDefinition implements Serializable {
     private final SerializableFunction<Map<String, Object>, ?> valueMapper;
     private final String                                       column;
     private final Optional<Transformations>                    transforms;
-    private final StorageDestination                           storageDestination;
+    private final Optional<StorageDestination>                 storageDestination;
 
     @JsonCreator
     public PropertyDefinition(
@@ -82,21 +81,21 @@ public class PropertyDefinition implements Serializable {
             this.valueMapper = row -> row.get( column );
         }
 
-        this.storageDestination = storageDestination.orElse( StorageDestination.REST );
+        this.storageDestination = storageDestination;
     }
 
     public PropertyDefinition(
             String propertyTypeFqn,
             String columnName,
             SerializableFunction<Map<String, Object>, ?> valueMapper ) {
-        this( propertyTypeFqn, columnName, valueMapper, StorageDestination.REST );
+        this( propertyTypeFqn, columnName, valueMapper, Optional.empty() );
     }
 
     public PropertyDefinition(
             String propertyTypeFqn,
             String columnName,
             SerializableFunction<Map<String, Object>, ?> valueMapper,
-            StorageDestination storageDestination ) {
+            Optional<StorageDestination> storageDestination ) {
         this.propertyTypeFqn = new FullQualifiedName( propertyTypeFqn );
         this.valueMapper = valueMapper;
         this.column = columnName;
@@ -113,7 +112,7 @@ public class PropertyDefinition implements Serializable {
     }
 
     @JsonProperty( Constants.STORAGE_DESTINATION )
-    public StorageDestination getStorageDestination() {
+    public Optional<StorageDestination> getStorageDestination() {
         return storageDestination;
     }
 
@@ -171,7 +170,7 @@ public class PropertyDefinition implements Serializable {
         private SerializableFunction<Map<String, Object>, ?> valueMapper;
         private Transformations                              transforms;
         private String                                       column             = "";
-        private StorageDestination                           storageDestination = StorageDestination.REST;
+        private Optional<StorageDestination>                 storageDestination = Optional.empty();
 
         public Builder(
                 FullQualifiedName propertyTypeFqn,
@@ -208,7 +207,7 @@ public class PropertyDefinition implements Serializable {
         }
 
         public Builder<T> storageDestionation( StorageDestination storageDestination ) {
-            this.storageDestination = storageDestination;
+            this.storageDestination = Optional.of( storageDestination );
             return this;
         }
 

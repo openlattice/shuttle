@@ -224,6 +224,7 @@ public class Shuttle implements Serializable {
         return s;
     }
 
+
     public void launchFlight( Flight flight, Stream<Map<String, Object>> payload ) {
         DataIntegrationApi dataApi;
         dataApi = this.apiClient.getDataIntegrationApi();
@@ -260,7 +261,7 @@ public class Shuttle implements Serializable {
 
                     if ( flight.condition.isPresent() ) {
                         Object out = flight.valueMapper.apply( row );
-                        if ( !( (Boolean) out ).booleanValue() ) {
+                        if ( !(Boolean) out ) {
                             return new BulkDataCreation( entities, associations );
                         }
                     }
