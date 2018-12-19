@@ -66,9 +66,9 @@ class RestDestination(
             DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
         }.toSet()
 
-        return (entitiesByEntitySet.map { (entitySetId, entities) ->
-            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType)
-        }.sum() + dataApi.createAssociations(entities)).toLong()
+        return entitiesByEntitySet.map { (entitySetId, entities) ->
+            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType).toLong()
+        }.sum() + dataApi.createAssociations(entities).toLong()
     }
 
     override fun accepts(): StorageDestination {

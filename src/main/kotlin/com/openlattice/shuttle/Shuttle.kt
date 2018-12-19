@@ -40,6 +40,7 @@ import com.openlattice.shuttle.ShuttleCli.Companion.ENVIRONMENT
 import com.openlattice.shuttle.ShuttleCli.Companion.FLIGHT
 import com.openlattice.shuttle.ShuttleCli.Companion.HELP
 import com.openlattice.shuttle.ShuttleCli.Companion.PASSWORD
+import com.openlattice.shuttle.ShuttleCli.Companion.S3
 import com.openlattice.shuttle.ShuttleCli.Companion.SQL
 import com.openlattice.shuttle.ShuttleCli.Companion.TOKEN
 import com.openlattice.shuttle.ShuttleCli.Companion.USER
@@ -94,13 +95,13 @@ fun main(args: Array<String>) {
         configuration = ObjectMappers.getYamlMapper()
                 .readValue(File(cl.getOptionValue(CONFIGURATION)), IntegrationConfig::class.java)
 
-        if (!cl.hasOption(DATASOURCE)){
+        if (!cl.hasOption(DATASOURCE)) {
             // check datasource presence
             System.out.println("Datasource must be specified when doing a JDBC datasource based integration.")
             ShuttleCli.printHelp()
             return
         }
-        if (!cl.hasOption(SQL)){
+        if (!cl.hasOption(SQL)) {
             // check SQL presence
             System.out.println("SQL expression must be specified when doing a JDBC datasource based integration.")
             ShuttleCli.printHelp()
@@ -153,22 +154,35 @@ fun main(args: Array<String>) {
     }
 
     createEntitySets = cl.hasOption(CREATE)
-    if( createEntitySets ) {
-        if( environment == RetrofitFactory.Environment.PRODUCTION ) {
-            throw IllegalArgumentException( "It is not allowed to automatically create entity sets on " +
-                    "${RetrofitFactory.Environment.PRODUCTION} environment" )
+    if (createEntitySets) {
+        if (environment == RetrofitFactory.Environment.PRODUCTION) {
+            throw IllegalArgumentException(
+                    "It is not allowed to automatically create entity sets on " +
+                            "${RetrofitFactory.Environment.PRODUCTION} environment"
+            )
         }
 
-        contacts = cl.getOptionValues( CREATE ).toSet()
-        if( contacts.isEmpty() ) {
-            throw IllegalArgumentException( "Can't create entity sets automatically without contacts provided" )
+        contacts = cl.getOptionValues(CREATE).toSet()
+        if (contacts.isEmpty()) {
+            throw IllegalArgumentException("Can't create entity sets automatically without contacts provided")
         }
     } else {
         contacts = setOf()
     }
 
+    val s3BucketUrl = if (cl.hasOption(S3)) {
+        val bucketCategory = cl.getOptionValue(S3)
+        check(bucketCategory.toUpperCase() in setOf("TEST", "PRODUCTION")) { "Invalid option $bucketCategory for $S3." }
+        when (bucketCategory) {
+            "TEST" -> "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
+            "PRODUCTION" -> "http://openlattice-media-storage.s3-website-us-gov-west-1.amazonaws.com"
+            else -> "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
+        }
+    } else {
+        "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
+    }
     val flightPlan = mapOf(flight to payload)
-    val missionControl = MissionControl(environment, jwt)
+    val missionControl = MissionControl(environment, jwt, s3BucketUrl)
     val shuttle = missionControl.prepare(flightPlan)
     shuttle.launch()
 }

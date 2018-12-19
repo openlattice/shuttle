@@ -42,6 +42,7 @@ class ShuttleCli {
         const val CSV = "csv"
         const val DATASOURCE = "datasource"
         const val CONFIGURATION = "config"
+        const val S3 = "s3"
 
         private val options = Options()
         private val clp = DefaultParser()
@@ -124,6 +125,13 @@ class ShuttleCli {
                 .argName("file")
                 .build()
 
+        private val s3Option = Option.builder()
+                .longOpt(S3)
+                .desc( "S3 bucket to use for storing binary. Possible values are TEST or PRODUCTION. Defaults to test bucket.")
+                .hasArg()
+                .argName("bucket")
+                .build()
+
 
         init {
             options.addOption(helpOption)
@@ -135,6 +143,7 @@ class ShuttleCli {
             options.addOption(userOption)
             options.addOption(passwordOption)
             options.addOption(createOption)
+            options.addOption(s3Option)
 
             options.addOptionGroup(
                     OptionGroup()

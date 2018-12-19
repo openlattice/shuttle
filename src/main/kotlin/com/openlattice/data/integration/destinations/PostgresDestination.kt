@@ -22,6 +22,7 @@
 package com.openlattice.data.integration.destinations
 
 import com.openlattice.data.EntityKey
+import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.*
 import java.util.*
 
@@ -30,11 +31,15 @@ import java.util.*
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 class PostgresDestination : IntegrationDestination {
-    override fun integrateEntities(data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>) {
+    override fun integrateEntities(
+            data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+    ): Long {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
-    override fun integrateAssociations(data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>) {
+    override fun integrateAssociations(
+            data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+    ): Long {
         TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 

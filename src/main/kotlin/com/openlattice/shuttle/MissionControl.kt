@@ -34,26 +34,36 @@ import com.openlattice.data.integration.destinations.S3Destination
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
+import com.openlattice.rhizome.proxy.RetrofitBuilders
 import com.openlattice.shuttle.payload.Payload
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
+import java.lang.UnsupportedOperationException
 import java.util.*
+import org.bouncycastle.crypto.tls.ConnectionEnd.client
+import com.openlattice.retrofit.RhizomeCallAdapterFactory
+import com.dataloom.mappers.ObjectMappers
+import com.openlattice.data.S3Api
+import com.openlattice.retrofit.RhizomeJacksonConverterFactory
+import com.openlattice.retrofit.RhizomeByteConverterFactory
+import retrofit2.Retrofit
 
 
 private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
 private const val AUTH0_CLIENT_DOMAIN = "openlattice.auth0.com"
 private const val AUTH0_CONNECTION = "Username-Password-Authentication"
 private const val AUTH0_SCOPES = "openid email nickname roles user_id organizations"
-private val client = MissionControl.buildClient(AUTH0_CLIENT_ID)
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class MissionControl(environment: RetrofitFactory.Environment, authToken: String ) {
+class MissionControl(environment: RetrofitFactory.Environment, authToken: String, s3BucketUrl: String) {
 
     companion object {
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
+        private val client = MissionControl.buildClient(AUTH0_CLIENT_ID)
+
         @JvmStatic
         @Throws(Auth0Exception::class)
         fun getIdToken(username: String, password: String): String {
@@ -84,6 +94,14 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
     private val dataApi = apiClient.dataApi
     private val dataIntegrationApi = apiClient.dataIntegrationApi
 
+    private val s3Api = Retrofit.Builder()
+            .baseUrl(s3BucketUrl)
+            .addConverterFactory(RhizomeByteConverterFactory())
+            .addConverterFactory(RhizomeJacksonConverterFactory(ObjectMappers.getJsonMapper()))
+            .addCallAdapterFactory(RhizomeCallAdapterFactory())
+            .client(RetrofitBuilders.okHttpClient().build())
+            .build().create(S3Api::class.java)
+
     private val entitySets = edmApi.entitySets.map { it.name to it }.toMap().toMutableMap()
     private val entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
     private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
@@ -91,7 +109,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
     private val integrationDestinations = mapOf(
             StorageDestination.REST to RestDestination(dataApi),
             StorageDestination.POSTGRES to PostgresDestination(),
-            StorageDestination.S3 to S3Destination()
+            StorageDestination.S3 to S3Destination(dataApi, s3Api, dataIntegrationApi)
     )
 
 
@@ -99,12 +117,12 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
             flightPlan: Map<Flight, Payload>,
             createEntitySets: Boolean = false,
             contacts: Set<String> = setOf()
-    ) : Shuttle2 {
+    ): Shuttle {
         ensureValidIntegration(flightPlan)
         if (createEntitySets) {
             createMissingEntitySets(flightPlan, contacts)
         }
-        return Shuttle2(
+        return Shuttle(
                 flightPlan,
                 entitySets,
                 entityTypes,
