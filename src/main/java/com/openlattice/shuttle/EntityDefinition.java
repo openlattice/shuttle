@@ -31,6 +31,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
+import com.openlattice.data.UpdateType;
 import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.conditions.ConditionValueMapper;
 import com.openlattice.shuttle.conditions.Conditions;
@@ -54,18 +55,18 @@ public class EntityDefinition implements Serializable {
 
     private static final long serialVersionUID = -3565689091187367622L;
 
-    private static final Logger logger = LoggerFactory.getLogger( EntityDefinition.class );
-
-    protected final Optional<UUID>                                              id;
-    protected final FullQualifiedName                                           entityTypeFqn;
-    protected final String                                                      entitySetName;
-    protected final List<FullQualifiedName>                                     key;
-    protected final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
-    protected final String                                                      alias;
-    public final  Optional<Conditions>                                          condition;
-    protected final Optional<SerializableFunction<Map<String, Object>, String>> generator;
-    protected final boolean                                                     useCurrentSync;
-    public final  SerializableFunction<Map<String, Object>, ?>                  valueMapper;
+    private static final Logger                                                      logger = LoggerFactory
+            .getLogger( EntityDefinition.class );
+    protected final      Optional<Conditions>                                        condition;
+    protected final      SerializableFunction<Map<String, Object>, ?>                valueMapper;
+    protected final      Optional<UUID>                                              id;
+    protected final      FullQualifiedName                                           entityTypeFqn;
+    protected final      String                                                      entitySetName;
+    protected final      List<FullQualifiedName>                                     key;
+    protected final      Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
+    protected final      String                                                      alias;
+    protected final      Optional<SerializableFunction<Map<String, Object>, String>> generator;
+    protected final      UpdateType                                                  updateType;
 
     @JsonCreator
     public EntityDefinition(
@@ -77,7 +78,7 @@ public class EntityDefinition implements Serializable {
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
-            @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
+            @JsonProperty( Constants.UPDATE_TYPES ) Optional<UpdateType> updateType ) {
 
         this.id = id;
         this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
@@ -87,7 +88,7 @@ public class EntityDefinition implements Serializable {
         this.alias = alias == null ? entitySetName : alias;
         this.generator = Optional.empty();
         this.condition = condition;
-        this.useCurrentSync = useCurrentSync == null ? false : useCurrentSync;
+        this.updateType = updateType.orElse( UpdateType.Merge );
 
         if ( condition.isPresent() ) {
             final List<Condition> internalConditions;
@@ -105,8 +106,7 @@ public class EntityDefinition implements Serializable {
             List<FullQualifiedName> key,
             Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             Optional<SerializableFunction<Map<String, Object>, String>> generator,
-            String alias,
-            Optional<Boolean> useCurrentSync
+            String alias
     ) {
         this.id = Optional.empty();
         this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
@@ -117,7 +117,6 @@ public class EntityDefinition implements Serializable {
         this.generator = generator;
         this.condition = Optional.empty();
         this.valueMapper = null;
-        this.useCurrentSync = useCurrentSync.orElse( false );
     }
 
     private EntityDefinition( EntityDefinition.Builder builder ) {
@@ -130,14 +129,14 @@ public class EntityDefinition implements Serializable {
         this.valueMapper = null;
         this.alias = builder.alias;
         this.generator = Optional.ofNullable( builder.entityIdGenerator );
-        this.useCurrentSync = builder.useCurrentSync;
     }
 
     @JsonProperty( SerializationConstants.ID_FIELD )
-    public Optional<UUID> getId() { return this.id; }
+    public Optional<UUID> getId() {
+        return this.id;
+    }
 
     @JsonIgnore
-    //    @JsonProperty( SerializationConstants.FQN )
     public FullQualifiedName getEntityTypeFqn() {
         return this.entityTypeFqn;
     }
@@ -170,11 +169,6 @@ public class EntityDefinition implements Serializable {
     @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
     public Optional<SerializableFunction<Map<String, Object>, String>> getGenerator() {
         return generator;
-    }
-
-    @JsonProperty( SerializationConstants.CURRENT_SYNC )
-    public boolean useCurrentSync() {
-        return useCurrentSync;
     }
 
     @JsonProperty( Constants.CONDITIONS )
@@ -318,13 +312,14 @@ public class EntityDefinition implements Serializable {
 
             return new PropertyDefinition.Builder<>( propertyTypeFqn, this, onBuild );
         }
+
         public Builder addProperty( String propertyString, String columnName ) {
             // This function is for when flights are defined in java
             // Useful for backwards compatibility
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             SerializableFunction<Map<String, Object>, ?> defaultMapper = row -> {
-                String value = row.get( columnName ).toString();
-                return ( value instanceof String && StringUtils.isBlank( value ) ) ? null : value;
+                Object value = row.get( columnName );
+                return ( value instanceof String && StringUtils.isBlank( (String) value ) ) ? null : value;
             };
             PropertyDefinition propertyDefinition = new PropertyDefinition(
                     propertyString, columnName, defaultMapper );
@@ -338,7 +333,7 @@ public class EntityDefinition implements Serializable {
                 Transformations transformation ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
-                    propertyString, columnName, Optional.empty(), Optional.of( transformation ) );
+                    propertyString, columnName, Optional.empty(), Optional.empty(), Optional.of( transformation ) );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }

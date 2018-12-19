@@ -22,6 +22,7 @@
 package com.openlattice.data.integration
 
 import com.openlattice.data.EntityKey
+import com.openlattice.data.UpdateType
 import java.util.*
 
 /**
@@ -29,7 +30,12 @@ import java.util.*
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 interface IntegrationDestination {
-    fun integrateEntities(data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>)
-    fun integrateAssociations(data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>)
+    fun integrateEntities(data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>)
+    fun integrateAssociations(
+            data: Set<Association>,
+            entityKeyIds: Map<EntityKey, UUID>,
+            updateTypes: Map<UUID, UpdateType>
+    )
+
     fun accepts(): StorageDestination
 }

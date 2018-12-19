@@ -22,21 +22,56 @@
 package com.openlattice.data.integration.destinations
 
 import com.openlattice.client.RetrofitFactory
-import com.openlattice.data.EntityKey
+import com.openlattice.data.*
 import com.openlattice.data.integration.*
+import com.openlattice.data.integration.Entity
+import org.jdbi.v3.core.statement.Update
 import java.util.*
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class RestDestination( environment: RetrofitFactory.Environment , authToken: String ) : IntegrationDestination {
-    override fun integrateEntities(data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+class RestDestination(
+        private val dataApi: DataApi,
+        private val updateType: UpdateType = UpdateType.Merge
+) : IntegrationDestination {
+    override fun integrateEntities(
+            data: Set<Entity>,
+            entityKeyIds: Map<EntityKey, UUID>,
+            updateTypes: Map<UUID, UpdateType>
+    ) {
+        val entitiesByEntitySet = data
+                .groupBy({ it.entitySetId }, { entityKeyIds[it.key]!! to it.details })
+                .mapValues { it.value.toMap() }
+
+        entitiesByEntitySet.forEach { entitySetId, entities ->
+            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType)
+        }
     }
 
-    override fun integrateAssociations(data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    override fun integrateAssociations(
+            data: Set<Association>,
+            entityKeyIds: Map<EntityKey, UUID>,
+            updateTypes: Map<UUID, UpdateType>
+    ) {
+
+        val entitiesByEntitySet = data
+                .groupBy({ it.key.entitySetId }, { entityKeyIds[it.key]!! to it.details })
+                .mapValues { it.value.toMap() }
+
+        val entities = data.map {
+            val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])
+            val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds[it.dst])
+            val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds[it.key])
+            DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
+        }.toSet()
+
+        entitiesByEntitySet.forEach { entitySetId, entities ->
+            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType)
+        }
+
+        dataApi.createAssociations(entities)
     }
 
     override fun accepts(): StorageDestination {

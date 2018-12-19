@@ -26,6 +26,7 @@ import com.openlattice.ApiUtil.generateDefaultEntityId
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKey
+import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.*
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
@@ -61,22 +62,20 @@ class Shuttle2(
     companion object {
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
     }
-//    private val apiClient = ApiClient(environment) { authToken }
-//    private val edmApi = apiClient.edmApi
-//    private val dataApi = apiClient.dataApi
 
-    private val storageDestByProperty = ConcurrentHashMap<StorageDestination, ConcurrentMap<UUID, StorageDestination>>()
+    private val updateTypes = getUpdateTypes()
 
+
+    fun getUpdateTypes(): Map<UUID, UpdateType> {
+        flightPlan.keys.map { it.entities.map { entitySets[it.entitySetName]!!.id to it.updateType } + it.associations.map { entitySets[it.entitySetName]!! to it.updateType } }
+    }
 
     @Throws(InterruptedException::class)
-    fun launchPayloadFlight(flightsToPayloads: Map<Flight, Payload>) {
-        ensureValidIntegration(flightsToPayloads)
-        flightsToPayloads.entries.forEach { entry ->
-
+    fun launch() {
+        flightPlan.entries.forEach { entry ->
             logger.info("Launching flight: {}", entry.key.name)
-            launchFlight(entry.key, entry.value.payload)
+            takeoff(entry.key, entry.value.payload)
             logger.info("Finished flight: {}", entry.key.name)
-
         }
     }
 
@@ -101,7 +100,7 @@ class Shuttle2(
         return ApiUtil.generateDefaultEntityId(key.stream(), properties)
     }
 
-    fun launchFlight(flight: Flight, payload: Stream<Map<String, Any>>) {
+    fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>) {
         logger.info("Launching flight: {}", flight.name)
         val remaining = payload.parallel().map { row ->
 
@@ -172,8 +171,6 @@ class Shuttle2(
                 } else {
                     wasCreated[entityDefinition.alias] = false
                 }
-
-                MissionControl.signal()
             }
 
             for (associationDefinition in flight.associations) {
@@ -269,8 +266,8 @@ class Shuttle2(
                 val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
 
                 integrationDestinations.forEach {
-                    it.value.integrateEntities(a.entities[it.key]!!, entityKeyIds)
-                    it.value.integrateAssociations(a.associations[it.key]!!, entityKeyIds)
+                    it.value.integrateEntities(a.entities[it.key]!!, entityKeyIds, updateTypes)
+                    it.value.integrateAssociations(a.associations[it.key]!!, entityKeyIds, updateTypes)
                 }
 
                 return@reduce AddressedDataHolder(mutableMapOf(), mutableMapOf())
@@ -282,8 +279,8 @@ class Shuttle2(
             val entityKeys = r.entities.flatMap { it.value.map { it.key } } + r.associations.flatMap { it.value.map { it.key } }
             val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
             integrationDestinations.forEach {
-                it.value.integrateEntities(r.entities[it.key]!!, entityKeyIds)
-                it.value.integrateAssociations(r.associations[it.key]!!, entityKeyIds)
+                it.value.integrateEntities(r.entities[it.key]!!, entityKeyIds, updateTypes)
+                it.value.integrateAssociations(r.associations[it.key]!!, entityKeyIds, updateTypes)
             }
         }
     }

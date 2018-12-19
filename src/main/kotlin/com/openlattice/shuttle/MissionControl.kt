@@ -28,6 +28,8 @@ import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.integration.IntegrationDestination
 import com.openlattice.data.integration.StorageDestination
+import com.openlattice.data.integration.destinations.PostgresDestination
+import com.openlattice.data.integration.destinations.RestDestination
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
@@ -78,12 +80,17 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
 
     private val apiClient = ApiClient(environment) { authToken }
     private val edmApi = apiClient.edmApi
+    private val dataApi = apiClient.dataApi
 
-    private val entitySets: MutableMap<String, EntitySet>,
-    private val entityTypes: MutableMap<UUID, EntityType>,
-    private val propertyTypes: MutableMap<FullQualifiedName, PropertyType>,
-    private val propertyTypesById: MutableMap<UUID, PropertyType>,
-    private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
+    private val entitySets = edmApi.entitySets.map{ it.name to it}.toMap().toMutableMap()
+    private val entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
+    private val propertyTypes = edmApi.propertyTypes.map{ it.datatype to it }.toMap().toMutableMap()
+    private val propertyTypesById = propertyTypes.values.map { it.id to it }.toMap().toMutableMap()
+    private val integrationDestinations = mapOf(
+            StorageDestination.REST to RestDestination(dataApi),
+            StorageDestination.POSTGRES to PostgresDestination(),
+            StorageDestination.S3 to PostgresDestination()
+    )
     private val logger = LoggerFactory.getLogger(MissionControl::class.java)
 
     fun startLaunch(
