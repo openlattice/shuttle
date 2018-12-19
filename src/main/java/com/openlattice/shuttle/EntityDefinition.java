@@ -35,8 +35,6 @@ import com.openlattice.data.UpdateType;
 import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.conditions.ConditionValueMapper;
 import com.openlattice.shuttle.conditions.Conditions;
-import com.openlattice.shuttle.transformations.TransformValueMapper;
-import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.Constants;
 
@@ -48,7 +46,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import transforms.ColumnTransform;
 
 @JsonInclude( value = Include.NON_EMPTY )
 public class EntityDefinition implements Serializable {
@@ -78,7 +75,7 @@ public class EntityDefinition implements Serializable {
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
-            @JsonProperty( Constants.UPDATE_TYPES ) Optional<UpdateType> updateType ) {
+            @JsonProperty( Constants.UPDATE_TYPE ) Optional<UpdateType> updateType ) {
 
         this.id = id;
         this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
@@ -106,7 +103,8 @@ public class EntityDefinition implements Serializable {
             List<FullQualifiedName> key,
             Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             Optional<SerializableFunction<Map<String, Object>, String>> generator,
-            String alias
+            String alias,
+            UpdateType updateType
     ) {
         this.id = Optional.empty();
         this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
@@ -117,6 +115,7 @@ public class EntityDefinition implements Serializable {
         this.generator = generator;
         this.condition = Optional.empty();
         this.valueMapper = null;
+        this.updateType = updateType;
     }
 
     private EntityDefinition( EntityDefinition.Builder builder ) {
@@ -129,6 +128,7 @@ public class EntityDefinition implements Serializable {
         this.valueMapper = null;
         this.alias = builder.alias;
         this.generator = Optional.ofNullable( builder.entityIdGenerator );
+        this.updateType = builder.updateType;
     }
 
     @JsonProperty( SerializationConstants.ID_FIELD )
@@ -238,7 +238,7 @@ public class EntityDefinition implements Serializable {
         private Map<FullQualifiedName, PropertyDefinition>        propertyDefinitionMap;
         private String                                            alias;
         private SerializableFunction<Map<String, Object>, String> entityIdGenerator;
-        private boolean                                           useCurrentSync;
+        private UpdateType                                        updateType;
 
         public Builder(
                 String alias,
@@ -249,7 +249,6 @@ public class EntityDefinition implements Serializable {
 
             this.alias = alias;
             this.propertyDefinitionMap = Maps.newHashMap();
-            this.useCurrentSync = false;
         }
 
         public Builder key( String... key ) {
@@ -290,8 +289,8 @@ public class EntityDefinition implements Serializable {
             return this;
         }
 
-        public Builder useCurrentSync() {
-            this.useCurrentSync = true;
+        public Builder updateType( UpdateType updateType ) {
+            this.updateType = updateType;
             return this;
         }
 

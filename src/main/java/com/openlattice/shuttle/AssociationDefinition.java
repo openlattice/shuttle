@@ -29,16 +29,18 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
-import com.openlattice.shuttle.conditions.Condition;
-import com.openlattice.shuttle.conditions.ConditionValueMapper;
+import com.openlattice.data.UpdateType;
 import com.openlattice.shuttle.conditions.Conditions;
 import com.openlattice.shuttle.transformations.Transformations;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.stream.Stream;
-
 import com.openlattice.shuttle.util.Constants;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,8 +52,8 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
     private static final Logger logger = LoggerFactory
             .getLogger( AssociationDefinition.class );
 
-    private final String                                                      srcAlias;
-    private final String                                                      dstAlias;
+    private final String srcAlias;
+    private final String dstAlias;
 
     @JsonCreator
     public AssociationDefinition(
@@ -64,27 +66,33 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.NAME ) String alias,
-            @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
-        super(Optional.empty(), entityTypeFqn, entitySetName, key, propertyDefinitions, alias, condition, useCurrentSync);
+            @JsonProperty( Constants.UPDATE_TYPE ) UpdateType updateType ) {
+        super( Optional.empty(),
+                entityTypeFqn,
+                entitySetName,
+                key,
+                propertyDefinitions,
+                alias,
+                condition,
+                Optional.of( updateType ) );
         this.srcAlias = srcAlias;
         this.dstAlias = dstAlias;
     }
 
     private AssociationDefinition( AssociationDefinition.Builder builder ) {
         super(
-                (builder.entityTypeFqn == null) ? null : builder.entityTypeFqn.getFullQualifiedNameAsString(),
+                ( builder.entityTypeFqn == null ) ? null : builder.entityTypeFqn.getFullQualifiedNameAsString(),
                 builder.entitySetName,
                 builder.key,
                 builder.propertyDefinitionMap,
                 Optional.ofNullable( builder.generator ),
                 builder.alias == null ? builder.entitySetName : builder.alias,
-                Optional.of( builder.useCurrentSync ) );
+                builder.updateType );
         this.srcAlias = builder.srcAlias;
         this.dstAlias = builder.dstAlias;
     }
 
     @JsonIgnore
-    //    @JsonProperty( SerializationConstants.FQN )
     public FullQualifiedName getEntityTypeFqn() {
         return this.entityTypeFqn;
     }
@@ -127,11 +135,6 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
     @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
     public Optional<SerializableFunction<Map<String, Object>, String>> getGenerator() {
         return generator;
-    }
-
-    @JsonProperty( SerializationConstants.CURRENT_SYNC )
-    public boolean useCurrentSync() {
-        return useCurrentSync;
     }
 
     @JsonProperty( Constants.CONDITIONS )
@@ -221,7 +224,7 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
         private List<FullQualifiedName>                           key;
         private String                                            alias;
         private Set<String>                                       entityAliases;
-        private boolean                                           useCurrentSync;
+        private UpdateType                                        updateType;
 
         public Builder(
                 String alias,
@@ -234,7 +237,6 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
             this.alias = alias;
             this.propertyDefinitionMap = Maps.newHashMap();
             this.entityAliases = entityAliases;
-            this.useCurrentSync = false;
         }
 
         public Builder key( String... key ) {
@@ -262,13 +264,11 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
         }
 
         public Builder ofType( FullQualifiedName entityTypeFqn ) {
-
             this.entityTypeFqn = entityTypeFqn;
             return this;
         }
 
         public Builder fromEntity( String srcAlias ) {
-
             checkArgument(
                     entityAliases.contains( srcAlias ),
                     "The source entity must be a previously defined alias." );
@@ -278,7 +278,6 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
         }
 
         public Builder toEntity( String dstAlias ) {
-
             checkArgument(
                     entityAliases.contains( dstAlias ),
                     "The destination entity must be a previously defined alias." );
@@ -288,14 +287,12 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
         }
 
         public Builder entityIdGenerator( SerializableFunction<Map<String, Object>, String> generator ) {
-
             this.generator = generator;
             return this;
         }
 
-        public Builder useCurrentSync() {
-
-            this.useCurrentSync = true;
+        public Builder updateType( UpdateType updateType ) {
+            this.updateType = updateType;
             return this;
         }
 
@@ -315,7 +312,7 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
                 propertyDefinitionMap.put( propertyDefFqn, propertyDefinition );
             };
 
-            return new PropertyDefinition.Builder<AssociationDefinition.Builder>( propertyTypeFqn, this, onBuild );
+            return new PropertyDefinition.Builder<>( propertyTypeFqn, this, onBuild );
         }
 
         public Builder addProperty( String propertyString, String columnName ) {
@@ -337,17 +334,13 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
                     new PropertyDefinition( propertyString,
                             columnName,
                             Optional.empty(),
-                            Optional.of( transformation ));
+                            Optional.empty(),
+                            Optional.of( transformation ) );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
 
-        public AssociationGroup.Builder ok() {
-            return endAssociation();
-        }
-
         public AssociationGroup.Builder endAssociation() {
-
             if ( this.propertyDefinitionMap.size() == 0 ) {
                 throw new IllegalStateException( "invoking addProperty() at least once is required" );
             }

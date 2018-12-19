@@ -29,8 +29,7 @@ import org.jdbi.v3.core.statement.Update
 import java.util.*
 
 /**
- *
- * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ * Writes data using the REST API
  */
 class RestDestination(
         private val dataApi: DataApi,
@@ -40,21 +39,21 @@ class RestDestination(
             data: Set<Entity>,
             entityKeyIds: Map<EntityKey, UUID>,
             updateTypes: Map<UUID, UpdateType>
-    ) {
+    ): Long {
         val entitiesByEntitySet = data
                 .groupBy({ it.entitySetId }, { entityKeyIds[it.key]!! to it.details })
                 .mapValues { it.value.toMap() }
 
-        entitiesByEntitySet.forEach { entitySetId, entities ->
+        return entitiesByEntitySet.map { (entitySetId, entities) ->
             dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType)
-        }
+        }.sum().toLong()
     }
 
     override fun integrateAssociations(
             data: Set<Association>,
             entityKeyIds: Map<EntityKey, UUID>,
             updateTypes: Map<UUID, UpdateType>
-    ) {
+    ): Long {
 
         val entitiesByEntitySet = data
                 .groupBy({ it.key.entitySetId }, { entityKeyIds[it.key]!! to it.details })
@@ -67,11 +66,9 @@ class RestDestination(
             DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
         }.toSet()
 
-        entitiesByEntitySet.forEach { entitySetId, entities ->
+        return (entitiesByEntitySet.map { (entitySetId, entities) ->
             dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType)
-        }
-
-        dataApi.createAssociations(entities)
+        }.sum() + dataApi.createAssociations(entities)).toLong()
     }
 
     override fun accepts(): StorageDestination {

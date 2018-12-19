@@ -30,6 +30,7 @@ import com.openlattice.data.integration.IntegrationDestination
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.data.integration.destinations.PostgresDestination
 import com.openlattice.data.integration.destinations.RestDestination
+import com.openlattice.data.integration.destinations.S3Destination
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
@@ -45,14 +46,14 @@ private const val AUTH0_CONNECTION = "Username-Password-Authentication"
 private const val AUTH0_SCOPES = "openid email nickname roles user_id organizations"
 private val client = MissionControl.buildClient(AUTH0_CLIENT_ID)
 
-
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class MissionControl(environment: RetrofitFactory.Environment, authToken: String, ) {
+class MissionControl(environment: RetrofitFactory.Environment, authToken: String ) {
 
     companion object {
+        private val logger = LoggerFactory.getLogger(MissionControl::class.java)
         @JvmStatic
         @Throws(Auth0Exception::class)
         fun getIdToken(username: String, password: String): String {
@@ -81,31 +82,41 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
     private val apiClient = ApiClient(environment) { authToken }
     private val edmApi = apiClient.edmApi
     private val dataApi = apiClient.dataApi
+    private val dataIntegrationApi = apiClient.dataIntegrationApi
 
-    private val entitySets = edmApi.entitySets.map{ it.name to it}.toMap().toMutableMap()
+    private val entitySets = edmApi.entitySets.map { it.name to it }.toMap().toMutableMap()
     private val entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
-    private val propertyTypes = edmApi.propertyTypes.map{ it.datatype to it }.toMap().toMutableMap()
+    private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
     private val propertyTypesById = propertyTypes.values.map { it.id to it }.toMap().toMutableMap()
     private val integrationDestinations = mapOf(
             StorageDestination.REST to RestDestination(dataApi),
             StorageDestination.POSTGRES to PostgresDestination(),
-            StorageDestination.S3 to PostgresDestination()
+            StorageDestination.S3 to S3Destination()
     )
-    private val logger = LoggerFactory.getLogger(MissionControl::class.java)
 
-    fun startLaunch(
+
+    fun prepare(
             flightPlan: Map<Flight, Payload>,
             createEntitySets: Boolean = false,
             contacts: Set<String> = setOf()
-    ) {
+    ) : Shuttle2 {
         ensureValidIntegration(flightPlan)
-        if( createEntitySets ) {
+        if (createEntitySets) {
             createMissingEntitySets(flightPlan, contacts)
         }
+        return Shuttle2(
+                flightPlan,
+                entitySets,
+                entityTypes,
+                propertyTypes,
+                propertyTypesById,
+                integrationDestinations,
+                dataIntegrationApi
+        )
     }
 
     private fun createMissingEntitySets(flightPlan: Map<Flight, Payload>, contacts: Set<String>) {
-        val requiredEntitySets = flightPlan.keys.forEach {
+        flightPlan.keys.forEach {
             it.entities.forEach { entityDefinition ->
                 if (entitySets.containsKey(entityDefinition.entitySetName)) {
 
@@ -118,9 +129,9 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
                             Optional.of(entityDefinition.getEntitySetName()),
                             contacts
                     )
-                    val entitySetId = edmApi.createEntitySets(setOf( entitySet ) )[entityDefinition.entitySetName]!!
-                    check( entitySetId == entitySet.id ) { "Submitted entity set id does not match return." }
-                    entitySets[entityDefinition.entitySetName ] = entitySet
+                    val entitySetId = edmApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
+                    check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
+                    entitySets[entityDefinition.entitySetName] = entitySet
                 }
             }
         }
@@ -150,7 +161,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
 
         val missingPropertyTypes = requiredPropertyTypes - actualPropertyTypes
         missingPropertyTypes.forEach {
-            Shuttle2.logger.error(
+            logger.error(
                     "Entity set {} does not contain any property type with FQN: {}",
                     entitySetName,
                     propertyTypesById[it]!!.type

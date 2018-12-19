@@ -35,7 +35,7 @@ public final class Constants {
     public static final String TRANSFORMS_IF_FALSE = "transformsIfFalse";
     public static final String TRANSFORMS_IF_TRUE  = "transformsIfTrue";
     public static final String TYPE                = "type";
-    public static final String UPDATE_TYPES        = "updateTypes";
+    public static final String UPDATE_TYPE         = "updateType";
     public static final String VALUE               = "value";
 
 }
