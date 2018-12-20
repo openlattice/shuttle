@@ -44,9 +44,9 @@ class RestDestination(
                 .groupBy({ it.entitySetId }, { entityKeyIds[it.key]!! to it.details })
                 .mapValues { it.value.toMap() }
 
-        return entitiesByEntitySet.map { (entitySetId, entities) ->
-            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType)
-        }.sum().toLong()
+        return entitiesByEntitySet.entries.parallelStream().mapToLong { (entitySetId, entities) ->
+            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType).toLong()
+        }.sum()
     }
 
     override fun integrateAssociations(

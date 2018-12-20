@@ -183,7 +183,7 @@ fun main(args: Array<String>) {
     }
     val flightPlan = mapOf(flight to payload)
     val missionControl = MissionControl(environment, jwt, s3BucketUrl)
-    val shuttle = missionControl.prepare(flightPlan)
+    val shuttle = missionControl.prepare(flightPlan, createEntitySets, contacts)
     shuttle.launch()
 }
 
@@ -247,7 +247,6 @@ class Shuttle(
     }
 
     private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>): Long {
-        logger.info("Launching flight: {}", flight.name)
         val sw = Stopwatch.createStarted()
         val remaining = payload.parallel().map { row ->
 
@@ -412,17 +411,21 @@ class Shuttle(
             if (a.associations.values.any { it.size > UPLOAD_BATCH_SIZE } ||
                     a.entities.values.any { it.size > UPLOAD_BATCH_SIZE }) {
                 val entityKeys = (a.entities.flatMap { it.value.map { it.key } }
-                        + a.associations.flatMap { it.value.map { it.key } })
+                        + a.associations.flatMap { it.value.map { it.key } }).toSet()
                 val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
                 val adh = AddressedDataHolder(mutableMapOf(), mutableMapOf())
 
                 integrationDestinations.forEach {
-                    adh.integratedEntities
-                            .addAndGet(it.value.integrateEntities(a.entities[it.key]!!, entityKeyIds, updateTypes))
-                    adh.integratedEdges
-                            .addAndGet(
-                                    it.value.integrateAssociations(a.associations[it.key]!!, entityKeyIds, updateTypes)
-                            )
+                    if (a.entities.containsKey(it.key)) {
+                        adh.integratedEntities
+                                .addAndGet(it.value.integrateEntities(a.entities[it.key]!!, entityKeyIds, updateTypes))
+                    }
+                    if (a.associations.containsKey(it.key)) {
+                        adh.integratedEdges
+                                .addAndGet(
+                                        it.value.integrateAssociations(a.associations[it.key]!!, entityKeyIds, updateTypes)
+                                )
+                    }
                 }
 
                 return@reduce adh
@@ -431,23 +434,29 @@ class Shuttle(
         }
 
         val (integratedEntities, integratedEdges) = remaining.map { r ->
-            val entityKeys = r.entities.flatMap { it.value.map { it.key } } + r.associations.flatMap { it.value.map { it.key } }
+            val entityKeys = (r.entities.flatMap { it.value.map { it.key } } + r.associations.flatMap { it.value.map { it.key } }).toSet()
             val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
-            integrationDestinations.forEach {
-                r.integratedEntities
-                        .addAndGet(it.value.integrateEntities(r.entities[it.key]!!, entityKeyIds, updateTypes))
-                r.integratedEdges
-                        .addAndGet(
-                                it.value.integrateAssociations(r.associations[it.key]!!, entityKeyIds, updateTypes)
-                        )
-            }
+            integrationDestinations
+                    .forEach {
+                        if (r.entities.containsKey(it.key)) {
+                            r.integratedEntities
+                                    .addAndGet(it.value.integrateEntities(r.entities[it.key]!!, entityKeyIds, updateTypes))
+                        }
+                        if (r.associations.containsKey(it.key)) {
+                            r.integratedEdges
+                                    .addAndGet(
+                                            it.value.integrateAssociations(r.associations[it.key]!!, entityKeyIds, updateTypes)
+                                    )
+                        }
+                    }
             r.integratedEntities.get() to r.integratedEdges.get()
         }.orElse(0L to 0L)
         logger.info(
-                "Integrated {} entities and {} edges in {} ms",
+                "Integrated {} entities and {} edges in {} ms for flight {}",
                 integratedEntities,
                 integratedEdges,
-                sw.elapsed(TimeUnit.MILLISECONDS)
+                sw.elapsed(TimeUnit.MILLISECONDS),
+                flight.name
         )
         return integratedEntities + integratedEdges
     }

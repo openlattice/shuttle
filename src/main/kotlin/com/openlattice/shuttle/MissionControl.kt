@@ -118,10 +118,10 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
             createEntitySets: Boolean = false,
             contacts: Set<String> = setOf()
     ): Shuttle {
-        ensureValidIntegration(flightPlan)
         if (createEntitySets) {
             createMissingEntitySets(flightPlan, contacts)
         }
+        ensureValidIntegration(flightPlan)
         return Shuttle(
                 flightPlan,
                 entitySets,
@@ -139,9 +139,10 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
                 if (entitySets.containsKey(entityDefinition.entitySetName)) {
 
                 } else {
+                    val fqn = entityDefinition.getEntityTypeFqn()
                     val entitySet = EntitySet(
                             entityDefinition.getId().orElse(UUID.randomUUID()),
-                            edmApi.getEntityTypeId(entityDefinition.getEntityTypeFqn()),
+                            edmApi.getEntityTypeId(fqn.namespace, fqn.name),
                             entityDefinition.getEntitySetName(),
                             entityDefinition.getEntitySetName(),
                             Optional.of(entityDefinition.getEntitySetName()),
@@ -150,6 +151,25 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
                     val entitySetId = edmApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[entityDefinition.entitySetName] = entitySet
+                }
+            }
+            it.associations.forEach { associationDefinition ->
+                if (entitySets.containsKey(associationDefinition.entitySetName)) {
+
+                } else {
+                    val fqn = associationDefinition.getEntityTypeFqn()
+                    val entityTypeId = edmApi.getEntityTypeId(fqn.namespace, fqn.name)
+                    val entitySet = EntitySet(
+                            associationDefinition.getId().orElse(UUID.randomUUID()),
+                            entityTypeId,
+                            associationDefinition.getEntitySetName(),
+                            associationDefinition.getEntitySetName(),
+                            Optional.of(associationDefinition.getEntitySetName()),
+                            contacts
+                    )
+                    val entitySetId = edmApi.createEntitySets(setOf(entitySet))[associationDefinition.entitySetName]!!
+                    check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
+                    entitySets[associationDefinition.entitySetName] = entitySet
                 }
             }
         }
