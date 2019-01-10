@@ -170,7 +170,6 @@ public class ShuttleTest extends ShuttleTestBootstrap {
     @Test(
             expected = IllegalStateException.class )
     public void testNoEntities() {
-
         Flight flight = Flight.newFlight().done();
     }
 

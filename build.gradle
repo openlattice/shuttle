@@ -22,6 +22,10 @@ distTar {
     archiveName "shuttle.tgz"
 }
 
+jacoco {
+    toolVersion = "0.8.2"
+}
+
 mainClassName = "com.openlattice.shuttle.ShuttleKt"
 applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server"]
 sourceCompatibility = JavaVersion.VERSION_1_10
