@@ -55,16 +55,15 @@ public class EntityDefinition implements Serializable {
     private static final long serialVersionUID = -3565689091187367622L;
 
     private static final Logger logger = LoggerFactory.getLogger( EntityDefinition.class );
-
+    public final  Optional<Conditions>                                        condition;
+    public final  SerializableFunction<Map<String, String>, ?>                valueMapper;
     private final FullQualifiedName                                           entityTypeFqn;
     private final String                                                      entitySetName;
     private final List<FullQualifiedName>                                     key;
     private final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
     private final String                                                      alias;
-    public final  Optional<Conditions>                                        condition;
     private final Optional<SerializableFunction<Map<String, String>, String>> generator;
     private final boolean                                                     useCurrentSync;
-    public final  SerializableFunction<Map<String, String>, ?>                valueMapper;
 
     @JsonCreator
     public EntityDefinition(

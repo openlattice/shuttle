@@ -49,6 +49,7 @@ import com.openlattice.shuttle.transformations.Transformations;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -84,6 +85,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
 
     private static EntityType CYPHERS_ET = TestDataFactory
             .childEntityTypeWithPropertyType( null,
+                    Optional.empty(),
                     PTS.stream().map( pt -> pt.getId() ).collect( Collectors.toSet() ),
                     null,
                     ALGO_PT );
