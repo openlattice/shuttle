@@ -52,18 +52,18 @@ public class EntityDefinition implements Serializable {
 
     private static final long serialVersionUID = -3565689091187367622L;
 
-    private static final Logger                                                      logger = LoggerFactory
-            .getLogger( EntityDefinition.class );
-    protected final      Optional<Conditions>                                        condition;
-    protected final      SerializableFunction<Map<String, Object>, ?>                valueMapper;
-    protected final      Optional<UUID>                                              id;
-    protected final      FullQualifiedName                                           entityTypeFqn;
-    protected final      String                                                      entitySetName;
-    protected final      List<FullQualifiedName>                                     key;
-    protected final      Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
-    protected final      String                                                      alias;
-    protected final      Optional<SerializableFunction<Map<String, Object>, String>> generator;
-    protected final      UpdateType                                                  updateType;
+    private static final Logger logger = LoggerFactory.getLogger( EntityDefinition.class );
+
+    protected final Optional<Conditions>                                        condition;
+    protected final SerializableFunction<Map<String, Object>, ?>                valueMapper;
+    protected final Optional<UUID>                                              id;
+    protected final FullQualifiedName                                           entityTypeFqn;
+    protected final String                                                      entitySetName;
+    protected final List<FullQualifiedName>                                     key;
+    protected final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
+    protected final String                                                      alias;
+    protected final Optional<SerializableFunction<Map<String, Object>, String>> generator;
+    protected final UpdateType                                                  updateType;
 
     @JsonCreator
     public EntityDefinition(
