@@ -73,6 +73,10 @@ dependencies {
 //    compile 'com.auth0:java-jwt:3.2.0'
 
     compile 'commons-cli:commons-cli:1.4'
+    compile 'javax.xml.bind:jaxb-api:2.2.11'
+    compile 'com.sun.xml.bind:jaxb-core:2.2.11'
+    compile 'com.sun.xml.bind:jaxb-impl:2.2.11'
+    compile 'javax.activation:activation:1.1.1'
 
     if (project.hasProperty('developmentMode') && project.developmentMode) {
         logger.quiet(project.name + " using project dependencies.")
