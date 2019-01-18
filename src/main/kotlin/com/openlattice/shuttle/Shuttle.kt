@@ -53,8 +53,10 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.lang.System.exit
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
 import java.util.stream.Stream
 
 /**
@@ -68,7 +70,6 @@ fun main(args: Array<String>) {
 
     val configuration: IntegrationConfig
     val environment: RetrofitFactory.Environment
-    val jwt: String
     val cl = ShuttleCli.parseCommandLine(args)
     val payload: Payload
     val flight: Flight
@@ -91,66 +92,85 @@ fun main(args: Array<String>) {
     }
 
     //You can have a configuration without any JDBC datasrouces
-    if (cl.hasOption(CONFIGURATION)) {
-        configuration = ObjectMappers.getYamlMapper()
-                .readValue(File(cl.getOptionValue(CONFIGURATION)), IntegrationConfig::class.java)
+    when {
+        cl.hasOption(CONFIGURATION) -> {
+            configuration = ObjectMappers.getYamlMapper()
+                    .readValue(File(cl.getOptionValue(CONFIGURATION)), IntegrationConfig::class.java)
 
-        if (!cl.hasOption(DATASOURCE)) {
-            // check datasource presence
-            System.out.println("Datasource must be specified when doing a JDBC datasource based integration.")
+            if (!cl.hasOption(DATASOURCE)) {
+                // check datasource presence
+                System.out.println("Datasource must be specified when doing a JDBC datasource based integration.")
+                ShuttleCli.printHelp()
+                return
+            }
+            if (!cl.hasOption(SQL)) {
+                // check SQL presence
+                System.out.println("SQL expression must be specified when doing a JDBC datasource based integration.")
+                ShuttleCli.printHelp()
+                return
+            }
+            if (cl.hasOption(CSV)) {
+                // check csv ABsence
+                System.out.println("Cannot specify CSV datasource and JDBC datasource simultaneously.")
+                ShuttleCli.printHelp()
+                return
+            }
+
+            // get JDBC payload
+            val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
+            val sql = cl.getOptionValue(SQL)
+            payload = JdbcPayload(hds, sql)
+
+        }
+        cl.hasOption(CSV) -> // get csv payload
+            payload = SimplePayload(cl.getOptionValue(CSV))
+        else -> {
+            System.err.println("At least one valid data source must be specified.")
             ShuttleCli.printHelp()
+            exit(1)
             return
         }
-        if (!cl.hasOption(SQL)) {
-            // check SQL presence
-            System.out.println("SQL expression must be specified when doing a JDBC datasource based integration.")
-            ShuttleCli.printHelp()
-            return
-        }
-        if (cl.hasOption(CSV)) {
-            // check csv ABsence
-            System.out.println("Cannot specify CSV datasource and JDBC datasource simultaneously.")
-            ShuttleCli.printHelp()
-            return
-        }
-
-        // get JDBC payload
-        val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
-        val sql = cl.getOptionValue(SQL)
-        payload = JdbcPayload(hds, sql)
-
-    } else if (cl.hasOption(CSV)) {
-
-        // get csv payload
-        payload = SimplePayload(cl.getOptionValue(CSV))
-
-    } else {
-        System.err.println("At least one valid data source must be specified.")
-        ShuttleCli.printHelp()
-        return
     }
 
 
-    if (cl.hasOption(ENVIRONMENT)) {
-        environment = RetrofitFactory.Environment.valueOf(cl.getOptionValue(ENVIRONMENT).toUpperCase())
+    environment = if (cl.hasOption(ENVIRONMENT)) {
+        RetrofitFactory.Environment.valueOf(cl.getOptionValue(ENVIRONMENT).toUpperCase())
     } else {
-        environment = RetrofitFactory.Environment.PRODUCTION
+        RetrofitFactory.Environment.PRODUCTION
+    }
+
+
+    val s3BucketUrl = if (cl.hasOption(S3)) {
+        val bucketCategory = cl.getOptionValue(S3)
+        check(bucketCategory.toUpperCase() in setOf("TEST", "PRODUCTION")) { "Invalid option $bucketCategory for $S3." }
+        when (bucketCategory) {
+            "TEST" -> "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
+            "PRODUCTION" -> "http://openlattice-media-storage.s3-website-us-gov-west-1.amazonaws.com"
+            else -> "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
+        }
+    } else {
+        "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
     }
 
     //TODO: Use the right method to select the JWT token for the appropriate environment.
 
-    if (cl.hasOption(TOKEN)) {
-        Preconditions.checkArgument(!cl.hasOption(PASSWORD))
-        jwt = cl.getOptionValue(TOKEN)
-    } else if (cl.hasOption(USER)) {
-        Preconditions.checkArgument(cl.hasOption(PASSWORD))
-        val user = cl.getOptionValue(USER)
-        val password = cl.getOptionValue(PASSWORD)
-        jwt = MissionControl.getIdToken(user, password)
-    } else {
-        System.err.println("User or token must be provided for authentication.")
-        ShuttleCli.printHelp()
-        return
+    val missionControl = when {
+        cl.hasOption(TOKEN) -> {
+            Preconditions.checkArgument(!cl.hasOption(PASSWORD))
+            val jwt = cl.getOptionValue(TOKEN)
+            MissionControl(environment, Supplier{ jwt } , s3BucketUrl)
+        }
+        cl.hasOption(USER) -> {
+            Preconditions.checkArgument(cl.hasOption(PASSWORD))
+            val user = cl.getOptionValue(USER)
+            val password = cl.getOptionValue(PASSWORD)
+            MissionControl(environment, user, password, s3BucketUrl )
+        }
+        else -> {
+            System.err.println("User or token must be provided for authentication.")
+            ShuttleCli.printHelp()
+            return
+        }
     }
 
     createEntitySets = cl.hasOption(CREATE)
@@ -170,19 +190,9 @@ fun main(args: Array<String>) {
         contacts = setOf()
     }
 
-    val s3BucketUrl = if (cl.hasOption(S3)) {
-        val bucketCategory = cl.getOptionValue(S3)
-        check(bucketCategory.toUpperCase() in setOf("TEST", "PRODUCTION")) { "Invalid option $bucketCategory for $S3." }
-        when (bucketCategory) {
-            "TEST" -> "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
-            "PRODUCTION" -> "http://openlattice-media-storage.s3-website-us-gov-west-1.amazonaws.com"
-            else -> "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
-        }
-    } else {
-        "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
-    }
+
     val flightPlan = mapOf(flight to payload)
-    val missionControl = MissionControl(environment, jwt, s3BucketUrl)
+
     val shuttle = missionControl.prepare(flightPlan, createEntitySets, contacts)
     shuttle.launch()
 }
@@ -201,7 +211,7 @@ class Shuttle(
         private val propertyTypes: Map<FullQualifiedName, PropertyType>,
         private val propertyTypesById: Map<UUID, PropertyType>,
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
-        private val dataIntegrationApi: DataIntegrationApi
+        private val dataIntegrationApi: Supplier<DataIntegrationApi>
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
@@ -410,9 +420,9 @@ class Shuttle(
 
             if (a.associations.values.any { it.size > UPLOAD_BATCH_SIZE } ||
                     a.entities.values.any { it.size > UPLOAD_BATCH_SIZE }) {
-                val entityKeys = (a.entities.flatMap { it.value.map { it.key } }
+                val entityKeys = (a.entities.flatMap { e -> e.value.map { it.key } }
                         + a.associations.flatMap { it.value.map { it.key } }).toSet()
-                val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
+                val entityKeyIds = entityKeys.zip(dataIntegrationApi.get().getEntityKeyIds(entityKeys)).toMap()
                 val adh = AddressedDataHolder(mutableMapOf(), mutableMapOf())
 
                 integrationDestinations.forEach {
@@ -423,7 +433,11 @@ class Shuttle(
                     if (a.associations.containsKey(it.key)) {
                         adh.integratedEdges
                                 .addAndGet(
-                                        it.value.integrateAssociations(a.associations[it.key]!!, entityKeyIds, updateTypes)
+                                        it.value.integrateAssociations(
+                                                a.associations[it.key]!!,
+                                                entityKeyIds,
+                                                updateTypes
+                                        )
                                 )
                     }
                 }
@@ -435,17 +449,21 @@ class Shuttle(
 
         val (integratedEntities, integratedEdges) = remaining.map { r ->
             val entityKeys = (r.entities.flatMap { it.value.map { it.key } } + r.associations.flatMap { it.value.map { it.key } }).toSet()
-            val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
+            val entityKeyIds = entityKeys.zip(dataIntegrationApi.get().getEntityKeyIds(entityKeys)).toMap()
             integrationDestinations
                     .forEach {
                         if (r.entities.containsKey(it.key)) {
                             r.integratedEntities
-                                    .addAndGet(it.value.integrateEntities(r.entities[it.key]!!, entityKeyIds, updateTypes))
+                                    .addAndGet(
+                                            it.value.integrateEntities(r.entities[it.key]!!, entityKeyIds, updateTypes)
+                                    )
                         }
                         if (r.associations.containsKey(it.key)) {
                             r.integratedEdges
                                     .addAndGet(
-                                            it.value.integrateAssociations(r.associations[it.key]!!, entityKeyIds, updateTypes)
+                                            it.value.integrateAssociations(
+                                                    r.associations[it.key]!!, entityKeyIds, updateTypes
+                                            )
                                     )
                         }
                     }

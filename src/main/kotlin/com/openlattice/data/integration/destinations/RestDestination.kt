@@ -27,12 +27,13 @@ import com.openlattice.data.integration.*
 import com.openlattice.data.integration.Entity
 import org.jdbi.v3.core.statement.Update
 import java.util.*
+import java.util.function.Supplier
 
 /**
  * Writes data using the REST API
  */
 class RestDestination(
-        private val dataApi: DataApi,
+        private val dataApi: Supplier<DataApi>,
         private val updateType: UpdateType = UpdateType.Merge
 ) : IntegrationDestination {
     override fun integrateEntities(
@@ -45,7 +46,7 @@ class RestDestination(
                 .mapValues { it.value.toMap() }
 
         return entitiesByEntitySet.entries.parallelStream().mapToLong { (entitySetId, entities) ->
-            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType).toLong()
+            dataApi.get().updateEntitiesInEntitySet(entitySetId, entities, updateType).toLong()
         }.sum()
     }
 
@@ -67,8 +68,8 @@ class RestDestination(
         }.toSet()
 
         return entitiesByEntitySet.map { (entitySetId, entities) ->
-            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType).toLong()
-        }.sum() + dataApi.createAssociations(entities).toLong()
+            dataApi.get().updateEntitiesInEntitySet(entitySetId, entities, updateType).toLong()
+        }.sum() + dataApi.get().createAssociations(entities).toLong()
     }
 
     override fun accepts(): StorageDestination {

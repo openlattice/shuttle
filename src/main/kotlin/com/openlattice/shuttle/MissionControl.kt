@@ -43,10 +43,13 @@ import java.util.*
 import org.bouncycastle.crypto.tls.ConnectionEnd.client
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.dataloom.mappers.ObjectMappers
+import com.google.common.base.Suppliers
 import com.openlattice.data.S3Api
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.retrofit.RhizomeByteConverterFactory
 import retrofit2.Retrofit
+import java.util.concurrent.TimeUnit
+import java.util.function.Supplier
 
 
 private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
@@ -58,7 +61,11 @@ private const val AUTH0_SCOPES = "openid email nickname roles user_id organizati
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class MissionControl(environment: RetrofitFactory.Environment, authToken: String, s3BucketUrl: String) {
+class MissionControl(environment: RetrofitFactory.Environment, authToken: Supplier<String>, s3BucketUrl: String) {
+
+    constructor(
+            environment: RetrofitFactory.Environment, username: String, password: String, s3BucketUrl: String
+    ) : this(environment, Supplier { getIdToken(username, password) }, s3BucketUrl)
 
     companion object {
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
@@ -89,10 +96,11 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
         }
     }
 
-    private val apiClient = ApiClient(environment) { authToken }
-    private val edmApi = apiClient.edmApi
-    private val dataApi = apiClient.dataApi
-    private val dataIntegrationApi = apiClient.dataIntegrationApi
+    private val apiClient = Suppliers
+            .memoizeWithExpiration({ ApiClient(environment) { authToken.get() } }, 1, TimeUnit.HOURS)
+    private val edmApi = Supplier { apiClient.get().edmApi }
+    private val dataApi = Supplier { apiClient.get().dataApi }
+    private val dataIntegrationApi = Supplier { apiClient.get().dataIntegrationApi }
 
     private val s3Api = Retrofit.Builder()
             .baseUrl(s3BucketUrl)
@@ -102,9 +110,9 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
             .client(RetrofitBuilders.okHttpClient().build())
             .build().create(S3Api::class.java)
 
-    private val entitySets = edmApi.entitySets.map { it.name to it }.toMap().toMutableMap()
-    private val entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
-    private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
+    private val entitySets = edmApi.get().entitySets.map { it.name to it }.toMap().toMutableMap()
+    private val entityTypes = edmApi.get().entityTypes.map { it.id to it }.toMap().toMutableMap()
+    private val propertyTypes = edmApi.get().propertyTypes.map { it.type to it }.toMap().toMutableMap()
     private val propertyTypesById = propertyTypes.values.map { it.id to it }.toMap().toMutableMap()
     private val integrationDestinations = mapOf(
             StorageDestination.REST to RestDestination(dataApi),
@@ -142,13 +150,13 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
                     val fqn = entityDefinition.getEntityTypeFqn()
                     val entitySet = EntitySet(
                             entityDefinition.getId().orElse(UUID.randomUUID()),
-                            edmApi.getEntityTypeId(fqn.namespace, fqn.name),
+                            edmApi.get().getEntityTypeId(fqn.namespace, fqn.name),
                             entityDefinition.getEntitySetName(),
                             entityDefinition.getEntitySetName(),
                             Optional.of(entityDefinition.getEntitySetName()),
                             contacts
                     )
-                    val entitySetId = edmApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
+                    val entitySetId = edmApi.get().createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[entityDefinition.entitySetName] = entitySet
                 }
@@ -158,7 +166,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
 
                 } else {
                     val fqn = associationDefinition.getEntityTypeFqn()
-                    val entityTypeId = edmApi.getEntityTypeId(fqn.namespace, fqn.name)
+                    val entityTypeId = edmApi.get().getEntityTypeId(fqn.namespace, fqn.name)
                     val entitySet = EntitySet(
                             associationDefinition.getId().orElse(UUID.randomUUID()),
                             entityTypeId,
@@ -167,7 +175,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: String
                             Optional.of(associationDefinition.getEntitySetName()),
                             contacts
                     )
-                    val entitySetId = edmApi.createEntitySets(setOf(entitySet))[associationDefinition.entitySetName]!!
+                    val entitySetId = edmApi.get().createEntitySets(setOf(entitySet))[associationDefinition.entitySetName]!!
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[associationDefinition.entitySetName] = entitySet
                 }

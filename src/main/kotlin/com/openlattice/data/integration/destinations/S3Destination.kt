@@ -27,15 +27,16 @@ import com.openlattice.data.integration.Entity
 import com.openlattice.data.util.PostgresDataHasher
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import java.util.*
+import java.util.function.Supplier
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 class S3Destination(
-        private val dataApi: DataApi,
+        private val dataApi: Supplier<DataApi>,
         private val s3Api: S3Api,
-        private val dataIntegrationApi: DataIntegrationApi
+        private val dataIntegrationApi: Supplier<DataIntegrationApi>
 ) : IntegrationDestination {
     override fun integrateEntities(
             data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
@@ -54,7 +55,7 @@ class S3Destination(
             }
         }.unzip()
 
-        dataIntegrationApi
+        dataIntegrationApi.get()
                 .generatePresignedUrls(s3entities)
                 .zip(values)
                 .parallelStream()
@@ -80,7 +81,7 @@ class S3Destination(
             }
         }.unzip()
 
-        dataIntegrationApi
+        dataIntegrationApi.get()
                 .generatePresignedUrls(s3entities)
                 .zip(values)
                 .parallelStream()
@@ -92,7 +93,7 @@ class S3Destination(
             val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds[it.key])
             DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
         }.toSet()
-        return values.size.toLong() + dataApi.createAssociations(entities).toLong()
+        return values.size.toLong() + dataApi.get().createAssociations(entities).toLong()
     }
 
     override fun accepts(): StorageDestination {
