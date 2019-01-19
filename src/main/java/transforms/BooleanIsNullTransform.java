@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BooleanIsNullTransform extends BooleanTransformation {
+public class BooleanIsNullTransform<I extends Object> extends BooleanTransformation<I> {
     private final String column;
 
     /**
@@ -46,7 +46,7 @@ public class BooleanIsNullTransform extends BooleanTransformation {
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
       
-        return StringUtils.isBlank( row.get( column ).toString() );
+        return row.get( column ) == null ;
     }
 }
 
