@@ -6,7 +6,6 @@ import com.openlattice.shuttle.dates.JavaDateTimeHelper;
 import com.openlattice.shuttle.dates.TimeZones;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
 public class TimeTransform extends Transformation<String> {
     private final String[] pattern;
@@ -28,9 +27,6 @@ public class TimeTransform extends Transformation<String> {
 
     @Override
     public Object applyValue( String o ) {
-        if ( StringUtils.isBlank( o ) | o == null ) {
-            return null;
-        }
         final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
                 pattern );
         return dtHelper.parseTime( o );

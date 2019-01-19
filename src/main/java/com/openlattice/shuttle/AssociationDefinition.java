@@ -29,38 +29,31 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
-import com.openlattice.shuttle.conditions.Condition;
-import com.openlattice.shuttle.conditions.ConditionValueMapper;
+import com.openlattice.data.UpdateType;
 import com.openlattice.shuttle.conditions.Conditions;
 import com.openlattice.shuttle.transformations.Transformations;
-
-import java.io.Serializable;
-import java.util.*;
-import java.util.stream.Stream;
-
 import com.openlattice.shuttle.util.Constants;
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AssociationDefinition implements Serializable {
+public class AssociationDefinition extends EntityDefinition implements Serializable {
 
     private static final long serialVersionUID = -6632902802080642647L;
 
     private static final Logger logger = LoggerFactory
             .getLogger( AssociationDefinition.class );
 
-    private final FullQualifiedName                                           entityTypeFqn;
-    private final String                                                      entitySetName;
-    private final List<FullQualifiedName>                                     key;
-    private final String                                                      srcAlias;
-    private final String                                                      dstAlias;
-    private final Map<FullQualifiedName, PropertyDefinition>                  propertyDefinitions;
-    private final String                                                      alias;
-    public final  Optional<Conditions>                                        condition;
-    private final Optional<SerializableFunction<Map<String, String>, String>> generator;
-    private final boolean                                                     useCurrentSync;
-    public final  SerializableFunction<Map<String, String>, ?>                valueMapper;
+    private final String srcAlias;
+    private final String dstAlias;
 
     @JsonCreator
     public AssociationDefinition(
@@ -73,46 +66,33 @@ public class AssociationDefinition implements Serializable {
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.NAME ) String alias,
-            @JsonProperty( SerializationConstants.CURRENT_SYNC ) Boolean useCurrentSync ) {
-
-        this.entityTypeFqn = entityTypeFqn == null ? null : new FullQualifiedName( entityTypeFqn );
-        this.entitySetName = entitySetName;
+            @JsonProperty( Constants.UPDATE_TYPE ) Optional<UpdateType> updateType ) {
+        super( Optional.empty(),
+                entityTypeFqn,
+                entitySetName,
+                key,
+                propertyDefinitions,
+                alias,
+                condition,
+                updateType );
         this.srcAlias = srcAlias;
         this.dstAlias = dstAlias;
-        this.propertyDefinitions = propertyDefinitions;
-        this.key = key;
-        this.alias = alias == null ? entitySetName : alias;
-        this.generator = Optional.empty();
-        this.condition = condition;
-        this.useCurrentSync = useCurrentSync == null ? false : useCurrentSync;
-
-        if ( condition.isPresent() ) {
-            final List<Condition> internalConditions;
-            internalConditions = new ArrayList<>( this.condition.get().size() + 1 );
-            condition.get().forEach( internalConditions::add );
-            this.valueMapper = new ConditionValueMapper( internalConditions );
-        } else {
-            this.valueMapper = null;
-        }
     }
 
     private AssociationDefinition( AssociationDefinition.Builder builder ) {
-
-        this.entityTypeFqn = builder.entityTypeFqn;
-        this.entitySetName = builder.entitySetName;
+        super(
+                ( builder.entityTypeFqn == null ) ? null : builder.entityTypeFqn.getFullQualifiedNameAsString(),
+                builder.entitySetName,
+                builder.key,
+                builder.propertyDefinitionMap,
+                Optional.ofNullable( builder.generator ),
+                builder.alias == null ? builder.entitySetName : builder.alias,
+                builder.updateType );
         this.srcAlias = builder.srcAlias;
         this.dstAlias = builder.dstAlias;
-        this.propertyDefinitions = builder.propertyDefinitionMap;
-        this.key = builder.key;
-        this.alias = builder.alias;
-        this.generator = Optional.ofNullable( builder.generator );
-        this.condition = Optional.empty();
-        this.valueMapper = null;
-        this.useCurrentSync = builder.useCurrentSync;
     }
 
     @JsonIgnore
-    //    @JsonProperty( SerializationConstants.FQN )
     public FullQualifiedName getEntityTypeFqn() {
         return this.entityTypeFqn;
     }
@@ -153,13 +133,8 @@ public class AssociationDefinition implements Serializable {
     }
 
     @JsonProperty( SerializationConstants.ENTITY_ID_GENERATOR )
-    public Optional<SerializableFunction<Map<String, String>, String>> getGenerator() {
+    public Optional<SerializableFunction<Map<String, Object>, String>> getGenerator() {
         return generator;
-    }
-
-    @JsonProperty( SerializationConstants.CURRENT_SYNC )
-    public boolean useCurrentSync() {
-        return useCurrentSync;
     }
 
     @JsonProperty( Constants.CONDITIONS )
@@ -245,11 +220,11 @@ public class AssociationDefinition implements Serializable {
         private String                                            srcAlias;
         private String                                            dstAlias;
         private Map<FullQualifiedName, PropertyDefinition>        propertyDefinitionMap;
-        private SerializableFunction<Map<String, String>, String> generator;
+        private SerializableFunction<Map<String, Object>, String> generator;
         private List<FullQualifiedName>                           key;
         private String                                            alias;
         private Set<String>                                       entityAliases;
-        private boolean                                           useCurrentSync;
+        private UpdateType                                        updateType;
 
         public Builder(
                 String alias,
@@ -262,7 +237,6 @@ public class AssociationDefinition implements Serializable {
             this.alias = alias;
             this.propertyDefinitionMap = Maps.newHashMap();
             this.entityAliases = entityAliases;
-            this.useCurrentSync = false;
         }
 
         public Builder key( String... key ) {
@@ -290,13 +264,11 @@ public class AssociationDefinition implements Serializable {
         }
 
         public Builder ofType( FullQualifiedName entityTypeFqn ) {
-
             this.entityTypeFqn = entityTypeFqn;
             return this;
         }
 
         public Builder fromEntity( String srcAlias ) {
-
             checkArgument(
                     entityAliases.contains( srcAlias ),
                     "The source entity must be a previously defined alias." );
@@ -306,7 +278,6 @@ public class AssociationDefinition implements Serializable {
         }
 
         public Builder toEntity( String dstAlias ) {
-
             checkArgument(
                     entityAliases.contains( dstAlias ),
                     "The destination entity must be a previously defined alias." );
@@ -315,15 +286,13 @@ public class AssociationDefinition implements Serializable {
             return this;
         }
 
-        public Builder entityIdGenerator( SerializableFunction<Map<String, String>, String> generator ) {
-
+        public Builder entityIdGenerator( SerializableFunction<Map<String, Object>, String> generator ) {
             this.generator = generator;
             return this;
         }
 
-        public Builder useCurrentSync() {
-
-            this.useCurrentSync = true;
+        public Builder updateType( UpdateType updateType ) {
+            this.updateType = updateType;
             return this;
         }
 
@@ -343,12 +312,12 @@ public class AssociationDefinition implements Serializable {
                 propertyDefinitionMap.put( propertyDefFqn, propertyDefinition );
             };
 
-            return new PropertyDefinition.Builder<AssociationDefinition.Builder>( propertyTypeFqn, this, onBuild );
+            return new PropertyDefinition.Builder<>( propertyTypeFqn, this, onBuild );
         }
 
         public Builder addProperty( String propertyString, String columnName ) {
             FullQualifiedName propertyFqn = new FullQualifiedName( propertyString );
-            SerializableFunction<Map<String, String>, ?> defaultMapper = row -> row.get( columnName );
+            SerializableFunction<Map<String, Object>, ?> defaultMapper = row -> row.get( columnName );
             PropertyDefinition propertyDefinition = new PropertyDefinition(
                     propertyString, columnName, defaultMapper );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
@@ -365,17 +334,13 @@ public class AssociationDefinition implements Serializable {
                     new PropertyDefinition( propertyString,
                             columnName,
                             Optional.empty(),
+                            Optional.empty(),
                             Optional.of( transformation ) );
             this.propertyDefinitionMap.put( propertyFqn, propertyDefinition );
             return this;
         }
 
-        public AssociationGroup.Builder ok() {
-            return endAssociation();
-        }
-
         public AssociationGroup.Builder endAssociation() {
-
             if ( this.propertyDefinitionMap.size() == 0 ) {
                 throw new IllegalStateException( "invoking addProperty() at least once is required" );
             }

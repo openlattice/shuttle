@@ -40,7 +40,7 @@ public class Flight implements Serializable {
     private final Map<String, EntityDefinition>                entityDefinitions;
     private final Map<String, AssociationDefinition>           associationDefinitions;
     private       String                                       name = "Anon";
-    public final  SerializableFunction<Map<String, String>, ?> valueMapper;
+    public final  SerializableFunction<Map<String, Object>, ?> valueMapper;
     public final  Optional<Conditions>                         condition;
 
     @JsonCreator

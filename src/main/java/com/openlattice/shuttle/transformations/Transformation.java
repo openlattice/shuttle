@@ -29,6 +29,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.Optional;
@@ -73,13 +74,24 @@ public abstract class Transformation<I extends Object> implements Function<I, Ob
         return input;
     }
 
+    protected String applyValueWrapper( String s ) {
+
+        if ( StringUtils.isBlank(s)) return null;
+
+        Object out = applyValue( s );
+
+        if (out==null) return null;
+
+        return out.toString();
+
+    }
+
     protected Object applyValue( String s ) {
         return s;
     }
 
     @Override
     public Object apply( I o ) {
-
-        return applyValue( getInputString( o, column ) );
+        return applyValueWrapper( getInputString( o, column ) );
     }
 }
