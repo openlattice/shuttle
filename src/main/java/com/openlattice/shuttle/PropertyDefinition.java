@@ -155,7 +155,6 @@ public class PropertyDefinition implements Serializable {
         if ( o == null || getClass() != o.getClass() ) { return false; }
         PropertyDefinition that = (PropertyDefinition) o;
         return Objects.equals( propertyTypeFqn, that.propertyTypeFqn ) &&
-                Objects.equals( valueMapper, that.valueMapper ) &&
                 Objects.equals( column, that.column ) &&
                 Objects.equals( transforms, that.transforms );
     }
