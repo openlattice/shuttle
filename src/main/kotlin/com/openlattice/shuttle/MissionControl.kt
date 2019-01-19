@@ -43,8 +43,10 @@ import java.util.*
 import org.bouncycastle.crypto.tls.ConnectionEnd.client
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.dataloom.mappers.ObjectMappers
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.base.Suppliers
 import com.openlattice.data.S3Api
+import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.retrofit.RhizomeByteConverterFactory
 import retrofit2.Retrofit
@@ -94,6 +96,12 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                     .execute()
                     .idToken
         }
+    }
+
+    //TODO: We need to figure out why this isn't registered or a better way of controlling watch ObjectMapper is used
+    //by retrofit clients.
+    init {
+        FullQualifiedNameJacksonSerializer.registerWithMapper(ObjectMappers.getJsonMapper())
     }
 
     private val apiClient = Suppliers
