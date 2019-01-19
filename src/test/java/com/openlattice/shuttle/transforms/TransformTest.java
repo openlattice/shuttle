@@ -193,19 +193,19 @@ public class TransformTest {
     @Test
     public void testParseIntTransform() {
         Object parseIntTest1 = new ParseIntTransform().apply( "3" );
-        Assert.assertEquals( 3, parseIntTest1 );
+        Assert.assertEquals( "3", parseIntTest1 );
     }
 
     @Test
     public void testParseBooleanTransform() {
         Object parseBoolTest1 = new ParseBoolTransform().apply( "1" );
-        Assert.assertEquals( true, parseBoolTest1 );
+        Assert.assertEquals( "true", parseBoolTest1 );
         Object parseBoolTest2 = new ParseBoolTransform().apply( "0" );
-        Assert.assertEquals( false, parseBoolTest2 );
+        Assert.assertEquals( "false", parseBoolTest2 );
         Object parseBoolTest3 = new ParseBoolTransform().apply( "true" );
-        Assert.assertEquals( true, parseBoolTest3 );
+        Assert.assertEquals( "true", parseBoolTest3 );
         Object parseBoolTest4 = new ParseBoolTransform().apply( "false" );
-        Assert.assertEquals( false, parseBoolTest4 );
+        Assert.assertEquals( "false", parseBoolTest4 );
     }
 
     //==================//
@@ -218,12 +218,12 @@ public class TransformTest {
         OffsetDateTime expected1 = OffsetDateTime
                 .of( LocalDateTime.of( 1998, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
         Object dateTimeTest1 = new DateTimeTransform( patterns ).apply( getTestRow().get( "DOB" ) );
-        Assert.assertEquals( expected1, dateTimeTest1 );
+        Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         OffsetDateTime expected2 = OffsetDateTime
                 .of( LocalDateTime.of( 2000, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
         Object dateTimeTest2 = new DateTimeTransform( patterns ).apply( getTestRow().get( "CommittedDateTime" ) );
-        Assert.assertEquals( expected1, dateTimeTest1 );
-        Assert.assertEquals( expected2, dateTimeTest2 );
+        Assert.assertEquals( expected1.toString(), dateTimeTest1 );
+        Assert.assertEquals( expected2.toString(), dateTimeTest2 );
     }
 
     @Test
@@ -231,10 +231,10 @@ public class TransformTest {
         String[] patterns = { "MM/dd/yy", "MM-dd-yy" };
         LocalDate expected1 = LocalDate.of( 1992, 10, 01 );
         Object dateTimeTest1 = new DateTransform( patterns ).apply( getTestRow().get( "ArrestedDate" ) );
-        Assert.assertEquals( expected1, dateTimeTest1 );
+        Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         LocalDate expected2 = LocalDate.of( 2025, 10, 01 );
         Object dateTimeTest2 = new DateTransform( patterns ).apply( getTestRow().get( "ReleasedDate" ) );
-        Assert.assertEquals( expected2, dateTimeTest2 );
+        Assert.assertEquals( expected2.toString(), dateTimeTest2 );
     }
 
     //==================//

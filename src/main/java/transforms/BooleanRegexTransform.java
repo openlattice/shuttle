@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class BooleanRegexTransform extends BooleanTransformation {
+public class BooleanRegexTransform<I extends Object> extends BooleanTransformation<I> {
     private final String column;
     private final String pattern;
 
@@ -52,13 +52,16 @@ public class BooleanRegexTransform extends BooleanTransformation {
     }
 
     @Override
-    public boolean applyCondition( Map<String, String> row ) {
+    public boolean applyCondition( Map<String, Object> row ) {
 
         if ( !( row.containsKey( column ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
 
-        String o = row.get( column );
+        Object input = row.get( column );
+        if (input == null) return false;
+        String o = input.toString();
+
         if ( StringUtils.isBlank( o ) ) {
             return false;
         }
