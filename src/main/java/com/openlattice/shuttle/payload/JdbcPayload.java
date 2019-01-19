@@ -103,6 +103,7 @@ public class JdbcPayload implements Payload {
                     rs.close();
                     stmt.close();
                     connection.close();
+                    logger.info("Exhausted query {} after {} rows", sql, readCount.get());
                 }
             } catch ( SQLException e ) {
                 logger.error( "Unable to advance to next item.", e );
@@ -129,70 +130,71 @@ public class JdbcPayload implements Payload {
             } ) );
         }
     }
-
-    static final class ResultSetIterator implements Iterator<Map<String, Object>> {
-        private final Connection    connection;
-        private final Statement     stmt;
-        private final ResultSet     rs;
-        private final List<String>  columns;
-        private final int           columnCount;
-        private final RateLimiter   rateLimiter;
-        private       AtomicBoolean hasNext = new AtomicBoolean( false );
-
-        public ResultSetIterator(
-                Connection connection,
-                Statement stmt,
-                ResultSet rs,
-                RateLimiter rateLimiter ) {
-            this.connection = connection;
-            this.stmt = stmt;
-            this.rs = rs;
-            this.rateLimiter = rateLimiter;
-            ResultSetMetaData rsm = null;
-            try {
-                rsm = rs.getMetaData();
-                columnCount = rsm.getColumnCount();
-                columns = new ArrayList( columnCount );
-                for ( int i = 1; i <= columnCount; ++i ) {
-                    columns.add( rsm.getColumnName( i ) );
-                }
-                hasNext.set( rs.next() );
-            } catch ( SQLException e ) {
-                throw new IllegalStateException( "ResultSummary Set Iterator initialization failed" );
-            }
-        }
-
-        @Override public boolean hasNext() {
-            return hasNext.get();
-        }
-
-        @Override public Map<String, Object> next() {
-            rateLimiter.acquire();
-            Map<String, Object> data = read( columns, rs );
-            try {
-                boolean hn = rs.next();
-                hasNext.set( hn );
-                if ( !hn ) {
-                    rs.close();
-                    stmt.close();
-                    connection.close();
-                }
-            } catch ( SQLException e ) {
-                logger.error( "Unable to advance to next item.", e );
-            }
-            return data;
-        }
-
-        private static Map<String, Object> read( List<String> columns, ResultSet rs ) {
-            return columns.stream().collect( Collectors.toMap( Function.identity(), col -> {
-                try {
-                    return rs.getObject( col );
-                } catch ( SQLException e ) {
-                    logger.error( "Unable to read col {}.", col, e );
-                    return null;
-                }
-            } ) );
-        }
-    }
+//
+//    static final class ResultSetIterator implements Iterator<Map<String, Object>> {
+//        private final Connection    connection;
+//        private final Statement     stmt;
+//        private final ResultSet     rs;
+//        private final List<String>  columns;
+//        private final int           columnCount;
+//        private final RateLimiter   rateLimiter;
+//        private       AtomicBoolean hasNext = new AtomicBoolean( false );
+//
+//        public ResultSetIterator(
+//                Connection connection,
+//                Statement stmt,
+//                ResultSet rs,
+//                RateLimiter rateLimiter ) {
+//            this.connection = connection;
+//            this.stmt = stmt;
+//            this.rs = rs;
+//            this.rateLimiter = rateLimiter;
+//            ResultSetMetaData rsm = null;
+//            try {
+//                rsm = rs.getMetaData();
+//                columnCount = rsm.getColumnCount();
+//                columns = new ArrayList( columnCount );
+//                for ( int i = 1; i <= columnCount; ++i ) {
+//                    columns.add( rsm.getColumnName( i ) );
+//                }
+//                hasNext.set( rs.next() );
+//            } catch ( SQLException e ) {
+//                throw new IllegalStateException( "ResultSummary Set Iterator initialization failed" );
+//            }
+//        }
+//
+//        @Override public boolean hasNext() {
+//            return hasNext.get();
+//        }
+//
+//        @Override public Map<String, Object> next() {
+//            rateLimiter.acquire();
+//            Map<String, Object> data = read( columns, rs );
+//            try {
+//                boolean hn = rs.next();
+//                hasNext.set( hn );
+//                if ( !hn ) {
+//                    rs.close();
+//                    stmt.close();
+//                    connection.close();
+//
+//                }
+//            } catch ( SQLException e ) {
+//                logger.error( "Unable to advance to next item.", e );
+//            }
+//            return data;
+//        }
+//
+//        private static Map<String, Object> read( List<String> columns, ResultSet rs ) {
+//            return columns.stream().collect( Collectors.toMap( Function.identity(), col -> {
+//                try {
+//                    return rs.getObject( col );
+//                } catch ( SQLException e ) {
+//                    logger.error( "Unable to read col {}.", col, e );
+//                    return null;
+//                }
+//            } ) );
+//        }
+//    }
 
 }
