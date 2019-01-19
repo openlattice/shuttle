@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BooleanContainsTransform extends BooleanTransformation {
+public class BooleanContainsTransform<I extends Object> extends BooleanTransformation<I> {
     private final String  column;
     private final String  string;
     private final Boolean ignoreCase;

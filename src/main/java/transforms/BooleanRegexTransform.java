@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class BooleanRegexTransform extends BooleanTransformation {
+public class BooleanRegexTransform<I extends Object> extends BooleanTransformation<I> {
     private final String column;
     private final String pattern;
 

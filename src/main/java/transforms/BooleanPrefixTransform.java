@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BooleanPrefixTransform extends BooleanTransformation {
+public class BooleanPrefixTransform<I extends Object> extends BooleanTransformation<I> {
     private final String  prefix;
     private final String  column;
     private final Boolean ignoreCase;
