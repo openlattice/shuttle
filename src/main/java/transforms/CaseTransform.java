@@ -5,18 +5,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.Shuttle;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.List;
 
 public class CaseTransform extends Transformation<String> {
 
     private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
 
-    public enum CaseType {name, sentence, lower, upper};
+    public enum CaseType {name, sentence, lower, upper}
+
+    ;
 
     private final CaseType type;
 
@@ -58,10 +57,6 @@ public class CaseTransform extends Transformation<String> {
     @Override
     public Object applyValue( String o ) {
 
-        if ( StringUtils.isBlank( o ) ) {
-            return null;
-        }
-        
         switch ( type ) {
             case name:
                 return getTitleCasing( o );
