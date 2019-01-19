@@ -32,6 +32,8 @@ data class AddressedDataHolder(
         val associations: MutableMap<StorageDestination, MutableSet<Association>>
 
 ) {
-    val integratedEntities: AtomicLong = AtomicLong(0)
-    val integratedEdges:AtomicLong = AtomicLong(0)
+    val integratedEntities: Map<StorageDestination, AtomicLong> = StorageDestination
+            .values().map { it to AtomicLong(0) }.toMap()
+    val integratedEdges: Map<StorageDestination, AtomicLong> = StorageDestination
+            .values().map { it to AtomicLong(0) }.toMap()
 }

@@ -56,6 +56,7 @@ import java.io.File
 import java.lang.System.exit
 import java.util.*
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import java.util.function.Supplier
 import java.util.stream.Stream
 
@@ -158,13 +159,13 @@ fun main(args: Array<String>) {
         cl.hasOption(TOKEN) -> {
             Preconditions.checkArgument(!cl.hasOption(PASSWORD))
             val jwt = cl.getOptionValue(TOKEN)
-            MissionControl(environment, Supplier{ jwt } , s3BucketUrl)
+            MissionControl(environment, Supplier { jwt }, s3BucketUrl)
         }
         cl.hasOption(USER) -> {
             Preconditions.checkArgument(cl.hasOption(PASSWORD))
             val user = cl.getOptionValue(USER)
             val password = cl.getOptionValue(PASSWORD)
-            MissionControl(environment, user, password, s3BucketUrl )
+            MissionControl(environment, user, password, s3BucketUrl)
         }
         else -> {
             System.err.println("User or token must be provided for authentication.")
@@ -231,7 +232,7 @@ class Shuttle(
             logger.info("Finished flight: {}", entry.key.name)
             count
         }.sum()
-        logger.info("Integrated {} entities in flight plan in {} ms.", total, sw.elapsed(TimeUnit.MILLISECONDS))
+        logger.info("Executed {} entity writes in flight plan in {} ms.", total, sw.elapsed(TimeUnit.MILLISECONDS))
         return total
     }
 
@@ -415,8 +416,8 @@ class Shuttle(
                 a.entities.getOrPut(storageDestination) { mutableSetOf() }.addAll(entities)
             }
 
-            a.integratedEntities.addAndGet(b.integratedEntities.get())
-            a.integratedEdges.addAndGet(b.integratedEdges.get())
+            a.integratedEntities.forEach { sd, count -> count.addAndGet(b.integratedEntities[sd]!!.get()) }
+            a.integratedEdges.forEach { sd, count -> count.addAndGet(b.integratedEdges[sd]!!.get()) }
 
             if (a.associations.values.any { it.size > UPLOAD_BATCH_SIZE } ||
                     a.entities.values.any { it.size > UPLOAD_BATCH_SIZE }) {
@@ -427,11 +428,11 @@ class Shuttle(
 
                 integrationDestinations.forEach {
                     if (a.entities.containsKey(it.key)) {
-                        adh.integratedEntities
+                        adh.integratedEntities[it.key]!!
                                 .addAndGet(it.value.integrateEntities(a.entities[it.key]!!, entityKeyIds, updateTypes))
                     }
                     if (a.associations.containsKey(it.key)) {
-                        adh.integratedEdges
+                        adh.integratedEdges[it.key]!!
                                 .addAndGet(
                                         it.value.integrateAssociations(
                                                 a.associations[it.key]!!,
@@ -441,6 +442,9 @@ class Shuttle(
                                 )
                     }
                 }
+
+                logger.info("Current entities progress: {}", adh.integratedEntities)
+                logger.info("Current edges progress: {}", adh.integratedEdges)
 
                 return@reduce adh
             }
@@ -453,13 +457,13 @@ class Shuttle(
             integrationDestinations
                     .forEach {
                         if (r.entities.containsKey(it.key)) {
-                            r.integratedEntities
+                            r.integratedEntities[it.key]!!
                                     .addAndGet(
                                             it.value.integrateEntities(r.entities[it.key]!!, entityKeyIds, updateTypes)
                                     )
                         }
                         if (r.associations.containsKey(it.key)) {
-                            r.integratedEdges
+                            r.integratedEdges[it.key]!!
                                     .addAndGet(
                                             it.value.integrateAssociations(
                                                     r.associations[it.key]!!, entityKeyIds, updateTypes
@@ -467,16 +471,23 @@ class Shuttle(
                                     )
                         }
                     }
-            r.integratedEntities.get() to r.integratedEdges.get()
-        }.orElse(0L to 0L)
-        logger.info(
-                "Integrated {} entities and {} edges in {} ms for flight {}",
-                integratedEntities,
-                integratedEdges,
-                sw.elapsed(TimeUnit.MILLISECONDS),
-                flight.name
+            r.integratedEntities to r.integratedEdges
+        }.orElse(
+                StorageDestination.values().map { it to AtomicLong(0) }.toMap() to
+                        StorageDestination.values().map { it to AtomicLong(0) }.toMap()
         )
-        return integratedEntities + integratedEdges
+
+        return StorageDestination.values().map {
+            logger.info(
+                    "Integrated {} entities and {} edges in {} ms for flight {} to {}",
+                    integratedEntities,
+                    integratedEdges,
+                    sw.elapsed(TimeUnit.MILLISECONDS),
+                    flight.name,
+                    it.name
+            )
+            integratedEntities[it]!!.get() + integratedEdges[it]!!.get()
+        }.sum()
     }
 
 }
