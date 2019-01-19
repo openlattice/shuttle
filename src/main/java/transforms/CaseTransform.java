@@ -16,9 +16,8 @@ public class CaseTransform extends Transformation<String> {
     private static final Logger logger = LoggerFactory
             .getLogger( Shuttle.class );
 
-    public enum CaseType {name, sentence, lower, upper}
+    public enum CaseType {name, sentence, lower, upper};
 
-    ;
     private final CaseType type;
 
     /**
