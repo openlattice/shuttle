@@ -60,14 +60,18 @@ public class BooleanPrefixTransform<I extends Object> extends BooleanTransformat
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
 
-        final String o;
+        Object input = row.get( column );
+        if (input == null) return false;
+        String o = input.toString();
+
+        final String oCased;
         if ( this.ignoreCase ) {
-            o = row.get( column ).toString().toLowerCase();
+            oCased = o.toLowerCase();
         } else {
-            o = row.get( column ).toString();
+            oCased = o.toString();
         }
-        if ( StringUtils.isNotBlank( o ) ) {
-            if ( o.startsWith( prefix ) ) {
+        if ( StringUtils.isNotBlank( oCased ) ) {
+            if ( oCased.startsWith( prefix ) ) {
                 return true;
             }
         }

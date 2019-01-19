@@ -58,8 +58,10 @@ public class BooleanContainsTransform<I extends Object> extends BooleanTransform
         if ( !( row.containsKey( column ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
-  
-        String o = row.get( column ).toString();
+
+        Object input = row.get( column );
+        if (input == null) return false;
+        String o = input.toString();
 
         if ( StringUtils.isBlank( o ) ) {
             return false;

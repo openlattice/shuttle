@@ -58,7 +58,10 @@ public class BooleanRegexTransform<I extends Object> extends BooleanTransformati
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
 
-        String o = row.get( column ).toString();
+        Object input = row.get( column );
+        if (input == null) return false;
+        String o = input.toString();
+
         if ( StringUtils.isBlank( o ) ) {
             return false;
         }
