@@ -160,7 +160,7 @@ public class PropertyDefinition implements Serializable {
     }
 
     @Override public int hashCode() {
-        return Objects.hash( propertyTypeFqn, valueMapper, column, transforms );
+        return Objects.hash( propertyTypeFqn, column, transforms );
     }
 
     public static class Builder<T extends BaseBuilder> extends BaseBuilder<T, PropertyDefinition> {
