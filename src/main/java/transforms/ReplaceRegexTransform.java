@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
 public class ReplaceRegexTransform extends Transformation<String> {
 
@@ -28,12 +27,7 @@ public class ReplaceRegexTransform extends Transformation<String> {
 
     @Override
     public Object applyValue( String o ) {
-        if ( StringUtils.isBlank( o ) ) { return null; }
-
         String outstring = o.replaceAll( target, "" );
-        if ( StringUtils.isBlank( o ) ) {
-            return null;
-        }
         return outstring;
     }
 
