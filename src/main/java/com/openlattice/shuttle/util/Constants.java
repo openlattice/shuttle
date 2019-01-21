@@ -4,10 +4,14 @@ public final class Constants {
 
     public static final String COLUMN              = "column";
     public static final String COLUMNS             = "columns";
+    public static final String LEFTCOLUMN          = "leftColumn";
+    public static final String RIGHTCOLUMN         = "rightColumn";
     public static final String HASH_FUNCTION       = "hashFunction";
     public static final String PREFIX              = "prefix";
     public static final String SUFFIX              = "suffix";
     public static final String READER              = "reader";
+    public static final String LEFTTRANSFORMS      = "leftTransforms";
+    public static final String RIGHTTRANSFORMS     = "rightTransforms";
     public static final String TRANSFORMS          = "transforms";
     public static final String TRANSFORMS_IF_TRUE  = "transformsIfTrue";
     public static final String TRANSFORMS_IF_FALSE = "transformsIfFalse";
@@ -35,5 +39,6 @@ public final class Constants {
     public static final String ADDRESS_OBJECT      = "addressObject";
     public static final String LAT_TRANSFORMS      = "latTransforms";
     public static final String LON_TRANSFORMS      = "lonTransforms";
+    public static final String COMPARISON          = "comparison";
 
 }

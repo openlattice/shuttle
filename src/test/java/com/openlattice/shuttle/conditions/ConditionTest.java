@@ -1,4 +1,4 @@
-package com.openlattice.shuttle.transforms;
+package com.openlattice.shuttle.conditions;
 
 import com.openlattice.shuttle.conditions.Conditions;
 import com.openlattice.shuttle.transformations.Transformation;

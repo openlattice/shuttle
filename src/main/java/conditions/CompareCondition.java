@@ -2,83 +2,114 @@ package conditions;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import com.openlattice.shuttle.conditions.Condition;
+import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-public class BooleanRegexCondition extends Condition<Map<String, String>> {
-    private final String  column;
-    private final String  pattern;
-    private final Boolean reverse;
+public class CompareCondition extends Condition<Map<String, String>> {
+    private final String leftColumn, rightColumn;
+    private final List<Transformation> leftTransforms, rightTransforms;
+
+    public enum Comparison {eq, ne, ge, gt, lt, le}
+
+    private final Comparison comparison;
 
     /**
      * Represents a condition to select columns based on a regular expression.
      *
-     * @param column:  column to test for pattern
-     * @param pattern: regular expression to test column against
-     * @param reverse: if the condition needs to be reversed (i.e. true if pattern *not* present)
+     * @param leftColumn: the column whose value will be on the left side of the comparison
+     * @param leftTransforms: transformations to apply to the left column
+     * @param rightColumn: the column whose value will be on the right side of the comparison
+     * @param rightTransforms: transformations to apply to the right column
+     * @param comparison: direction of comparison -> {eq, ne, ge, gt, lt, le}
+     *
      */
     @JsonCreator
-    public BooleanRegexCondition(
-            @JsonProperty( Constants.COLUMN ) String column,
-            @JsonProperty( Constants.PATTERN ) String pattern,
-            @JsonProperty( Constants.REVERSE ) Boolean reverse ) {
-        this.column = column;
-        this.pattern = pattern;
-        this.reverse = reverse == null ? false : reverse;
-
+    public CompareCondition(
+            @JsonProperty( Constants.LEFTCOLUMN ) String leftColumn,
+            @JsonProperty( Constants.LEFTTRANSFORMS ) List<Transformation> leftTransforms,
+            @JsonProperty( Constants.RIGHTCOLUMN ) String rightColumn,
+            @JsonProperty( Constants.RIGHTTRANSFORMS ) List<Transformation> rightTransforms,
+            @JsonProperty( Constants.COMPARISON ) Comparison comparison  ) {
+        this.leftColumn = leftColumn;
+        this.leftTransforms = leftTransforms;
+        this.rightColumn = rightColumn;
+        this.rightTransforms = rightTransforms;
+        this.comparison = comparison == null ? Comparison.le : comparison;
     }
 
-    @JsonProperty( Constants.COLUMN )
-    public String getColumn() {
-        return column;
+    @JsonProperty( Constants.LEFTCOLUMN )
+    public String getLeftColumn() {
+        return leftColumn;
     }
 
-    @JsonProperty( Constants.PATTERN )
-    public String getPattern() {
-        return pattern;
+    @JsonProperty( Constants.LEFTTRANSFORMS )
+    public List<Transformation> getLeftTransforms() {
+        return leftTransforms;
     }
 
-    @JsonProperty( Constants.REVERSE )
-    public Boolean getReverse() {
-        return reverse;
+    @JsonProperty( Constants.RIGHTCOLUMN )
+    public String getRightColumn() {
+        return rightColumn;
+    }
+
+    @JsonProperty( Constants.RIGHTTRANSFORMS )
+    public List<Transformation> getRightTransforms() {
+        return rightTransforms;
+    }
+
+    @JsonProperty( Constants.COMPARISON )
+    public Comparison getComparison() {
+        return comparison;
     }
 
     @Override
     public Boolean apply( Map<String, String> row ) {
-        String o = row.get( column );
-        if ( StringUtils.isBlank( o ) ) {
-            return false;
-        }
-        Pattern p = Pattern
-                .compile( this.pattern, Pattern.CASE_INSENSITIVE );
-        Matcher m = p.matcher( o );
+        // return <transformed leftColumn> <comparison> <transformed rightColumn>
 
-        Boolean out = false;
-        if ( StringUtils.isNotBlank( o ) ) {
-            if ( m.find() ) {
-                out = true;
+        Object leftTransformed = row.get(leftColumn);
+        for ( Transformation t : leftTransforms )
+        {
+            leftTransformed = t.apply(leftTransformed);
+        }
+
+        Object rightTransformed = row.get(rightColumn);
+        for ( Transformation t : rightTransforms )
+        {
+            rightTransformed = t.apply(rightTransformed);
+        }
+
+        if (leftTransformed == null || rightTransformed == null)
+        {
+            return null;
+        }
+
+        try {
+            switch (comparison) {
+
+                case eq:
+                    return ((Comparable) leftTransformed).compareTo(rightTransformed) == 0;
+                case ne:
+                    return ((Comparable) leftTransformed).compareTo(rightTransformed) != 0;
+                case ge:
+                    return ((Comparable) leftTransformed).compareTo(rightTransformed) >= 0;
+                case gt:
+                    return ((Comparable) leftTransformed).compareTo(rightTransformed) > 0;
+                case lt:
+                    return ((Comparable) leftTransformed).compareTo(rightTransformed) < 0;
+                case le:
+                    return ((Comparable) leftTransformed).compareTo(rightTransformed) <= 0;
+                default:
+                    return false;
             }
         }
-
-        if ( reverse == true ) {
-            if ( out ) {
-                out = false;
-            } else {
-                out = true;
-            }
+        catch (ClassCastException e)
+        {
+            return null;
         }
-
-        return out;
     }
-
 }
 
