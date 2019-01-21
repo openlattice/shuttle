@@ -20,12 +20,11 @@ public class CompareCondition extends Condition<Map<String, String>> {
     /**
      * Represents a condition to select columns based on a regular expression.
      *
-     * @param leftColumn: the column whose value will be on the left side of the comparison
-     * @param leftTransforms: transformations to apply to the left column
-     * @param rightColumn: the column whose value will be on the right side of the comparison
+     * @param leftColumn:      the column whose value will be on the left side of the comparison
+     * @param leftTransforms:  transformations to apply to the left column
+     * @param rightColumn:     the column whose value will be on the right side of the comparison
      * @param rightTransforms: transformations to apply to the right column
-     * @param comparison: direction of comparison -> {eq, ne, ge, gt, lt, le}
-     *
+     * @param comparison:      direction of comparison -> {eq, ne, ge, gt, lt, le}
      */
     @JsonCreator
     public CompareCondition(
@@ -33,7 +32,7 @@ public class CompareCondition extends Condition<Map<String, String>> {
             @JsonProperty( Constants.LEFTTRANSFORMS ) List<Transformation> leftTransforms,
             @JsonProperty( Constants.RIGHTCOLUMN ) String rightColumn,
             @JsonProperty( Constants.RIGHTTRANSFORMS ) List<Transformation> rightTransforms,
-            @JsonProperty( Constants.COMPARISON ) Comparison comparison  ) {
+            @JsonProperty( Constants.COMPARISON ) Comparison comparison ) {
         this.leftColumn = leftColumn;
         this.leftTransforms = leftTransforms;
         this.rightColumn = rightColumn;
@@ -70,44 +69,39 @@ public class CompareCondition extends Condition<Map<String, String>> {
     public Boolean apply( Map<String, String> row ) {
         // return <transformed leftColumn> <comparison> <transformed rightColumn>
 
-        Object leftTransformed = row.get(leftColumn);
-        for ( Transformation t : leftTransforms )
-        {
-            leftTransformed = t.apply(leftTransformed);
+        Object leftTransformed = row.get( leftColumn );
+        for ( Transformation t : leftTransforms ) {
+            leftTransformed = t.apply( leftTransformed );
         }
 
-        Object rightTransformed = row.get(rightColumn);
-        for ( Transformation t : rightTransforms )
-        {
-            rightTransformed = t.apply(rightTransformed);
+        Object rightTransformed = row.get( rightColumn );
+        for ( Transformation t : rightTransforms ) {
+            rightTransformed = t.apply( rightTransformed );
         }
 
-        if (leftTransformed == null || rightTransformed == null)
-        {
+        if ( leftTransformed == null || rightTransformed == null ) {
             return null;
         }
 
         try {
-            switch (comparison) {
+            switch ( comparison ) {
 
                 case eq:
-                    return ((Comparable) leftTransformed).compareTo(rightTransformed) == 0;
+                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) == 0;
                 case ne:
-                    return ((Comparable) leftTransformed).compareTo(rightTransformed) != 0;
+                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) != 0;
                 case ge:
-                    return ((Comparable) leftTransformed).compareTo(rightTransformed) >= 0;
+                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) >= 0;
                 case gt:
-                    return ((Comparable) leftTransformed).compareTo(rightTransformed) > 0;
+                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) > 0;
                 case lt:
-                    return ((Comparable) leftTransformed).compareTo(rightTransformed) < 0;
+                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) < 0;
                 case le:
-                    return ((Comparable) leftTransformed).compareTo(rightTransformed) <= 0;
+                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) <= 0;
                 default:
                     return false;
             }
-        }
-        catch (ClassCastException e)
-        {
+        } catch ( ClassCastException e ) {
             return null;
         }
     }
