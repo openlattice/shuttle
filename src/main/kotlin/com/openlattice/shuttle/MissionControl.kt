@@ -183,7 +183,9 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                             Optional.of(associationDefinition.getEntitySetName()),
                             contacts
                     )
-                    val entitySetId = edmApi.get().createEntitySets(setOf(entitySet))[associationDefinition.entitySetName]!!
+                    val entitySetId = edmApi.get().createEntitySets(
+                            setOf(entitySet)
+                    )[associationDefinition.entitySetName]!!
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[associationDefinition.entitySetName] = entitySet
                 }
@@ -210,6 +212,14 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
     }
 
     private fun assertPropertiesMatchEdm(entitySetName: String, properties: Collection<PropertyDefinition>) {
+        val missingProperties = properties.filter { !propertyTypes.contains(it.fullQualifiedName) }
+        if (missingProperties.isNotEmpty()) {
+            missingProperties.forEach {
+                logger.error("The fqn ${it.fullQualifiedName}is not associated with any property type ")
+            }
+            throw NoSuchElementException("The following property definition fqn were not found: $missingProperties")
+        }
+
         val requiredPropertyTypes = properties.map { propertyTypes[it.fullQualifiedName]!!.id }.toSet()
         val actualPropertyTypes = entityTypes[entitySets[entitySetName]!!.entityTypeId]!!.properties
 
