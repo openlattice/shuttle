@@ -37,5 +37,10 @@ public final class Constants {
     public static final String TYPE                = "type";
     public static final String UPDATE_TYPE         = "updateType";
     public static final String VALUE               = "value";
+    public static final String LEFTCOLUMN          = "leftColumn";
+    public static final String LEFTTRANSFORMS      = "leftTransforms";
+    public static final String RIGHTCOLUMN         = "rightColumn";
+    public static final String RIGHTTRANSFORMS     = "rightTransforms";
+    public static final String COMPARISON          = "comparison";
 
 }
