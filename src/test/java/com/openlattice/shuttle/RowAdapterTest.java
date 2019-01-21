@@ -35,7 +35,7 @@ import java.util.Map;
 public class RowAdapterTest {
     @Test
     public void testRowAdapter() {
-        final Map<String, String> row = ImmutableMap.of( "test", RandomStringUtils.random( 5 ) );
+        final Map<String, Object> row = ImmutableMap.of( "test", RandomStringUtils.random( 5 ) );
         final SerializableFunction<Row, Object> sf = r -> r.getAs( "test" );
 
         RowAdapter adapter = new RowAdapter( sf );
