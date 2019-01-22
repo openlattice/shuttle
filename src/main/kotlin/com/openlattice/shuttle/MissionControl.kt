@@ -212,6 +212,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
     }
 
     private fun assertPropertiesMatchEdm(entitySetName: String, properties: Collection<PropertyDefinition>) {
+        check( entitySets.contains(entitySetName)) { "Entity set $entitySetName does not exist."}
         val missingProperties = properties.filter { !propertyTypes.contains(it.fullQualifiedName) }
         if (missingProperties.isNotEmpty()) {
             missingProperties.forEach {
