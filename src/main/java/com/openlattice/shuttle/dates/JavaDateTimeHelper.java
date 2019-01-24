@@ -88,7 +88,10 @@ public class JavaDateTimeHelper {
     public LocalDate parseDateTimeAsDate(String date) {
         if (shouldIgnoreValue(date))
             return null;
-        LocalDateTime ldt = parseDateTime(date).toLocalDateTime();
+        OffsetDateTime odt = parseDateTime(date);
+        if (odt == null)
+            return null;
+        LocalDateTime ldt = odt.toLocalDateTime();
         if (ldt == null) {
             return null;
         }
