@@ -212,7 +212,7 @@ class Shuttle(
         private val propertyTypes: Map<FullQualifiedName, PropertyType>,
         private val propertyTypesById: Map<UUID, PropertyType>,
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
-        private val dataIntegrationApi: Supplier<DataIntegrationApi>
+        private val dataIntegrationApi: DataIntegrationApi
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
@@ -423,7 +423,7 @@ class Shuttle(
                     a.entities.values.any { it.size > UPLOAD_BATCH_SIZE }) {
                 val entityKeys = (a.entities.flatMap { e -> e.value.map { it.key } }
                         + a.associations.flatMap { it.value.map { it.key } }).toSet()
-                val entityKeyIds = entityKeys.zip(dataIntegrationApi.get().getEntityKeyIds(entityKeys)).toMap()
+                val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
                 val adh = AddressedDataHolder(mutableMapOf(), mutableMapOf())
 
                 integrationDestinations.forEach {
@@ -453,7 +453,7 @@ class Shuttle(
 
         val (integratedEntities, integratedEdges) = remaining.map { r ->
             val entityKeys = (r.entities.flatMap { it.value.map { it.key } } + r.associations.flatMap { it.value.map { it.key } }).toSet()
-            val entityKeyIds = entityKeys.zip(dataIntegrationApi.get().getEntityKeyIds(entityKeys)).toMap()
+            val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
             integrationDestinations
                     .forEach {
                         if (r.entities.containsKey(it.key)) {
