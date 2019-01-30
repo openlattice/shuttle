@@ -30,7 +30,7 @@ public class ReplaceRegexTransform extends Transformation<String> {
     public Object applyValue( String o ) {
         if ( StringUtils.isBlank( o ) ) { return null; }
 
-        String outstring = o.replaceAll( target, "" );
+        String outstring = o.replaceAll( target, goal );
         if ( StringUtils.isBlank( o ) ) {
             return null;
         }
