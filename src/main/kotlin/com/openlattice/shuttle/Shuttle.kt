@@ -295,12 +295,19 @@ class Shuttle(
 
                         val propertyId = propertyTypes[propertyDefinition.fullQualifiedName]!!.id
 
-                        addressedProperties
-                                .getOrPut(storageDestination) { mutableMapOf() }
-                                .getOrPut(propertyId) { mutableSetOf() }
-                                .add(propertyValue)
-
-                        properties.getOrPut(propertyId) { mutableSetOf() }.add(propertyValue)
+                        if (propertyValue is Collection<*>) {
+                            addressedProperties
+                                    .getOrPut(storageDestination) { mutableMapOf() }
+                                    .getOrPut(propertyId) { mutableSetOf() }
+                                    .addAll(propertyValue as Collection<Any>)
+                            properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValue)
+                        } else {
+                            properties.getOrPut(propertyId) { mutableSetOf() }.add(propertyValue)
+                            addressedProperties
+                                    .getOrPut(storageDestination) { mutableMapOf() }
+                                    .getOrPut(propertyId) { mutableSetOf() }
+                                    .add(propertyValue)
+                        }
                     }
                 }
 
@@ -370,12 +377,19 @@ class Shuttle(
 
                             val propertyId = propertyTypes[propertyDefinition.fullQualifiedName]!!.id
 
-                            addressedProperties
-                                    .getOrPut(storageDestination) { mutableMapOf() }
-                                    .getOrPut(propertyId) { mutableSetOf() }
-                                    .add(propertyValue)
-
-                            properties.getOrPut(propertyId) { mutableSetOf() }.add(propertyValue)
+                            if (propertyValue is Collection<*>) {
+                                addressedProperties
+                                        .getOrPut(storageDestination) { mutableMapOf() }
+                                        .getOrPut(propertyId) { mutableSetOf() }
+                                        .addAll(propertyValue as Collection<Any>)
+                                properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValue)
+                            } else {
+                                addressedProperties
+                                        .getOrPut(storageDestination) { mutableMapOf() }
+                                        .getOrPut(propertyId) { mutableSetOf() }
+                                        .add(propertyValue)
+                                properties.getOrPut(propertyId) { mutableSetOf() }.add(propertyValue)
+                            }
                         }
                     }
 
