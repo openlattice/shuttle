@@ -1,6 +1,7 @@
 package com.openlattice.shuttle.payload;
 
 import com.dataloom.streams.StreamUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.shuttle.util.CsvUtil;
 import org.slf4j.Logger;
@@ -23,7 +24,7 @@ public class SimplePayload implements Payload {
     }
 
     @Override
-    public Stream<Map<String, String>> getPayload() {
+    public Stream<Map<String, Object>> getPayload() {
         return StreamUtil.stream( () -> {
             try {
                 return newDefaultMapper()
@@ -32,7 +33,7 @@ public class SimplePayload implements Payload {
                         .readValues( new File( path ) );
             } catch ( IOException e ) {
                 logger.error( "Unable to read csv file", e );
-                return ImmutableList.<Map<String, String>>of().iterator();
+                return ImmutableList.<Map<String, Object>>of().iterator();
             }
         } );
     }

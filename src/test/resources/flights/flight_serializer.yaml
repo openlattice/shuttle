@@ -17,7 +17,7 @@ entityDefinitions:
         type: "2jMG7.l0ovJ"
         column: "mode"
     name: "cyphers"
-    currentSync: false
+    updateType: Merge
   moreCyphers:
     entitySetName: "C0YVJ"
     propertyDefinitions:
@@ -32,7 +32,7 @@ entityDefinitions:
       2jMG7.l0ovJ:
         type: "2jMG7.l0ovJ"
     name: "moreCyphers"
-    currentSync: false
+    updateType: Replace
 associationDefinitions:
   cypherToCypher:
     fqn: null
@@ -44,6 +44,6 @@ associationDefinitions:
       MbX2C.Htjnc:
         type: "MbX2C.Htjnc"
     name: "cypherToCypher"
-    currentSync: false
+    updateType: PartialReplace
     entityIdGenerator: null
 name: "Anon"
