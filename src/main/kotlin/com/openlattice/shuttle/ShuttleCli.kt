@@ -42,6 +42,7 @@ class ShuttleCli {
         const val CSV = "csv"
         const val DATASOURCE = "datasource"
         const val CONFIGURATION = "config"
+        const val S3 = "s3"
 
         private val options = Options()
         private val clp = DefaultParser()
@@ -49,7 +50,7 @@ class ShuttleCli {
 
         private val flightOption = Option.builder()
                 .longOpt(FLIGHT)
-                .desc("Attempt to load configuration from AWS.")
+                .desc("Attempt to load configuration from S3.")
                 .hasArg(true)
                 .argName("file")
                 .build()
@@ -77,29 +78,31 @@ class ShuttleCli {
 
         private val userOption = Option.builder()
                 .longOpt(USER)
-                .desc("Creates any entity sets that are missing ")
+                .desc("Username to use for authentication ")
                 .hasArg(true)
                 .argName("Auth0 username")
                 .build()
 
         private val passwordOption = Option.builder()
                 .longOpt(PASSWORD)
-                .desc("Creates any entity sets that are missing ")
+                .desc("Password for the username ")
                 .hasArg(true)
                 .argName("password")
                 .build()
 
         private val tokenOption = Option.builder()
                 .longOpt(TOKEN)
-                .desc("Creates any entity sets that are missing ")
+                .desc("Token to use for authentication ")
                 .hasArg(true)
                 .argName("Auth0 JWT Token")
                 .build()
 
         private val createOption = Option.builder()
                 .longOpt(CREATE)
-                .desc("Creates any entity sets that are missing ")
-                .hasArg(false)
+                .desc("Creates any entity sets that are missing with the provided contacts in the argument ")
+                .hasArgs()
+                .argName("Contacts")
+                .valueSeparator(',')
                 .build()
 
         private val helpOption = Option.builder(HELP.first().toString())
@@ -122,6 +125,13 @@ class ShuttleCli {
                 .argName("file")
                 .build()
 
+        private val s3Option = Option.builder()
+                .longOpt(S3)
+                .desc( "S3 bucket to use for storing binary. Possible values are TEST or PRODUCTION. Defaults to test bucket.")
+                .hasArg()
+                .argName("bucket")
+                .build()
+
 
         init {
             options.addOption(helpOption)
@@ -133,6 +143,7 @@ class ShuttleCli {
             options.addOption(userOption)
             options.addOption(passwordOption)
             options.addOption(createOption)
+            options.addOption(s3Option)
 
             options.addOptionGroup(
                     OptionGroup()

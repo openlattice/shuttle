@@ -28,14 +28,14 @@ import java.util.Map;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class RowAdapter implements SerializableFunction<Map<String, String>, Object> {
+class RowAdapter implements SerializableFunction<Map<String, Object>, Object> {
     private final SerializableFunction<Row, Object> extractor;
 
     RowAdapter( SerializableFunction<Row, Object> extractor ) {
         this.extractor = extractor;
     }
 
-    @Override public Object apply( final Map<String, String> row ) {
+    @Override public Object apply( final Map<String, Object> row ) {
         return extractor.apply( new Row() {
             @Override public <T> T getAs( String column ) {
                 return (T) row.get( column );

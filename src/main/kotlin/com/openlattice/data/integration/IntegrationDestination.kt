@@ -19,22 +19,23 @@
  *
  */
 
-package com.openlattice.shuttle.payload;
+package com.openlattice.data.integration
 
-import java.util.Map;
-import java.util.stream.Stream;
+import com.openlattice.data.EntityKey
+import com.openlattice.data.UpdateType
+import java.util.*
 
 /**
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class StreamPayload implements Payload {
-    private final Stream<Map<String, Object>> streamPayload;
+interface IntegrationDestination {
+    fun integrateEntities(data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>) : Long
+    fun integrateAssociations(
+            data: Set<Association>,
+            entityKeyIds: Map<EntityKey, UUID>,
+            updateTypes: Map<UUID, UpdateType>
+    ) : Long
 
-    public StreamPayload( Stream<Map<String, Object>> streamPayload ) {
-        this.streamPayload = streamPayload;
-    }
-
-    @Override public Stream<Map<String, Object>> getPayload() {
-        return null;
-    }
+    fun accepts(): StorageDestination
 }

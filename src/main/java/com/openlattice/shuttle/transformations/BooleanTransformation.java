@@ -2,6 +2,7 @@ package com.openlattice.shuttle.transformations;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.shuttle.util.Constants;
 
@@ -10,11 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BooleanTransformation extends Transformation<Map<String, String>> {
-    private final SerializableFunction<Map<String, String>, ?> trueValueMapper;
-    private final SerializableFunction<Map<String, String>, ?> falseValueMapper;
-    private final Optional<Transformations>                    transformsIfTrue;
-    private final Optional<Transformations>                    transformsIfFalse;
+public class BooleanTransformation<I extends Object> extends Transformation<I> {
+    private final SerializableFunction<Map<String, Object>, Object>              trueValueMapper;
+    private final SerializableFunction<Map<String, Object>, Object>              falseValueMapper;
+    private final Optional<Transformations>                                      transformsIfTrue;
+    private final Optional<Transformations>                                      transformsIfFalse;
 
     /**
      * Represents a selection of transformations based on empty cells.  If either transformsiftrue or transformsiffalse are empty,
@@ -51,6 +52,12 @@ public class BooleanTransformation extends Transformation<Map<String, String>> {
         }
     }
 
+    protected Map<String, Object> getInputMap( Object o ) {
+        ObjectMapper m = new ObjectMapper();
+        Map<String, Object> row = m.convertValue( o, Map.class );
+        return row;
+    }
+
     @JsonProperty( Constants.TRANSFORMS_IF_TRUE )
     public Optional<Transformations> getTransformsIfTrue() {
         return transformsIfTrue;
@@ -61,19 +68,21 @@ public class BooleanTransformation extends Transformation<Map<String, String>> {
         return transformsIfFalse;
     }
 
-    public SerializableFunction<Map<String, String>, ?> getTrueValueMapper() {
+    public SerializableFunction<Map<String, Object>, Object> getTrueValueMapper() {
         return trueValueMapper;
     }
 
-    public SerializableFunction<Map<String, String>, ?> getFalseValueMapper() {
+    public SerializableFunction<Map<String, Object>, Object> getFalseValueMapper() {
         return falseValueMapper;
     }
 
-    public boolean applyCondition( Map<String, String> row ) {
+    public boolean applyCondition( Map<String, Object> row ) {
         return true;
     }
 
-    public Object apply( Map<String, String> row ) {
+    @Override
+    public Object apply( I o ) {
+        Map<String, Object> row = getInputMap(o);
         return applyCondition( row ) ? this.trueValueMapper.apply( row ) : this.falseValueMapper.apply( row );
     }
 }

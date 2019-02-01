@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BooleanPrefixTransform extends BooleanTransformation {
+public class BooleanPrefixTransform<I extends Object> extends BooleanTransformation<I> {
     private final String  prefix;
     private final String  column;
     private final Boolean ignoreCase;
@@ -54,20 +54,24 @@ public class BooleanPrefixTransform extends BooleanTransformation {
     }
 
     @Override
-    public boolean applyCondition( Map<String, String> row ) {
+    public boolean applyCondition( Map<String, Object> row ) {
 
         if ( !( row.containsKey( column ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
 
-        final String o;
+        Object input = row.get( column );
+        if (input == null) return false;
+        String o = input.toString();
+
+        final String oCased;
         if ( this.ignoreCase ) {
-            o = row.get( column ).toLowerCase();
+            oCased = o.toLowerCase();
         } else {
-            o = row.get( column );
+            oCased = o.toString();
         }
-        if ( StringUtils.isNotBlank( o ) ) {
-            if ( o.startsWith( prefix ) ) {
+        if ( StringUtils.isNotBlank( oCased ) ) {
+            if ( oCased.startsWith( prefix ) ) {
                 return true;
             }
         }

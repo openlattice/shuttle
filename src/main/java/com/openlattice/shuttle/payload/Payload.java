@@ -4,7 +4,6 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 public interface Payload {
-
-    Stream<Map<String, String>> getPayload();
+    Stream<Map<String, Object>> getPayload();
 
 }

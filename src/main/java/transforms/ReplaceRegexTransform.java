@@ -27,7 +27,12 @@ public class ReplaceRegexTransform extends Transformation<String> {
 
     @Override
     public Object applyValue( String o ) {
-        String outstring = o.replaceAll( target, "" );
+        if ( StringUtils.isBlank( o ) ) { return null; }
+
+        String outstring = o.replaceAll( target, goal );
+        if ( StringUtils.isBlank( o ) ) {
+            return null;
+        }
         return outstring;
     }
 

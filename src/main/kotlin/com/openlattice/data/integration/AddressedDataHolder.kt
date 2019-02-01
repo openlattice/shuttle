@@ -19,22 +19,21 @@
  *
  */
 
-package com.openlattice.shuttle.payload;
+package com.openlattice.data.integration
 
-import java.util.Map;
-import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicLong
 
 /**
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class StreamPayload implements Payload {
-    private final Stream<Map<String, Object>> streamPayload;
+data class AddressedDataHolder(
+        val entities: MutableMap<StorageDestination, MutableSet<Entity>>,
+        val associations: MutableMap<StorageDestination, MutableSet<Association>>
 
-    public StreamPayload( Stream<Map<String, Object>> streamPayload ) {
-        this.streamPayload = streamPayload;
-    }
-
-    @Override public Stream<Map<String, Object>> getPayload() {
-        return null;
-    }
+) {
+    val integratedEntities: Map<StorageDestination, AtomicLong> = StorageDestination
+            .values().map { it to AtomicLong(0) }.toMap()
+    val integratedEdges: Map<StorageDestination, AtomicLong> = StorageDestination
+            .values().map { it to AtomicLong(0) }.toMap()
 }
