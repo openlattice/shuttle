@@ -24,7 +24,7 @@ public class CompareCondition extends Condition<Map<String, String>> {
      * @param leftTransforms:  transformations to apply to the left column
      * @param rightColumn:     the column whose value will be on the right side of the comparison
      * @param rightTransforms: transformations to apply to the right column
-     * @param comparison:      direction of comparison -> {eq, ne, ge, gt, lt, le}
+     * @param comparison:      direction of comparison : {eq, ne, ge, gt, lt, le}
      */
     @JsonCreator
     public CompareCondition(
