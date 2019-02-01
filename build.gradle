@@ -43,6 +43,11 @@ run {
 
 }
 
+def versions = [
+        checkstyle: '7.4',
+]
+
+
 configurations {
     provided
 }
