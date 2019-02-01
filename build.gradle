@@ -23,6 +23,10 @@ ext.developerConnectionUrl = 'scm:git:https://github.com/openlattice/shuttle.git
 
 apply from: "https://raw.githubusercontent.com/openlattice/gradles/master/openlattice.gradle"
 
+def versions = [
+        checkstyle: '7.4',
+]
+
 distTar {
     archiveName "shuttle.tgz"
 }
