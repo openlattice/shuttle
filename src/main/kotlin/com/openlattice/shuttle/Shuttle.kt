@@ -24,6 +24,7 @@ package com.openlattice.shuttle
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions
 import com.google.common.base.Stopwatch
+import com.google.common.collect.ImmutableList
 import com.openlattice.ApiUtil
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataIntegrationApi
@@ -297,7 +298,7 @@ class Shuttle(
 
                         val propertyValueAsCollection: Collection<Any> =
                                 if (propertyValue is Collection<*>) propertyValue as Collection<Any>
-                                else mutableSetOf(propertyValue)
+                                else ImmutableList.of(propertyValue)
 
                         addressedProperties
                                 .getOrPut(storageDestination) { mutableMapOf() }
@@ -375,7 +376,7 @@ class Shuttle(
 
                             val propertyValueAsCollection: Collection<Any> =
                                     if (propertyValue is Collection<*>) propertyValue as Collection<Any>
-                                    else mutableSetOf(propertyValue)
+                                    else ImmutableList.of(propertyValue)
 
                             addressedProperties
                                     .getOrPut(storageDestination) { mutableMapOf() }
