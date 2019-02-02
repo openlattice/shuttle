@@ -377,19 +377,15 @@ class Shuttle(
 
                             val propertyId = propertyTypes[propertyDefinition.fullQualifiedName]!!.id
 
-                            if (propertyValue is Collection<*>) {
-                                addressedProperties
-                                        .getOrPut(storageDestination) { mutableMapOf() }
-                                        .getOrPut(propertyId) { mutableSetOf() }
-                                        .addAll(propertyValue as Collection<Any>)
-                                properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValue)
-                            } else {
-                                addressedProperties
-                                        .getOrPut(storageDestination) { mutableMapOf() }
-                                        .getOrPut(propertyId) { mutableSetOf() }
-                                        .add(propertyValue)
-                                properties.getOrPut(propertyId) { mutableSetOf() }.add(propertyValue)
-                            }
+                            val propertyValueAsCollection: Collection<Any> =
+                                    if (propertyValue is Collection<*>) propertyValue as Collection<Any>
+                                    else mutableSetOf(propertyValue)
+
+                            addressedProperties
+                                    .getOrPut(storageDestination) { mutableMapOf() }
+                                    .getOrPut(propertyId) { mutableSetOf() }
+                                    .addAll(propertyValueAsCollection)
+                            properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValueAsCollection)
                         }
                     }
 
