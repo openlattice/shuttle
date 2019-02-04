@@ -8,8 +8,6 @@ plugins {
     id "eclipse"
     id "maven-publish"
     id "idea"
-    id "maven-publish"
-    id "signing"
     id "jacoco"
 }
 
