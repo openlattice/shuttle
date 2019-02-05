@@ -38,6 +38,7 @@ import com.openlattice.shuttle.ShuttleCli.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCli.Companion.CSV
 import com.openlattice.shuttle.ShuttleCli.Companion.DATASOURCE
 import com.openlattice.shuttle.ShuttleCli.Companion.ENVIRONMENT
+import com.openlattice.shuttle.ShuttleCli.Companion.FETCHSIZE
 import com.openlattice.shuttle.ShuttleCli.Companion.FLIGHT
 import com.openlattice.shuttle.ShuttleCli.Companion.HELP
 import com.openlattice.shuttle.ShuttleCli.Companion.PASSWORD
@@ -121,7 +122,13 @@ fun main(args: Array<String>) {
             // get JDBC payload
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
             val sql = cl.getOptionValue(SQL)
-            payload = JdbcPayload(hds, sql)
+
+            payload = if( cl.hasOption(FETCHSIZE) ) {
+                val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
+                JdbcPayload(hds, sql, fetchSize)
+            } else {
+                JdbcPayload(hds, sql)
+            }
 
         }
         cl.hasOption(CSV) -> // get csv payload
