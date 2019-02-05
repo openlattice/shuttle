@@ -44,6 +44,7 @@ class ShuttleCli {
         const val FETCHSIZE = "fetchsize"
         const val CONFIGURATION = "config"
         const val S3 = "s3"
+        const val UPLOAD_SIZE = "upload-size"
 
         private val options = Options()
         private val clp = DefaultParser()
@@ -60,6 +61,12 @@ class ShuttleCli {
                 .longOpt(FETCHSIZE)
                 .hasArg(true)
                 .argName("fetch size")
+                .build()
+
+        private val uploadSize = Option.builder()
+                .longOpt(UPLOAD_SIZE)
+                .hasArg(true)
+                .argName("upload size")
                 .build()
 
         private val environmentOption = Option.builder()
@@ -152,6 +159,7 @@ class ShuttleCli {
             options.addOption(createOption)
             options.addOption(s3Option)
             options.addOption(fetchSize)
+            options.addOption(uploadSize)
 
             options.addOptionGroup(
                     OptionGroup()
