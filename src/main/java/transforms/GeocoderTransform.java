@@ -36,7 +36,7 @@ public class GeocoderTransform extends Transformation<Object> {
             @JsonProperty( Constants.ADDRESS_OBJECT ) String addressObject,
             @JsonProperty( Constants.COLUMN ) Optional<String> column ) {
         super( column );
-        this.addressObject = addressObject == "street" ? "road" : addressObject;
+        this.addressObject = addressObject.equals( "street" ) ? "road" : addressObject;
         this.geocodingApi = new Retrofit.Builder()
                 .baseUrl( NOMINATIM_SERVICE_URL )
                 .addConverterFactory( new RhizomeByteConverterFactory() )
