@@ -46,7 +46,7 @@ public class GeocoderTransform extends Transformation<Object> {
                 .build().create( GeocodingApi.class );
     }
 
-    public String getAddress( String input, String addressObject ) throws java.io.IOException {
+    public String getAddress( String input, String addressObject ) {
         List<Map<String, Object>> map = geocodingApi.geocode( addressObject );
 
         if ( map.size() == 0 ) {
@@ -73,13 +73,8 @@ public class GeocoderTransform extends Transformation<Object> {
     @Override
     public String applyValue( String input ) {
         if ( input == null ) { return null; }
-        try {
-            return getAddress( input, this.addressObject );
-        } catch ( IOException e ) {
-            logger.error( "Can't parse address " + input );
 
-            return null;
-        }
+        return getAddress( input, this.addressObject );
     }
 
     public interface GeocodingApi {
