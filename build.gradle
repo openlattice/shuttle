@@ -87,6 +87,8 @@ dependencies {
     compile 'com.sun.xml.bind:jaxb-impl:2.2.11'
     compile 'javax.activation:activation:1.1.1'
 
+    compile "org.jodd:jodd-mail:5.0.7"
+
     compile 'com.microsoft.sqlserver:mssql-jdbc:7.2.0.jre11'
     compile 'org.postgresql:postgresql:42.2.5'
 
