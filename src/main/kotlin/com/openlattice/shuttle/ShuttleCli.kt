@@ -45,6 +45,11 @@ class ShuttleCli {
         const val CONFIGURATION = "config"
         const val S3 = "s3"
         const val UPLOAD_SIZE = "upload-size"
+        const val NOTIFICATION_EMAILS = "notify-emails"
+        const val FROM_EMAIL = "from-email"
+        const val FROM_EMAIL_PASSWORD = "from-email-password"
+        const val SMTP_SERVER = "smtp-server"
+        const val SMTP_SERVER_PORT = "smtp-server-port"
 
         private val options = Options()
         private val clp = DefaultParser()
@@ -141,25 +146,62 @@ class ShuttleCli {
 
         private val s3Option = Option.builder()
                 .longOpt(S3)
-                .desc( "S3 bucket to use for storing binary. Possible values are TEST or PRODUCTION. Defaults to test bucket.")
+                .desc("S3 bucket to use for storing binary. Possible values are TEST or PRODUCTION. Defaults to test bucket.")
                 .hasArg()
                 .argName("bucket")
                 .build()
 
+        private val notificationEmailsOption = Option.builder()
+                .longOpt(NOTIFICATION_EMAILS)
+                .desc("E-mails to notify if an issue occurs with integration")
+                .hasArgs()
+                .argName("version")
+                .valueSeparator(',')
+                .build()
+
+        private val fromEmailOption = Option.builder()
+                .longOpt(FROM_EMAIL)
+                .hasArg(true)
+                .argName("E-mail account being used to send notifications an issues occurs with integration")
+                .build()
+
+        private val fromEmailPasswordOption = Option.builder()
+                .longOpt(FROM_EMAIL_PASSWORD)
+                .hasArg(true)
+                .argName("Password of account being used to send e-mails an issues occurs with integration")
+                .build()
+
+        private val smtpServerOption = Option.builder()
+                .longOpt(SMTP_SERVER)
+                .hasArg(true)
+                .argName("Hostname of smtp server")
+                .build()
+
+        private val smtpServerPortOption = Option.builder()
+                .longOpt(FROM_EMAIL_PASSWORD)
+                .hasArg(true)
+                .argName("Port used to connect to smtp server")
+                .build()
 
         init {
-            options.addOption(helpOption)
-            options.addOption(configurationOption)
-            options.addOption(datasourceOption)
-            options.addOption(flightOption)
-            options.addOption(environmentOption)
-            options.addOption(tokenOption)
-            options.addOption(userOption)
-            options.addOption(passwordOption)
-            options.addOption(createOption)
-            options.addOption(s3Option)
-            options.addOption(fetchSize)
-            options.addOption(uploadSize)
+            options
+                    .addOption(helpOption)
+                    .addOption(configurationOption)
+                    .addOption(datasourceOption)
+                    .addOption(flightOption)
+                    .addOption(environmentOption)
+                    .addOption(tokenOption)
+                    .addOption(userOption)
+                    .addOption(passwordOption)
+                    .addOption(createOption)
+                    .addOption(s3Option)
+                    .addOption(fetchSize)
+                    .addOption(uploadSize)
+                    .addOption(notificationEmailsOption)
+                    .addOption(fromEmailOption)
+                    .addOption(fromEmailPasswordOption)
+                    .addOption(smtpServerOption)
+                    .addOption(smtpServerPortOption)
 
             options.addOptionGroup(
                     OptionGroup()
