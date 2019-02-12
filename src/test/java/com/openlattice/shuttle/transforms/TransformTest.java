@@ -2,6 +2,7 @@ package com.openlattice.shuttle.transforms;
 
 import com.openlattice.shuttle.transformations.Transformations;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import transforms.*;
 
@@ -328,6 +329,7 @@ public class TransformTest {
     }
 
     @Test(timeout=3000)
+    @Ignore
     public void testGeocoderTransform() {
         String expectedStreet = "Scott Street";
         Object geocoderTest1 = new GeocoderTransform( "road", Optional.empty() )
