@@ -121,7 +121,10 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
             .client(RetrofitBuilders.okHttpClient().build())
             .build().create(S3Api::class.java)
 
-    private val entitySets = edmApi.entitySets.map { it.name to it }.toMap().toMutableMap()
+    private val entitySets = edmApi.entitySets.mapNotNull {
+        if (it == null) return@mapNotNull null
+        else it.name to it
+    }.toMap().toMutableMap()
     private val entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
     private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
     private val propertyTypesById = propertyTypes.values.map { it.id to it }.toMap().toMutableMap()

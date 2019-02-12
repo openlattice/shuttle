@@ -3,32 +3,25 @@ package transforms;
 import com.dataloom.mappers.ObjectMappers;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openlattice.data.S3Api;
 import com.openlattice.retrofit.RhizomeByteConverterFactory;
 import com.openlattice.retrofit.RhizomeCallAdapterFactory;
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory;
 import com.openlattice.rhizome.proxy.RetrofitBuilders;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import retrofit2.Retrofit;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
 
 public class GeocoderTransform extends Transformation<Object> {
-    protected static final String NOMINATIM_SERVICE_URL = "https://osm.openlattice.com/nominatim/";
-    private final          String addressObject;
-    private final GeocodingApi geocodingApi;
+    protected static final String       NOMINATIM_SERVICE_URL = "https://osm.openlattice.com/nominatim/";
+    private final          String       addressObject;
+    private final          GeocodingApi geocodingApi;
 
     /**
      * Represents a transformation to get the digits at the start of a column (if starts with digits).
@@ -45,16 +38,15 @@ public class GeocoderTransform extends Transformation<Object> {
         super( column );
         this.addressObject = addressObject == "street" ? "road" : addressObject;
         this.geocodingApi = new Retrofit.Builder()
-                .baseUrl(NOMINATIM_SERVICE_URL)
-                .addConverterFactory(new RhizomeByteConverterFactory())
-                .addConverterFactory(new RhizomeJacksonConverterFactory( ObjectMappers.getJsonMapper()))
-                .addCallAdapterFactory(new RhizomeCallAdapterFactory())
-                .client( RetrofitBuilders.okHttpClient().build())
-                .build().create( GeocodingApi.class);
+                .baseUrl( NOMINATIM_SERVICE_URL )
+                .addConverterFactory( new RhizomeByteConverterFactory() )
+                .addConverterFactory( new RhizomeJacksonConverterFactory( ObjectMappers.getJsonMapper() ) )
+                .addCallAdapterFactory( new RhizomeCallAdapterFactory() )
+                .client( RetrofitBuilders.okHttpClient().build() )
+                .build().create( GeocodingApi.class );
     }
 
     public String getAddress( String input, String addressObject ) throws java.io.IOException {
-       final ObjectMapper mapper = ObjectMappers.newJsonMapper();
         List<Map<String, Object>> map = geocodingApi.geocode( addressObject );
 
         if ( map.size() == 0 ) {
@@ -83,17 +75,18 @@ public class GeocoderTransform extends Transformation<Object> {
         if ( input == null ) { return null; }
         try {
             return getAddress( input, this.addressObject );
-        } catch ( java.io.IOException e ) {
+        } catch ( IOException e ) {
             logger.error( "Can't parse address " + input );
+
             return null;
         }
     }
 
     public interface GeocodingApi {
-        @GET("search?"
-                +"format=json"
-                +"&addressdetails=1"
-                +"&limit="+5)
+        @GET( "search?"
+                + "format=json"
+                + "&addressdetails=1"
+                + "&limit=" + 5 )
         List<Map<String, Object>> geocode( @Query( "q" ) String address );
     }
 
