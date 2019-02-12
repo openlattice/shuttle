@@ -38,12 +38,14 @@ import com.openlattice.shuttle.ShuttleCli.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCli.Companion.CSV
 import com.openlattice.shuttle.ShuttleCli.Companion.DATASOURCE
 import com.openlattice.shuttle.ShuttleCli.Companion.ENVIRONMENT
+import com.openlattice.shuttle.ShuttleCli.Companion.FETCHSIZE
 import com.openlattice.shuttle.ShuttleCli.Companion.FLIGHT
 import com.openlattice.shuttle.ShuttleCli.Companion.HELP
 import com.openlattice.shuttle.ShuttleCli.Companion.PASSWORD
 import com.openlattice.shuttle.ShuttleCli.Companion.S3
 import com.openlattice.shuttle.ShuttleCli.Companion.SQL
 import com.openlattice.shuttle.ShuttleCli.Companion.TOKEN
+import com.openlattice.shuttle.ShuttleCli.Companion.UPLOAD_SIZE
 import com.openlattice.shuttle.ShuttleCli.Companion.USER
 import com.openlattice.shuttle.config.IntegrationConfig
 import com.openlattice.shuttle.payload.JdbcPayload
@@ -67,6 +69,7 @@ import java.util.stream.Stream
  */
 
 private val logger = LoggerFactory.getLogger(ShuttleCli::class.java)
+const val DEFAULT_UPLOAD_SIZE = 100000
 
 fun main(args: Array<String>) {
 
@@ -121,7 +124,14 @@ fun main(args: Array<String>) {
             // get JDBC payload
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
             val sql = cl.getOptionValue(SQL)
-            payload = JdbcPayload(hds, sql)
+
+            payload = if (cl.hasOption(FETCHSIZE)) {
+                val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
+                logger.info("Using a fetch size of $fetchSize")
+                JdbcPayload(hds, sql, fetchSize)
+            } else {
+                JdbcPayload(hds, sql)
+            }
 
         }
         cl.hasOption(CSV) -> // get csv payload
@@ -192,15 +202,18 @@ fun main(args: Array<String>) {
         contacts = setOf()
     }
 
+    val uploadBatchSize = if (cl.hasOption(UPLOAD_SIZE)) {
+        cl.getOptionValue(UPLOAD_SIZE).toInt()
+    } else {
+        DEFAULT_UPLOAD_SIZE
+    }
 
     val flightPlan = mapOf(flight to payload)
 
     val shuttle = missionControl.prepare(flightPlan, createEntitySets, contacts)
-    shuttle.launch()
+    shuttle.launch(uploadBatchSize)
 }
 
-
-const val UPLOAD_BATCH_SIZE = 100000
 
 /**
  *
@@ -225,11 +238,11 @@ class Shuttle(
     }.toMap()
 
 
-    fun launch(): Long {
+    fun launch(uploadBatchSize: Int): Long {
         val sw = Stopwatch.createStarted()
         val total = flightPlan.entries.map { entry ->
             logger.info("Launching flight: {}", entry.key.name)
-            val count = takeoff(entry.key, entry.value.payload)
+            val count = takeoff(entry.key, entry.value.payload, uploadBatchSize)
             logger.info("Finished flight: {}", entry.key.name)
             count
         }.sum()
@@ -258,7 +271,7 @@ class Shuttle(
         return ApiUtil.generateDefaultEntityId(key.stream(), properties)
     }
 
-    private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>): Long {
+    private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int): Long {
         val sw = Stopwatch.createStarted()
         val remaining = payload.parallel().map { row ->
 
@@ -426,8 +439,8 @@ class Shuttle(
             a.integratedEntities.forEach { sd, count -> count.addAndGet(b.integratedEntities[sd]!!.get()) }
             a.integratedEdges.forEach { sd, count -> count.addAndGet(b.integratedEdges[sd]!!.get()) }
 
-            if (a.associations.values.any { it.size > UPLOAD_BATCH_SIZE } ||
-                    a.entities.values.any { it.size > UPLOAD_BATCH_SIZE }) {
+            if (a.associations.values.any { it.size > uploadBatchSize } ||
+                    a.entities.values.any { it.size > uploadBatchSize }) {
                 val entityKeys = (a.entities.flatMap { e -> e.value.map { it.key } }
                         + a.associations.flatMap { it.value.map { it.key } }).toSet()
                 val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()

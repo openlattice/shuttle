@@ -41,8 +41,10 @@ class ShuttleCli {
         const val SQL = "sql"
         const val CSV = "csv"
         const val DATASOURCE = "datasource"
+        const val FETCHSIZE = "fetchsize"
         const val CONFIGURATION = "config"
         const val S3 = "s3"
+        const val UPLOAD_SIZE = "upload-size"
 
         private val options = Options()
         private val clp = DefaultParser()
@@ -53,6 +55,18 @@ class ShuttleCli {
                 .desc("Attempt to load configuration from S3.")
                 .hasArg(true)
                 .argName("file")
+                .build()
+
+        private val fetchSize = Option.builder()
+                .longOpt(FETCHSIZE)
+                .hasArg(true)
+                .argName("fetch size")
+                .build()
+
+        private val uploadSize = Option.builder()
+                .longOpt(UPLOAD_SIZE)
+                .hasArg(true)
+                .argName("upload size")
                 .build()
 
         private val environmentOption = Option.builder()
@@ -144,6 +158,8 @@ class ShuttleCli {
             options.addOption(passwordOption)
             options.addOption(createOption)
             options.addOption(s3Option)
+            options.addOption(fetchSize)
+            options.addOption(uploadSize)
 
             options.addOptionGroup(
                     OptionGroup()

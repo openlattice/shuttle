@@ -31,6 +31,10 @@ public class JdbcPayload implements Payload {
         this( hds, sql, DEFAULT_PERMITS_PER_SECOND, DEFAULT_FETCH_SIZE );
     }
 
+    public JdbcPayload( HikariDataSource hds, String sql, int fetchSize ) {
+        this( hds, sql, DEFAULT_PERMITS_PER_SECOND, fetchSize );
+    }
+
     public JdbcPayload( HikariDataSource hds, String sql, double permitsPerSecond, int fetchSize ) {
         this.rateLimiter = RateLimiter.create( permitsPerSecond );
         this.hds = hds;
@@ -41,8 +45,8 @@ public class JdbcPayload implements Payload {
     @Override public Stream<Map<String, Object>> getPayload() {
         try {
             Connection conn = hds.getConnection();
-            Statement statement = conn.createStatement();
-            statement.setFetchSize( 50000 );
+            Statement statement = conn.createStatement( ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY );
+            statement.setFetchSize( fetchSize );
             final ResultSet rs = statement.executeQuery( sql );
             return StreamUtil.stream( () -> new ResultSetStringIterator( conn, statement, rs, rateLimiter, sql ) );
         } catch ( SQLException e ) {
@@ -103,7 +107,7 @@ public class JdbcPayload implements Payload {
                     rs.close();
                     stmt.close();
                     connection.close();
-                    logger.info("Exhausted query {} after {} rows", sql, readCount.get());
+                    logger.info( "Exhausted query {} after {} rows", sql, readCount.get() );
                 }
             } catch ( SQLException e ) {
                 logger.error( "Unable to advance to next item.", e );
