@@ -21,13 +21,13 @@
 
 package transforms;
 
-import static java.lang.Integer.parseInt;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
+
+import static java.lang.Integer.parseInt;
 
 public class SplitTransform extends Transformation<String> {
 
@@ -63,9 +63,6 @@ public class SplitTransform extends Transformation<String> {
 
     @Override
     public Object applyValue( String o ) {
-        if ( StringUtils.isBlank( o ) | o == "" ) {
-            return null;
-        }
         String[] strNames = o.trim().split( separator );
 
         int idx = 0;
