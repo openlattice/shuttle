@@ -51,8 +51,8 @@ public class HashTransform extends Transformation<Map<String, String>> {
             @JsonProperty( Constants.COLUMNS ) List<String> columns,
             @JsonProperty( Constants.HASH_FUNCTION ) String hashFunction ) {
         this.columns = columns;
-        this.hashFunction = hashFunction;
-        switch ( hashFunction ) {
+        this.hashFunction = hashFunction == null ? "sha256" : hashFunction;
+        switch ( this.hashFunction ) {
             default:
             case "":
             case "murmur128":
