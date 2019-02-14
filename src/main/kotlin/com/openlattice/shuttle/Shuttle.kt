@@ -40,9 +40,14 @@ import com.openlattice.shuttle.ShuttleCli.Companion.DATASOURCE
 import com.openlattice.shuttle.ShuttleCli.Companion.ENVIRONMENT
 import com.openlattice.shuttle.ShuttleCli.Companion.FETCHSIZE
 import com.openlattice.shuttle.ShuttleCli.Companion.FLIGHT
+import com.openlattice.shuttle.ShuttleCli.Companion.FROM_EMAIL
+import com.openlattice.shuttle.ShuttleCli.Companion.FROM_EMAIL_PASSWORD
 import com.openlattice.shuttle.ShuttleCli.Companion.HELP
+import com.openlattice.shuttle.ShuttleCli.Companion.NOTIFICATION_EMAILS
 import com.openlattice.shuttle.ShuttleCli.Companion.PASSWORD
 import com.openlattice.shuttle.ShuttleCli.Companion.S3
+import com.openlattice.shuttle.ShuttleCli.Companion.SMTP_SERVER
+import com.openlattice.shuttle.ShuttleCli.Companion.SMTP_SERVER_PORT
 import com.openlattice.shuttle.ShuttleCli.Companion.SQL
 import com.openlattice.shuttle.ShuttleCli.Companion.TOKEN
 import com.openlattice.shuttle.ShuttleCli.Companion.UPLOAD_SIZE
@@ -51,7 +56,12 @@ import com.openlattice.shuttle.config.IntegrationConfig
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.openlattice.shuttle.payload.SimplePayload
+import jodd.mail.Email
+import jodd.mail.EmailAddress
+import jodd.mail.MailServer
+import org.apache.commons.cli.CommandLine
 import org.apache.commons.lang3.StringUtils
+import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
@@ -134,8 +144,9 @@ fun main(args: Array<String>) {
             }
 
         }
-        cl.hasOption(CSV) -> // get csv payload
+        cl.hasOption(CSV) -> {// get csv payload
             payload = SimplePayload(cl.getOptionValue(CSV))
+        }
         else -> {
             System.err.println("At least one valid data source must be specified.")
             ShuttleCli.printHelp()
@@ -196,7 +207,9 @@ fun main(args: Array<String>) {
 
         contacts = cl.getOptionValues(CREATE).toSet()
         if (contacts.isEmpty()) {
-            throw IllegalArgumentException("Can't create entity sets automatically without contacts provided")
+            System.err.println("Can't create entity sets automatically without contacts provided")
+            ShuttleCli.printHelp()
+            return
         }
     } else {
         contacts = setOf()
@@ -208,10 +221,98 @@ fun main(args: Array<String>) {
         DEFAULT_UPLOAD_SIZE
     }
 
+    val emailConfiguration = getEmailConfiguration(cl)
+
     val flightPlan = mapOf(flight to payload)
 
-    val shuttle = missionControl.prepare(flightPlan, createEntitySets, contacts)
-    shuttle.launch(uploadBatchSize)
+    try {
+        val shuttle = missionControl.prepare(flightPlan, createEntitySets, contacts)
+        shuttle.launch(uploadBatchSize)
+    } catch (ex: Exception) {
+        emailConfiguration.ifPresent { emailConfiguration ->
+            logger.error("An error occurred during the integration sending e-mail notification.", ex)
+            val stackTraceText = ExceptionUtils.getStackTrace(ex)
+            val errorEmail = "An error occurred while running an integration. The integration name is $flight.name. \n" +
+                    "The cause is ${ex.message} \n The stack trace is $stackTraceText"
+            val emailAddresses = emailConfiguration.notificationEmails.map(EmailAddress::of).toTypedArray()
+            val email = Email.create()
+                    .from(emailConfiguration.fromEmail)
+                    .subject("Integration error in $flight.name")
+                    .textMessage(errorEmail)
+            emailConfiguration.notificationEmails
+                    .map(EmailAddress::of)
+                    .forEach { emailAddress -> email.to(emailAddress) }
+
+            val smtpServer = MailServer.create()
+                    .ssl(true)
+                    .host(emailConfiguration.smtpServer)
+                    .port(emailConfiguration.smtpServerPort)
+                    .auth(emailConfiguration.fromEmail, emailConfiguration.fromEmailPassword)
+                    .buildSmtpMailServer()
+
+            val session = smtpServer.createSession()
+            session.open()
+            session.sendMail(email)
+            session.close()
+
+        }
+    }
+}
+
+fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
+    if (cl.hasOption(SMTP_SERVER)) {
+        val smtpServer = cl.getOptionValue(SMTP_SERVER)
+        val smtpServerPort = if (cl.hasOption(SMTP_SERVER_PORT)) {
+            cl.getOptionValue(SMTP_SERVER_PORT).toInt()
+        } else {
+            System.err.println("No smtp server port was specified")
+            ShuttleCli.printHelp()
+            kotlin.system.exitProcess(1)
+        }
+
+        val notificationEmails = cl.getOptionValues(NOTIFICATION_EMAILS).toSet()
+        if (notificationEmails.isEmpty()) {
+            System.err.println("No notification e-mails were actually specified.")
+            ShuttleCli.printHelp()
+            kotlin.system.exitProcess(1)
+        }
+
+        val fromEmail = if (cl.hasOption(FROM_EMAIL)) {
+            cl.getOptionValue(FROM_EMAIL)
+        } else {
+            System.err.println("If notification e-mails are specified must also specify a sending account.")
+            ShuttleCli.printHelp()
+            kotlin.system.exitProcess(1)
+        }
+
+        val fromEmailPassword = if (cl.hasOption(FROM_EMAIL_PASSWORD)) {
+            cl.getOptionValue(FROM_EMAIL_PASSWORD)
+        } else {
+            System.err.println(
+                    "If notification e-mails are specified must also specify an e-mail password for sending account."
+            )
+            ShuttleCli.printHelp()
+            kotlin.system.exitProcess(1)
+        }
+        Optional.of(EmailConfiguration(fromEmail, fromEmailPassword, notificationEmails, smtpServer, smtpServerPort))
+    } else if (cl.hasOption(SMTP_SERVER_PORT)) {
+        System.err.println("Port was specified, no smtp server was specified")
+        ShuttleCli.printHelp()
+        kotlin.system.exitProcess(1)
+    } else if (cl.hasOption(FROM_EMAIL)) {
+        System.err.println("From e-mail was specified, no smtp server was specified")
+        ShuttleCli.printHelp()
+        kotlin.system.exitProcess(1)
+    } else if (cl.hasOption(FROM_EMAIL_PASSWORD)) {
+        System.err.println("From e-mail password was specified, no smtp server was specified")
+        ShuttleCli.printHelp()
+        kotlin.system.exitProcess(1)
+    } else if (cl.hasOption(NOTIFICATION_EMAILS)) {
+        System.err.println("Notification e-mails were specified, no smtp server was specified")
+        ShuttleCli.printHelp()
+        kotlin.system.exitProcess(1)
+    }
+    return Optional.empty()
 }
 
 

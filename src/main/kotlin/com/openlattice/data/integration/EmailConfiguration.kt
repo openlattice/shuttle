@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018. OpenLattice, Inc.
+ * Copyright (C) 2019. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,26 +19,16 @@
  *
  */
 
-package transforms;
+package com.openlattice.data.integration
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.openlattice.shuttle.transformations.Transformation;
-
-import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
-
-@JsonIgnoreProperties( value = { TRANSFORM } )
-public class RemoveDigitsTransform extends Transformation<String> {
-
-    /**
-     * Represents a transformation to remove digits in a string.
-     */
-    public RemoveDigitsTransform() {
-    }
-
-    @Override
-    public Object applyValue( String o ) {
-        String outstring = o.replaceAll( "[\\d]+", "" );
-        return outstring;
-    }
-
-}
+/**
+ *
+ * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
+ */
+data class EmailConfiguration(
+        val fromEmail: String,
+        val fromEmailPassword: String,
+        val notificationEmails: Set<String>,
+        val smtpServer: String,
+        val smtpServerPort: Int
+)

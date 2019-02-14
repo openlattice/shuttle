@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
 public class SubstringTransform extends Transformation<String> {
     private final int index;
@@ -28,14 +27,7 @@ public class SubstringTransform extends Transformation<String> {
     @Override
     public Object applyValue( String o ) {
         final String output;
-        if ( StringUtils.isBlank( o ) ) {
-            return null;
-        } else {
-            output = o.substring( index );
-        }
-        if ( !StringUtils.isBlank( output ) ) {
-            return null;
-        }
+        output = o.substring( index );
         return output;
     }
 }

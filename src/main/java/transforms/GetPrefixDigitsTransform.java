@@ -21,44 +21,32 @@
 
 package transforms;
 
-import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import com.openlattice.shuttle.util.Parsers;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 public class GetPrefixDigitsTransform extends Transformation<Object> {
-    private final String           separator;
+    private final String separator;
 
     /**
      * Represents a transformation to get the digits at the start of a column (if starts with digits).
      *
      * @param separator: separation between digits and
-     * @param column:   column name
+     * @param column:    column name
      */
     @JsonCreator
     public GetPrefixDigitsTransform(
-            @JsonProperty( Constants.SEP ) String separator,  @JsonProperty( Constants.COLUMN ) Optional<String> column  ) {
+            @JsonProperty( Constants.SEP ) String separator,
+            @JsonProperty( Constants.COLUMN ) Optional<String> column ) {
         super( column );
         this.separator = separator;
-        }
-
+    }
 
     @Override
     public Object applyValue( String input ) {
-        if ( StringUtils.isBlank( input ) ) {
-            return null;
-        }
         if ( Character.isDigit( input.trim().charAt( 0 ) ) ) {
             String[] strBadge = input.split( separator );
             return strBadge[ 0 ].trim();
