@@ -34,9 +34,12 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @JsonTypeInfo( use = Id.CLASS, include = As.PROPERTY, property = TRANSFORM )
 public abstract class Transformation<I extends Object> implements Function<I, Object> {
+    protected final Logger logger = LoggerFactory.getLogger( getClass() );
     public static final String TRANSFORM = "@transform";
 
     private final Optional<String> column;
