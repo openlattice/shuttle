@@ -42,7 +42,7 @@ class RestDestination(
             updateTypes: Map<UUID, UpdateType>
     ): Long {
         val entitiesByEntitySet = data
-                .groupBy({ it.entitySetId }, { entityKeyIds[it.key]!! to it.details })
+                .groupBy({ it.entitySetId }, { entityKeyIds.getValue(it.key) to it.details })
                 .mapValues { it.value.toMap() }
 
         return entitiesByEntitySet.entries.parallelStream().mapToLong { (entitySetId, entities) ->
@@ -57,7 +57,7 @@ class RestDestination(
     ): Long {
 
         val entitiesByEntitySet = data
-                .groupBy({ it.key.entitySetId }, { entityKeyIds[it.key]!! to it.details })
+                .groupBy({ it.key.entitySetId }, { entityKeyIds.getValue(it.key) to it.details })
                 .mapValues { it.value.toMap() }
 
         val entities = data.map {
