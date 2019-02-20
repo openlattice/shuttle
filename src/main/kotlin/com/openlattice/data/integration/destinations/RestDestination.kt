@@ -21,13 +21,12 @@
 
 package com.openlattice.data.integration.destinations
 
-import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.*
-import com.openlattice.data.integration.*
+import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
-import org.jdbi.v3.core.statement.Update
+import com.openlattice.data.integration.IntegrationDestination
+import com.openlattice.data.integration.StorageDestination
 import java.util.*
-import java.util.function.Supplier
 
 /**
  * Writes data using the REST API
