@@ -66,18 +66,22 @@ public class BooleanAreNotNullCondition extends Condition<Map<String, String>> {
                     out = true;
                 else
                     out = false;
+                break;
             case any:
                 if (count > 0)
                     out = true;
                 else
                     out = false;
+                break;
             case none:
                 if (count == 0)
                     out = true;
                 else
                     out = false;
+                break;
             default:
                 out = false;
+                break;
         }
 
         if ( reverse == true ) {
