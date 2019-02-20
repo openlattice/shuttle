@@ -30,6 +30,7 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -51,8 +52,8 @@ public class HashTransform extends Transformation<Map<String, String>> {
             @JsonProperty( Constants.COLUMNS ) List<String> columns,
             @JsonProperty( Constants.HASH_FUNCTION ) String hashFunction ) {
         this.columns = columns;
-        this.hashFunction = hashFunction;
-        switch ( hashFunction ) {
+        this.hashFunction = StringUtils.isBlank( hashFunction ) ? "sha256" : hashFunction;
+        switch ( this.hashFunction ) {
             default:
             case "":
             case "murmur128":
