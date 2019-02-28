@@ -185,7 +185,7 @@ public class PropertyDefinition implements Serializable {
             return this;
         }
 
-        public Builder<T> value( List<String> columns, String hashFunction ) {
+        public Builder<T> value( List<String> columns, HashTransform.HashType hashFunction ) {
             return value( ImmutableList.of( new HashTransform( columns, hashFunction ) ) );
         }
 
