@@ -40,7 +40,7 @@ public class TransformsSerializerTest extends AbstractJacksonSerializationTest<O
         OptionalListOfTransforms olt = new OptionalListOfTransforms();
         Transformations transforms = new Transformations(
                 ImmutableList.of( new PrefixTransform( "COWBELL_" ),
-                        new HashTransform( ImmutableList.of( "algo", "mode", "keySize" ), "murmur128" ) ) );
+                        new HashTransform( ImmutableList.of( "algo", "mode", "keySize" ), HashTransform.HashType.murmur128 ) ) );
         olt.field = Optional.of( transforms );
 
         return olt;
