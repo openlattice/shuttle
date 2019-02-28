@@ -233,6 +233,7 @@ fun main(args: Array<String>) {
             logger.error("An error occurred during the integration.", ex)
         }
         emailConfiguration.ifPresent { emailConfiguration ->
+            logger.error("An error occurred during the integration sending e-mail notification.", ex)
             val stackTraceText = ExceptionUtils.getStackTrace(ex)
             val errorEmail = "An error occurred while running an integration. The integration name is $flight.name. \n" +
                     "The cause is ${ex.message} \n The stack trace is $stackTraceText"
