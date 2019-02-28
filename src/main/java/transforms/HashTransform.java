@@ -30,7 +30,6 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -44,29 +43,34 @@ import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 @JsonIgnoreProperties( value = { TRANSFORM } )
 public class HashTransform extends Transformation<Map<String, String>> {
     private final List<String> columns;
-    private final String       hashFunction;
+    private final HashType     hashFunction;
+
+    public enum HashType {murmur128, sha256}
+
+    ;
+
     private final HashFunction hf;
 
     @JsonCreator
     public HashTransform(
             @JsonProperty( Constants.COLUMNS ) List<String> columns,
-            @JsonProperty( Constants.HASH_FUNCTION ) String hashFunction ) {
+            @JsonProperty( Constants.HASH_FUNCTION ) HashType hashFunction ) {
         this.columns = columns;
-        this.hashFunction = StringUtils.isBlank( hashFunction ) ? "sha256" : hashFunction;
+        this.hashFunction = hashFunction;
         switch ( this.hashFunction ) {
-            default:
-            case "":
-            case "murmur128":
+            case murmur128:
                 hf = Hashing.murmur3_128();
                 break;
-            case "sha256":
+            case sha256:
                 hf = Hashing.sha256();
                 break;
+            default:
+                hf = Hashing.sha256();
         }
     }
 
     @JsonProperty( Constants.HASH_FUNCTION )
-    public String getHashFunction() {
+    public HashType getHashFunction() {
         return hashFunction;
     }
 
