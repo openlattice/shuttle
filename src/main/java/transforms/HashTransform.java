@@ -30,6 +30,7 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -82,7 +83,11 @@ public class HashTransform extends Transformation<Map<String, String>> {
     @Override
     public Object apply( Map<String, String> row ) {
         Hasher hasher = hf.newHasher();
-        columns.stream().map( row::get ).forEach( s -> hasher.putString( s, Charsets.UTF_8 ) );
+        for ( String s : columns ) {
+            if ( !StringUtils.isBlank( row.get( s ) ) ) {
+                hasher.putString( row.get( s ),  Charsets.UTF_8 );
+            }
+        }
         return hasher.hash().toString();
     }
 
