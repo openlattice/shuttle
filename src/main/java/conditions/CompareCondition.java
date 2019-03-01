@@ -72,14 +72,14 @@ public class CompareCondition extends Condition<Map<String, String>> {
         Object leftTransformed = row.get( leftColumn );
         Object rightTransformed = row.get( rightColumn );
 
-        if ( !( row.containsKey( leftColumn ) ) ) {
+        if ( !(leftColumn == null) && !( row.containsKey( leftColumn ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", leftColumn ) );
         }
-        if ( !( row.containsKey( rightColumn ) ) ) {
+        if ( !(rightColumn == null) && !( row.containsKey( rightColumn ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", rightColumn ) );
         }
 
-        if ( leftTransformed == null || rightTransformed == null ) {
+        if ( (!(leftColumn == null) &&  leftTransformed == null) ||  (!(rightColumn == null) &&  rightTransformed == null) ) {
             return Boolean.FALSE;
         }
 
