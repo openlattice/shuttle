@@ -90,6 +90,9 @@ public class CompareCondition extends Condition<Map<String, String>> {
             rightTransformed = t.apply( rightTransformed );
         }
 
+        if ( leftTransformed == null || rightTransformed == null ) {
+            return Boolean.FALSE;
+        }
 
         try {
             switch ( comparison ) {
