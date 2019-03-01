@@ -279,6 +279,7 @@ fun main(args: Array<String>) {
                         "\\_|  \\_| |_/\\___/\\_____/\\___/\\_| \\_\\____/ \n" +
                         "                                         "
         )
+        kotlin.system.exitProcess(1)
     }
 }
 
