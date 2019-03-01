@@ -229,7 +229,7 @@ fun main(args: Array<String>) {
         val shuttle = missionControl.prepare(flightPlan, createEntitySets, contacts)
         shuttle.launch(uploadBatchSize)
         logger.info(
-                " _____ _   _ _____  _____  _____ _____ _____ \n" +
+                "\n _____ _   _ _____  _____  _____ _____ _____ \n" +
                         "/  ___| | | /  __ \\/  __ \\|  ___/  ___/  ___|\n" +
                         "\\ `--.| | | | /  \\/| /  \\/| |__ \\ `--.\\ `--. \n" +
                         " `--. \\ | | | |    | |    |  __| `--. \\`--. \\\n" +
@@ -271,7 +271,7 @@ fun main(args: Array<String>) {
 
                 }, { logger.error("An error occurred during the integration.", ex) })
         logger.error(
-                "______ ___  _____ _     _   _______ _____ \n" +
+                "\n______ ___  _____ _     _   _______ _____ \n" +
                         "|  ___/ _ \\|_   _| |   | | | | ___ \\  ___|\n" +
                         "| |_ / /_\\ \\ | | | |   | | | | |_/ / |__  \n" +
                         "|  _||  _  | | | | |   | | | |    /|  __| \n" +
