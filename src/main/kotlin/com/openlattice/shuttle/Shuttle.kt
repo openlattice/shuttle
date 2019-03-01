@@ -228,34 +228,57 @@ fun main(args: Array<String>) {
     try {
         val shuttle = missionControl.prepare(flightPlan, createEntitySets, contacts)
         shuttle.launch(uploadBatchSize)
+        logger.info(
+                " _____ _   _ _____  _____  _____ _____ _____ \n" +
+                        "/  ___| | | /  __ \\/  __ \\|  ___/  ___/  ___|\n" +
+                        "\\ `--.| | | | /  \\/| /  \\/| |__ \\ `--.\\ `--. \n" +
+                        " `--. \\ | | | |    | |    |  __| `--. \\`--. \\\n" +
+                        "/\\__/ / |_| | \\__/\\| \\__/\\| |___/\\__/ /\\__/ /\n" +
+                        "\\____/ \\___/ \\____/ \\____/\\____/\\____/\\____/"
+        )
     } catch (ex: Exception) {
-        emailConfiguration.ifPresent { emailConfiguration ->
-            logger.error("An error occurred during the integration sending e-mail notification.", ex)
-            val stackTraceText = ExceptionUtils.getStackTrace(ex)
-            val errorEmail = "An error occurred while running an integration. The integration name is $flight.name. \n" +
-                    "The cause is ${ex.message} \n The stack trace is $stackTraceText"
-            val emailAddresses = emailConfiguration.notificationEmails.map(EmailAddress::of).toTypedArray()
-            val email = Email.create()
-                    .from(emailConfiguration.fromEmail)
-                    .subject("Integration error in $flight.name")
-                    .textMessage(errorEmail)
-            emailConfiguration.notificationEmails
-                    .map(EmailAddress::of)
-                    .forEach { emailAddress -> email.to(emailAddress) }
+        emailConfiguration.ifPresentOrElse(
+                { emailConfiguration ->
+                    logger.error("An error occurred during the integration sending e-mail notification.", ex)
+                    val stackTraceText = ExceptionUtils.getStackTrace(ex)
+                    val errorEmail = "An error occurred while running an integration. The integration name is $flight.name. \n" +
+                            "The cause is ${ex.message} \n The stack trace is $stackTraceText"
+                    val emailAddresses = emailConfiguration.notificationEmails
+                            .map(EmailAddress::of)
+                            .toTypedArray()
+                    val email = Email.create()
+                            .from(emailConfiguration.fromEmail)
+                            .subject("Integration error in $flight.name")
+                            .textMessage(errorEmail)
+                    emailConfiguration.notificationEmails
+                            .map(EmailAddress::of)
+                            .forEach { emailAddress -> email.to(emailAddress) }
 
-            val smtpServer = MailServer.create()
-                    .ssl(true)
-                    .host(emailConfiguration.smtpServer)
-                    .port(emailConfiguration.smtpServerPort)
-                    .auth(emailConfiguration.fromEmail, emailConfiguration.fromEmailPassword)
-                    .buildSmtpMailServer()
+                    val smtpServer = MailServer.create()
+                            .ssl(true)
+                            .host(emailConfiguration.smtpServer)
+                            .port(emailConfiguration.smtpServerPort)
+                            .auth(
+                                    emailConfiguration.fromEmail,
+                                    emailConfiguration.fromEmailPassword
+                            )
+                            .buildSmtpMailServer()
 
-            val session = smtpServer.createSession()
-            session.open()
-            session.sendMail(email)
-            session.close()
+                    val session = smtpServer.createSession()
+                    session.open()
+                    session.sendMail(email)
+                    session.close()
 
-        }
+                }, { logger.error("An error occurred during the integration.", ex) })
+        logger.error(
+                "______ ___  _____ _     _   _______ _____ \n" +
+                        "|  ___/ _ \\|_   _| |   | | | | ___ \\  ___|\n" +
+                        "| |_ / /_\\ \\ | | | |   | | | | |_/ / |__  \n" +
+                        "|  _||  _  | | | | |   | | | |    /|  __| \n" +
+                        "| |  | | | |_| |_| |___| |_| | |\\ \\| |___ \n" +
+                        "\\_|  \\_| |_/\\___/\\_____/\\___/\\_| \\_\\____/ \n" +
+                        "                                         "
+        )
     }
 }
 
