@@ -283,59 +283,68 @@ fun main(args: Array<String>) {
 }
 
 fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
-    if (cl.hasOption(SMTP_SERVER)) {
-        val smtpServer = cl.getOptionValue(SMTP_SERVER)
-        val smtpServerPort = if (cl.hasOption(SMTP_SERVER_PORT)) {
-            cl.getOptionValue(SMTP_SERVER_PORT).toInt()
-        } else {
-            System.err.println("No smtp server port was specified")
-            ShuttleCli.printHelp()
-            kotlin.system.exitProcess(1)
-        }
+    return when {
+        cl.hasOption(SMTP_SERVER) -> {
+            val smtpServer = cl.getOptionValue(SMTP_SERVER)
+            val smtpServerPort = if (cl.hasOption(SMTP_SERVER_PORT)) {
+                cl.getOptionValue(SMTP_SERVER_PORT).toInt()
+            } else {
+                System.err.println("No smtp server port was specified")
+                ShuttleCli.printHelp()
+                kotlin.system.exitProcess(1)
+            }
 
-        val notificationEmails = cl.getOptionValues(NOTIFICATION_EMAILS).toSet()
-        if (notificationEmails.isEmpty()) {
-            System.err.println("No notification e-mails were actually specified.")
-            ShuttleCli.printHelp()
-            kotlin.system.exitProcess(1)
-        }
+            val notificationEmails = cl.getOptionValues(NOTIFICATION_EMAILS).toSet()
+            if (notificationEmails.isEmpty()) {
+                System.err.println("No notification e-mails were actually specified.")
+                ShuttleCli.printHelp()
+                kotlin.system.exitProcess(1)
+            }
 
-        val fromEmail = if (cl.hasOption(FROM_EMAIL)) {
-            cl.getOptionValue(FROM_EMAIL)
-        } else {
-            System.err.println("If notification e-mails are specified must also specify a sending account.")
-            ShuttleCli.printHelp()
-            kotlin.system.exitProcess(1)
-        }
+            val fromEmail = if (cl.hasOption(FROM_EMAIL)) {
+                cl.getOptionValue(FROM_EMAIL)
+            } else {
+                System.err.println("If notification e-mails are specified must also specify a sending account.")
+                ShuttleCli.printHelp()
+                kotlin.system.exitProcess(1)
+            }
 
-        val fromEmailPassword = if (cl.hasOption(FROM_EMAIL_PASSWORD)) {
-            cl.getOptionValue(FROM_EMAIL_PASSWORD)
-        } else {
-            System.err.println(
-                    "If notification e-mails are specified must also specify an e-mail password for sending account."
+            val fromEmailPassword = if (cl.hasOption(FROM_EMAIL_PASSWORD)) {
+                cl.getOptionValue(FROM_EMAIL_PASSWORD)
+            } else {
+                System.err.println(
+                        "If notification e-mails are specified must also specify an e-mail password for sending account."
+                )
+                ShuttleCli.printHelp()
+                kotlin.system.exitProcess(1)
+            }
+            Optional.of(
+                    EmailConfiguration(fromEmail, fromEmailPassword, notificationEmails, smtpServer, smtpServerPort)
             )
+        }
+        cl.hasOption(SMTP_SERVER_PORT) -> {
+            System.err.println("Port was specified, no smtp server was specified")
             ShuttleCli.printHelp()
             kotlin.system.exitProcess(1)
         }
-        Optional.of(EmailConfiguration(fromEmail, fromEmailPassword, notificationEmails, smtpServer, smtpServerPort))
-    } else if (cl.hasOption(SMTP_SERVER_PORT)) {
-        System.err.println("Port was specified, no smtp server was specified")
-        ShuttleCli.printHelp()
-        kotlin.system.exitProcess(1)
-    } else if (cl.hasOption(FROM_EMAIL)) {
-        System.err.println("From e-mail was specified, no smtp server was specified")
-        ShuttleCli.printHelp()
-        kotlin.system.exitProcess(1)
-    } else if (cl.hasOption(FROM_EMAIL_PASSWORD)) {
-        System.err.println("From e-mail password was specified, no smtp server was specified")
-        ShuttleCli.printHelp()
-        kotlin.system.exitProcess(1)
-    } else if (cl.hasOption(NOTIFICATION_EMAILS)) {
-        System.err.println("Notification e-mails were specified, no smtp server was specified")
-        ShuttleCli.printHelp()
-        kotlin.system.exitProcess(1)
+        cl.hasOption(FROM_EMAIL) -> {
+            System.err.println("From e-mail was specified, no smtp server was specified")
+            ShuttleCli.printHelp()
+            kotlin.system.exitProcess(1)
+        }
+        cl.hasOption(FROM_EMAIL_PASSWORD) -> {
+            System.err.println("From e-mail password was specified, no smtp server was specified")
+            ShuttleCli.printHelp()
+            kotlin.system.exitProcess(1)
+        }
+        cl.hasOption(NOTIFICATION_EMAILS) -> {
+            System.err.println("Notification e-mails were specified, no smtp server was specified")
+            ShuttleCli.printHelp()
+            kotlin.system.exitProcess(1)
+        }
+        else -> Optional.empty()
     }
-    return Optional.empty()
+
 }
 
 
