@@ -70,18 +70,18 @@ public class CompareCondition extends Condition<Map<String, String>> {
         // return <transformed leftColumn> <comparison> <transformed rightColumn>
 
         Object leftTransformed = row.get( leftColumn );
+        Object rightTransformed = row.get( rightColumn );
+        if ( leftTransformed == null || rightTransformed == null ) {
+            return Boolean.FALSE;
+        }
+
         for ( Transformation t : leftTransforms ) {
             leftTransformed = t.apply( leftTransformed );
         }
-
-        Object rightTransformed = row.get( rightColumn );
         for ( Transformation t : rightTransforms ) {
             rightTransformed = t.apply( rightTransformed );
         }
 
-        if ( leftTransformed == null || rightTransformed == null ) {
-            return null;
-        }
 
         try {
             switch ( comparison ) {
