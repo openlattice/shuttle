@@ -218,11 +218,11 @@ public class TransformTest {
         String[] patterns = { "MM/dd/yyyy HH:mm", "MM/dd/yy HH:mm" };
         OffsetDateTime expected1 = OffsetDateTime
                 .of( LocalDateTime.of( 1998, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
-        Object dateTimeTest1 = new DateTimeTransform( patterns ).apply( getTestRow().get( "DOB" ) );
+        Object dateTimeTest1 = new DateTimeTransform( patterns, null ).apply( getTestRow().get( "DOB" ) );
         Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         OffsetDateTime expected2 = OffsetDateTime
                 .of( LocalDateTime.of( 2000, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
-        Object dateTimeTest2 = new DateTimeTransform( patterns ).apply( getTestRow().get( "CommittedDateTime" ) );
+        Object dateTimeTest2 = new DateTimeTransform( patterns, null ).apply( getTestRow().get( "CommittedDateTime" ) );
         Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         Assert.assertEquals( expected2.toString(), dateTimeTest2 );
     }
@@ -231,10 +231,10 @@ public class TransformTest {
     public void testDateTransform() {
         String[] patterns = { "MM/dd/yy", "MM-dd-yy" };
         LocalDate expected1 = LocalDate.of( 1992, 10, 01 );
-        Object dateTimeTest1 = new DateTransform( patterns ).apply( getTestRow().get( "ArrestedDate" ) );
+        Object dateTimeTest1 = new DateTransform( patterns, null ).apply( getTestRow().get( "ArrestedDate" ) );
         Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         LocalDate expected2 = LocalDate.of( 2025, 10, 01 );
-        Object dateTimeTest2 = new DateTransform( patterns ).apply( getTestRow().get( "ReleasedDate" ) );
+        Object dateTimeTest2 = new DateTransform( patterns, null ).apply( getTestRow().get( "ReleasedDate" ) );
         Assert.assertEquals( expected2.toString(), dateTimeTest2 );
     }
 
@@ -329,7 +329,6 @@ public class TransformTest {
     }
 
     @Test(timeout=3000)
-    @Ignore
     public void testGeocoderTransform() {
         String expectedStreet = "Scott Street";
         Object geocoderTest1 = new GeocoderTransform( "road", Optional.empty() )
