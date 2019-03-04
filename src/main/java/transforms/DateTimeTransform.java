@@ -7,8 +7,11 @@ import com.openlattice.shuttle.dates.TimeZones;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 
+import java.util.TimeZone;
+
 public class DateTimeTransform extends Transformation<String> {
     private final String[] pattern;
+    private final TimeZone timezone;
 
     /**
      * Represents a transformation from string to datetime.
@@ -16,8 +19,12 @@ public class DateTimeTransform extends Transformation<String> {
      * @param pattern: pattern of date (eg. "MM/dd/YY")
      */
     @JsonCreator
-    public DateTimeTransform( @JsonProperty( Constants.PATTERN ) String[] pattern ) {
+    public DateTimeTransform(
+            @JsonProperty( Constants.PATTERN ) String[] pattern,
+            @JsonProperty( Constants.TIMEZONE ) String timezone
+    ) {
         this.pattern = pattern;
+        this.timezone = timezone == null ? TimeZone.getTimeZone( "America/New_York" ) : TimeZone.getTimeZone( timezone );
     }
 
     @JsonProperty( value = Constants.PATTERN, required = false )
@@ -27,7 +34,7 @@ public class DateTimeTransform extends Transformation<String> {
 
     @Override
     public Object applyValue( String o ) {
-        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
+        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( this.timezone,
                 pattern );
         Object out = dtHelper.parseDateTime( o );
         return out;
