@@ -28,15 +28,11 @@ import com.openlattice.data.util.PostgresDataHasher
 import org.apache.commons.lang3.RandomUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.slf4j.LoggerFactory
-import org.springframework.web.context.request.async.AsyncRequestTimeoutException
 import java.lang.ClassCastException
 import java.lang.Exception
 import java.util.*
-import java.util.concurrent.locks.ReentrantLock
-import java.util.function.Supplier
 import java.util.stream.Collectors
 import kotlin.math.max
-import kotlin.streams.asSequence
 
 private val logger = LoggerFactory.getLogger(S3Destination::class.java)
 const val MAX_DELAY_MILLIS = 60 * 60 * 1000L
@@ -68,6 +64,63 @@ class S3Destination(
             }
         }
 
+        uploadToS3WithRetry(s3entities)
+
+        return s3entities.size.toLong()
+    }
+
+    private fun getS3Urls(s3entities: List<S3EntityData>): List<String> {
+        var currentDelayMillis = 1L
+        var currentRetryCount = 0
+        while (true) {
+            val maybeUrls: List<String>? = dataIntegrationApi.generatePresignedUrls(s3entities)
+            if (maybeUrls == null) {
+                currentRetryCount++
+                if (currentRetryCount <= MAX_RETRY_COUNT) {
+                    Thread.sleep(currentDelayMillis)
+                    currentDelayMillis = max(
+                            MAX_DELAY_MILLIS,
+                            (currentDelayMillis * RandomUtils.nextDouble(1.25, 2.0).toLong())
+                    )
+                } else {
+                    throw IllegalStateException("Unable to retrieve presigned urls. Maybe prod is down?")
+                }
+            } else {
+                return maybeUrls
+            }
+        }
+
+    }
+
+    override fun integrateAssociations(
+            data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+    ): Long {
+        val s3entities = data.flatMap { entity ->
+            val entityKeyId = entityKeyIds.getValue(entity.key)
+            entity.details.entries.flatMap { (propertyTypeId, properties) ->
+                properties.map {
+                    S3EntityData(
+                            entity.key.entitySetId,
+                            entityKeyId,
+                            propertyTypeId,
+                            PostgresDataHasher.hashObjectToHex(it, EdmPrimitiveTypeKind.Binary)
+                    ) to it
+                }
+            }
+        }
+
+        uploadToS3WithRetry(s3entities)
+
+        val entities = data.map {
+            val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])
+            val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds[it.dst])
+            val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds[it.key])
+            DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
+        }.toSet()
+        return s3entities.size.toLong() + dataApi.createAssociations(entities).toLong()
+    }
+
+    private fun uploadToS3WithRetry(s3entities: List<Pair<S3EntityData, Any>>) {
         var s3eds = s3entities
 
         var currentDelayMillis = 1L
@@ -114,63 +167,6 @@ class S3Destination(
                 }
             }
         }
-
-        return s3entities.size.toLong()
-    }
-
-    private fun getS3Urls(s3entities: List<S3EntityData>): List<String> {
-        var currentDelayMillis = 1L
-        var currentRetryCount = 0
-        while (true) {
-            val maybeUrls: List<String>? = dataIntegrationApi.generatePresignedUrls(s3entities)
-            if (maybeUrls == null) {
-                currentRetryCount++
-                if (currentRetryCount <= MAX_RETRY_COUNT) {
-                    Thread.sleep(currentDelayMillis)
-                    currentDelayMillis = max(
-                            MAX_DELAY_MILLIS,
-                            (currentDelayMillis * RandomUtils.nextDouble(1.25, 2.0).toLong())
-                    )
-                } else {
-                    throw IllegalStateException("Unable to retrieve presigned urls. Maybe prod is down?")
-                }
-            } else {
-                return maybeUrls
-            }
-        }
-
-    }
-
-    override fun integrateAssociations(
-            data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
-    ): Long {
-        val (s3entities, values) = data.flatMap { entity ->
-            val entityKeyId = entityKeyIds[entity.key]!!
-            entity.details.entries.flatMap { (propertyTypeId, properties) ->
-                properties.map {
-                    S3EntityData(
-                            entity.key.entitySetId,
-                            entityKeyId,
-                            propertyTypeId,
-                            PostgresDataHasher.hashObjectToHex(it, EdmPrimitiveTypeKind.Binary)
-                    ) to it
-                }
-            }
-        }.unzip()
-
-        dataIntegrationApi
-                .generatePresignedUrls(s3entities)
-                .zip(values)
-                .parallelStream()
-                .forEach { s3Api.writeToS3(it.first, it.second as ByteArray) }
-
-        val entities = data.map {
-            val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])
-            val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds[it.dst])
-            val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds[it.key])
-            DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
-        }.toSet()
-        return values.size.toLong() + dataApi.createAssociations(entities).toLong()
     }
 
     override fun accepts(): StorageDestination {

@@ -503,7 +503,7 @@ class Shuttle(
                 }
                 if ((wasCreated[associationDefinition.srcAlias]!! && wasCreated[associationDefinition.dstAlias]!!)) {
 
-                    val entitySetId = entitySets[associationDefinition.entitySetName]!!.id
+                    val entitySetId = entitySets.getValue(associationDefinition.entitySetName).id
                     val properties = mutableMapOf<UUID, MutableSet<Any>>()
                     val addressedProperties = mutableMapOf<StorageDestination, MutableMap<UUID, MutableSet<Any>>>()
 
@@ -513,13 +513,13 @@ class Shuttle(
                                 ((propertyValue !is String) || propertyValue.isNotBlank())) {
 
                             val storageDestination = propertyDefinition.storageDestination.orElseGet {
-                                when (propertyTypes[propertyDefinition.fullQualifiedName]!!.datatype) {
+                                when (propertyTypes.getValue(propertyDefinition.fullQualifiedName).datatype) {
                                     EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
                                     else -> StorageDestination.REST
                                 }
                             }
 
-                            val propertyId = propertyTypes[propertyDefinition.fullQualifiedName]!!.id
+                            val propertyId = propertyTypes.getValue(propertyDefinition.fullQualifiedName).id
 
                             val propertyValueAsCollection: Collection<Any> =
                                     if (propertyValue is Collection<*>) propertyValue as Collection<Any>
@@ -570,23 +570,23 @@ class Shuttle(
                 a.entities.getOrPut(storageDestination) { mutableSetOf() }.addAll(entities)
             }
 
-            a.integratedEntities.forEach { sd, count -> count.addAndGet(b.integratedEntities[sd]!!.get()) }
-            a.integratedEdges.forEach { sd, count -> count.addAndGet(b.integratedEdges[sd]!!.get()) }
+            a.integratedEntities.forEach { sd, count -> count.addAndGet(b.integratedEntities.getValue(sd).get()) }
+            a.integratedEdges.forEach { sd, count -> count.addAndGet(b.integratedEdges.getValue(sd).get()) }
 
             if (a.associations.values.any { it.size > uploadBatchSize } ||
                     a.entities.values.any { it.size > uploadBatchSize }) {
                 val entityKeys = (a.entities.flatMap { e -> e.value.map { it.key } }
-                        + a.associations.flatMap { it.value.map { it.key } }).toSet()
+                        + a.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
                 val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
                 val adh = AddressedDataHolder(mutableMapOf(), mutableMapOf())
 
                 integrationDestinations.forEach {
                     if (a.entities.containsKey(it.key)) {
-                        adh.integratedEntities[it.key]!!
+                        adh.integratedEntities.getValue(it.key)
                                 .addAndGet(it.value.integrateEntities(a.entities[it.key]!!, entityKeyIds, updateTypes))
                     }
                     if (a.associations.containsKey(it.key)) {
-                        adh.integratedEdges[it.key]!!
+                        adh.integratedEdges.getValue(it.key)
                                 .addAndGet(
                                         it.value.integrateAssociations(
                                                 a.associations[it.key]!!,
@@ -606,18 +606,18 @@ class Shuttle(
         }
 
         val (integratedEntities, integratedEdges) = remaining.map { r ->
-            val entityKeys = (r.entities.flatMap { it.value.map { it.key } } + r.associations.flatMap { it.value.map { it.key } }).toSet()
+            val entityKeys = (r.entities.flatMap { it.value.map { it.key } } + r.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
             val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
             integrationDestinations
                     .forEach {
                         if (r.entities.containsKey(it.key)) {
-                            r.integratedEntities[it.key]!!
+                            r.integratedEntities.getValue(it.key)
                                     .addAndGet(
                                             it.value.integrateEntities(r.entities[it.key]!!, entityKeyIds, updateTypes)
                                     )
                         }
                         if (r.associations.containsKey(it.key)) {
-                            r.integratedEdges[it.key]!!
+                            r.integratedEdges.getValue(it.key)
                                     .addAndGet(
                                             it.value.integrateAssociations(
                                                     r.associations[it.key]!!, entityKeyIds, updateTypes
