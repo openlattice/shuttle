@@ -390,6 +390,8 @@ class Shuttle(
     }
 
     private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int): Long {
+        val totalEntities = AtomicLong(0)
+        val totalEdges = AtomicLong(0)
         val sw = Stopwatch.createStarted()
         val remaining = payload.parallel().map { row ->
 
@@ -581,8 +583,12 @@ class Shuttle(
                     }
                 }
 
-                logger.info("Current entities progress: {}", adh.integratedEntities)
-                logger.info("Current edges progress: {}", adh.integratedEdges)
+                logger.info(
+                        "Current entities progress: {}",
+                        adh.integratedEntities.mapValues { totalEntities.addAndGet(it.value.get()) })
+                logger.info(
+                        "Current edges progress: {}",
+                        adh.integratedEdges.mapValues { totalEdges.addAndGet(it.value.get()) })
 
                 return@reduce adh
             }
