@@ -25,6 +25,7 @@ import com.openlattice.data.*
 import com.openlattice.data.integration.*
 import com.openlattice.data.integration.Entity
 import com.openlattice.data.util.PostgresDataHasher
+import com.openlattice.shuttle.MissionControl
 import org.apache.commons.lang3.RandomUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.slf4j.LoggerFactory
@@ -141,10 +142,16 @@ class S3Destination(
                             false
                         } catch (ex: Exception) {
                             if (ex is ClassCastException) {
-                                logger.error("Expected byte array, but found wrong data type for upload.", ex)
-                                kotlin.system.exitProcess(2)
+                                logger.error(
+                                        "Expected byte array, but found wrong data type for upload (entitySetId=${s3ed.entitySetId}, entityKeyId=${s3ed.entityKeyId}, PropertType=${s3ed.propertyTypeId}).",
+                                        ex
+                                )
+                                MissionControl.fail(2)
                             } else {
-                                logger.error("Encountered an issue when uploading data. Retrying...", ex)
+                                logger.warn(
+                                        "Encountered an issue when uploading data (entitySetId=${s3ed.entitySetId}, entityKeyId=${s3ed.entityKeyId}, PropertType=${s3ed.propertyTypeId}). Retrying...",
+                                        ex
+                                )
                                 true
                             }
                         }
@@ -159,7 +166,7 @@ class S3Destination(
                     Thread.sleep(currentDelayMillis)
                     currentDelayMillis = max(
                             MAX_DELAY_MILLIS,
-                            (currentDelayMillis * RandomUtils.nextDouble(1.25, 2.0).toLong())
+                            (currentDelayMillis * RandomUtils.nextDouble(1.25, 2.0)).toLong()
                     )
 
                 } else {

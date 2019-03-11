@@ -228,14 +228,7 @@ fun main(args: Array<String>) {
     try {
         val shuttle = missionControl.prepare(flightPlan, createEntitySets, contacts)
         shuttle.launch(uploadBatchSize)
-        logger.info(
-                "\n _____ _   _ _____  _____  _____ _____ _____ \n" +
-                        "/  ___| | | /  __ \\/  __ \\|  ___/  ___/  ___|\n" +
-                        "\\ `--.| | | | /  \\/| /  \\/| |__ \\ `--.\\ `--. \n" +
-                        " `--. \\ | | | |    | |    |  __| `--. \\`--. \\\n" +
-                        "/\\__/ / |_| | \\__/\\| \\__/\\| |___/\\__/ /\\__/ /\n" +
-                        "\\____/ \\___/ \\____/ \\____/\\____/\\____/\\____/"
-        )
+        MissionControl.succeed()
     } catch (ex: Exception) {
         emailConfiguration.ifPresentOrElse(
                 { emailConfiguration ->
@@ -270,16 +263,7 @@ fun main(args: Array<String>) {
                     session.close()
 
                 }, { logger.error("An error occurred during the integration.", ex) })
-        logger.error(
-                "\n______ ___  _____ _     _   _______ _____ \n" +
-                        "|  ___/ _ \\|_   _| |   | | | | ___ \\  ___|\n" +
-                        "| |_ / /_\\ \\ | | | |   | | | | |_/ / |__  \n" +
-                        "|  _||  _  | | | | |   | | | |    /|  __| \n" +
-                        "| |  | | | |_| |_| |___| |_| | |\\ \\| |___ \n" +
-                        "\\_|  \\_| |_/\\___/\\_____/\\___/\\_| \\_\\____/ \n" +
-                        "                                         "
-        )
-        kotlin.system.exitProcess(1)
+        MissionControl.fail()
     }
 }
 
@@ -606,7 +590,8 @@ class Shuttle(
         }
 
         val (integratedEntities, integratedEdges) = remaining.map { r ->
-            val entityKeys = (r.entities.flatMap { it.value.map { it.key } } + r.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
+            val entityKeys = (r.entities.flatMap { it.value.map { entity -> entity.key } } +
+                    r.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
             val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
             integrationDestinations
                     .forEach {
