@@ -70,6 +70,14 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
         private val client = MissionControl.buildClient(AUTH0_CLIENT_ID)
 
+        init {
+            Runtime.getRuntime().addShutdownHook(object : Thread() {
+                override fun run() {
+                    logger.info("The JVM is going through its normal shutdown process.")
+                }
+            })
+        }
+
         @JvmStatic
         @Throws(Auth0Exception::class)
         fun getIdToken(username: String, password: String): String {
@@ -93,6 +101,40 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                     .execute()
                     .idToken
         }
+
+        @JvmStatic
+        fun succeed() {
+            logger.info(
+                    "\n _____ _   _ _____  _____  _____ _____ _____ \n" +
+                            "/  ___| | | /  __ \\/  __ \\|  ___/  ___/  ___|\n" +
+                            "\\ `--.| | | | /  \\/| /  \\/| |__ \\ `--.\\ `--. \n" +
+                            " `--. \\ | | | |    | |    |  __| `--. \\`--. \\\n" +
+                            "/\\__/ / |_| | \\__/\\| \\__/\\| |___/\\__/ /\\__/ /\n" +
+                            "\\____/ \\___/ \\____/ \\____/\\____/\\____/\\____/"
+            )
+            kotlin.system.exitProcess(0)
+        }
+
+        @JvmStatic
+        fun fail(): Nothing {
+            fail(1)
+        }
+
+        @JvmStatic
+        fun fail(code: Int): Nothing {
+            logger.error(
+                    "\n______ ___  _____ _     _   _______ _____ \n" +
+                            "|  ___/ _ \\|_   _| |   | | | | ___ \\  ___|\n" +
+                            "| |_ / /_\\ \\ | | | |   | | | | |_/ / |__  \n" +
+                            "|  _||  _  | | | | |   | | | |    /|  __| \n" +
+                            "| |  | | | |_| |_| |___| |_| | |\\ \\| |___ \n" +
+                            "\\_|  \\_| |_/\\___/\\_____/\\___/\\_| \\_\\____/ \n" +
+                            "                                         "
+            )
+            kotlin.system.exitProcess(code)
+        }
+
+
     }
 
     //TODO: We need to figure out why this isn't registered or a better way of controlling watch ObjectMapper is used

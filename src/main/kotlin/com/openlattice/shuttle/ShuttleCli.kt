@@ -178,7 +178,7 @@ class ShuttleCli {
                 .build()
 
         private val smtpServerPortOption = Option.builder()
-                .longOpt(FROM_EMAIL_PASSWORD)
+                .longOpt(SMTP_SERVER_PORT)
                 .hasArg(true)
                 .argName("Port used to connect to smtp server")
                 .build()
