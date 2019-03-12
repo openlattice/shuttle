@@ -72,6 +72,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.function.Supplier
 import java.util.stream.Stream
+import kotlin.streams.asSequence
 
 /**
  *
@@ -390,10 +391,10 @@ class Shuttle(
     }
 
     private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int): Long {
-        val totalEntities = AtomicLong(0)
-        val totalEdges = AtomicLong(0)
+        val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>()
+        val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>()
         val sw = Stopwatch.createStarted()
-        val remaining = payload.parallel().map { row ->
+        payload.parallel().map { row ->
 
             val aliasesToEntityKey = mutableMapOf<String, EntityKey>()
             val addressedDataHolder = AddressedDataHolder(mutableMapOf(), mutableMapOf())
@@ -547,91 +548,51 @@ class Shuttle(
                 }
             }
             addressedDataHolder
-        }.reduce { a: AddressedDataHolder, b: AddressedDataHolder ->
-            b.associations.forEach { storageDestination, associations ->
-                a.associations.getOrPut(storageDestination) { mutableSetOf() }.addAll(associations)
-            }
-
-            b.entities.forEach { storageDestination, entities ->
-                a.entities.getOrPut(storageDestination) { mutableSetOf() }.addAll(entities)
-            }
-
-            a.integratedEntities.forEach { sd, count -> count.addAndGet(b.integratedEntities.getValue(sd).get()) }
-            a.integratedEdges.forEach { sd, count -> count.addAndGet(b.integratedEdges.getValue(sd).get()) }
-
-            if (a.associations.values.any { it.size > uploadBatchSize } ||
-                    a.entities.values.any { it.size > uploadBatchSize }) {
+        }.asSequence().chunked(uploadBatchSize).forEach { batch ->
+            batch.forEach { a ->
                 val entityKeys = (a.entities.flatMap { e -> e.value.map { it.key } }
                         + a.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
                 val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
-                val adh = AddressedDataHolder(mutableMapOf(), mutableMapOf())
 
-                integrationDestinations.forEach {
-                    if (a.entities.containsKey(it.key)) {
-                        adh.integratedEntities.getValue(it.key)
-                                .addAndGet(it.value.integrateEntities(a.entities[it.key]!!, entityKeyIds, updateTypes))
-                    }
-                    if (a.associations.containsKey(it.key)) {
-                        adh.integratedEdges.getValue(it.key)
-                                .addAndGet(
-                                        it.value.integrateAssociations(
-                                                a.associations[it.key]!!,
-                                                entityKeyIds,
-                                                updateTypes
-                                        )
+
+                integrationDestinations.forEach { (storageDestination, integrationDestination) ->
+
+                    if (a.entities.containsKey(storageDestination)) {
+                        integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                integrationDestination.integrateEntities(
+                                        a.entities.getValue(storageDestination),
+                                        entityKeyIds,
+                                        updateTypes
                                 )
+                        )
+                    }
+                    if (a.associations.containsKey(storageDestination)) {
+                        integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                integrationDestination.integrateAssociations(
+                                        a.associations.getValue(storageDestination),
+                                        entityKeyIds,
+                                        updateTypes
+                                )
+                        )
                     }
                 }
 
-                logger.info(
-                        "Current entities progress: {}",
-                        adh.integratedEntities.mapValues { totalEntities.addAndGet(it.value.get()) })
-                logger.info(
-                        "Current edges progress: {}",
-                        adh.integratedEdges.mapValues { totalEdges.addAndGet(it.value.get()) })
-
-                return@reduce adh
             }
-            a
-        }
 
-        val (integratedEntities, integratedEdges) = remaining.map { r ->
-            val entityKeys = (r.entities.flatMap { it.value.map { entity -> entity.key } } +
-                    r.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
-            val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
-            integrationDestinations
-                    .forEach {
-                        if (r.entities.containsKey(it.key)) {
-                            r.integratedEntities.getValue(it.key)
-                                    .addAndGet(
-                                            it.value.integrateEntities(r.entities[it.key]!!, entityKeyIds, updateTypes)
-                                    )
-                        }
-                        if (r.associations.containsKey(it.key)) {
-                            r.integratedEdges.getValue(it.key)
-                                    .addAndGet(
-                                            it.value.integrateAssociations(
-                                                    r.associations[it.key]!!, entityKeyIds, updateTypes
-                                            )
-                                    )
-                        }
-                    }
-            r.integratedEntities to r.integratedEdges
-        }.orElse(
-                StorageDestination.values().map { it to AtomicLong(0) }.toMap() to
-                        StorageDestination.values().map { it to AtomicLong(0) }.toMap()
-        )
+            logger.info("Current entities progress: {}", integratedEntities)
+            logger.info("Current edges progress: {}", integratedEdges)
+        }
 
         return StorageDestination.values().map {
             logger.info(
                     "Integrated {} entities and {} edges in {} ms for flight {} to {}",
-                    integratedEntities,
-                    integratedEdges,
+                    integratedEntities.getValue(it),
+                    integratedEdges.getValue(it),
                     sw.elapsed(TimeUnit.MILLISECONDS),
                     flight.name,
                     it.name
             )
-            integratedEntities[it]!!.get() + integratedEdges[it]!!.get()
+            integratedEntities.getValue(it).get() + integratedEdges.getValue(it).get()
         }.sum()
     }
 
