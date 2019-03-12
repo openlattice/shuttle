@@ -25,18 +25,15 @@ import com.openlattice.data.*
 import com.openlattice.data.integration.*
 import com.openlattice.data.integration.Entity
 import com.openlattice.data.util.PostgresDataHasher
+import com.openlattice.shuttle.MissionControl
 import org.apache.commons.lang3.RandomUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.slf4j.LoggerFactory
-import org.springframework.web.context.request.async.AsyncRequestTimeoutException
 import java.lang.ClassCastException
 import java.lang.Exception
 import java.util.*
-import java.util.concurrent.locks.ReentrantLock
-import java.util.function.Supplier
 import java.util.stream.Collectors
 import kotlin.math.max
-import kotlin.streams.asSequence
 
 private val logger = LoggerFactory.getLogger(S3Destination::class.java)
 const val MAX_DELAY_MILLIS = 60 * 60 * 1000L
@@ -68,52 +65,7 @@ class S3Destination(
             }
         }
 
-        var s3eds = s3entities
-
-        var currentDelayMillis = 1L
-        var currentRetryCount = 0
-
-        while (s3eds.isNotEmpty()) {
-            val (s3entities, values) = s3eds.unzip()
-            val presignedUrls = getS3Urls(s3entities)
-
-            s3eds = s3entities
-                    .mapIndexed { index, s3EntityData ->
-                        Triple(s3EntityData, presignedUrls[index], values[index])
-                    }
-                    .parallelStream()
-                    .filter { (s3ed, url, bytes) ->
-                        try {
-                            s3Api.writeToS3(url, bytes as ByteArray)
-                            false
-                        } catch (ex: Exception) {
-                            if (ex is ClassCastException) {
-                                logger.error("Expected byte array, but found wrong data type for upload.", ex)
-                                kotlin.system.exitProcess(2)
-                            } else {
-                                logger.error("Encountered an issue when uploading data. Retrying...", ex)
-                                true
-                            }
-                        }
-                    }
-                    .map { (s3ed, _, bytes) ->
-                        s3ed to bytes
-                    }.collect(Collectors.toList())
-
-            if (s3eds.isNotEmpty()) {
-                currentRetryCount++
-                if (currentRetryCount <= MAX_RETRY_COUNT) {
-                    Thread.sleep(currentDelayMillis)
-                    currentDelayMillis = max(
-                            MAX_DELAY_MILLIS,
-                            (currentDelayMillis * RandomUtils.nextDouble(1.25, 2.0).toLong())
-                    )
-
-                } else {
-                    throw IllegalStateException("Unable to retrieve presigned urls. Maybe prod is down?")
-                }
-            }
-        }
+        uploadToS3WithRetry(s3entities)
 
         return s3entities.size.toLong()
     }
@@ -144,8 +96,8 @@ class S3Destination(
     override fun integrateAssociations(
             data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
     ): Long {
-        val (s3entities, values) = data.flatMap { entity ->
-            val entityKeyId = entityKeyIds[entity.key]!!
+        val s3entities = data.flatMap { entity ->
+            val entityKeyId = entityKeyIds.getValue(entity.key)
             entity.details.entries.flatMap { (propertyTypeId, properties) ->
                 properties.map {
                     S3EntityData(
@@ -156,13 +108,9 @@ class S3Destination(
                     ) to it
                 }
             }
-        }.unzip()
+        }
 
-        dataIntegrationApi
-                .generatePresignedUrls(s3entities)
-                .zip(values)
-                .parallelStream()
-                .forEach { s3Api.writeToS3(it.first, it.second as ByteArray) }
+        uploadToS3WithRetry(s3entities)
 
         val entities = data.map {
             val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])
@@ -170,7 +118,62 @@ class S3Destination(
             val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds[it.key])
             DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
         }.toSet()
-        return values.size.toLong() + dataApi.createAssociations(entities).toLong()
+        return s3entities.size.toLong() + dataApi.createAssociations(entities).toLong()
+    }
+
+    private fun uploadToS3WithRetry(s3entities: List<Pair<S3EntityData, Any>>) {
+        var s3eds = s3entities
+
+        var currentDelayMillis = 1L
+        var currentRetryCount = 0
+
+        while (s3eds.isNotEmpty()) {
+            val (s3entities, values) = s3eds.unzip()
+            val presignedUrls = getS3Urls(s3entities)
+
+            s3eds = s3entities
+                    .mapIndexed { index, s3EntityData ->
+                        Triple(s3EntityData, presignedUrls[index], values[index])
+                    }
+                    .parallelStream()
+                    .filter { (s3ed, url, bytes) ->
+                        try {
+                            s3Api.writeToS3(url, bytes as ByteArray)
+                            false
+                        } catch (ex: Exception) {
+                            if (ex is ClassCastException) {
+                                logger.error(
+                                        "Expected byte array, but found wrong data type for upload (entitySetId=${s3ed.entitySetId}, entityKeyId=${s3ed.entityKeyId}, PropertType=${s3ed.propertyTypeId}).",
+                                        ex
+                                )
+                                MissionControl.fail(2)
+                            } else {
+                                logger.warn(
+                                        "Encountered an issue when uploading data (entitySetId=${s3ed.entitySetId}, entityKeyId=${s3ed.entityKeyId}, PropertType=${s3ed.propertyTypeId}). Retrying...",
+                                        ex
+                                )
+                                true
+                            }
+                        }
+                    }
+                    .map { (s3ed, _, bytes) ->
+                        s3ed to bytes
+                    }.collect(Collectors.toList())
+
+            if (s3eds.isNotEmpty()) {
+                currentRetryCount++
+                if (currentRetryCount <= MAX_RETRY_COUNT) {
+                    Thread.sleep(currentDelayMillis)
+                    currentDelayMillis = max(
+                            MAX_DELAY_MILLIS,
+                            (currentDelayMillis * RandomUtils.nextDouble(1.25, 2.0)).toLong()
+                    )
+
+                } else {
+                    throw IllegalStateException("Unable to retrieve presigned urls. Maybe prod is down?")
+                }
+            }
+        }
     }
 
     override fun accepts(): StorageDestination {
