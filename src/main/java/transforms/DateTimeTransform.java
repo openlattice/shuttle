@@ -24,8 +24,15 @@ public class DateTimeTransform extends Transformation<String> {
             @JsonProperty( Constants.TIMEZONE ) String timezone
     ) {
         this.pattern = pattern;
-        this.timezone =
-                timezone == null ? TimeZone.getTimeZone( "America/New_York" ) : TimeZone.getTimeZone( timezone );
+        this.timezone = TimeZone.getTimeZone( timezone );
+    }
+
+    @JsonCreator
+    public DateTimeTransform(
+            @JsonProperty( Constants.PATTERN ) String[] pattern
+    ) {
+        this.pattern = pattern;
+        this.timezone = TimeZone.getTimeZone( "America/New_York" );
     }
 
     @JsonProperty( value = Constants.PATTERN, required = false )
