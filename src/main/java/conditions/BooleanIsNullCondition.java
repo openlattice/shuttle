@@ -41,19 +41,11 @@ public class BooleanIsNullCondition extends Condition<Map<String, String>> {
 
     @Override
     public Boolean apply( Map<String, String> row ) {
-        if ( StringUtils.isBlank( row.get( column ) ) ) {
             if ( reverse ) {
-                return false;
+                return !StringUtils.isBlank( row.get( column ) );
             } else {
-                return true;
+                return StringUtils.isBlank( row.get( column ) );
             }
-        } else {
-            if ( reverse ) {
-                return true;
-            } else {
-                return false;
-            }
-        }
     }
 
 }
