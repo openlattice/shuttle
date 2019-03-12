@@ -218,7 +218,7 @@ public class TransformTest {
         String[] patterns = { "MM/dd/yyyy HH:mm", "MM/dd/yy HH:mm" };
         OffsetDateTime expected1 = OffsetDateTime
                 .of( LocalDateTime.of( 1998, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
-        Object dateTimeTest1 = new DateTimeTransform( patterns, null ).apply( getTestRow().get( "DOB" ) );
+        Object dateTimeTest1 = new DateTimeTransform( patterns ).apply( getTestRow().get( "DOB" ) );
         Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         OffsetDateTime expected2 = OffsetDateTime
                 .of( LocalDateTime.of( 2000, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
