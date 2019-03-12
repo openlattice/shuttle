@@ -73,6 +73,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.function.Supplier
 import java.util.stream.Stream
 import kotlin.streams.asSequence
+import kotlin.streams.asStream
 
 /**
  *
@@ -394,19 +395,65 @@ class Shuttle(
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>()
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>()
         val sw = Stopwatch.createStarted()
-        payload.parallel().map { row ->
+        payload.asSequence().chunked(uploadBatchSize)
+                .asStream().parallel()
+                .map { batch -> impulse(flight, batch) }
+                .forEach { batch ->
+                    val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
+                            + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
+                    val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
 
+
+                    integrationDestinations.forEach { (storageDestination, integrationDestination) ->
+                        if (batch.entities.containsKey(storageDestination)) {
+                            integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                    integrationDestination.integrateEntities(
+                                            batch.entities.getValue(storageDestination),
+                                            entityKeyIds,
+                                            updateTypes
+                                    )
+                            )
+                        }
+
+                        if (batch.associations.containsKey(storageDestination)) {
+                            integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                    integrationDestination.integrateAssociations(
+                                            batch.associations.getValue(storageDestination),
+                                            entityKeyIds,
+                                            updateTypes
+                                    )
+                            )
+                        }
+                    }
+
+                }
+
+        logger.info("Current entities progress: {}", integratedEntities)
+        logger.info("Current edges progress: {}", integratedEdges)
+
+
+        return StorageDestination.values().map {
+            logger.info(
+                    "Integrated {} entities and {} edges in {} ms for flight {} to {}",
+                    integratedEntities.getValue(it),
+                    integratedEdges.getValue(it),
+                    sw.elapsed(TimeUnit.MILLISECONDS),
+                    flight.name,
+                    it.name
+            )
+            integratedEntities.getValue(it).get() + integratedEdges.getValue(it).get()
+        }.sum()
+    }
+
+    private fun impulse(flight: Flight, batch: List<Map<String, Any>>): AddressedDataHolder {
+        val addressedDataHolder = AddressedDataHolder(mutableMapOf(), mutableMapOf())
+
+        batch.forEach { row ->
             val aliasesToEntityKey = mutableMapOf<String, EntityKey>()
-            val addressedDataHolder = AddressedDataHolder(mutableMapOf(), mutableMapOf())
-//            val entities = mutableSetOf<Entity>()
-//            val associations = mutableSetOf<Association>()
             val wasCreated = mutableMapOf<String, Boolean>()
-
             if (flight.condition.isPresent && !(flight.valueMapper.apply(row) as Boolean)) {
-                return@map addressedDataHolder
-                //BulkDataCreation(entities, associations)
+                return@forEach
             }
-
             for (entityDefinition in flight.entities) {
                 val condition = if (entityDefinition.condition.isPresent) {
                     entityDefinition.valueMapper.apply(row) as Boolean
@@ -461,7 +508,6 @@ class Shuttle(
                                 .getOrPut(storageDestination) { mutableSetOf() }
                                 .add(Entity(key, data))
                     }
-//                    entities.add(Entity(key, properties))
                     wasCreated[entityDefinition.alias] = true
                 } else {
                     wasCreated[entityDefinition.alias] = false
@@ -547,53 +593,7 @@ class Shuttle(
                     }
                 }
             }
-            addressedDataHolder
-        }.asSequence().chunked(uploadBatchSize).forEach { batch ->
-            batch.forEach { a ->
-                val entityKeys = (a.entities.flatMap { e -> e.value.map { it.key } }
-                        + a.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
-                val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
-
-
-                integrationDestinations.forEach { (storageDestination, integrationDestination) ->
-
-                    if (a.entities.containsKey(storageDestination)) {
-                        integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                integrationDestination.integrateEntities(
-                                        a.entities.getValue(storageDestination),
-                                        entityKeyIds,
-                                        updateTypes
-                                )
-                        )
-                    }
-                    if (a.associations.containsKey(storageDestination)) {
-                        integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                integrationDestination.integrateAssociations(
-                                        a.associations.getValue(storageDestination),
-                                        entityKeyIds,
-                                        updateTypes
-                                )
-                        )
-                    }
-                }
-
-            }
-
-            logger.info("Current entities progress: {}", integratedEntities)
-            logger.info("Current edges progress: {}", integratedEdges)
         }
-
-        return StorageDestination.values().map {
-            logger.info(
-                    "Integrated {} entities and {} edges in {} ms for flight {} to {}",
-                    integratedEntities.getValue(it),
-                    integratedEdges.getValue(it),
-                    sw.elapsed(TimeUnit.MILLISECONDS),
-                    flight.name,
-                    it.name
-            )
-            integratedEntities.getValue(it).get() + integratedEdges.getValue(it).get()
-        }.sum()
+        return addressedDataHolder
     }
-
 }
