@@ -54,7 +54,7 @@ public class ConditionTest {
         Map<String, String> row = getTestRow();
         String[] datePattern = { "MM/dd/yyyy HH:mm" };
         ArrayList<Transformation> transforms = new ArrayList<>();
-        transforms.add( new DateTimeTransform( datePattern, null ) );
+        transforms.add( new DateTimeTransform( datePattern ) );
         CompareCondition comp1 = new CompareCondition(
                 "Encounter 1 start date",
                 transforms,
