@@ -75,7 +75,7 @@ public class BooleanAreNotNullCondition extends Condition<Map<String, String>> {
                 break;
         }
 
-        if ( reverse == true ) {
+        if ( reverse ) {
             out = !out;
         }
 

@@ -69,7 +69,7 @@ public class BooleanRegexCondition extends Condition<Map<String, String>> {
             }
         }
 
-        if ( reverse == true ) {
+        if ( reverse ) {
             out = !out;
         }
 
