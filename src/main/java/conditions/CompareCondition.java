@@ -72,15 +72,17 @@ public class CompareCondition extends Condition<Map<String, String>> {
         Object leftTransformed = row.get( leftColumn );
         Object rightTransformed = row.get( rightColumn );
 
-        if ( !(leftColumn == null) && !( row.containsKey( leftColumn ) ) ) {
+        if ( leftColumn == null && rightColumn == null ) {
+            throw new IllegalStateException( String.format( "The comparison is not data dependent. No columns are specified." ) );
+        }
+        if ( leftColumn != null && !( row.containsKey( leftColumn ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", leftColumn ) );
         }
-        if ( !(rightColumn == null) && !( row.containsKey( rightColumn ) ) ) {
+        if ( rightColumn != null && !( row.containsKey( rightColumn ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", rightColumn ) );
         }
-
-        if ( (!(leftColumn == null) &&  leftTransformed == null) ||  (!(rightColumn == null) &&  rightTransformed == null) ) {
-            return Boolean.FALSE;
+        if ( (leftColumn != null &&  leftTransformed == null) ||  (rightColumn != null &&  rightTransformed == null) ) {
+            return false;
         }
 
         for ( Transformation t : leftTransforms ) {
@@ -91,24 +93,25 @@ public class CompareCondition extends Condition<Map<String, String>> {
         }
 
         if ( leftTransformed == null || rightTransformed == null ) {
-            return Boolean.FALSE;
+            return false;
         }
 
+        int comparisonValue = ( (Comparable) leftTransformed ).compareTo( rightTransformed );
         try {
             switch ( comparison ) {
 
                 case eq:
-                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) == 0;
+                    return comparisonValue == 0;
                 case ne:
-                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) != 0;
+                    return comparisonValue != 0;
                 case ge:
-                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) >= 0;
+                    return comparisonValue >= 0;
                 case gt:
-                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) > 0;
+                    return comparisonValue > 0;
                 case lt:
-                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) < 0;
+                    return comparisonValue < 0;
                 case le:
-                    return ( (Comparable) leftTransformed ).compareTo( rightTransformed ) <= 0;
+                    return comparisonValue <= 0;
                 default:
                     return false;
             }
