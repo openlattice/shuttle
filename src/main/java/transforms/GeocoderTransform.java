@@ -47,7 +47,7 @@ public class GeocoderTransform extends Transformation<Object> {
     }
 
     public String getAddress( String input, String addressObject ) {
-        List<Map<String, Object>> map = geocodingApi.geocode( addressObject );
+        List<Map<String, Object>> map = geocodingApi.geocode( input );
 
         if ( map.size() == 0 ) {
             System.out.println( "Can't parse address " + input );

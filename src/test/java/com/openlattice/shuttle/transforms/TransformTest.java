@@ -329,7 +329,6 @@ public class TransformTest {
     }
 
     @Test(timeout=3000)
-    @Ignore
     public void testGeocoderTransform() {
         String expectedStreet = "Scott Street";
         Object geocoderTest1 = new GeocoderTransform( "road", Optional.empty() )

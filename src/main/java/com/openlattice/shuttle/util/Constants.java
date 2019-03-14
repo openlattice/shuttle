@@ -42,5 +42,6 @@ public final class Constants {
     public static final String RIGHTCOLUMN         = "rightColumn";
     public static final String RIGHTTRANSFORMS     = "rightTransforms";
     public static final String COMPARISON          = "comparison";
+    public static final String TIMEZONE            = "timezone";
 
 }

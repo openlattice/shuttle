@@ -62,6 +62,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import transforms.HashTransform;
 import transforms.PrefixTransform;
 
 public class ShuttleTest extends ShuttleTestBootstrap {
@@ -258,7 +259,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .addProperty( ALGO_PT.getType() ).extractor( row -> row.get( "algo" ) ).ok()
                         .addProperty( MODE_PT.getType() ).value( "mode" ).ok()
                         .addProperty( CYPHER_HASH_PT.getType() )
-                            .value( ImmutableList.of("algo", "mode", "keySize"), "murmur128" )
+                            .value( ImmutableList.of("algo", "mode", "keySize"), HashTransform.HashType.murmur128 )
                             .ok()
                         .endEntity()
                     .addEntity( MORE_CYPHERS_ALIAS )

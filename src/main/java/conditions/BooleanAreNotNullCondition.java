@@ -62,30 +62,21 @@ public class BooleanAreNotNullCondition extends Condition<Map<String, String>> {
         Boolean out = false;
         switch ( type ) {
             case all:
-                if (count == columns.size())
-                    out = true;
-                else
-                    out = false;
+                out = count == columns.size();
+                break;
             case any:
-                if (count > 0)
-                    out = true;
-                else
-                    out = false;
+                out = count > 0;
+                break;
             case none:
-                if (count == 0)
-                    out = true;
-                else
-                    out = false;
+                out = count == 0;
+                break;
             default:
                 out = false;
+                break;
         }
 
-        if ( reverse == true ) {
-            if ( out ) {
-                out = false;
-            } else {
-                out = true;
-            }
+        if ( reverse ) {
+            out = !out;
         }
 
         return out;
