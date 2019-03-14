@@ -402,7 +402,7 @@ class Shuttle(
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>()
         val integrationQueue = Queues
                 .newArrayBlockingQueue<List<Map<String, Any>>>(
-                        Math.max(1, Runtime.getRuntime().availableProcessors() - 3)
+                        Math.max(2, 2*(Runtime.getRuntime().availableProcessors() - 2))
                 )
         val latch = CountDownLatch(1)
         val sw = Stopwatch.createStarted()
