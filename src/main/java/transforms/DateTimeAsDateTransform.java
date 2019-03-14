@@ -6,6 +6,7 @@ import com.openlattice.shuttle.dates.JavaDateTimeHelper;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 
+import java.util.Optional;
 import java.util.TimeZone;
 
 public class DateTimeAsDateTransform extends Transformation<String> {
@@ -21,17 +22,10 @@ public class DateTimeAsDateTransform extends Transformation<String> {
     @JsonCreator
     public DateTimeAsDateTransform(
             @JsonProperty( Constants.PATTERN ) String[] pattern,
-            @JsonProperty( Constants.TIMEZONE ) String timezone
+            @JsonProperty( Constants.TIMEZONE ) Optional<String> timezone
     ) {
         this.pattern = pattern;
-        this.timezone = TimeZone.getTimeZone( timezone );
-    }
-
-    public DateTimeAsDateTransform(
-            @JsonProperty( Constants.PATTERN ) String[] pattern
-    ) {
-        this.pattern = pattern;
-        this.timezone = TimeZone.getTimeZone( "America/New_York" );
+        this.timezone = TimeZone.getTimeZone( timezone.orElse( "America/New_York" ) );
     }
 
     @JsonProperty( value = Constants.PATTERN, required = false )
