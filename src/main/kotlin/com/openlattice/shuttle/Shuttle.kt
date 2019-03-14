@@ -25,6 +25,7 @@ import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions
 import com.google.common.base.Stopwatch
 import com.google.common.collect.ImmutableList
+import com.google.common.collect.Queues
 import com.openlattice.ApiUtil
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataIntegrationApi
@@ -68,8 +69,12 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.System.exit
 import java.util.*
+import java.util.concurrent.BlockingQueue
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Supplier
 import java.util.stream.Stream
 import kotlin.streams.asSequence
@@ -350,6 +355,7 @@ class Shuttle(
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
+        private val uploadingExecutor = Executors.newSingleThreadExecutor()
     }
 
     private val updateTypes = flightPlan.keys.flatMap { flight ->
@@ -394,43 +400,56 @@ class Shuttle(
     private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int): Long {
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>()
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>()
+        val integrationQueue = Queues
+                .newArrayBlockingQueue<List<Map<String, Any>>>(
+                        Math.max(1, Runtime.getRuntime().availableProcessors() - 3)
+                )
+        val latch = CountDownLatch(1)
         val sw = Stopwatch.createStarted()
-        payload.asSequence().chunked(uploadBatchSize)
-                .asStream().parallel()
-                .map { batch -> impulse(flight, batch) }
-                .forEach { batch ->
-                    val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
-                            + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
-                    val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
+
+        uploadingExecutor.execute {
+            Stream.generate { integrationQueue.take() }.parallel()
+                    .map { batch -> impulse(flight, batch) }
+                    .forEach { batch ->
+                        val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
+                                + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
+                        val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
 
 
-                    integrationDestinations.forEach { (storageDestination, integrationDestination) ->
-                        if (batch.entities.containsKey(storageDestination)) {
-                            integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                    integrationDestination.integrateEntities(
-                                            batch.entities.getValue(storageDestination),
-                                            entityKeyIds,
-                                            updateTypes
-                                    )
-                            )
+                        integrationDestinations.forEach { (storageDestination, integrationDestination) ->
+                            if (batch.entities.containsKey(storageDestination)) {
+                                integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                        integrationDestination.integrateEntities(
+                                                batch.entities.getValue(storageDestination),
+                                                entityKeyIds,
+                                                updateTypes
+                                        )
+                                )
+                            }
+
+                            if (batch.associations.containsKey(storageDestination)) {
+                                integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                        integrationDestination.integrateAssociations(
+                                                batch.associations.getValue(storageDestination),
+                                                entityKeyIds,
+                                                updateTypes
+                                        )
+                                )
+                            }
                         }
-
-                        if (batch.associations.containsKey(storageDestination)) {
-                            integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                    integrationDestination.integrateAssociations(
-                                            batch.associations.getValue(storageDestination),
-                                            entityKeyIds,
-                                            updateTypes
-                                    )
-                            )
-                        }
+                        logger.info("Current entities progress: {}", integratedEntities)
+                        logger.info("Current edges progress: {}", integratedEdges)
                     }
+            latch.countDown()
+        }
 
+        payload.asSequence()
+                .chunked(uploadBatchSize)
+                .forEach {
+                    integrationQueue.put(it)
                 }
 
-        logger.info("Current entities progress: {}", integratedEntities)
-        logger.info("Current edges progress: {}", integratedEdges)
-
+        latch.await()
 
         return StorageDestination.values().map {
             logger.info(
