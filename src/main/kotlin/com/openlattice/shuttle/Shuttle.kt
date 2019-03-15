@@ -402,44 +402,49 @@ class Shuttle(
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>()
         val integrationQueue = Queues
                 .newArrayBlockingQueue<List<Map<String, Any>>>(
-                        Math.max(2, 2*(Runtime.getRuntime().availableProcessors() - 2))
+                        Math.max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
                 )
         val latch = CountDownLatch(1)
         val sw = Stopwatch.createStarted()
 
         uploadingExecutor.execute {
-            Stream.generate { integrationQueue.take() }.parallel()
-                    .map { batch -> impulse(flight, batch) }
-                    .forEach { batch ->
-                        val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
-                                + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
-                        val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
+            try {
+                Stream.generate { integrationQueue.take() }.parallel()
+                        .map { batch -> impulse(flight, batch) }
+                        .forEach { batch ->
+                            val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
+                                    + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
+                            val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
 
 
-                        integrationDestinations.forEach { (storageDestination, integrationDestination) ->
-                            if (batch.entities.containsKey(storageDestination)) {
-                                integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                        integrationDestination.integrateEntities(
-                                                batch.entities.getValue(storageDestination),
-                                                entityKeyIds,
-                                                updateTypes
-                                        )
-                                )
+                            integrationDestinations.forEach { (storageDestination, integrationDestination) ->
+                                if (batch.entities.containsKey(storageDestination)) {
+                                    integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                            integrationDestination.integrateEntities(
+                                                    batch.entities.getValue(storageDestination),
+                                                    entityKeyIds,
+                                                    updateTypes
+                                            )
+                                    )
+                                }
+
+                                if (batch.associations.containsKey(storageDestination)) {
+                                    integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                            integrationDestination.integrateAssociations(
+                                                    batch.associations.getValue(storageDestination),
+                                                    entityKeyIds,
+                                                    updateTypes
+                                            )
+                                    )
+                                }
                             }
-
-                            if (batch.associations.containsKey(storageDestination)) {
-                                integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                        integrationDestination.integrateAssociations(
-                                                batch.associations.getValue(storageDestination),
-                                                entityKeyIds,
-                                                updateTypes
-                                        )
-                                )
-                            }
+                            logger.info("Current entities progress: {}", integratedEntities)
+                            logger.info("Current edges progress: {}", integratedEdges)
                         }
-                        logger.info("Current entities progress: {}", integratedEntities)
-                        logger.info("Current edges progress: {}", integratedEdges)
-                    }
+            } catch (ex: Exception) {
+                logger.error("Integration failure. ", ex)
+                MissionControl.fail(1)
+            }
             latch.countDown()
         }
 
