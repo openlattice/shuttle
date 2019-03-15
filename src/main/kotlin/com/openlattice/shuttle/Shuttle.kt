@@ -398,18 +398,27 @@ class Shuttle(
     }
 
     private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int): Long {
-        val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>()
-        val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>()
+        val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault{AtomicLong(0L)}
+        val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault{AtomicLong(0L)}
         val integrationQueue = Queues
                 .newArrayBlockingQueue<List<Map<String, Any>>>(
                         Math.max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
                 )
+
         val sw = Stopwatch.createStarted()
+
+        payload.asSequence()
+                .chunked(uploadBatchSize)
+                .forEach {
+                    integrationQueue.put(it)
+                }
 
         uploadingExecutor.execute {
             try {
-                Stream.generate { integrationQueue.take() }.parallel()
-                        .map { batch -> impulse(flight, batch) }
+                Stream.generate { integrationQueue.peek() }.parallel()
+                        .map {
+                            batch -> impulse(flight, batch)
+                        }
                         .forEach { batch ->
                             val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
                                     + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
@@ -439,6 +448,8 @@ class Shuttle(
                             }
                             logger.info("Current entities progress: {}", integratedEntities)
                             logger.info("Current edges progress: {}", integratedEdges)
+
+                            integrationQueue.take()
                         }
             } catch (ex: Exception) {
                 logger.error("Integration failure. ", ex)
@@ -446,15 +457,12 @@ class Shuttle(
             }
         }
 
-        payload.asSequence()
-                .chunked(uploadBatchSize)
-                .forEach {
-                    integrationQueue.put(it)
-                }
         //Wait on upload thread to finish emptying queue.
         while( integrationQueue.isNotEmpty() ) {
             Thread.sleep(1000)
         }
+
+        Thread.sleep(1000)
 
         return StorageDestination.values().map {
             logger.info(
