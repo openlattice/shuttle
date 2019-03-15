@@ -404,7 +404,6 @@ class Shuttle(
                 .newArrayBlockingQueue<List<Map<String, Any>>>(
                         Math.max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
                 )
-        val latch = CountDownLatch(1)
         val sw = Stopwatch.createStarted()
 
         uploadingExecutor.execute {
@@ -445,7 +444,6 @@ class Shuttle(
                 logger.error("Integration failure. ", ex)
                 MissionControl.fail(1)
             }
-            latch.countDown()
         }
 
         payload.asSequence()
@@ -453,8 +451,10 @@ class Shuttle(
                 .forEach {
                     integrationQueue.put(it)
                 }
-
-        latch.await()
+        //Wait on upload thread to finish emptying queue.
+        while( integrationQueue.isNotEmpty() ) {
+            Thread.sleep(1000)
+        }
 
         return StorageDestination.values().map {
             logger.info(
