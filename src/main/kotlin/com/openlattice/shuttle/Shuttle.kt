@@ -405,6 +405,7 @@ class Shuttle(
                         Math.max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
                 )
         val sw = Stopwatch.createStarted()
+        val remaining = AtomicLong(0)
 
         uploadingExecutor.execute {
             try {
@@ -439,6 +440,7 @@ class Shuttle(
                             }
                             logger.info("Current entities progress: {}", integratedEntities)
                             logger.info("Current edges progress: {}", integratedEdges)
+                            remaining.decrementAndGet()
                         }
             } catch (ex: Exception) {
                 logger.error("Integration failure. ", ex)
@@ -449,10 +451,11 @@ class Shuttle(
         payload.asSequence()
                 .chunked(uploadBatchSize)
                 .forEach {
+                    remaining.incrementAndGet()
                     integrationQueue.put(it)
                 }
         //Wait on upload thread to finish emptying queue.
-        while( integrationQueue.isNotEmpty() ) {
+        while( remaining.get() > 0 ) {
             Thread.sleep(1000)
         }
 
