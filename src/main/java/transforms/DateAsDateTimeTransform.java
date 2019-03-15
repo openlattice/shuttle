@@ -31,8 +31,10 @@ public class DateAsDateTimeTransform extends Transformation<String> {
     public DateAsDateTimeTransform(
             @JsonProperty( Constants.PATTERN ) String[] pattern
     ) {
-        this.pattern = pattern;
-        this.timezone = TimeZone.getTimeZone( "America/New_York");
+        this(
+                pattern,
+                Optional.empty()
+        );
     }
 
     @JsonProperty( value = Constants.PATTERN, required = false )
