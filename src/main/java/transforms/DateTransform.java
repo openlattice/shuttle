@@ -49,6 +49,13 @@ public class DateTransform extends Transformation<String> {
         this.timezone = TimeZone.getTimeZone( timezone.orElse("America/New_York") );
     }
 
+    public DateTransform(
+            @JsonProperty( Constants.PATTERN ) String[] pattern
+    ) {
+        this.pattern = pattern;
+        this.timezone = TimeZone.getTimeZone( "America/New_York");
+    }
+
     @JsonProperty( value = Constants.PATTERN, required = false )
     public String[] getPattern() {
         return pattern;
