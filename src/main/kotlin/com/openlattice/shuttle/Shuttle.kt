@@ -398,8 +398,8 @@ class Shuttle(
     }
 
     private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int): Long {
-        val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>()
-        val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>()
+        val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault{AtomicLong(0L)}
+        val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault{AtomicLong(0L)}
         val integrationQueue = Queues
                 .newArrayBlockingQueue<List<Map<String, Any>>>(
                         Math.max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
