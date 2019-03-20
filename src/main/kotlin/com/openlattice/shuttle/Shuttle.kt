@@ -233,6 +233,7 @@ fun main(args: Array<String>) {
     val flightPlan = mapOf(flight to payload)
 
     try {
+        MissionControl.setEmailConfiguration(emailConfiguration)
         val shuttle = missionControl.prepare(flightPlan, createEntitySets, contacts)
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()

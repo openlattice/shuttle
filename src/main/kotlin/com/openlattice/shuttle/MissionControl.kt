@@ -109,6 +109,11 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         }
 
         @JvmStatic
+        fun setEmailConfiguration( emailConfiguration: Optional<EmailConfiguration> ) {
+            this.emailConfiguration = emailConfiguration
+        }
+
+        @JvmStatic
         fun succeed() {
             logger.info(
                     "\n _____ _   _ _____  _____  _____ _____ _____ \n" +
