@@ -237,40 +237,7 @@ fun main(args: Array<String>) {
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()
     } catch (ex: Exception) {
-        emailConfiguration.ifPresentOrElse(
-                { emailConfiguration ->
-                    logger.error("An error occurred during the integration sending e-mail notification.", ex)
-                    val stackTraceText = ExceptionUtils.getStackTrace(ex)
-                    val errorEmail = "An error occurred while running an integration. The integration name is $flight.name. \n" +
-                            "The cause is ${ex.message} \n The stack trace is $stackTraceText"
-                    val emailAddresses = emailConfiguration.notificationEmails
-                            .map(EmailAddress::of)
-                            .toTypedArray()
-                    val email = Email.create()
-                            .from(emailConfiguration.fromEmail)
-                            .subject("Integration error in $flight.name")
-                            .textMessage(errorEmail)
-                    emailConfiguration.notificationEmails
-                            .map(EmailAddress::of)
-                            .forEach { emailAddress -> email.to(emailAddress) }
-
-                    val smtpServer = MailServer.create()
-                            .ssl(true)
-                            .host(emailConfiguration.smtpServer)
-                            .port(emailConfiguration.smtpServerPort)
-                            .auth(
-                                    emailConfiguration.fromEmail,
-                                    emailConfiguration.fromEmailPassword
-                            )
-                            .buildSmtpMailServer()
-
-                    val session = smtpServer.createSession()
-                    session.open()
-                    session.sendMail(email)
-                    session.close()
-
-                }, { logger.error("An error occurred during the integration.", ex) })
-        MissionControl.fail()
+        MissionControl.fail(1, flight, ex)
     }
 }
 
@@ -398,19 +365,23 @@ class Shuttle(
     }
 
     private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int): Long {
-        val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault{AtomicLong(0L)}
-        val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault{AtomicLong(0L)}
+        val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
+        val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integrationQueue = Queues
                 .newArrayBlockingQueue<List<Map<String, Any>>>(
                         Math.max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
                 )
+        val rows = AtomicLong(0)
         val sw = Stopwatch.createStarted()
         val remaining = AtomicLong(0)
 
         uploadingExecutor.execute {
             try {
                 Stream.generate { integrationQueue.take() }.parallel()
-                        .map { batch -> impulse(flight, batch) }
+                        .map { batch ->
+                            rows.addAndGet(batch.size.toLong())
+                            return@map impulse(flight, batch)
+                        }
                         .forEach { batch ->
                             val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
                                     + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
@@ -438,13 +409,14 @@ class Shuttle(
                                     )
                                 }
                             }
+                            logger.info("Processed {} rows.", rows)
                             logger.info("Current entities progress: {}", integratedEntities)
                             logger.info("Current edges progress: {}", integratedEdges)
                             remaining.decrementAndGet()
                         }
             } catch (ex: Exception) {
                 logger.error("Integration failure. ", ex)
-                MissionControl.fail(1)
+                MissionControl.fail(1, flight, ex)
             }
         }
 
@@ -455,7 +427,8 @@ class Shuttle(
                     integrationQueue.put(it)
                 }
         //Wait on upload thread to finish emptying queue.
-        while( remaining.get() > 0 ) {
+        while (remaining.get() > 0) {
+            logger.info("Waiting on upload to finish...")
             Thread.sleep(1000)
         }
 

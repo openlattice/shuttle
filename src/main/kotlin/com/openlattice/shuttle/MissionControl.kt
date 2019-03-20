@@ -29,6 +29,7 @@ import com.google.common.base.Suppliers
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
+import com.openlattice.data.integration.EmailConfiguration
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.data.integration.destinations.PostgresDestination
 import com.openlattice.data.integration.destinations.RestDestination
@@ -40,6 +41,10 @@ import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.rhizome.proxy.RetrofitBuilders
 import com.openlattice.shuttle.payload.Payload
+import jodd.mail.Email
+import jodd.mail.EmailAddress
+import jodd.mail.MailServer
+import org.apache.commons.lang3.exception.ExceptionUtils
 import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
 import java.util.*
@@ -69,6 +74,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
     companion object {
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
         private val client = MissionControl.buildClient(AUTH0_CLIENT_ID)
+        private var emailConfiguration: Optional<EmailConfiguration> = Optional.empty()
 
         init {
             Runtime.getRuntime().addShutdownHook(object : Thread() {
@@ -116,12 +122,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         }
 
         @JvmStatic
-        fun fail(): Nothing {
-            fail(1)
-        }
-
-        @JvmStatic
-        fun fail(code: Int): Nothing {
+        fun fail(code: Int, flight: Flight, ex: Exception): Nothing {
             logger.error(
                     "\n______ ___  _____ _     _   _______ _____ \n" +
                             "|  ___/ _ \\|_   _| |   | | | | ___ \\  ___|\n" +
@@ -131,6 +132,43 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                             "\\_|  \\_| |_/\\___/\\_____/\\___/\\_| \\_\\____/ \n" +
                             "                                         "
             )
+
+            emailConfiguration.ifPresentOrElse(
+                    { emailConfiguration ->
+                        logger.error(
+                                "An error occurred during the integration sending e-mail notification.", ex
+                        )
+                        val stackTraceText = ExceptionUtils.getStackTrace(ex)
+                        val errorEmail = "An error occurred while running an integration. The integration name is $flight.name. \n" +
+                                "The cause is ${ex.message} \n The stack trace is $stackTraceText"
+                        val emailAddresses = emailConfiguration.notificationEmails
+                                .map(EmailAddress::of)
+                                .toTypedArray()
+                        val email = Email.create()
+                                .from(emailConfiguration.fromEmail)
+                                .subject("Integration error in $flight.name")
+                                .textMessage(errorEmail)
+                        emailConfiguration.notificationEmails
+                                .map(EmailAddress::of)
+                                .forEach { emailAddress -> email.to(emailAddress) }
+
+                        val smtpServer = MailServer.create()
+                                .ssl(true)
+                                .host(emailConfiguration.smtpServer)
+                                .port(emailConfiguration.smtpServerPort)
+                                .auth(
+                                        emailConfiguration.fromEmail,
+                                        emailConfiguration.fromEmailPassword
+                                )
+                                .buildSmtpMailServer()
+
+                        val session = smtpServer.createSession()
+                        session.open()
+                        session.sendMail(email)
+                        session.close()
+
+                    }, { logger.error("An error occurred during the integration.", ex) })
+
             kotlin.system.exitProcess(code)
         }
 

@@ -121,8 +121,8 @@ class S3Destination(
         return s3entities.size.toLong() + dataApi.createAssociations(entities).toLong()
     }
 
-    private fun uploadToS3WithRetry(s3entities: List<Pair<S3EntityData, Any>>) {
-        var s3eds = s3entities
+    private fun uploadToS3WithRetry(s3entitiesAndValues: List<Pair<S3EntityData, Any>>) {
+        var s3eds = s3entitiesAndValues
 
         var currentDelayMillis = 1L
         var currentRetryCount = 0
@@ -146,7 +146,7 @@ class S3Destination(
                                         "Expected byte array, but found wrong data type for upload (entitySetId=${s3ed.entitySetId}, entityKeyId=${s3ed.entityKeyId}, PropertType=${s3ed.propertyTypeId}).",
                                         ex
                                 )
-                                MissionControl.fail(2)
+                                throw ex
                             } else {
                                 logger.warn(
                                         "Encountered an issue when uploading data (entitySetId=${s3ed.entitySetId}, entityKeyId=${s3ed.entityKeyId}, PropertType=${s3ed.propertyTypeId}). Retrying...",
