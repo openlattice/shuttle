@@ -416,7 +416,6 @@ class Shuttle(
                             remaining.decrementAndGet()
                         }
             } catch (ex: Exception) {
-                logger.error("Integration failure. ", ex)
                 MissionControl.fail(1, flight, ex)
             }
         }
