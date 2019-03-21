@@ -39,6 +39,7 @@ import com.openlattice.edm.EntitySet
 import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
+import com.openlattice.retrofit.RhizomeRetrofitCallException
 import com.openlattice.rhizome.proxy.RetrofitBuilders
 import com.openlattice.shuttle.payload.Payload
 import jodd.mail.Email
@@ -139,13 +140,22 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                     ex
             )
 
+            val errorInfo =             if( ex is RhizomeRetrofitCallException ) {
+                "Server returned ${ex.code} with body: ${ex.body}."
+            } else {
+                "Something went wrong during client side processing. "
+            }
+
+            logger.error(errorInfo)
+
             emailConfiguration.ifPresentOrElse(
                     { emailConfiguration ->
                         logger.error(
                                 "An error occurred during the integration sending e-mail notification.", ex
                         )
                         val stackTraceText = ExceptionUtils.getStackTrace(ex)
-                        val errorEmail = "An error occurred while running an integration. The integration name is ${flight.name}. \n" +
+
+                        val errorEmail = "An error occurred while running integration ${flight.name}. $errorInfo \n" +
                                 "The cause is ${ex.message} \n The stack trace is $stackTraceText"
                         val emailAddresses = emailConfiguration.notificationEmails
                                 .map(EmailAddress::of)
