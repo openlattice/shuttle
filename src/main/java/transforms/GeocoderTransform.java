@@ -24,12 +24,15 @@ public class GeocoderTransform extends Transformation<Object> {
     private final          GeocodingApi geocodingApi;
 
     /**
-     * Represents a transformation to get the digits at the start of a column (if starts with digits).
+     * A transformation that runs a string address through a geolocation API and returns a user-specified part of the
+     * resulting data.
      *
-     * @param addressObject: which object from the address to choose, on of ['lat', 'lon', 'type', 'house_number'
+     *
+     * @param addressObject: which object from the address to choose, one of ['lat', 'lon', 'geographypoint', 'type', 'house_number'
      * 'road', 'neighbourhood', 'city', 'postcode', 'county', 'state',
      * 'country', 'country_code']
      * @param column: column name
+     *
      */
     @JsonCreator
     public GeocoderTransform(
@@ -55,6 +58,7 @@ public class GeocoderTransform extends Transformation<Object> {
         }
 
         Map<String, Object> address = map.get( 0 );
+
         if ( address.isEmpty() ) {
             System.out.println( "Can't parse address " + input );
             return null;
@@ -63,17 +67,17 @@ public class GeocoderTransform extends Transformation<Object> {
         List<String> outercodes = Arrays.asList( "lat", "lon", "type" );
         if ( outercodes.contains( addressObject ) ) {
             return (String) address.get( addressObject );
+        } else if ( addressObject == "geographypoint" ) {
+            return address.get( "lat" ) + "," + address.get("lon");
         } else {
             Map<String, Object> hlpr = (Map<String, Object>) address.get( "address" );
             return (String) hlpr.get( addressObject );
         }
-
     }
 
     @Override
     public String applyValue( String input ) {
         if ( input == null ) { return null; }
-
         return getAddress( input, this.addressObject );
     }
 
@@ -84,6 +88,5 @@ public class GeocoderTransform extends Transformation<Object> {
                 + "&limit=" + 5 )
         List<Map<String, Object>> geocode( @Query( "q" ) String address );
     }
-
 }
 
