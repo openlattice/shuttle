@@ -377,16 +377,18 @@ class Shuttle(
         val remaining = AtomicLong(0)
 
         uploadingExecutor.execute {
-            try {
-                Stream.generate { integrationQueue.take() }.parallel()
-                        .map { batch ->
-                            rows.addAndGet(batch.size.toLong())
-                            return@map impulse(flight, batch)
-                        }
-                        .forEach { batch ->
+            Stream.generate { integrationQueue.take() }.parallel()
+                    .map { batch ->
+                        rows.addAndGet(batch.size.toLong())
+                        return@map impulse(flight, batch)
+                    }
+                    .forEach { batch ->
+                        try {
                             val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
                                     + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
-                            val entityKeyIds = entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
+                            val entityKeyIds = entityKeys.zip(
+                                    dataIntegrationApi.getEntityKeyIds(entityKeys)
+                            ).toMap()
 
 
                             integrationDestinations.forEach { (storageDestination, integrationDestination) ->
@@ -413,11 +415,12 @@ class Shuttle(
                             logger.info("Processed {} rows.", rows)
                             logger.info("Current entities progress: {}", integratedEntities)
                             logger.info("Current edges progress: {}", integratedEdges)
+                        } catch (ex: Exception) {
+                            MissionControl.fail(1, flight, ex)
+                        } finally {
                             remaining.decrementAndGet()
                         }
-            } catch (ex: Exception) {
-                MissionControl.fail(1, flight, ex)
-            }
+                    }
         }
 
         payload.asSequence()
