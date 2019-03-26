@@ -128,7 +128,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         }
 
         @JvmStatic
-        fun fail(code: Int, flight: Flight, ex: Exception): Nothing {
+        fun fail(code: Int, flight: Flight, ex: Throwable): Nothing {
             logger.error(
                     "\n______ ___  _____ _     _   _______ _____ \n" +
                             "|  ___/ _ \\|_   _| |   | | | | ___ \\  ___|\n" +

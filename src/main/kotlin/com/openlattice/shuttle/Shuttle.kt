@@ -417,6 +417,8 @@ class Shuttle(
                             logger.info("Current edges progress: {}", integratedEdges)
                         } catch (ex: Exception) {
                             MissionControl.fail(1, flight, ex)
+                        } catch (err: OutOfMemoryError) {
+                            MissionControl.fail(1, flight, err)
                         } finally {
                             remaining.decrementAndGet()
                         }
