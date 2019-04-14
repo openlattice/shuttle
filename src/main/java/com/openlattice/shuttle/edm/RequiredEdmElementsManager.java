@@ -317,7 +317,8 @@ public class RequiredEdmElementsManager {
                 properties,
                 LinkedHashMultimap.create(),
                 model.getBaseType().map( bt -> edmApi.getEntityTypeId( bt.getNamespace(), bt.getName() ) ),
-                Optional.of( objectType )
+                Optional.of( objectType ),
+                Optional.empty()
         );
     }
 
