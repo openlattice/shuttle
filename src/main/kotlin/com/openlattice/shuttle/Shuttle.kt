@@ -57,28 +57,20 @@ import com.openlattice.shuttle.config.IntegrationConfig
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.openlattice.shuttle.payload.SimplePayload
-import jodd.mail.Email
-import jodd.mail.EmailAddress
-import jodd.mail.MailServer
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.lang3.StringUtils
-import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.System.exit
 import java.util.*
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Supplier
 import java.util.stream.Stream
 import kotlin.streams.asSequence
-import kotlin.streams.asStream
 
 /**
  *
@@ -448,6 +440,42 @@ class Shuttle(
             )
             integratedEntities.getValue(it).get() + integratedEdges.getValue(it).get()
         }.sum()
+    }
+
+    private fun buildPropertiesFromPropertyDefinitions( row: Map<String, Any>,
+                     propertyDefinitions: Collection<PropertyDefinition> )
+            : Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
+        val properties = mutableMapOf<UUID, MutableSet<Any>>()
+        val addressedProperties = mutableMapOf<StorageDestination, MutableMap<UUID, MutableSet<Any>>>()
+        for (propertyDefinition in propertyDefinitions ) {
+            val propertyValue = propertyDefinition.propertyValue.apply(row)
+
+            if ( propertyValue == null || !((propertyValue !is String) || propertyValue.isNotBlank()) ){
+                continue
+            }
+
+            val propertyType = propertyTypes[propertyDefinition.fullQualifiedName]!!
+
+            val storageDestination = propertyDefinition.storageDestination.orElseGet {
+                when (propertyType.datatype) {
+                    EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
+                    else -> StorageDestination.REST
+                }
+            }
+
+            val propertyValueAsCollection: Collection<Any> =
+                    if (propertyValue is Collection<*>) propertyValue as Collection<Any>
+                    else ImmutableList.of(propertyValue)
+
+            val propertyId = propertyType.id
+
+            addressedProperties
+                    .getOrPut(storageDestination) { mutableMapOf() }
+                    .getOrPut(propertyId) { mutableSetOf() }
+                    .addAll(propertyValueAsCollection)
+            properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValueAsCollection)
+        }
+        return Pair(properties, addressedProperties);
     }
 
     private fun impulse(flight: Flight, batch: List<Map<String, Any>>): AddressedDataHolder {
