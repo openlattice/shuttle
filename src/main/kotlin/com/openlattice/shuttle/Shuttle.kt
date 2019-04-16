@@ -447,10 +447,11 @@ class Shuttle(
             : Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
         val properties = mutableMapOf<UUID, MutableSet<Any>>()
         val addressedProperties = mutableMapOf<StorageDestination, MutableMap<UUID, MutableSet<Any>>>()
+        
         for (propertyDefinition in propertyDefinitions ) {
             val propertyValue = propertyDefinition.propertyValue.apply(row)
 
-            if ( propertyValue == null || !((propertyValue !is String) || propertyValue.isNotBlank()) ){
+            if ( propertyValue == null || !( (propertyValue !is String) || propertyValue.isNotBlank() ) ){
                 continue
             }
 
@@ -495,32 +496,8 @@ class Shuttle(
                 }
 
                 val entitySetId = entitySets[entityDefinition.entitySetName]!!.id
-                val properties = mutableMapOf<UUID, MutableSet<Any>>()
-                val addressedProperties = mutableMapOf<StorageDestination, MutableMap<UUID, MutableSet<Any>>>()
-                for (propertyDefinition in entityDefinition.properties) {
-                    val propertyValue = propertyDefinition.propertyValue.apply(row)
-                    if (propertyValue != null &&
-                            ((propertyValue !is String) || propertyValue.isNotBlank())) {
-                        val storageDestination = propertyDefinition.storageDestination.orElseGet {
-                            when (propertyTypes[propertyDefinition.fullQualifiedName]!!.datatype) {
-                                EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
-                                else -> StorageDestination.REST
-                            }
-                        }
 
-                        val propertyId = propertyTypes[propertyDefinition.fullQualifiedName]!!.id
-
-                        val propertyValueAsCollection: Collection<Any> =
-                                if (propertyValue is Collection<*>) propertyValue as Collection<Any>
-                                else ImmutableList.of(propertyValue)
-
-                        addressedProperties
-                                .getOrPut(storageDestination) { mutableMapOf() }
-                                .getOrPut(propertyId) { mutableSetOf() }
-                                .addAll(propertyValueAsCollection)
-                        properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValueAsCollection)
-                    }
-                }
+                val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(row, entityDefinition.properties)
 
                 /*
                  * For entityId generation to work correctly it is very important that Stream remain ordered.
@@ -570,34 +547,8 @@ class Shuttle(
                 if ((wasCreated[associationDefinition.srcAlias]!! && wasCreated[associationDefinition.dstAlias]!!)) {
 
                     val entitySetId = entitySets.getValue(associationDefinition.entitySetName).id
-                    val properties = mutableMapOf<UUID, MutableSet<Any>>()
-                    val addressedProperties = mutableMapOf<StorageDestination, MutableMap<UUID, MutableSet<Any>>>()
 
-                    for (propertyDefinition in associationDefinition.properties) {
-                        val propertyValue = propertyDefinition.propertyValue.apply(row)
-                        if (propertyValue != null &&
-                                ((propertyValue !is String) || propertyValue.isNotBlank())) {
-
-                            val storageDestination = propertyDefinition.storageDestination.orElseGet {
-                                when (propertyTypes.getValue(propertyDefinition.fullQualifiedName).datatype) {
-                                    EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
-                                    else -> StorageDestination.REST
-                                }
-                            }
-
-                            val propertyId = propertyTypes.getValue(propertyDefinition.fullQualifiedName).id
-
-                            val propertyValueAsCollection: Collection<Any> =
-                                    if (propertyValue is Collection<*>) propertyValue as Collection<Any>
-                                    else ImmutableList.of(propertyValue)
-
-                            addressedProperties
-                                    .getOrPut(storageDestination) { mutableMapOf() }
-                                    .getOrPut(propertyId) { mutableSetOf() }
-                                    .addAll(propertyValueAsCollection)
-                            properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValueAsCollection)
-                        }
-                    }
+                    val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(row, associationDefinition.properties)
 
                     val entityId = associationDefinition.generator
                             .map { it.apply(row) }
