@@ -495,8 +495,6 @@ class Shuttle(
                     true
                 }
 
-                val entitySetId = entitySets[entityDefinition.entitySetName]!!.id
-
                 val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(row, entityDefinition.properties)
 
                 /*
@@ -511,6 +509,9 @@ class Shuttle(
                         }
 
                 if (StringUtils.isNotBlank(entityId) and condition and properties.isNotEmpty()) {
+
+                    val entitySetId = entitySets[entityDefinition.entitySetName]!!.id
+
                     val key = EntityKey(entitySetId, entityId)
                     aliasesToEntityKey[entityDefinition.alias] = key
                     addressedProperties.forEach { storageDestination, data ->
@@ -546,8 +547,6 @@ class Shuttle(
                 }
                 if ((wasCreated[associationDefinition.srcAlias]!! && wasCreated[associationDefinition.dstAlias]!!)) {
 
-                    val entitySetId = entitySets.getValue(associationDefinition.entitySetName).id
-
                     val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(row, associationDefinition.properties)
 
                     val entityId = associationDefinition.generator
@@ -560,6 +559,9 @@ class Shuttle(
                             }
 
                     if (StringUtils.isNotBlank(entityId)) {
+
+                        val entitySetId = entitySets.getValue(associationDefinition.entitySetName).id
+
                         val key = EntityKey(entitySetId, entityId)
                         val src = aliasesToEntityKey[associationDefinition.srcAlias]
                         val dst = aliasesToEntityKey[associationDefinition.dstAlias]
