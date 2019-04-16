@@ -455,7 +455,7 @@ class Shuttle(
                 continue
             }
 
-            val propertyType = propertyTypes[propertyDefinition.fullQualifiedName]!!
+            val propertyType = propertyTypes.getValue(propertyDefinition.fullQualifiedName)
 
             val storageDestination = propertyDefinition.storageDestination.orElseGet {
                 when (propertyType.datatype) {
@@ -552,10 +552,7 @@ class Shuttle(
                     val entityId = associationDefinition.generator
                             .map { it.apply(row) }
                             .orElseGet {
-                                ApiUtil.generateDefaultEntityId(
-                                        getKeys(associationDefinition.entitySetName).stream(),
-                                        properties
-                                )
+                                generateDefaultEntityId(getKeys(associationDefinition.entitySetName), properties)
                             }
 
                     if (StringUtils.isNotBlank(entityId)) {
