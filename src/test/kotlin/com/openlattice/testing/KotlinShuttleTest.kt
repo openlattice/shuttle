@@ -49,15 +49,19 @@ class KotlinShuttleTest {
             Stream.generate { integrationQueue.take() }.parallel()
                     .map { batch ->
                         println("mapping batch")
-                        rows.addAndGet(batch.size.toLong())
-                        return@map impulse()
+                        try {
+                            rows.addAndGet(batch.size.toLong())
+                            return@map impulse()
+                        } catch (ex: Exception) {
+                            println("caught splosion")
+                            remaining.decrementAndGet()
+                            return@map AddressedDataHolder(mutableMapOf(), mutableMapOf())
+                        }
                     }
                     .forEach { (entities, associations) ->
-                        println("ABout to try hard")
+                        println("About to try hard")
                         try {
                             println("Processed $rows rows.")
-                            println("Current entities progress: $integratedEntities")
-                            println("Current edges progress: $integratedEdges")
                         } catch (ex: Exception) {
                             println("caught ex")
                             MissionControl.fail(1, flight, ex)
@@ -91,6 +95,10 @@ class KotlinShuttleTest {
 
     fun impulse() : AddressedDataHolder {
         println("Impulsing")
-        throw NoSuchElementException()
+        val rand = (1..3).random()
+        if ( rand == 2) {
+            throw NoSuchElementException()
+        }
+        return AddressedDataHolder(mutableMapOf(), mutableMapOf())
     }
 }
