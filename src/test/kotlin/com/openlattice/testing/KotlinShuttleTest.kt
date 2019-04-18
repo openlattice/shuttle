@@ -8,7 +8,6 @@ import com.openlattice.data.integration.StorageDestination
 import com.openlattice.shuttle.MissionControl
 import com.openlattice.shuttle.payload.SimplePayload
 import com.openlattice.shuttle.test.ShuttleTest.getFlight
-import io.findify.s3mock.S3Mock
 import org.junit.Assert
 import org.junit.Test
 import java.util.concurrent.Executors
@@ -22,11 +21,6 @@ class KotlinShuttleTest {
     private val uploadingExecutor = Executors.newSingleThreadExecutor()
     private val url = Resources.getResource( "cyphers.csv" )
     private var payload = SimplePayload( url.path )
-
-    init {
-        val api = S3Mock.create(8001, "/tmp/s3");
-        api.start();
-    }
 
     @Test( timeout = 5000 )
     fun testFoo () {
