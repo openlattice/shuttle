@@ -19,7 +19,7 @@ public class ParseBoolTransform extends Transformation<String> {
     private boolean convertToBoolean( String value ) {
         boolean returnValue = false;
         if ( "1".equalsIgnoreCase( value ) || "yes".equalsIgnoreCase( value ) ||
-                "true".equalsIgnoreCase( value ) || "on".equalsIgnoreCase( value ) ) {
+                "true".equalsIgnoreCase( value ) || "on".equalsIgnoreCase( value ) || "y".equalsIgnoreCase( value ) ) {
             returnValue = true;
         }
         return returnValue;
