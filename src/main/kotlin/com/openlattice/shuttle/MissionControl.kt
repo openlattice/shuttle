@@ -53,7 +53,6 @@ import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 import java.util.Optional
 import java.util.UUID
-import kotlin.NoSuchElementException
 
 
 private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
