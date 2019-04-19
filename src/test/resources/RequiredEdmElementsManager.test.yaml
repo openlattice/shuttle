@@ -1,6 +1,6 @@
 propertyTypes:
   - datatype: "String"
-    piiField: false
+    pii: false
     analyzer: "METAPHONE"
     properties:
       - type: "test.p0"

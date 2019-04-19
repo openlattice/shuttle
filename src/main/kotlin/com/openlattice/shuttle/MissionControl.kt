@@ -76,6 +76,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
         private val client = MissionControl.buildClient(AUTH0_CLIENT_ID)
         private var emailConfiguration: Optional<EmailConfiguration> = Optional.empty()
+        private var terminateOnSuccess = true
 
         init {
             Runtime.getRuntime().addShutdownHook(object : Thread() {
@@ -89,6 +90,11 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         @Throws(Auth0Exception::class)
         fun getIdToken(username: String, password: String): String {
             return getIdToken(client, AUTH0_CONNECTION, username, password)
+        }
+
+        @JvmStatic
+        fun continueAfterSuccess() {
+            this.terminateOnSuccess = true
         }
 
         @JvmStatic
@@ -110,7 +116,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         }
 
         @JvmStatic
-        fun setEmailConfiguration( emailConfiguration: Optional<EmailConfiguration> ) {
+        fun setEmailConfiguration(emailConfiguration: Optional<EmailConfiguration>) {
             this.emailConfiguration = emailConfiguration
         }
 
@@ -124,7 +130,9 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                             "/\\__/ / |_| | \\__/\\| \\__/\\| |___/\\__/ /\\__/ /\n" +
                             "\\____/ \\___/ \\____/ \\____/\\____/\\____/\\____/"
             )
-            kotlin.system.exitProcess(0)
+            if (terminateOnSuccess) {
+                kotlin.system.exitProcess(0)
+            }
         }
 
         @JvmStatic
@@ -140,7 +148,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                     ex
             )
 
-            val errorInfo =             if( ex is RhizomeRetrofitCallException ) {
+            val errorInfo = if (ex is RhizomeRetrofitCallException) {
                 "Server returned ${ex.code} with body: ${ex.body}."
             } else {
                 "Something went wrong during client side processing. "
