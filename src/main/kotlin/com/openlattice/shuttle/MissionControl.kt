@@ -48,9 +48,12 @@ import jodd.mail.MailServer
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
-import java.util.*
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
+import java.util.Optional
+import java.util.UUID
+import kotlin.NoSuchElementException
 
 
 private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
@@ -136,7 +139,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         }
 
         @JvmStatic
-        fun fail(code: Int, flight: Flight, ex: Throwable): Nothing {
+        fun fail(code: Int, flight: Flight, ex: Throwable, executor: Optional<ExecutorService> = Optional.empty() ): Nothing {
             logger.error(
                     "\n______ ___  _____ _     _   _______ _____ \n" +
                             "|  ___/ _ \\|_   _| |   | | | | ___ \\  ___|\n" +
@@ -193,6 +196,9 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
 
                     }, { logger.error("An error occurred during the integration.", ex) })
 
+            if ( executor.isPresent() ) {
+                executor.get().shutdownNow()
+            }
             kotlin.system.exitProcess(code)
         }
 

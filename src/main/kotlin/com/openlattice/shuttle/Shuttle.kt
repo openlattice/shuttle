@@ -375,9 +375,9 @@ class Shuttle(
                             rows.addAndGet(batch.size.toLong())
                             return@map impulse(flight, batch)
                         } catch (ex: Exception) {
-                            MissionControl.fail(1, flight, ex)
+                            MissionControl.fail(1, flight, ex, Optional.of(uploadingExecutor))
                         } catch (err: OutOfMemoryError) {
-                            MissionControl.fail(1, flight, err)
+                            MissionControl.fail(1, flight, err, Optional.of(uploadingExecutor))
                         }
                     }
                     .forEach { batch ->
@@ -414,9 +414,9 @@ class Shuttle(
                             logger.info("Current entities progress: {}", integratedEntities)
                             logger.info("Current edges progress: {}", integratedEdges)
                         } catch (ex: Exception) {
-                            MissionControl.fail(1, flight, ex)
+                            MissionControl.fail(1, flight, ex, Optional.of(uploadingExecutor))
                         } catch (err: OutOfMemoryError) {
-                            MissionControl.fail(1, flight, err)
+                            MissionControl.fail(1, flight, err, Optional.of(uploadingExecutor))
                         } finally {
                             remaining.decrementAndGet()
                         }
