@@ -139,7 +139,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         }
 
         @JvmStatic
-        fun fail(code: Int, flight: Flight, ex: Throwable, executor: Optional<ExecutorService> = Optional.empty() ): Nothing {
+        fun fail(code: Int, flight: Flight, ex: Throwable, executors: List<ExecutorService> = listOf() ): Nothing {
             logger.error(
                     "\n______ ___  _____ _     _   _______ _____ \n" +
                             "|  ___/ _ \\|_   _| |   | | | | ___ \\  ___|\n" +
@@ -196,9 +196,8 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
 
                     }, { logger.error("An error occurred during the integration.", ex) })
 
-            if ( executor.isPresent() ) {
-                executor.get().shutdownNow()
-            }
+            executors.forEach( { it.shutdownNow() } )
+
             kotlin.system.exitProcess(code)
         }
 
