@@ -96,7 +96,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
 
         @JvmStatic
         fun continueAfterSuccess() {
-            this.terminateOnSuccess = true
+            this.terminateOnSuccess = false
         }
 
         @JvmStatic
