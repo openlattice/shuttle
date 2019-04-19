@@ -371,8 +371,14 @@ class Shuttle(
         uploadingExecutor.execute {
             Stream.generate { integrationQueue.take() }.parallel()
                     .map { batch ->
-                        rows.addAndGet(batch.size.toLong())
-                        return@map impulse(flight, batch)
+                        try {
+                            rows.addAndGet(batch.size.toLong())
+                            return@map impulse(flight, batch)
+                        } catch (ex: Exception) {
+                            MissionControl.fail(1, flight, ex)
+                        } catch (err: OutOfMemoryError) {
+                            MissionControl.fail(1, flight, err)
+                        }
                     }
                     .forEach { batch ->
                         try {
