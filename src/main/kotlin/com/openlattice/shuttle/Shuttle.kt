@@ -57,28 +57,20 @@ import com.openlattice.shuttle.config.IntegrationConfig
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.openlattice.shuttle.payload.SimplePayload
-import jodd.mail.Email
-import jodd.mail.EmailAddress
-import jodd.mail.MailServer
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.lang3.StringUtils
-import org.apache.commons.lang3.exception.ExceptionUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.System.exit
 import java.util.*
-import java.util.concurrent.BlockingQueue
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Supplier
 import java.util.stream.Stream
 import kotlin.streams.asSequence
-import kotlin.streams.asStream
 
 /**
  *
@@ -379,8 +371,14 @@ class Shuttle(
         uploadingExecutor.execute {
             Stream.generate { integrationQueue.take() }.parallel()
                     .map { batch ->
-                        rows.addAndGet(batch.size.toLong())
-                        return@map impulse(flight, batch)
+                        try {
+                            rows.addAndGet(batch.size.toLong())
+                            return@map impulse(flight, batch)
+                        } catch (ex: Exception) {
+                            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
+                        } catch (err: OutOfMemoryError) {
+                            MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
+                        }
                     }
                     .forEach { batch ->
                         try {
@@ -416,9 +414,9 @@ class Shuttle(
                             logger.info("Current entities progress: {}", integratedEntities)
                             logger.info("Current edges progress: {}", integratedEdges)
                         } catch (ex: Exception) {
-                            MissionControl.fail(1, flight, ex)
+                            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
                         } catch (err: OutOfMemoryError) {
-                            MissionControl.fail(1, flight, err)
+                            MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
                         } finally {
                             remaining.decrementAndGet()
                         }
@@ -450,6 +448,43 @@ class Shuttle(
         }.sum()
     }
 
+    private fun buildPropertiesFromPropertyDefinitions( row: Map<String, Any>,
+                     propertyDefinitions: Collection<PropertyDefinition> )
+            : Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
+        val properties = mutableMapOf<UUID, MutableSet<Any>>()
+        val addressedProperties = mutableMapOf<StorageDestination, MutableMap<UUID, MutableSet<Any>>>()
+        
+        for (propertyDefinition in propertyDefinitions ) {
+            val propertyValue = propertyDefinition.propertyValue.apply(row)
+
+            if ( propertyValue == null || !( (propertyValue !is String) || propertyValue.isNotBlank() ) ){
+                continue
+            }
+
+            val propertyType = propertyTypes.getValue(propertyDefinition.fullQualifiedName)
+
+            val storageDestination = propertyDefinition.storageDestination.orElseGet {
+                when (propertyType.datatype) {
+                    EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
+                    else -> StorageDestination.REST
+                }
+            }
+
+            val propertyValueAsCollection: Collection<Any> =
+                    if (propertyValue is Collection<*>) propertyValue as Collection<Any>
+                    else ImmutableList.of(propertyValue)
+
+            val propertyId = propertyType.id
+
+            addressedProperties
+                    .getOrPut(storageDestination) { mutableMapOf() }
+                    .getOrPut(propertyId) { mutableSetOf() }
+                    .addAll(propertyValueAsCollection)
+            properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValueAsCollection)
+        }
+        return Pair(properties, addressedProperties);
+    }
+
     private fun impulse(flight: Flight, batch: List<Map<String, Any>>): AddressedDataHolder {
         val addressedDataHolder = AddressedDataHolder(mutableMapOf(), mutableMapOf())
 
@@ -466,33 +501,7 @@ class Shuttle(
                     true
                 }
 
-                val entitySetId = entitySets[entityDefinition.entitySetName]!!.id
-                val properties = mutableMapOf<UUID, MutableSet<Any>>()
-                val addressedProperties = mutableMapOf<StorageDestination, MutableMap<UUID, MutableSet<Any>>>()
-                for (propertyDefinition in entityDefinition.properties) {
-                    val propertyValue = propertyDefinition.propertyValue.apply(row)
-                    if (propertyValue != null &&
-                            ((propertyValue !is String) || propertyValue.isNotBlank())) {
-                        val storageDestination = propertyDefinition.storageDestination.orElseGet {
-                            when (propertyTypes[propertyDefinition.fullQualifiedName]!!.datatype) {
-                                EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
-                                else -> StorageDestination.REST
-                            }
-                        }
-
-                        val propertyId = propertyTypes[propertyDefinition.fullQualifiedName]!!.id
-
-                        val propertyValueAsCollection: Collection<Any> =
-                                if (propertyValue is Collection<*>) propertyValue as Collection<Any>
-                                else ImmutableList.of(propertyValue)
-
-                        addressedProperties
-                                .getOrPut(storageDestination) { mutableMapOf() }
-                                .getOrPut(propertyId) { mutableSetOf() }
-                                .addAll(propertyValueAsCollection)
-                        properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValueAsCollection)
-                    }
-                }
+                val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(row, entityDefinition.properties)
 
                 /*
                  * For entityId generation to work correctly it is very important that Stream remain ordered.
@@ -506,6 +515,9 @@ class Shuttle(
                         }
 
                 if (StringUtils.isNotBlank(entityId) and condition and properties.isNotEmpty()) {
+
+                    val entitySetId = entitySets[entityDefinition.entitySetName]!!.id
+
                     val key = EntityKey(entitySetId, entityId)
                     aliasesToEntityKey[entityDefinition.alias] = key
                     addressedProperties.forEach { storageDestination, data ->
@@ -541,46 +553,18 @@ class Shuttle(
                 }
                 if ((wasCreated[associationDefinition.srcAlias]!! && wasCreated[associationDefinition.dstAlias]!!)) {
 
-                    val entitySetId = entitySets.getValue(associationDefinition.entitySetName).id
-                    val properties = mutableMapOf<UUID, MutableSet<Any>>()
-                    val addressedProperties = mutableMapOf<StorageDestination, MutableMap<UUID, MutableSet<Any>>>()
-
-                    for (propertyDefinition in associationDefinition.properties) {
-                        val propertyValue = propertyDefinition.propertyValue.apply(row)
-                        if (propertyValue != null &&
-                                ((propertyValue !is String) || propertyValue.isNotBlank())) {
-
-                            val storageDestination = propertyDefinition.storageDestination.orElseGet {
-                                when (propertyTypes.getValue(propertyDefinition.fullQualifiedName).datatype) {
-                                    EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
-                                    else -> StorageDestination.REST
-                                }
-                            }
-
-                            val propertyId = propertyTypes.getValue(propertyDefinition.fullQualifiedName).id
-
-                            val propertyValueAsCollection: Collection<Any> =
-                                    if (propertyValue is Collection<*>) propertyValue as Collection<Any>
-                                    else ImmutableList.of(propertyValue)
-
-                            addressedProperties
-                                    .getOrPut(storageDestination) { mutableMapOf() }
-                                    .getOrPut(propertyId) { mutableSetOf() }
-                                    .addAll(propertyValueAsCollection)
-                            properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValueAsCollection)
-                        }
-                    }
+                    val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(row, associationDefinition.properties)
 
                     val entityId = associationDefinition.generator
                             .map { it.apply(row) }
                             .orElseGet {
-                                ApiUtil.generateDefaultEntityId(
-                                        getKeys(associationDefinition.entitySetName).stream(),
-                                        properties
-                                )
+                                generateDefaultEntityId(getKeys(associationDefinition.entitySetName), properties)
                             }
 
                     if (StringUtils.isNotBlank(entityId)) {
+
+                        val entitySetId = entitySets.getValue(associationDefinition.entitySetName).id
+
                         val key = EntityKey(entitySetId, entityId)
                         val src = aliasesToEntityKey[associationDefinition.srcAlias]
                         val dst = aliasesToEntityKey[associationDefinition.dstAlias]
