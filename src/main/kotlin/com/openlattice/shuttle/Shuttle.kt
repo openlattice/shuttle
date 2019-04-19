@@ -65,7 +65,6 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.System.exit
 import java.util.*
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -314,7 +313,7 @@ class Shuttle(
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
         private val dataIntegrationApi: DataIntegrationApi
 ) {
-    private val uploadingExecutor =Executors.newSingleThreadExecutor()
+    private val uploadingExecutor = Executors.newSingleThreadExecutor()
 
     companion object {
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
