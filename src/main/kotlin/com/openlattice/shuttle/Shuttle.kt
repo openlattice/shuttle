@@ -313,9 +313,10 @@ class Shuttle(
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
         private val dataIntegrationApi: DataIntegrationApi
 ) {
+    private val uploadingExecutor = Executors.newSingleThreadExecutor()
+
     companion object {
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
-        private val uploadingExecutor = Executors.newSingleThreadExecutor()
     }
 
     private val updateTypes = flightPlan.keys.flatMap { flight ->
