@@ -75,11 +75,15 @@ jar {
 
 dependencies {
 
+    compile "com.fasterxml.woodstox:woodstox-core:5.1.0"
     compile "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:${jackson_version}"
+    compile "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jackson_version}"
     compile "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     
 //    compile 'com.auth0:auth0:1.1.0'
 //    compile 'com.auth0:java-jwt:3.2.0'
+
+    compile 'com.ximpleware:vtd-xml:2.13.4'
 
     compile 'commons-cli:commons-cli:1.4'
     compile 'javax.xml.bind:jaxb-api:2.2.11'
