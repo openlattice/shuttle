@@ -83,8 +83,6 @@ dependencies {
 //    compile 'com.auth0:auth0:1.1.0'
 //    compile 'com.auth0:java-jwt:3.2.0'
 
-    compile 'com.ximpleware:vtd-xml:2.13.4'
-
     compile 'commons-cli:commons-cli:1.4'
     compile 'javax.xml.bind:jaxb-api:2.2.11'
     compile 'com.sun.xml.bind:jaxb-core:2.2.11'

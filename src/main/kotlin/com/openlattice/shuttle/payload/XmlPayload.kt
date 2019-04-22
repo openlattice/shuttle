@@ -3,8 +3,6 @@ package com.openlattice.shuttle.payload
 import com.ctc.wstx.stax.WstxInputFactory
 import com.ctc.wstx.stax.WstxOutputFactory
 import com.fasterxml.jackson.dataformat.xml.XmlFactory
-import com.ximpleware.VTDGen
-import com.ximpleware.VTDNav
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.InputStream
@@ -44,34 +42,6 @@ data class XmlPayload(val directoryPath: String, val startTagName: String = DEFA
                 return@map readXmlIntoMap( it, path )
             }
         }.stream()
-    }
-
-    private fun readXmlIntoMapVTD( inStream: InputStream, filePath: Path ): MutableMap<String, Any> {
-        val mutableMapOf = mutableMapOf<String, Any>()
-
-        val vg = VTDGen();
-        val bytes = inStream.readAllBytes()
-        vg.setDoc(bytes)
-        vg.parse(true)
-        val nav = vg.nav
-        nav.toElement(VTDNav.NEXT_SIBLING, startTagName)
-        if (nav.toString(nav.currentIndex) != startTagName) {
-            logger.error("Start tag $startTagName was not found in the input xml file $filePath");
-            vg.clear()
-            return mutableMapOf
-        }
-        var previousIndex = nav.currentIndex
-        nav.toElement(VTDNav.FIRST_CHILD)
-        while ( nav.currentIndex != previousIndex ) {
-            val key = nav.toString(nav.currentIndex )
-            if ( nav.text != -1 ) {
-                mutableMapOf[key] = nav.toNormalizedString( nav.text )
-            }
-            previousIndex = nav.currentIndex
-            nav.toElement(VTDNav.NEXT_SIBLING)
-        }
-        vg.clear()
-        return mutableMapOf
     }
 
     private fun readXmlIntoMap( inStream: InputStream, filePath: Path): MutableMap<String, Any> {
