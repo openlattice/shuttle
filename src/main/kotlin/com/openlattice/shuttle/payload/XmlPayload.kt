@@ -10,7 +10,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.stream.Stream
-import javax.xml.stream.XMLStreamConstants.*
+import javax.xml.stream.XMLStreamConstants.CHARACTERS
+import javax.xml.stream.XMLStreamConstants.END_ELEMENT
 
 data class XmlPayload(val directoryPath: String, val startTagName: String = DEFAULT_START_TAG) : Payload {
 
@@ -62,8 +63,6 @@ data class XmlPayload(val directoryPath: String, val startTagName: String = DEFA
         var currentContents = ""
         while( !(next.isEndElement && next.asEndElement().name.toString() == startTagName ) ) {
             when ( next.eventType ) {
-                START_ELEMENT -> {
-                }
                 END_ELEMENT -> {
                     val endElem = next.asEndElement()
                     mutableMapOf[endElem.name.toString()] = currentContents
@@ -75,12 +74,6 @@ data class XmlPayload(val directoryPath: String, val startTagName: String = DEFA
                     if ( asCharacters.isWhiteSpace ) {
                         currentContents = ""
                     }
-                }
-                END_DOCUMENT -> {
-                    println("[endDoc]")
-                }
-                else -> {
-                    println("[else]")
                 }
             }
             next = xmlReader.nextEvent()

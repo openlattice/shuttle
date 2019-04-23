@@ -148,8 +148,9 @@ class ShuttleCli {
 
         private val startTagOption = Option.builder()
                 .longOpt(START_TAG)
+                .desc("Name of the root XML tag to integrate child nodes from")
+                .argName("startTag")
                 .hasArg( true )
-                .argName("Name of the root XML tag to integrate child nodes from")
                 .build()
 
         private val csvOption = Option.builder()
