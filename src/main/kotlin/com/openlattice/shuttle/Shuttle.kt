@@ -50,7 +50,6 @@ import com.openlattice.shuttle.ShuttleCli.Companion.S3
 import com.openlattice.shuttle.ShuttleCli.Companion.SMTP_SERVER
 import com.openlattice.shuttle.ShuttleCli.Companion.SMTP_SERVER_PORT
 import com.openlattice.shuttle.ShuttleCli.Companion.SQL
-import com.openlattice.shuttle.ShuttleCli.Companion.START_TAG
 import com.openlattice.shuttle.ShuttleCli.Companion.TOKEN
 import com.openlattice.shuttle.ShuttleCli.Companion.UPLOAD_SIZE
 import com.openlattice.shuttle.ShuttleCli.Companion.USER
@@ -156,12 +155,7 @@ fun main(args: Array<String>) {
             payload = SimplePayload(cl.getOptionValue(CSV))
         }
         cl.hasOption(XML) -> {// get xml payload
-            if (!cl.hasOption(START_TAG)) {
-                System.out.println("No start tag specified for XML integration. Using 'Read' as the default tag")
-                payload = XmlPayload( cl.getOptionValue(XML) )
-            } else {
-                payload = XmlPayload( cl.getOptionValue(XML), cl.getOptionValue(START_TAG) )
-            }
+            payload = XmlPayload( cl.getOptionValue(XML) )
         }
         else -> {
             System.err.println("At least one valid data source must be specified.")

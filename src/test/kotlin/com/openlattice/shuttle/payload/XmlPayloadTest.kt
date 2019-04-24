@@ -48,18 +48,6 @@ internal class XmlPayloadTest {
     }
 
     @Test
-    fun testPayloadWithNoTag() {
-        val xmlPayloadUnderTest = XmlPayload( TEST_PATH_1.path, "Feed" ).payload
-
-        var count = 0
-        xmlPayloadUnderTest.forEach {
-            count++
-            assertTrue(it.keys.isEmpty())
-        }
-        assertTrue( count == 1 )
-    }
-
-    @Test
     fun testGetPayloadNestedDirectories() {
         val xmlPayloadUnderTest = XmlPayload( TEST_PATH_3.path ).payload
         var count = 0

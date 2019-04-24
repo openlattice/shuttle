@@ -41,7 +41,6 @@ class ShuttleCli {
         const val SQL = "sql"
         const val CSV = "csv"
         const val XML = "xml"
-        const val START_TAG = "tag"
         const val DATASOURCE = "datasource"
         const val FETCHSIZE = "fetchsize"
         const val CONFIGURATION = "config"
@@ -146,13 +145,6 @@ class ShuttleCli {
                 .argName("directory")
                 .build()
 
-        private val startTagOption = Option.builder()
-                .longOpt(START_TAG)
-                .desc("Name of the root XML tag to integrate child nodes from")
-                .argName("startTag")
-                .hasArg( true )
-                .build()
-
         private val csvOption = Option.builder()
                 .longOpt(CSV)
                 .desc("CSV file to use as the datasource for a specific flight.")
@@ -218,7 +210,6 @@ class ShuttleCli {
                     .addOption(fromEmailPasswordOption)
                     .addOption(smtpServerOption)
                     .addOption(smtpServerPortOption)
-                    .addOption(startTagOption)
 
             options.addOptionGroup(
                     OptionGroup()
