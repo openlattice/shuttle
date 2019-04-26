@@ -355,7 +355,9 @@ class Shuttle(
             key: Set<UUID>,
             properties: Map<UUID, Set<Any>>
     ): String {
-        return ApiUtil.generateDefaultEntityId(key.stream(), properties)
+        val keyValuesPresent = key.filter { !properties[it].isNullOrEmpty() }.isNotEmpty()
+
+        return if (keyValuesPresent) ApiUtil.generateDefaultEntityId(key.stream(), properties) else ""
     }
 
     private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int): Long {
