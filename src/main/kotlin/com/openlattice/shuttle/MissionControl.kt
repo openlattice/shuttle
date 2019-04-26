@@ -48,9 +48,11 @@ import jodd.mail.MailServer
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
-import java.util.*
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
+import java.util.Optional
+import java.util.UUID
 
 
 private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
@@ -76,6 +78,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
         private val client = MissionControl.buildClient(AUTH0_CLIENT_ID)
         private var emailConfiguration: Optional<EmailConfiguration> = Optional.empty()
+        private var terminateOnSuccess = true
 
         init {
             Runtime.getRuntime().addShutdownHook(object : Thread() {
@@ -89,6 +92,11 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         @Throws(Auth0Exception::class)
         fun getIdToken(username: String, password: String): String {
             return getIdToken(client, AUTH0_CONNECTION, username, password)
+        }
+
+        @JvmStatic
+        fun continueAfterSuccess() {
+            this.terminateOnSuccess = false
         }
 
         @JvmStatic
@@ -110,7 +118,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         }
 
         @JvmStatic
-        fun setEmailConfiguration( emailConfiguration: Optional<EmailConfiguration> ) {
+        fun setEmailConfiguration(emailConfiguration: Optional<EmailConfiguration>) {
             this.emailConfiguration = emailConfiguration
         }
 
@@ -124,11 +132,13 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                             "/\\__/ / |_| | \\__/\\| \\__/\\| |___/\\__/ /\\__/ /\n" +
                             "\\____/ \\___/ \\____/ \\____/\\____/\\____/\\____/"
             )
-            kotlin.system.exitProcess(0)
+            if (terminateOnSuccess) {
+                kotlin.system.exitProcess(0)
+            }
         }
 
         @JvmStatic
-        fun fail(code: Int, flight: Flight, ex: Throwable): Nothing {
+        fun fail(code: Int, flight: Flight, ex: Throwable, executors: List<ExecutorService> = listOf() ): Nothing {
             logger.error(
                     "\n______ ___  _____ _     _   _______ _____ \n" +
                             "|  ___/ _ \\|_   _| |   | | | | ___ \\  ___|\n" +
@@ -140,7 +150,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                     ex
             )
 
-            val errorInfo =             if( ex is RhizomeRetrofitCallException ) {
+            val errorInfo = if (ex is RhizomeRetrofitCallException) {
                 "Server returned ${ex.code} with body: ${ex.body}."
             } else {
                 "Something went wrong during client side processing. "
@@ -184,6 +194,8 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                         session.close()
 
                     }, { logger.error("An error occurred during the integration.", ex) })
+
+            executors.forEach( { it.shutdownNow() } )
 
             kotlin.system.exitProcess(code)
         }
