@@ -433,8 +433,8 @@ class Shuttle(
                     integrationQueue.put(it)
                 }
         //Wait on upload thread to finish emptying queue.
-        while (remaining.get() > 0) {
-            logger.info("Waiting on upload to finish...")
+        while ( remaining.get() > 0 ) {
+            logger.info("Waiting on upload to finish... {} entries left", remaining.get() )
             Thread.sleep(1000)
         }
 

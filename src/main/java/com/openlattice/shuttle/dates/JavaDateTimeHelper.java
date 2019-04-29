@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -59,18 +58,18 @@ public class JavaDateTimeHelper {
     }
 
     public OffsetDateTime parseDateTime(String date) {
-        if (shouldIgnoreValue(date))
+
+        if ( shouldIgnoreValue(date) ) {
             return null;
+        }
+
         for (int i = 0; i < datePatterns.length; ++i) {
             DateTimeFormatter formatter = formatters.get(i);
             try {
                 LocalDateTime ldt = LocalDateTime.parse(date, formatter);
-                //                if (ldt.isBefore(LocalDateTime.of(1900, 1, 1, 0, 0, 0))){return null;}
-                if (
-                        datePatterns[0].matches(".*yy.*") && !datePatterns[0].matches(".*yyyy.*") ||
-                                datePatterns[0].matches(".*YY.*") && !datePatterns[0].matches(".*YYYY.*")
-                ) {
-                    if ((ldt.getYear() - LocalDate.now().getYear()) > 20) {
+                if ( datePatterns[0].matches(".*yy.*") && !datePatterns[0].matches(".*yyyy.*")
+                        || datePatterns[0].matches(".*YY.*") && !datePatterns[0].matches(".*YYYY.*") ) {
+                    if ( (ldt.getYear() - LocalDate.now().getYear()) > 20) {
                         ldt = ldt.withYear(ldt.getYear() - 100);
                     }
                 }

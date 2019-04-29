@@ -30,8 +30,12 @@ jacoco {
     toolVersion = "0.8.2"
 }
 
+if (PARALLEL == 'null' || PARALLEL == null || PARALLEL == "") {
+    PARALLEL = "-Djava.util.concurrent.ForkJoinPool.common.parallelism=" + Runtime.runtime.availableProcessors()
+}
+
 mainClassName = "com.openlattice.shuttle.ShuttleKt"
-applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server"]
+applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server", PARALLEL]
 sourceCompatibility = JavaVersion.VERSION_1_10
 targetCompatibility = JavaVersion.VERSION_1_10
 

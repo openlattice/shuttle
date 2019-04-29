@@ -83,7 +83,7 @@ public class JdbcPayload implements Payload {
             try {
                 rsm = rs.getMetaData();
                 columnCount = rsm.getColumnCount();
-                columns = new ArrayList( columnCount );
+                columns = new ArrayList<>( columnCount );
                 for ( int i = 1; i <= columnCount; ++i ) {
                     columns.add( rsm.getColumnName( i ) );
                 }

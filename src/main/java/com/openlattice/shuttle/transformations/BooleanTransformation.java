@@ -33,9 +33,7 @@ public class BooleanTransformation<I extends Object> extends Transformation<I> {
 
         // true valuemapper
         if ( transformsIfTrue.isPresent() ) {
-            final List<Transformation> internalTrueTransforms;
-            internalTrueTransforms = new ArrayList<>( this.transformsIfTrue.get().size() );
-            transformsIfTrue.get().forEach( internalTrueTransforms::add );
+            final List<Transformation> internalTrueTransforms = new ArrayList<>( transformsIfTrue.get() );
             this.trueValueMapper = new TransformValueMapper( internalTrueTransforms );
         } else {
             this.trueValueMapper = row -> null;
@@ -43,9 +41,7 @@ public class BooleanTransformation<I extends Object> extends Transformation<I> {
 
         // false valuemapper
         if ( transformsIfFalse.isPresent() ) {
-            final List<Transformation> internalFalseTransforms;
-            internalFalseTransforms = new ArrayList<>( this.transformsIfFalse.get().size() );
-            transformsIfFalse.get().forEach( internalFalseTransforms::add );
+            final List<Transformation> internalFalseTransforms = new ArrayList<>( transformsIfFalse.get() );
             this.falseValueMapper = new TransformValueMapper( internalFalseTransforms );
         } else {
             this.falseValueMapper = row -> null;

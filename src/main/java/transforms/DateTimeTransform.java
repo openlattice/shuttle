@@ -10,36 +10,30 @@ import java.util.Optional;
 import java.util.TimeZone;
 
 public class DateTimeTransform extends Transformation<String> {
-    private final String[] pattern;
+    private final String[] patterns;
     private final TimeZone timezone;
 
     /**
      * Represents a transformation from string to datetime.
      *
-     * @param pattern:  pattern of date (eg. "MM/dd/YY")
+     * @param patterns:  pattern of date (eg. "MM/dd/YY")
      * @param timezone: name of the timezone
      */
     @JsonCreator
     public DateTimeTransform(
-            @JsonProperty( Constants.PATTERN ) String[] pattern,
-            @JsonProperty( Constants.TIMEZONE ) Optional<String> timezone
-    ) {
-        this.pattern = pattern;
+            @JsonProperty( Constants.PATTERN ) String[] patterns,
+            @JsonProperty( Constants.TIMEZONE ) Optional<String> timezone ) {
+        this.patterns = patterns;
         this.timezone = TimeZone.getTimeZone( timezone.orElse("America/New_York") );
     }
 
-    public DateTimeTransform(
-            @JsonProperty( Constants.PATTERN ) String[] pattern
-    ) {
-        this(
-                pattern,
-                Optional.empty()
-        );
+    public DateTimeTransform( @JsonProperty( Constants.PATTERN ) String[] patterns ) {
+        this( patterns, Optional.empty() );
     }
 
     @JsonProperty( value = Constants.PATTERN, required = false )
     public String[] getPattern() {
-        return pattern;
+        return patterns;
     }
 
     @JsonProperty( value = Constants.TIMEZONE, required = false )
@@ -49,8 +43,7 @@ public class DateTimeTransform extends Transformation<String> {
 
     @Override
     public Object applyValue( String o ) {
-        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( this.timezone,
-                pattern );
+        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( this.timezone, patterns );
         Object out = dtHelper.parseDateTime( o );
         return out;
     }

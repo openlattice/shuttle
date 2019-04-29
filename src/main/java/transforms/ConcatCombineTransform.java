@@ -37,20 +37,17 @@ public class ConcatCombineTransform extends Transformation<Map<String, String>> 
         for ( Transformation s : transforms )
         {
             Object toadd = s.apply(row);
-            if ( !(toadd == null)) {
-                if (!StringUtils.isBlank( toadd.toString()) ) {
-                    sb.append(sep).append(toadd);
-                    sep = separator;
-                }
+            if ( toadd != null && !StringUtils.isBlank( toadd.toString()) ) {
+                sb.append(sep).append(toadd);
+                sep = separator;
             }
         }
 
         String outstring = sb.toString();
-        if ( !StringUtils.isBlank( outstring ) ) {
-            return outstring;
-        } else {
+        if ( StringUtils.isBlank( outstring ) ) {
             return null;
         }
+        return outstring;
     }
 
 }
