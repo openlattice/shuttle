@@ -324,9 +324,10 @@ class Shuttle(
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
         private val dataIntegrationApi: DataIntegrationApi
 ) {
+    private val uploadingExecutor = Executors.newSingleThreadExecutor()
+
     companion object {
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
-        private val uploadingExecutor = Executors.newSingleThreadExecutor()
     }
 
     private val updateTypes = flightPlan.keys.flatMap { flight ->
@@ -365,7 +366,9 @@ class Shuttle(
             key: Set<UUID>,
             properties: Map<UUID, Set<Any>>
     ): String {
-        return ApiUtil.generateDefaultEntityId(key.stream(), properties)
+        val keyValuesPresent = key.filter { !properties[it].isNullOrEmpty() }.isNotEmpty()
+
+        return if (keyValuesPresent) ApiUtil.generateDefaultEntityId(key.stream(), properties) else ""
     }
 
     private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int): Long {
