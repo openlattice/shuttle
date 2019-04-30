@@ -53,10 +53,12 @@ import com.openlattice.shuttle.ShuttleCli.Companion.SQL
 import com.openlattice.shuttle.ShuttleCli.Companion.TOKEN
 import com.openlattice.shuttle.ShuttleCli.Companion.UPLOAD_SIZE
 import com.openlattice.shuttle.ShuttleCli.Companion.USER
+import com.openlattice.shuttle.ShuttleCli.Companion.XML
 import com.openlattice.shuttle.config.IntegrationConfig
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.openlattice.shuttle.payload.SimplePayload
+import com.openlattice.shuttle.payload.XmlPayload
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
@@ -129,6 +131,12 @@ fun main(args: Array<String>) {
                 ShuttleCli.printHelp()
                 return
             }
+            if (cl.hasOption(XML)) {
+                // check xml Absence
+                System.out.println("Cannot specify XML datasource and JDBC datasource simultaneously.")
+                ShuttleCli.printHelp()
+                return
+            }
 
             // get JDBC payload
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
@@ -145,6 +153,9 @@ fun main(args: Array<String>) {
         }
         cl.hasOption(CSV) -> {// get csv payload
             payload = SimplePayload(cl.getOptionValue(CSV))
+        }
+        cl.hasOption(XML) -> {// get xml payload
+            payload = XmlPayload( cl.getOptionValue(XML) )
         }
         else -> {
             System.err.println("At least one valid data source must be specified.")
