@@ -24,7 +24,7 @@ public class JavaDateTimeHelper {
     public JavaDateTimeHelper(TimeZone tz, String... datePatterns) {
         this.tz = tz;
         this.datePatterns = datePatterns;
-        this.formatters = Arrays.stream(datePatterns).map(pattern -> DateTimeFormatter.ofPattern(pattern))
+        this.formatters = Arrays.stream(datePatterns).map( DateTimeFormatter::ofPattern )
                 .collect(Collectors.toList());
     }
 
