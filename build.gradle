@@ -31,7 +31,7 @@ jacoco {
 }
 
 mainClassName = "com.openlattice.shuttle.ShuttleKt"
-applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server"]
+applicationDefaultJvmArgs = ["-Xmx2G", "-Xms2G", "-XX:+UseG1GC", "-XX:+UseStringDeduplication", "-server"]
 sourceCompatibility = JavaVersion.VERSION_1_10
 targetCompatibility = JavaVersion.VERSION_1_10
 
