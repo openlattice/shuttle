@@ -39,6 +39,7 @@ import com.openlattice.shuttle.ShuttleCli.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCli.Companion.CSV
 import com.openlattice.shuttle.ShuttleCli.Companion.DATASOURCE
 import com.openlattice.shuttle.ShuttleCli.Companion.ENVIRONMENT
+import com.openlattice.shuttle.ShuttleCli.Companion.FETCHRATE
 import com.openlattice.shuttle.ShuttleCli.Companion.FETCHSIZE
 import com.openlattice.shuttle.ShuttleCli.Companion.FLIGHT
 import com.openlattice.shuttle.ShuttleCli.Companion.FROM_EMAIL
@@ -142,14 +143,19 @@ fun main(args: Array<String>) {
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
             val sql = cl.getOptionValue(SQL)
 
-            payload = if (cl.hasOption(FETCHSIZE)) {
+            payload = if ( cl.hasOption(FETCHRATE) && cl.hasOption(FETCHSIZE) ) {
+                val readRate = cl.getOptionValue(FETCHRATE).toDouble()
+                logger.info("Using a fetch rate of $readRate")
+                val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
+                logger.info("Using a fetch size of $fetchSize")
+                JdbcPayload(hds, sql, readRate, fetchSize)
+            } else if (cl.hasOption(FETCHSIZE)) {
                 val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
                 logger.info("Using a fetch size of $fetchSize")
                 JdbcPayload(hds, sql, fetchSize)
             } else {
                 JdbcPayload(hds, sql)
             }
-
         }
         cl.hasOption(CSV) -> {// get csv payload
             payload = SimplePayload(cl.getOptionValue(CSV))

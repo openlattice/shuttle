@@ -43,6 +43,7 @@ class ShuttleCli {
         const val XML = "xml"
         const val DATASOURCE = "datasource"
         const val FETCHSIZE = "fetchsize"
+        const val FETCHRATE = "fetchrate"
         const val CONFIGURATION = "config"
         const val S3 = "s3"
         const val UPLOAD_SIZE = "upload-size"
@@ -67,6 +68,13 @@ class ShuttleCli {
                 .longOpt(FETCHSIZE)
                 .hasArg(true)
                 .argName("fetch size")
+                .build()
+
+        private val fetchRate = Option.builder()
+                .longOpt(FETCHRATE)
+                .hasArg(true)
+                .argName("fetch rate")
+                .desc("rate at which to read from the database (reads per second)")
                 .build()
 
         private val uploadSize = Option.builder()
@@ -204,6 +212,7 @@ class ShuttleCli {
                     .addOption(createOption)
                     .addOption(s3Option)
                     .addOption(fetchSize)
+                    .addOption(fetchRate)
                     .addOption(uploadSize)
                     .addOption(notificationEmailsOption)
                     .addOption(fromEmailOption)
