@@ -38,6 +38,10 @@ public class JdbcPayload implements Payload {
         this( hds, sql, DEFAULT_PERMITS_PER_SECOND, fetchSize );
     }
 
+    public JdbcPayload( HikariDataSource hds, String sql, double permitsPerSecond) {
+        this( hds, sql, permitsPerSecond, DEFAULT_FETCH_SIZE);
+    }
+
     public JdbcPayload( HikariDataSource hds, String sql, double permitsPerSecond, int fetchSize ) {
         this.rateLimiter = RateLimiter.create( permitsPerSecond );
         this.hds = hds;

@@ -144,15 +144,19 @@ fun main(args: Array<String>) {
             val sql = cl.getOptionValue(SQL)
 
             payload = if ( cl.hasOption(FETCHRATE) && cl.hasOption(FETCHSIZE) ) {
-                val readRate = cl.getOptionValue(FETCHRATE).toDouble()
-                logger.info("Using a fetch rate of $readRate")
+                val fetchRate = cl.getOptionValue(FETCHRATE).toDouble()
+                logger.info("Using a fetch rate of $fetchRate")
                 val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
                 logger.info("Using a fetch size of $fetchSize")
-                JdbcPayload(hds, sql, readRate, fetchSize)
+                JdbcPayload(hds, sql, fetchRate, fetchSize)
             } else if (cl.hasOption(FETCHSIZE)) {
                 val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
                 logger.info("Using a fetch size of $fetchSize")
                 JdbcPayload(hds, sql, fetchSize)
+            } else if (cl.hasOption(FETCHRATE)) {
+                val fetchRate = cl.getOptionValue(FETCHRATE).toDouble()
+                logger.info("Using a fetch rate of $fetchRate")
+                JdbcPayload(hds, sql, fetchRate)
             } else {
                 JdbcPayload(hds, sql)
             }
@@ -171,13 +175,11 @@ fun main(args: Array<String>) {
         }
     }
 
-
     environment = if (cl.hasOption(ENVIRONMENT)) {
         RetrofitFactory.Environment.valueOf(cl.getOptionValue(ENVIRONMENT).toUpperCase())
     } else {
         RetrofitFactory.Environment.PRODUCTION
     }
-
 
     val s3BucketUrl = if (cl.hasOption(S3)) {
         val bucketCategory = cl.getOptionValue(S3)
