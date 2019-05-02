@@ -16,16 +16,12 @@ import java.time.format.DateTimeParseException;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
-import java.util.regex.Pattern;
 
 public class JavaDateTimeHelper {
     private static final Logger logger = LoggerFactory.getLogger(JavaDateTimeHelper.class);
 
-    private final TimeZone  tz;
-    private final String[]  datePatterns;
-    private static final Pattern[] compiledRegexes = {
-            Pattern.compile( ".*yy.*" ),Pattern.compile( ".*yyyy.*" ),
-            Pattern.compile( ".*YY.*" ),Pattern.compile( ".*YYYY.*" )};
+    private final TimeZone      tz;
+    private final String[]      datePatterns;
 
     private static final LoadingCache<String, DateTimeFormatter> formatCache = buildCache();
 
@@ -68,6 +64,7 @@ public class JavaDateTimeHelper {
     public LocalDate parseDate(String date) {
         return parseWithTwoDigitYearHandling( date, LocalDate::parse, ( ld, datePattern ) -> {
             if (  checkDatePatternIsTwoDigitYear( datePattern ) ) {
+                // TODO: break this out into its own transform that specifies the date boundaries for two-digit years
                 if ((ld.getYear() - LocalDate.now().getYear()) > 20) {
                     ld = ld.withYear(ld.getYear() - 100);
                 }
@@ -82,6 +79,7 @@ public class JavaDateTimeHelper {
             return parsed.atZone( tz.toZoneId() ).toOffsetDateTime();
         }, ( odt, datePattern ) -> {
             if (  checkDatePatternIsTwoDigitYear( datePattern ) ) {
+                // TODO: break this out into its own transform that specifies the date boundaries for two-digit years
                 if ((odt.getYear() - LocalDate.now().getYear()) > 20) {
                     odt = odt.withYear(odt.getYear() - 100);
                 }
@@ -91,11 +89,7 @@ public class JavaDateTimeHelper {
     }
 
     private boolean checkDatePatternIsTwoDigitYear( String datePattern ) {
-        boolean matchesyy = compiledRegexes[ 0 ].matcher( datePattern ).matches();
-        boolean matchesyyyy = compiledRegexes[ 1 ].matcher( datePattern ).matches();
-        boolean matchesYY = compiledRegexes[ 2 ].matcher( datePattern ).matches();
-        boolean matchesYYYY = compiledRegexes[ 3 ].matcher( datePattern ).matches();
-        return ( ( matchesyy && !matchesyyyy ) || ( matchesYY && !matchesYYYY ) );
+        return !datePattern.endsWith( "yyyy" ) && !datePattern.startsWith("yyyy") && ( datePattern.endsWith( "yy" ) || datePattern.startsWith( "yy" ) );
     }
 
     public LocalDate parseDateTimeAsDate(String date) {
