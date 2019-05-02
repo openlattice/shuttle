@@ -1,5 +1,8 @@
 package com.openlattice.shuttle.dates;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,30 +13,35 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Arrays;
-import java.util.Map;
 import java.util.TimeZone;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
+import java.util.regex.Pattern;
 
 public class JavaDateTimeHelper {
     private static final Logger logger = LoggerFactory.getLogger(JavaDateTimeHelper.class);
 
-    private final TimeZone tz;
-    private final String[] datePatterns;
+    private final TimeZone  tz;
+    private final String[]  datePatterns;
+    private static final Pattern[] compiledRegexes = {
+            Pattern.compile( ".*yy.*" ),Pattern.compile( ".*yyyy.*" ),
+            Pattern.compile( ".*YY.*" ),Pattern.compile( ".*YYYY.*" )};
 
-    private static final Map<String, DateTimeFormatter> formatCache = new ConcurrentHashMap<>();
+    private static final LoadingCache<String, DateTimeFormatter> formatCache = buildCache();
 
     public JavaDateTimeHelper(TimeZone tz, String... datePatterns) {
         this.tz = tz;
         this.datePatterns = datePatterns;
-        Arrays.stream(datePatterns).forEach( pattern ->  {
-            formatCache.putIfAbsent( pattern, DateTimeFormatter.ofPattern( pattern ) );
-        });
+    }
+
+    private static LoadingCache<String, DateTimeFormatter> buildCache() {
+        return CacheBuilder.newBuilder()
+                .maximumSize( 64L )
+                .build( CacheLoader.from( DateTimeFormatter::ofPattern ) );
     }
 
     private boolean shouldIgnoreValue(String date) {
-        return StringUtils.isBlank(date) || date.equals("NULL");
+        return date == null || StringUtils.isBlank(date) || date.equals("NULL");
     }
 
     public <R> R parseWithTwoDigitYearHandling(String date, BiFunction<String, DateTimeFormatter, R> parseFunction,
@@ -42,14 +50,16 @@ public class JavaDateTimeHelper {
             return null;
         }
         for ( String datePattern: datePatterns ){
-            DateTimeFormatter formatter = formatCache.get(datePattern);
             try {
+                DateTimeFormatter formatter = formatCache.get( datePattern );
                 R result = parseFunction.apply( date, formatter );
                 return postParseFunction.apply( result, datePattern );
-            } catch (DateTimeParseException e) {
+            } catch ( DateTimeParseException e) {
                 if ( datePattern.equals(datePatterns[datePatterns.length - 1]) ) {
                     logger.error("Unable to parse date {}, please see debug log for additional information: {}.", date,e);
                 }
+            } catch ( ExecutionException ex ) {
+                logger.error("ExecutionException loading pattern from cache", ex);
             }
         }
         return null;
@@ -81,8 +91,11 @@ public class JavaDateTimeHelper {
     }
 
     private boolean checkDatePatternIsTwoDigitYear( String datePattern ) {
-        return ( datePattern.matches(".*yy.*") && !datePattern.matches(".*yyyy.*") ) ||
-                ( datePattern.matches(".*YY.*") && !datePattern.matches(".*YYYY.*") );
+        boolean matchesyy = compiledRegexes[ 0 ].matcher( datePattern ).matches();
+        boolean matchesyyyy = compiledRegexes[ 1 ].matcher( datePattern ).matches();
+        boolean matchesYY = compiledRegexes[ 2 ].matcher( datePattern ).matches();
+        boolean matchesYYYY = compiledRegexes[ 3 ].matcher( datePattern ).matches();
+        return ( ( matchesyy && !matchesyyyy ) || ( matchesYY && !matchesYYYY ) );
     }
 
     public LocalDate parseDateTimeAsDate(String date) {
@@ -122,13 +135,15 @@ public class JavaDateTimeHelper {
             return null;
         }
         for ( String datePattern: datePatterns ){
-            DateTimeFormatter formatter = formatCache.get(datePattern);
             try {
+                DateTimeFormatter formatter = formatCache.get(datePattern);
                 return parseFunction.apply( parseableString, formatter );
             } catch (DateTimeParseException e) {
                 if ( datePattern.equals(datePatterns[datePatterns.length - 1]) ) {
                     logger.error("Unable to parse string {}, please see debug log for additional information: {}.", parseableString, e);
                 }
+            } catch ( ExecutionException ex ) {
+                logger.error("ExecutionException loading pattern from cache", ex);
             }
         }
         return null;
