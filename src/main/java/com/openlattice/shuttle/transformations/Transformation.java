@@ -59,7 +59,6 @@ public abstract class Transformation<I extends Object> implements Function<I, Ob
     }
 
     protected String getInputString( Object o, Optional<String> column ) {
-        final String input;
         if ( o == null ) {
             return null;
         }
