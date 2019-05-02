@@ -3,6 +3,7 @@ package transforms;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
@@ -11,7 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ReplaceTransform extends Transformation<String> {
@@ -77,8 +77,7 @@ public class ReplaceTransform extends Transformation<String> {
 
         // get pattern and matcher
 
-        Pattern pattern = Pattern.compile( patternString );
-        Matcher matcher = pattern.matcher( o );
+        Matcher matcher = Cached.getMatcherForString( o, patternString );
 
         // create stringbuffer
 

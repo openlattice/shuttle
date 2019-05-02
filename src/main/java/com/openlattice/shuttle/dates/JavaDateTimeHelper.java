@@ -3,6 +3,7 @@ package com.openlattice.shuttle.dates;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.openlattice.shuttle.util.Cached;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +23,6 @@ public class JavaDateTimeHelper {
 
     private final TimeZone      tz;
     private final String[]      datePatterns;
-
-    private static final LoadingCache<String, DateTimeFormatter> formatCache = buildCache();
 
     public JavaDateTimeHelper(TimeZone tz, String... datePatterns) {
         this.tz = tz;
@@ -47,7 +46,7 @@ public class JavaDateTimeHelper {
         }
         for ( String datePattern: datePatterns ){
             try {
-                DateTimeFormatter formatter = formatCache.get( datePattern );
+                DateTimeFormatter formatter = Cached.getDateFormatForString( datePattern );
                 R result = parseFunction.apply( date, formatter );
                 return postParseFunction.apply( result, datePattern );
             } catch ( DateTimeParseException e) {
@@ -130,7 +129,7 @@ public class JavaDateTimeHelper {
         }
         for ( String datePattern: datePatterns ){
             try {
-                DateTimeFormatter formatter = formatCache.get(datePattern);
+                DateTimeFormatter formatter = Cached.getDateFormatForString(datePattern);
                 return parseFunction.apply( parseableString, formatter );
             } catch (DateTimeParseException e) {
                 if ( datePattern.equals(datePatterns[datePatterns.length - 1]) ) {
