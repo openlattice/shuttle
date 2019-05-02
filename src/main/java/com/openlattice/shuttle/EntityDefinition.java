@@ -19,9 +19,6 @@
 
 package com.openlattice.shuttle;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -37,15 +34,17 @@ import com.openlattice.shuttle.conditions.ConditionValueMapper;
 import com.openlattice.shuttle.conditions.Conditions;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.StringUtils;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonInclude( value = Include.NON_EMPTY )
 public class EntityDefinition implements Serializable {
@@ -90,7 +89,7 @@ public class EntityDefinition implements Serializable {
         if ( condition.isPresent() ) {
             final List<Condition> internalConditions;
             internalConditions = new ArrayList<>( this.condition.get().size() + 1 );
-            condition.get().forEach( internalConditions::add );
+            internalConditions.addAll( condition.get() );
             this.valueMapper = new ConditionValueMapper( internalConditions );
         } else {
             this.valueMapper = null;

@@ -33,17 +33,12 @@ import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.Constants;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import transforms.ColumnTransform;
 import transforms.HashTransform;
+
+import java.io.Serializable;
+import java.util.*;
 
 @JsonInclude( value = Include.NON_EMPTY )
 public class PropertyDefinition implements Serializable {
@@ -68,14 +63,13 @@ public class PropertyDefinition implements Serializable {
         this.transforms = transforms;
 
         if ( transforms.isPresent() ) {
-            final List<Transformation> internalTransforms;
-            internalTransforms = new ArrayList<>( this.transforms.get().size() + 1 );
+            final List<Transformation> internalTransforms = new ArrayList<>( this.transforms.get().size() + 1 );
             if ( reader.isPresent() ) {
                 internalTransforms.add( reader.get() );
             } else if ( column != null ) {
                 internalTransforms.add( new ColumnTransform( column ) );
             }
-            transforms.get().forEach( internalTransforms::add );
+            internalTransforms.addAll( transforms.get() );
             this.valueMapper = new TransformValueMapper( internalTransforms );
         } else {
             this.valueMapper = row -> row.get( column );
