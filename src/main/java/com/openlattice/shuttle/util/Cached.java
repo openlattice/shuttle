@@ -12,18 +12,17 @@ import java.util.regex.Pattern;
 
 public class Cached {
 
-    private static final LoadingCache<String, Matcher> regexCache = buildRegexCache();
-    private static final LoadingCache<String, Matcher> insensitiveRegexCache = buildInsensitiveRegexCache();
+    private static final LoadingCache<String, Pattern> regexCache = buildRegexCache();
+    private static final LoadingCache<String, Pattern> insensitiveRegexCache = buildInsensitiveRegexCache();
     private static final LoadingCache<String, DateTimeFormatter> formatCache = buildFormatCache();
 
-    private static LoadingCache<String, Matcher> buildRegexCache() {
-        return CacheBuilder.newBuilder()
-                .build( CacheLoader.from( (key) -> Pattern.compile( key ).matcher( "" ) ) );
+    private static LoadingCache<String, Pattern> buildRegexCache() {
+        return CacheBuilder.newBuilder().build( CacheLoader.from( Pattern::compile ) );
     }
 
-    private static LoadingCache<String, Matcher> buildInsensitiveRegexCache() {
+    private static LoadingCache<String, Pattern> buildInsensitiveRegexCache() {
         return CacheBuilder.newBuilder()
-                .build( CacheLoader.from( (key) -> Pattern.compile( key, Pattern.CASE_INSENSITIVE ).matcher( "" ) ) );
+                .build( CacheLoader.from( (key) -> Pattern.compile( key, Pattern.CASE_INSENSITIVE ) ) );
     }
 
     private static LoadingCache<String, DateTimeFormatter> buildFormatCache() {
@@ -32,15 +31,13 @@ public class Cached {
     }
 
     public static Matcher getInsensitiveMatcherForString( @NotNull String targetString, @NotNull String regex ) {
-        Matcher unchecked = insensitiveRegexCache.getUnchecked( regex );
-        unchecked.reset( targetString );
-        return unchecked;
+        Pattern pat = insensitiveRegexCache.getUnchecked( regex );
+        return pat.matcher( targetString );
     }
 
     public static Matcher getMatcherForString( @NotNull String targetString, @NotNull String regex ) {
-        Matcher unchecked = regexCache.getUnchecked( regex );
-        unchecked.reset( targetString );
-        return unchecked;
+        Pattern pat = regexCache.getUnchecked( regex );
+        return pat.matcher( targetString );
     }
 
     public static DateTimeFormatter getDateFormatForString( @NotNull String dateFormatString ) throws ExecutionException {
