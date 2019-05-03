@@ -187,7 +187,7 @@ fun main(args: Array<String>) {
                      }
                      "local" -> {
                          if ( arguments.size < LOCAL_ORIGIN_EXPECTED_ARGS_COUNT ){
-                             println("Not enough arguments provided for S3 data origin, provide AWS region, S3 URL and bucket name")
+                             println("Not enough arguments provided for local data origin, provide a local file path")
                              ShuttleCli.printHelp()
                              exit(1)
                              return
@@ -195,7 +195,7 @@ fun main(args: Array<String>) {
                          LocalFileOrigin( Paths.get( arguments[1] ) )
                      }
                      else -> {
-                         println("The specified configuration is invalid ${cl.getOptionValue(DATA_ORIGIN)}, ${cl.getOptionValue(XML)}")
+                         println("The specified configuration is invalid ${cl.getOptionValues(DATA_ORIGIN)}")
                          ShuttleCli.printHelp()
                          exit(1)
                          return
