@@ -147,7 +147,7 @@ fun main(args: Array<String>) {
                 return
             }
             if ( cl.hasOption(DATA_ORIGIN) ) {
-                System.out.println("SQL and/or CSV cannot be specified when performing a data origin integration")
+                System.out.println("SQL cannot be specified when performing a data origin integration")
                 ShuttleCli.printHelp()
                 return
             }
@@ -166,7 +166,7 @@ fun main(args: Array<String>) {
         }
         cl.hasOption(CSV) -> {// get csv payload
             if ( cl.hasOption(DATA_ORIGIN) ) {
-                System.out.println("SQL and/or CSV cannot be specified when performing a data origin integration")
+                System.out.println("CSV cannot be specified when performing a data origin integration")
                 ShuttleCli.printHelp()
                 return
             }
