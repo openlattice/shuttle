@@ -1,16 +1,16 @@
 package com.openlattice.shuttle.payload
 
-import com.google.common.io.Resources.getResource
+import com.google.common.io.Resources
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.net.URL
 
 internal class XmlPayloadTest {
 
-    private val TEST_PATH_1: URL = getResource( "xmls/xmltest1" )
-    private val TEST_PATH_2: URL = getResource( "xmls/xmltest2" )
-    private val TEST_PATH_3: URL = getResource( "xmls/" )
-    private val TEST_PATH_4: URL = getResource( "xmls/xmltest1/xmlTest1.xml" )
+    private val TEST_PATH_1: URL = Resources.getResource( "xmls/xmltest1" )
+    private val TEST_PATH_2: URL = Resources.getResource( "xmls/xmltest2" )
+    private val TEST_PATH_3: URL = Resources.getResource( "xmls/" )
+    private val TEST_PATH_4: URL = Resources.getResource( "xmls/xmltest1/xmlTest1.xml" )
 
     private val OVERVIEW_IMG_TAG = "OverviewImage"
     private val EXPECTED_KEYS = setOf("VehicleID", "Plate", "Date", "Time", "SharpName", "PlateImage", "ContextImage",

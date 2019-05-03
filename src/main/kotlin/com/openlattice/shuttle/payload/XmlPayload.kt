@@ -10,10 +10,12 @@ import java.util.stream.Stream
 import kotlin.streams.asStream
 
 data class XmlPayload( val source: IntegrationSource) : Payload {
-    constructor( source: String ) : this( LocalFileSource( Paths.get( source ) ) )
+
+    constructor( source: String ) : this( LocalFileSource( Paths.get( source ), { it.toString().endsWith(xmlSuffix) } ) )
 
     companion object {
         private val logger = LoggerFactory.getLogger(XmlPayload::class.java)
+        private val xmlSuffix = ".xml"
         private val mapper = XmlMapper()
     }
 
