@@ -42,7 +42,13 @@ internal class XmlPayloadTest {
         var count = 0
         xmlPayloadUnderTest.forEach {
             count++
-            assertTrue(it.keys.isEmpty())
+            //assert all keys present
+            assertTrue(EXPECTED_KEYS.equals(it.keys))
+
+            //assert any missing values dont have values in the map
+            val emptyValue = it[OVERVIEW_IMG_TAG] as String
+            assertTrue( emptyValue.isBlank() )
+            assertTrue( emptyValue.isEmpty() )
         }
         assertTrue( count == 1 )
     }
