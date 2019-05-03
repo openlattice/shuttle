@@ -99,7 +99,10 @@ class ShuttleCli {
         private val dataOriginOption = Option.builder()
                 .longOpt(DATA_ORIGIN)
                 .hasArg(true)
-                .desc("Source location of the data to be integrated\n Current options are:\n- S3 <S3 endpoint> <AWS Region> <S3 bucket name>\n- local <path to a data file>")
+                .desc("Source location of the data to be integrated\n" +
+                        " Current options are:\n" +
+                        "     S3 <S3 endpoint> <AWS Region> <S3 bucket name>\n" +
+                        "     local <path to a data file>")
                 .argName("data origin")
                 .numberOfArgs(S3_ORIGIN_EXPECTED_ARGS_COUNT)
                 .build()
