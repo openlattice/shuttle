@@ -21,6 +21,10 @@
 
 package com.openlattice.shuttle
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider
+import com.amazonaws.auth.AnonymousAWSCredentials
+import com.amazonaws.services.s3.AmazonS3
+import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions
 import com.google.common.base.Stopwatch
@@ -38,15 +42,18 @@ import com.openlattice.shuttle.ShuttleCli.Companion.CONFIGURATION
 import com.openlattice.shuttle.ShuttleCli.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCli.Companion.CSV
 import com.openlattice.shuttle.ShuttleCli.Companion.DATASOURCE
+import com.openlattice.shuttle.ShuttleCli.Companion.DATA_ORIGIN
 import com.openlattice.shuttle.ShuttleCli.Companion.ENVIRONMENT
 import com.openlattice.shuttle.ShuttleCli.Companion.FETCHSIZE
 import com.openlattice.shuttle.ShuttleCli.Companion.FLIGHT
 import com.openlattice.shuttle.ShuttleCli.Companion.FROM_EMAIL
 import com.openlattice.shuttle.ShuttleCli.Companion.FROM_EMAIL_PASSWORD
 import com.openlattice.shuttle.ShuttleCli.Companion.HELP
+import com.openlattice.shuttle.ShuttleCli.Companion.LOCAL_ORIGIN_EXPECTED_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCli.Companion.NOTIFICATION_EMAILS
 import com.openlattice.shuttle.ShuttleCli.Companion.PASSWORD
 import com.openlattice.shuttle.ShuttleCli.Companion.S3
+import com.openlattice.shuttle.ShuttleCli.Companion.S3_ORIGIN_EXPECTED_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCli.Companion.SMTP_SERVER
 import com.openlattice.shuttle.ShuttleCli.Companion.SMTP_SERVER_PORT
 import com.openlattice.shuttle.ShuttleCli.Companion.SQL
@@ -58,7 +65,9 @@ import com.openlattice.shuttle.config.IntegrationConfig
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.openlattice.shuttle.payload.SimplePayload
-import com.openlattice.shuttle.payload.XmlPayload
+import com.openlattice.shuttle.payload.XmlFilesPayload
+import com.openlattice.shuttle.source.LocalFileOrigin
+import com.openlattice.shuttle.source.S3BucketOrigin
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
@@ -66,6 +75,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.lang.System.exit
+import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -100,7 +110,6 @@ fun main(args: Array<String>) {
 
     if (cl.hasOption(FLIGHT)) {
         flight = ObjectMappers.getYamlMapper().readValue(File(cl.getOptionValue(FLIGHT)), Flight::class.java)
-
     } else {
         System.err.println("A flight is required in order to run shuttle.")
         ShuttleCli.printHelp()
@@ -137,6 +146,11 @@ fun main(args: Array<String>) {
                 ShuttleCli.printHelp()
                 return
             }
+            if ( cl.hasOption(DATA_ORIGIN) ) {
+                System.out.println("SQL and/or CSV cannot be specified when performing a data origin integration")
+                ShuttleCli.printHelp()
+                return
+            }
 
             // get JDBC payload
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
@@ -149,22 +163,56 @@ fun main(args: Array<String>) {
             } else {
                 JdbcPayload(hds, sql)
             }
-
         }
         cl.hasOption(CSV) -> {// get csv payload
+            if ( cl.hasOption(DATA_ORIGIN) ) {
+                System.out.println("SQL and/or CSV cannot be specified when performing a data origin integration")
+                ShuttleCli.printHelp()
+                return
+            }
             payload = SimplePayload(cl.getOptionValue(CSV))
         }
         cl.hasOption(XML) -> {// get xml payload
-            payload = XmlPayload( cl.getOptionValue(XML) )
+             if (cl.hasOption(DATA_ORIGIN) ) {
+                 val arguments = cl.getOptionValues(DATA_ORIGIN);
+                 val dataOrigin = when (arguments[0]) {
+                     "S3" -> {
+                         if ( arguments.size < S3_ORIGIN_EXPECTED_ARGS_COUNT ){
+                             println("Not enough arguments provided for S3 data origin, provide AWS region, S3 URL and bucket name")
+                             ShuttleCli.printHelp()
+                             exit(1)
+                             return
+                         }
+                         S3BucketOrigin( arguments[2], makeAWSS3Client( arguments[1] ) )
+                     }
+                     "local" -> {
+                         if ( arguments.size < LOCAL_ORIGIN_EXPECTED_ARGS_COUNT ){
+                             println("Not enough arguments provided for S3 data origin, provide AWS region, S3 URL and bucket name")
+                             ShuttleCli.printHelp()
+                             exit(1)
+                             return
+                         }
+                         LocalFileOrigin( Paths.get( arguments[1] ) )
+                     }
+                     else -> {
+                         println("The specified configuration is invalid ${cl.getOptionValue(DATA_ORIGIN)}, ${cl.getOptionValue(XML)}")
+                         ShuttleCli.printHelp()
+                         exit(1)
+                         return
+                     }
+                 }
+                 payload = XmlFilesPayload( dataOrigin )
+             } else {
+                 payload = XmlFilesPayload( cl.getOptionValue(XML) )
+             }
         }
         else -> {
-            System.err.println("At least one valid data source must be specified.")
+            System.err.println("At least one valid data origin must be specified.")
             ShuttleCli.printHelp()
             exit(1)
             return
         }
     }
-
 
     environment = if (cl.hasOption(ENVIRONMENT)) {
         RetrofitFactory.Environment.valueOf(cl.getOptionValue(ENVIRONMENT).toUpperCase())
@@ -243,6 +291,15 @@ fun main(args: Array<String>) {
     } catch (ex: Exception) {
         MissionControl.fail(1, flight, ex)
     }
+}
+
+fun makeAWSS3Client( region: String ): AmazonS3 {
+    return AmazonS3ClientBuilder
+            .standard()
+            .withPathStyleAccessEnabled(true)
+            .withRegion( region )
+            .withCredentials(AWSStaticCredentialsProvider(AnonymousAWSCredentials()))
+            .build();
 }
 
 fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {

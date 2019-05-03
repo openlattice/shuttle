@@ -8,10 +8,10 @@ import java.io.InputStream
 import java.util.stream.StreamSupport
 
 
-data class S3BucketSource(val bucketName: String, val s3Client: AmazonS3) : IntegrationSource() {
+data class S3BucketOrigin(val bucketName: String, val s3Client: AmazonS3) : IntegrationOrigin() {
 
     companion object {
-        val logger = LoggerFactory.getLogger(S3BucketSource::class.java)
+        val logger = LoggerFactory.getLogger(S3BucketOrigin::class.java)
     }
 
     override fun iterator(): Iterator<InputStream> {

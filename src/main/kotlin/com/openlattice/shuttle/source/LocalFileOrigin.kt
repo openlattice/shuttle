@@ -5,10 +5,10 @@ import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 
-data class LocalFileSource( val path: Path, val filter: (Path) -> Boolean = { true } ) : IntegrationSource() {
+data class LocalFileOrigin(val path: Path, val filter: (Path) -> Boolean = { true } ) : IntegrationOrigin() {
 
     companion object {
-        private val logger = LoggerFactory.getLogger(LocalFileSource::class.java)
+        private val logger = LoggerFactory.getLogger(LocalFileOrigin::class.java)
     }
 
     override fun iterator(): Iterator<InputStream> {
@@ -17,7 +17,7 @@ data class LocalFileSource( val path: Path, val filter: (Path) -> Boolean = { tr
         }
         return Files.newDirectoryStream(path) {
             filter.invoke(it) && !Files.isDirectory(it)
-        }.map{
+        }.map {
             Files.newInputStream(it)
         }.iterator()
     }

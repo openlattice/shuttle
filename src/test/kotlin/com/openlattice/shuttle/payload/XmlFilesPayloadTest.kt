@@ -5,7 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.net.URL
 
-internal class XmlPayloadTest {
+internal class XmlFilesPayloadTest {
 
     private val TEST_PATH_1: URL = Resources.getResource( "xmls/xmltest1" )
     private val TEST_PATH_2: URL = Resources.getResource( "xmls/xmltest2" )
@@ -19,7 +19,7 @@ internal class XmlPayloadTest {
 
     @Test
     fun testGetHappyPathPayload() {
-        val xmlPayloadUnderTest = XmlPayload( TEST_PATH_1.path ).payload
+        val xmlPayloadUnderTest = XmlFilesPayload( TEST_PATH_1.path ).payload
 
         var count = 0
         xmlPayloadUnderTest.forEach {
@@ -37,7 +37,7 @@ internal class XmlPayloadTest {
 
     @Test
     fun testFilePathInsteadOfDirPath() {
-        val xmlPayloadUnderTest = XmlPayload( TEST_PATH_4.path ).payload
+        val xmlPayloadUnderTest = XmlFilesPayload( TEST_PATH_4.path ).payload
 
         var count = 0
         xmlPayloadUnderTest.forEach {
@@ -55,7 +55,7 @@ internal class XmlPayloadTest {
 
     @Test
     fun testGetPayloadNestedDirectories() {
-        val xmlPayloadUnderTest = XmlPayload( TEST_PATH_3.path ).payload
+        val xmlPayloadUnderTest = XmlFilesPayload( TEST_PATH_3.path ).payload
         var count = 0
         xmlPayloadUnderTest.forEach {
             count++
@@ -72,7 +72,7 @@ internal class XmlPayloadTest {
 
     @Test
     fun testGetPayloadMultipleFiles() {
-        val xmlPayloadUnderTest = XmlPayload( TEST_PATH_2.path ).payload
+        val xmlPayloadUnderTest = XmlFilesPayload( TEST_PATH_2.path ).payload
         var count = 0
         xmlPayloadUnderTest.forEach {
             count++

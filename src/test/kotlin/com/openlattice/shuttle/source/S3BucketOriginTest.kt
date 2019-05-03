@@ -8,7 +8,7 @@ import java.io.InputStreamReader
 import java.net.URL
 import java.nio.file.Paths
 
-class S3BucketSourceTest {
+class S3BucketOriginTest {
 
     private val TEST_S3_PORT = 9999
     private val TEST_REGION = "us-west-2"
@@ -36,7 +36,7 @@ class S3BucketSourceTest {
     @Test
     fun testIterator() {
         var i = 0
-        val s3BucketSource = S3BucketSource(TEST_BUCKET, client)
+        val s3BucketSource = S3BucketOrigin(TEST_BUCKET, client)
         s3BucketSource.map {
             Pair( InputStreamReader(it).readText() , i++)
         }.forEach {

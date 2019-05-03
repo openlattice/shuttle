@@ -17,7 +17,7 @@ class S3TestingUtils () {
         fun newTestS3Client( port: Int, region: String ) : AmazonS3 {
             val api = S3Mock.Builder().withPort(port).withInMemoryBackend().build()
             api.start()
-            val endpoint = AwsClientBuilder.EndpointConfiguration("http://localhost:$port", region);
+            val endpoint = AwsClientBuilder.EndpointConfiguration("http://localhost:$port", region)
             val client = AmazonS3ClientBuilder
                     .standard()
                     .withPathStyleAccessEnabled(true)
