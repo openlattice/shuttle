@@ -21,8 +21,6 @@
 
 package com.openlattice.shuttle
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider
-import com.amazonaws.auth.AnonymousAWSCredentials
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.dataloom.mappers.ObjectMappers
@@ -298,7 +296,6 @@ fun makeAWSS3Client( region: String ): AmazonS3 {
             .standard()
             .withPathStyleAccessEnabled(true)
             .withRegion( region )
-            .withCredentials(AWSStaticCredentialsProvider(AnonymousAWSCredentials()))
             .build();
 }
 
