@@ -62,13 +62,13 @@ public abstract class Transformation<I extends Object> implements Function<I, Ob
         if ( o == null ) {
             return null;
         }
-        if ( !( column.isPresent() ) ) {
+        if ( !column.isPresent() ) {
             return o.toString();
         }
         ObjectMapper m = ObjectMappers.getJsonMapper();
         Map<String, String> row = m.convertValue( o, Map.class );
         String col = getColumn();
-        if ( !( row.containsKey( col ) ) ) {
+        if ( !row.containsKey(col) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
         return row.get( col );
@@ -80,7 +80,7 @@ public abstract class Transformation<I extends Object> implements Function<I, Ob
 
         Object out = applyValue( s );
 
-        if (out==null) return null;
+        if ( out == null ) return null;
 
         return out.toString();
 
