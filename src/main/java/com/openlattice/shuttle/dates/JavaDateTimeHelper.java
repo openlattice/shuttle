@@ -1,8 +1,5 @@
 package com.openlattice.shuttle.dates;
 
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.openlattice.shuttle.util.Cached;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -27,12 +24,6 @@ public class JavaDateTimeHelper {
     public JavaDateTimeHelper(TimeZone tz, String... datePatterns) {
         this.tz = tz;
         this.datePatterns = datePatterns;
-    }
-
-    private static LoadingCache<String, DateTimeFormatter> buildCache() {
-        return CacheBuilder.newBuilder()
-                .maximumSize( 64L )
-                .build( CacheLoader.from( DateTimeFormatter::ofPattern ) );
     }
 
     private boolean shouldIgnoreValue(String date) {
