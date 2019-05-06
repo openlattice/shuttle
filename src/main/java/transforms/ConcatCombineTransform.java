@@ -35,9 +35,9 @@ public class ConcatCombineTransform extends Transformation<Map<String, String>> 
         StringBuilder sb = new StringBuilder();
         String sep = "";
         for ( Transformation s : transforms ) {
-            Object toadd = s.apply(row);
-            if ( toadd != null && !StringUtils.isBlank( toadd.toString()) ) {
-                sb.append(sep).append(toadd);
+            Object toAdd = s.apply(row);
+            if ( toAdd != null && !StringUtils.isBlank( toAdd.toString()) ) {
+                sb.append(sep).append(toAdd);
                 sep = separator;
             }
         }
