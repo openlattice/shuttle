@@ -46,6 +46,7 @@ public class JdbcPayload implements Payload {
         try {
             Connection conn = hds.getConnection();
             conn.setAutoCommit( false );
+            logger.info( "running connection with autoCommit enabled: ${}", conn.getAutoCommit() );
             Statement statement = conn.createStatement( ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY );
             statement.setFetchSize( fetchSize );
             final ResultSet rs = statement.executeQuery( sql );

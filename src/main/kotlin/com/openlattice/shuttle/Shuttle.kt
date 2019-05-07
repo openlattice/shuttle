@@ -80,7 +80,7 @@ import kotlin.streams.asSequence
  */
 
 private val logger = LoggerFactory.getLogger(ShuttleCli::class.java)
-const val DEFAULT_UPLOAD_SIZE = 100000
+const val DEFAULT_UPLOAD_SIZE = 100_000
 
 fun main(args: Array<String>) {
 
@@ -383,8 +383,12 @@ class Shuttle(
         val remaining = AtomicLong(0)
 
         uploadingExecutor.execute {
-            Stream.generate { integrationQueue.take() }.parallel()
+            Stream.generate {
+                println("${Thread.currentThread().name} taking")
+                integrationQueue.take()
+            }.parallel()
                     .map { batch ->
+                        logger.info("${Thread.currentThread().name} mapping")
                         try {
                             rows.addAndGet(batch.size.toLong())
                             return@map impulse(flight, batch)
@@ -396,6 +400,7 @@ class Shuttle(
                     }
                     .forEach { batch ->
                         try {
+                            logger.info("${Thread.currentThread().name} processing")
                             val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
                                     + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
                             val entityKeyIds = entityKeys.zip(
@@ -403,6 +408,7 @@ class Shuttle(
                             ).toMap()
 
 
+                            logger.info("Secondary mapping finished, beginning to integrate")
                             integrationDestinations.forEach { (storageDestination, integrationDestination) ->
                                 if (batch.entities.containsKey(storageDestination)) {
                                     integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
@@ -441,7 +447,12 @@ class Shuttle(
                 .chunked(uploadBatchSize)
                 .forEach {
                     remaining.incrementAndGet()
-                    integrationQueue.put(it)
+                    val offer = integrationQueue.offer(it)
+                    if (!offer){
+                        logger.info("Tried adding to queue, blocking until space is free")
+                        integrationQueue.put(it)
+                    }
+                    logger.info("successfully enqueued")
                 }
         //Wait on upload thread to finish emptying queue.
         while (remaining.get() > 0) {
