@@ -45,6 +45,7 @@ public class JdbcPayload implements Payload {
     @Override public Stream<Map<String, Object>> getPayload() {
         try {
             Connection conn = hds.getConnection();
+            conn.setAutoCommit( false );
             Statement statement = conn.createStatement( ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY );
             statement.setFetchSize( fetchSize );
             final ResultSet rs = statement.executeQuery( sql );
