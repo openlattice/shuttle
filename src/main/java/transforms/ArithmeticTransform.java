@@ -56,7 +56,7 @@ public class ArithmeticTransform extends Transformation<Map<String, String>> {
     public Double getValueFromTransform( Object transformed ) {
 
         if ( StringUtils.isBlank( String.valueOf( transformed ) ) ) {
-            logger.debug( "Unable to parse number {} for arithmetic transform, returning",
+            logger.debug( "Unable to parse number {} for arithmetic transform, returning {}",
                     String.valueOf( transformed ),
                     this.alternative );
             return this.alternative;
@@ -64,7 +64,7 @@ public class ArithmeticTransform extends Transformation<Map<String, String>> {
             try {
                 return Double.parseDouble( String.valueOf( transformed ) );
             } catch ( Exception e ) {
-                logger.debug( "Unable to parse number {} for arithmetic transform, returning",
+                logger.debug( "Unable to parse number {} for arithmetic transform, returning {}",
                         String.valueOf( transformed ),
                         this.alternative );
                 return this.alternative;
@@ -102,7 +102,7 @@ public class ArithmeticTransform extends Transformation<Map<String, String>> {
                 return left / right;
             default:
                 throw new IllegalStateException( String
-                        .format( "Unknown operator in ArithmeticTransformation: ", operator ) );
+                        .format( "Unknown operator in ArithmeticTransformation: {}", operator ) );
         }
     }
 
