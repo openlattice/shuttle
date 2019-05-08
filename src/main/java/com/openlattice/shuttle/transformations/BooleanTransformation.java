@@ -1,5 +1,6 @@
 package com.openlattice.shuttle.transformations;
 
+import com.dataloom.mappers.ObjectMappers;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,7 +54,7 @@ public class BooleanTransformation<I extends Object> extends Transformation<I> {
     }
 
     protected Map<String, Object> getInputMap( Object o ) {
-        ObjectMapper m = new ObjectMapper();
+        ObjectMapper m = ObjectMappers.getJsonMapper();
         Map<String, Object> row = m.convertValue( o, Map.class );
         return row;
     }

@@ -23,6 +23,7 @@ package transforms;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.util.Cached;
 
 import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 
@@ -37,8 +38,7 @@ public class RemoveDigitsTransform extends Transformation<String> {
 
     @Override
     public Object applyValue( String o ) {
-        String outstring = o.replaceAll( "[\\d]+", "" );
-        return outstring;
+        return Cached.getMatcherForString( o, "[\\d]+").replaceAll( "" );
     }
 
 }
