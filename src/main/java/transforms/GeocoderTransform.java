@@ -67,7 +67,7 @@ public class GeocoderTransform extends Transformation<Object> {
         List<String> outercodes = Arrays.asList( "lat", "lon", "type" );
         if ( outercodes.contains( addressObject ) ) {
             return (String) address.get( addressObject );
-        } else if ( addressObject == "geographypoint" ) {
+        } else if ( addressObject.equals("geographypoint") ) {
             return address.get( "lat" ) + "," + address.get("lon");
         } else {
             Map<String, Object> hlpr = (Map<String, Object>) address.get( "address" );
