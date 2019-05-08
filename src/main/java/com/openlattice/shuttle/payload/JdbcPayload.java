@@ -3,13 +3,13 @@ package com.openlattice.shuttle.payload;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.util.concurrent.RateLimiter;
 import com.zaxxer.hikari.HikariDataSource;
-import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -26,6 +26,7 @@ public class JdbcPayload implements Payload {
     private final String           sql;
     private final RateLimiter      rateLimiter;
     private final int              fetchSize;
+    private final List<String>     primaryKeyCols;
 
     public JdbcPayload( HikariDataSource hds, String sql ) {
         this( hds, sql, DEFAULT_PERMITS_PER_SECOND, DEFAULT_FETCH_SIZE );
@@ -36,6 +37,15 @@ public class JdbcPayload implements Payload {
     }
 
     public JdbcPayload( HikariDataSource hds, String sql, double permitsPerSecond, int fetchSize ) {
+        this(hds, sql, permitsPerSecond, fetchSize, List.of());
+    }
+
+    public JdbcPayload( HikariDataSource hds, String sql, double permitsPerSecond, int fetchSize, List<String> primaryKeyCols ) {
+        if ( primaryKeyCols == null || primaryKeyCols.isEmpty() ) {
+            this.primaryKeyCols = List.of();
+        } else {
+            this.primaryKeyCols = primaryKeyCols;
+        }
         this.rateLimiter = RateLimiter.create( permitsPerSecond );
         this.hds = hds;
         this.sql = sql;
@@ -49,7 +59,8 @@ public class JdbcPayload implements Payload {
             Statement statement = conn.createStatement( ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY );
             statement.setFetchSize( fetchSize );
             final ResultSet rs = statement.executeQuery( sql );
-            return StreamUtil.stream( () -> new ResultSetStringIterator( conn, statement, rs, rateLimiter, sql ) );
+            return StreamUtil.stream( () -> new ResultSetStringIterator( conn, statement, rs, rateLimiter, sql
+                    , primaryKeyCols ) );
         } catch ( SQLException e ) {
             logger.info( "Unable to get payload.", e );
         }
@@ -67,6 +78,7 @@ public class JdbcPayload implements Payload {
         private final RateLimiter   rateLimiter;
         private final String        sql;
         private final AtomicLong    readCount = new AtomicLong( 0 );
+        private final List<String>  primaryKeyCols;
         private       AtomicBoolean hasNext   = new AtomicBoolean( false );
 
         public ResultSetStringIterator(
@@ -74,12 +86,13 @@ public class JdbcPayload implements Payload {
                 Statement stmt,
                 ResultSet rs,
                 RateLimiter rateLimiter,
-                String sql ) {
+                String sql, List<String> primaryKeyCols ) {
             this.connection = connection;
             this.stmt = stmt;
             this.rs = rs;
             this.rateLimiter = rateLimiter;
             this.sql = sql;
+            this.primaryKeyCols = primaryKeyCols;
             ResultSetMetaData rsm = null;
             try {
                 rsm = rs.getMetaData();
@@ -108,6 +121,12 @@ public class JdbcPayload implements Payload {
                     rs.close();
                     stmt.close();
                     connection.close();
+                    if (!primaryKeyCols.isEmpty()) {
+                        logger.info("Final row read:");
+                    }
+                    for ( String column : primaryKeyCols ) {
+                        logger.info( column + ": " + data.get( column ) );
+                    }
                     logger.info( "Exhausted query {} after {} rows", sql, readCount.get() );
                 }
             } catch ( SQLException e ) {

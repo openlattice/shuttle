@@ -456,7 +456,6 @@ class Shuttle(
                                     dataIntegrationApi.getEntityKeyIds(entityKeys)
                             ).toMap()
 
-
                             integrationDestinations.forEach { (storageDestination, integrationDestination) ->
                                 if (batch.entities.containsKey(storageDestination)) {
                                     integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
@@ -499,7 +498,7 @@ class Shuttle(
                 }
         //Wait on upload thread to finish emptying queue.
         while (remaining.get() > 0) {
-            logger.info("Waiting on upload to finish...")
+            logger.info("Waiting on upload to finish... ${remaining.get()} batches left")
             Thread.sleep(1000)
         }
 
