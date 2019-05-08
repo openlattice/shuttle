@@ -18,6 +18,14 @@ public class ArithmeticTransform extends Transformation<Map<String, String>> {
     private              Double alternative;
     private static final Logger logger = LoggerFactory.getLogger( DateTimeHelper.class );
 
+    /**
+     * Represents a transformation from string to datetime.
+     *
+     * @param leftTransforms:  transformations for left side of computation
+     * @param rightTransforms: transformations for right side of computation
+     * @param operator:        operator, one of +, -, /, *
+     * @param alternative:     if left or right transformation fail to parse to double: what should the value be (defaults to null);
+     */
     public ArithmeticTransform(
             @JsonProperty( Constants.LEFTTRANSFORMS ) List<Transformation> leftTransforms,
             @JsonProperty( Constants.RIGHTTRANSFORMS ) List<Transformation> rightTransforms,
