@@ -40,6 +40,8 @@ class ShuttleCli {
         const val ENVIRONMENT = "environment"
         const val SQL = "sql"
         const val CSV = "csv"
+        const val XML = "xml"
+        const val DATA_ORIGIN = "data-origin"
         const val DATASOURCE = "datasource"
         const val FETCHSIZE = "fetchsize"
         const val CONFIGURATION = "config"
@@ -50,6 +52,9 @@ class ShuttleCli {
         const val FROM_EMAIL_PASSWORD = "from-email-password"
         const val SMTP_SERVER = "smtp-server"
         const val SMTP_SERVER_PORT = "smtp-server-port"
+
+        const val S3_ORIGIN_EXPECTED_ARGS_COUNT = 3
+        const val LOCAL_ORIGIN_EXPECTED_ARGS_COUNT = 2
 
         private val options = Options()
         private val clp = DefaultParser()
@@ -87,6 +92,19 @@ class ShuttleCli {
                 .desc("File containing integration configuration")
                 .hasArg()
                 .argName("file")
+                .build()
+
+        // --data-origin    S3       region      bucketName
+        // --data-origin    local    filepath
+        private val dataOriginOption = Option.builder()
+                .longOpt(DATA_ORIGIN)
+                .hasArg(true)
+                .desc("Source location of the data to be integrated\n" +
+                        " Current options are:\n" +
+                        "     S3 <S3 endpoint> <AWS Region> <S3 bucket name>\n" +
+                        "     local <path to a data file>")
+                .argName("data origin")
+                .numberOfArgs(S3_ORIGIN_EXPECTED_ARGS_COUNT)
                 .build()
 
         private val datasourceOption = Option.builder()
@@ -135,6 +153,13 @@ class ShuttleCli {
                 .desc("SQL query to use for the flight.")
                 .argName("query")
                 .hasArg(true)
+                .build()
+
+        private val xmlOption = Option.builder()
+                .longOpt(XML)
+                .desc("Directory of XML files to use as the datasource for a specific flight.")
+                .hasArg(true)
+                .argName("directory")
                 .build()
 
         private val csvOption = Option.builder()
@@ -207,6 +232,14 @@ class ShuttleCli {
                     OptionGroup()
                             .addOption(sqlOption)
                             .addOption(csvOption)
+                            .addOption(xmlOption)
+            )
+
+            options.addOptionGroup(
+                    OptionGroup()
+                            .addOption(dataOriginOption)
+                            .addOption(csvOption)
+                            .addOption(sqlOption)
             )
 
             options.addOptionGroup(
