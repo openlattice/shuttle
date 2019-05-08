@@ -2,11 +2,9 @@ package com.openlattice.shuttle.transforms;
 
 import com.openlattice.shuttle.transformations.Transformations;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import transforms.*;
 
-import javax.management.AttributeList;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -26,17 +24,21 @@ public class TransformTest {
     String dateArrest        = "10/01/92";
     String dateRelease       = "10-01-25";
     String datetimeCommitted = "03/05/00 10:00";
+    String fullname          = "John_Paul_Doe";
+    String partialname       = "John_Doe";
 
     public Map<String, String> getTestRow() {
         Map<String, String> testrow = new HashMap<String, String>();
         testrow.put( "FirstName", first );
         testrow.put( "LastName", last );
         testrow.put( "Family", family );
+        testrow.put( "FullName", fullname );
+        testrow.put( "PartialName", partialname );
         testrow.put( "DOB", DOB );
         testrow.put( "ArrestedDate", dateArrest );
         testrow.put( "ReleasedDate", dateRelease );
         testrow.put( "SSN", null );
-        testrow.put( "Sex", sex);
+        testrow.put( "Sex", sex );
         testrow.put( "Address", address );
         testrow.put( "CommittedDateTime", datetimeCommitted );
         testrow.put( "Lat", lat );
@@ -252,6 +254,26 @@ public class TransformTest {
     }
 
     @Test
+    public void testSplitTransform() {
+        Object lastName1 = new SplitTransform( "_", "2", Optional.empty(), Optional.empty() )
+                .apply( getTestRow().get( "FullName" ) );
+        Assert.assertEquals( "Doe", lastName1 );
+
+        Object lastName2 = new SplitTransform( "_", "last", Optional.empty(), Optional.empty() )
+                .apply( getTestRow().get( "PartialName" ) );
+        Assert.assertEquals( "Doe", lastName2 );
+
+        Object middleName1 = new SplitTransform( "_", "1", Optional.empty(), Optional.of( 2 ) )
+                .apply( getTestRow().get( "FullName" ) );
+        Assert.assertEquals( "Paul", middleName1 );
+
+        Object middleName2 = new SplitTransform( "_", "1", Optional.empty(), Optional.of( 2 ) )
+                .apply( getTestRow().get( "PartialName" ) );
+        Assert.assertEquals( null, middleName2 );
+
+    }
+
+    @Test
     public void testCasingTransform() {
         Object casingTest1 = new CaseTransform( null ).apply( "JANINE" );
         Assert.assertEquals( "Janine", casingTest1 );
@@ -267,7 +289,6 @@ public class TransformTest {
         Assert.assertEquals( "Janine Vanderginst", casingTest6 );
     }
 
-
     @Test
     public void testConcatTransform() {
         String expected = "John Doe";
@@ -276,7 +297,7 @@ public class TransformTest {
         Assert.assertEquals( expected, concatTest1 );
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test( expected = IllegalStateException.class )
     public void testColumnAbsence() {
         String unknownColumn = "thisdoesnotexist";
         Object concatTest1 = new ColumnTransform( unknownColumn ).apply( getTestRow() );
@@ -288,8 +309,8 @@ public class TransformTest {
         String goal = "";
 
         Object replaceRegexTest1 = new ReplaceRegexTransform( target, goal )
-                .apply(getTestRow().get("Family"));
-        Assert.assertEquals( "mother", replaceRegexTest1);
+                .apply( getTestRow().get( "Family" ) );
+        Assert.assertEquals( "mother", replaceRegexTest1 );
     }
 
     @Test
@@ -328,7 +349,7 @@ public class TransformTest {
 
     }
 
-    @Test(timeout=4000)
+    @Test( timeout = 3000 )
     public void testGeocoderTransform() {
         String expectedStreet = "Scott Street";
         Object geocoderTest1 = new GeocoderTransform( "road", Optional.empty() )

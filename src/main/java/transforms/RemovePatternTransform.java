@@ -21,27 +21,23 @@
 
 package transforms;
 
-import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 
 @JsonIgnoreProperties( value = { TRANSFORM } )
 
 public class RemovePatternTransform extends Transformation<String> {
 
     private final List<String>  patterns;
-    private final List<Pattern> rgx;
 
     /**
      * Represents a transformation to set values to "" if they appear.
@@ -53,14 +49,10 @@ public class RemovePatternTransform extends Transformation<String> {
     public RemovePatternTransform( @JsonProperty( Constants.PATTERNS ) List<String> patterns ) {
         this.patterns = patterns;
 
-        List<Pattern> rgx = new ArrayList<Pattern>();
         for ( String ptrn : patterns ) {
-            rgx.add(
-                    Pattern.compile( "\\b(?i)" + ptrn + "\\b", Pattern.CASE_INSENSITIVE )
-            );
+            String fullPatternString = "\\b(?i)" + ptrn + "\\b";
+            Cached.getInsensitiveMatcherForString( "", fullPatternString);
         }
-        this.rgx = rgx;
-
     }
 
     @JsonProperty( value = Constants.PATTERNS )
@@ -70,11 +62,11 @@ public class RemovePatternTransform extends Transformation<String> {
 
     @Override
     public Object applyValue( String o ) {
-        for ( Pattern rx : rgx ) {
+        for ( String pattern : patterns ) {
             if ( StringUtils.isBlank( o ) ) {
                 return null;
             }
-            if ( rx.matcher( o ).matches() ) {
+            if ( Cached.getInsensitiveMatcherForString( o, pattern ).matches() ) {
                 return null;
             }
         }

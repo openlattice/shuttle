@@ -2,20 +2,15 @@ package transforms;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.BooleanTransformation;
-import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class BooleanRegexTransform<I extends Object> extends BooleanTransformation<I> {
     private final String column;
@@ -65,9 +60,8 @@ public class BooleanRegexTransform<I extends Object> extends BooleanTransformati
         if ( StringUtils.isBlank( o ) ) {
             return false;
         }
-        Pattern p = Pattern
-                .compile( this.pattern, Pattern.CASE_INSENSITIVE );
-        Matcher m = p.matcher( o );
+
+        Matcher m = Cached.getInsensitiveMatcherForString( o, this.pattern );
         return m.find();
 
     }
