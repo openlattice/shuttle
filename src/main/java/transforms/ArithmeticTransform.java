@@ -1,24 +1,33 @@
 package transforms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.openlattice.shuttle.dates.DateTimeHelper;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class ArithmeticTransform extends Transformation<Map<String, String>> {
-    private String operator;
+    private String               operator;
     private List<Transformation> leftTransforms, rightTransforms;
+    private              Double alternative;
+    private static final Logger logger = LoggerFactory.getLogger( DateTimeHelper.class );
 
     public ArithmeticTransform(
             @JsonProperty( Constants.LEFTTRANSFORMS ) List<Transformation> leftTransforms,
             @JsonProperty( Constants.RIGHTTRANSFORMS ) List<Transformation> rightTransforms,
-            @JsonProperty( Constants.OPERATOR ) String operator
-            ) {
+            @JsonProperty( Constants.OPERATOR ) String operator,
+            @JsonProperty( Constants.ELSE ) Optional<Double> alternative
+    ) {
         this.operator = operator;
         this.leftTransforms = leftTransforms;
         this.rightTransforms = rightTransforms;
+        this.alternative = alternative.orElse( null );
     }
 
     @JsonProperty( Constants.OPERATOR )
@@ -36,50 +45,42 @@ public class ArithmeticTransform extends Transformation<Map<String, String>> {
         return rightTransforms;
     }
 
+    public Double getValueFromTransform( Object transformed ) {
+
+        if ( StringUtils.isBlank( String.valueOf( transformed ) ) ) {
+            logger.debug( "Unable to parse number {} for arithmetic transform, returning",
+                    String.valueOf( transformed ),
+                    this.alternative );
+            return this.alternative;
+        } else {
+            try {
+                return Double.parseDouble( String.valueOf( transformed ) );
+            } catch ( Exception e ) {
+                logger.debug( "Unable to parse number {} for arithmetic transform, returning",
+                        String.valueOf( transformed ),
+                        this.alternative );
+                return this.alternative;
+            }
+        }
+    }
+
     @Override
     public Object apply( Map<String, String> row ) {
+
         Object leftTransformed = row;
         for ( Transformation t : leftTransforms ) {
             leftTransformed = t.apply( leftTransformed );
         }
+        Double left = getValueFromTransform( leftTransformed );
 
         Object rightTransformed = row;
         for ( Transformation t : rightTransforms ) {
             rightTransformed = t.apply( rightTransformed );
         }
+        Double right = getValueFromTransform( rightTransformed );
 
-        double left, right;
-
-        if ( leftTransformed == null ) {
-            left = 0;
-        }
-        else
-        {
-            String leftString = leftTransformed.toString();
-            if (leftString.equals(""))
-            {
-                left = 0;
-            }
-            else
-            {
-                left = Double.parseDouble(leftString);
-            }
-        }
-
-        if ( rightTransformed == null ) {
-            right = 0;
-        }
-        else
-        {
-            String rightString = rightTransformed.toString();
-            if (rightString.equals(""))
-            {
-                right = 0;
-            }
-            else
-            {
-                right = Double.parseDouble(rightString);
-            }
+        if ( left == null | right == null ) {
+            return null;
         }
 
         switch ( operator ) {
@@ -92,7 +93,8 @@ public class ArithmeticTransform extends Transformation<Map<String, String>> {
             case "/":
                 return left / right;
             default:
-                return null;
+                throw new IllegalStateException( String
+                        .format( "Unknown operator in ArithmeticTransformation: ", operator ) );
         }
     }
 

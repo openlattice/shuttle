@@ -353,12 +353,29 @@ public class TransformTest {
     }
 
 
+    @Test(expected = IllegalStateException.class)
+    public void testArithmeticTransformInvalid() {
+        // Tests with problematic input
+
+        Transformations leftTransfos = new Transformations();
+        leftTransfos.add( new ColumnTransform( "Lat" ) );
+
+        Transformations rightTransfos = new Transformations();
+        rightTransfos.add( new ColumnTransform( "Long" ) );
+
+        Object arithmeticTest = new ArithmeticTransform(
+                leftTransfos, rightTransfos, ":", Optional.empty()
+        ).apply( getTestRow() );
+    }
+
+
     @Test
     public void testArithmeticTransform() {
         double expectedSum = 36.23452 + 30.34573;
         double expectedDiff = 36.23452 - 30.34573;
         double expectedProd = 36.23452 * 30.34573;
         double expectedQuo = 36.23452 / 30.34573;
+        double expectedSumLeft = 36.23452;
 
         Transformations leftTransfos = new Transformations();
         leftTransfos.add( new ColumnTransform( "Lat" ) );
@@ -367,7 +384,7 @@ public class TransformTest {
         rightTransfos.add( new ColumnTransform( "Long" ) );
 
         Object arithmeticTest1 = new ArithmeticTransform(
-                leftTransfos, rightTransfos, "+"
+                leftTransfos, rightTransfos, "+", Optional.empty()
         ).apply( getTestRow() );
 
         if (!(arithmeticTest1 instanceof Double))
@@ -380,7 +397,7 @@ public class TransformTest {
 
 
         Object arithmeticTest2 = new ArithmeticTransform(
-                leftTransfos, rightTransfos, "-"
+                leftTransfos, rightTransfos, "-", Optional.empty()
         ).apply( getTestRow() );
 
         if (!(arithmeticTest2 instanceof Double))
@@ -394,7 +411,7 @@ public class TransformTest {
 
 
         Object arithmeticTest3 = new ArithmeticTransform(
-                leftTransfos, rightTransfos, "*"
+                leftTransfos, rightTransfos, "*", Optional.empty()
         ).apply( getTestRow() );
 
         if (!(arithmeticTest3 instanceof Double))
@@ -408,7 +425,7 @@ public class TransformTest {
 
 
         Object arithmeticTest4 = new ArithmeticTransform(
-                leftTransfos, rightTransfos, "/"
+                leftTransfos, rightTransfos, "/", Optional.empty()
         ).apply( getTestRow() );
 
         if (!(arithmeticTest4 instanceof Double))
@@ -418,6 +435,32 @@ public class TransformTest {
         value = (Double)arithmeticTest4;
 
         Assert.assertTrue( expectedQuo - .00001 < value && expectedQuo + .00001 > value );
+
+
+        // invalid value returning 0 as alternative
+
+        Transformations rightTransfos_string = new Transformations();
+        rightTransfos.add( new ValueTransform( "Long" ) );
+
+        Object arithmeticTest5 = new ArithmeticTransform(
+                leftTransfos, rightTransfos, "+", Optional.of(0.0)
+        ).apply( getTestRow() );
+
+        if (!(arithmeticTest5 instanceof Double))
+        {
+            Assert.fail("Arithmetic transform with sum did not return a Double.");
+        }
+        value = (Double)arithmeticTest5;
+
+        Assert.assertTrue( expectedSumLeft - .00001 < value && expectedSumLeft + .00001 > value );
+
+        // invalid value returning null as alternative
+
+        Object arithmeticTest = new ArithmeticTransform(
+                leftTransfos, rightTransfos_string, "+", Optional.empty()
+        ).apply( getTestRow() );
+        Assert.assertEquals( arithmeticTest , null );
+
     }
 
 }
