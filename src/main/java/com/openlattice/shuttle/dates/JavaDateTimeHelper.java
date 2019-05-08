@@ -79,7 +79,9 @@ public class JavaDateTimeHelper {
     }
 
     private boolean checkDatePatternIsTwoDigitYear( String datePattern ) {
-        return !datePattern.endsWith( "yyyy" ) && !datePattern.startsWith("yyyy") && ( datePattern.endsWith( "yy" ) || datePattern.startsWith( "yy" ) );
+        boolean yyMatch = Cached.getMatcherForString( datePattern, ".*yy.*" ).matches();
+        boolean yyyyMatch = Cached.getMatcherForString( datePattern, ".*yyyy.*" ).matches();
+        return yyMatch && !yyyyMatch;
     }
 
     public LocalDate parseDateTimeAsDate(String date) {
