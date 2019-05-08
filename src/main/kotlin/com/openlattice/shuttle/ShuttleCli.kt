@@ -94,7 +94,7 @@ class ShuttleCli {
                 .argName("file")
                 .build()
 
-        // --origin-origin  S3       region      bucketName
+        // --data-origin    S3       region      bucketName
         // --data-origin    local    filepath
         private val dataOriginOption = Option.builder()
                 .longOpt(DATA_ORIGIN)
