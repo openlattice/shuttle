@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class ArithmeticTransform extends Transformation<Map<String, String>> {
@@ -55,17 +56,19 @@ public class ArithmeticTransform extends Transformation<Map<String, String>> {
 
     public Double getValueFromTransform( Object transformed ) {
 
-        if ( StringUtils.isBlank( String.valueOf( transformed ) ) ) {
+        String transformedString = Objects.toString( transformed, "" );
+
+        if ( StringUtils.isBlank( transformedString ) ) {
             logger.debug( "Unable to parse number {} for arithmetic transform, returning {}",
-                    String.valueOf( transformed ),
+                    transformedString,
                     this.alternative );
             return this.alternative;
         } else {
             try {
-                return Double.parseDouble( String.valueOf( transformed ) );
+                return Double.parseDouble( transformedString );
             } catch ( Exception e ) {
                 logger.debug( "Unable to parse number {} for arithmetic transform, returning {}",
-                        String.valueOf( transformed ),
+                        transformedString,
                         this.alternative );
                 return this.alternative;
             }
