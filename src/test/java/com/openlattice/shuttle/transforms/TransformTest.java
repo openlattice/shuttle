@@ -461,10 +461,10 @@ public class TransformTest {
         // invalid value returning 0 as alternative
 
         Transformations rightTransfos_string = new Transformations();
-        rightTransfos.add( new ValueTransform( "Long" ) );
+        rightTransfos_string.add( new ValueTransform( "Long" ) );
 
         Object arithmeticTest5 = new ArithmeticTransform(
-                leftTransfos, rightTransfos, "+", Optional.of(0.0)
+                leftTransfos, rightTransfos_string, "+", Optional.of(0.0)
         ).apply( getTestRow() );
 
         if (!(arithmeticTest5 instanceof Double))
@@ -481,6 +481,15 @@ public class TransformTest {
                 leftTransfos, rightTransfos_string, "+", Optional.empty()
         ).apply( getTestRow() );
         Assert.assertEquals( arithmeticTest , null );
+
+        // check when null is input
+
+        Transformations nullTransfos = new Transformations();
+        nullTransfos.add( new ValueTransform( null ) );
+        Object arithmeticTest6 = new ArithmeticTransform(
+                nullTransfos, rightTransfos, "+", Optional.empty()
+        ).apply( getTestRow() );
+
 
     }
 
