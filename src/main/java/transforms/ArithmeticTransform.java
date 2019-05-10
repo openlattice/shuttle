@@ -56,21 +56,26 @@ public class ArithmeticTransform extends Transformation<Map<String, String>> {
 
     public Double getValueFromTransform( Object transformed ) {
 
-        String transformedString = Objects.toString( transformed, "" );
-
-        if ( StringUtils.isBlank( transformedString ) ) {
-            logger.debug( "Unable to parse number {} for arithmetic transform, returning {}",
-                    transformedString,
-                    this.alternative );
-            return this.alternative;
+        if ( transformed instanceof Number ) {
+            return (double) transformed;
         } else {
-            try {
-                return Double.parseDouble( transformedString );
-            } catch ( Exception e ) {
+
+            String transformedString = Objects.toString( transformed, "" );
+
+            if ( StringUtils.isBlank( transformedString ) ) {
                 logger.debug( "Unable to parse number {} for arithmetic transform, returning {}",
                         transformedString,
                         this.alternative );
                 return this.alternative;
+            } else {
+                try {
+                    return Double.parseDouble( String.valueOf( transformed ) );
+                } catch ( Exception e ) {
+                    logger.debug( "Unable to parse number {} for arithmetic transform, returning {}",
+                            transformedString,
+                            this.alternative );
+                    return this.alternative;
+                }
             }
         }
     }
