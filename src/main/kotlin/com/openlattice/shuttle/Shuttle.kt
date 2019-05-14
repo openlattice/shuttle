@@ -493,12 +493,16 @@ class Shuttle(
                             logger.info("Current entities progress: {}", integratedEntities)
                             logger.info("Current edges progress: {}", integratedEdges)
                         } catch (ex: Exception) {
-                            logger.info("Earliest unintegrated row:")
-                            printRow( minRows.firstEntry().value, primaryKeyCols )
+                            if ( primaryKeyCols.isNotEmpty() ){
+                                logger.info("Earliest unintegrated row:")
+                                printRow( minRows.firstEntry().value, primaryKeyCols )
+                            }
                             MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
                         } catch (err: OutOfMemoryError) {
-                            logger.info("Earliest unintegrated row:")
-                            printRow( minRows.firstEntry().value, primaryKeyCols )
+                            if ( primaryKeyCols.isNotEmpty() ){
+                                logger.info("Earliest unintegrated row:")
+                                printRow( minRows.firstEntry().value, primaryKeyCols )
+                            }
                             MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
                         } finally {
                             remaining.decrementAndGet()
