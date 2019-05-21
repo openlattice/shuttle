@@ -19,41 +19,42 @@
  *
  */
 
-package com.openlattice.shuttle.transformations;
+package generators;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.util.Constants;
 
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
- */
-public class TransformValueMapper implements SerializableFunction<Map<String, Object>, Object> {
-    private final List<Transformation> transforms;
+public class TransformSeriesGenerator implements SerializableFunction<Map<String, Object>, String> {
+    private final List<TransformValueMapper> transformValueMapper;
 
+    /**
+     * Represents a generator to create a String from a combination of transformations
+     *
+     * @param transformValueMapper:   list of transformationValueMappers
+     */
     @JsonCreator
-    public TransformValueMapper(
-            @JsonProperty(Constants.TRANSFORMS) List<Transformation> transforms
+    public TransformSeriesGenerator(
+            @JsonProperty( Constants.TRANSFORM_VALUE_MAPPER) List<TransformValueMapper> transformValueMapper
     ) {
-        this.transforms = transforms;
+        this.transformValueMapper = transformValueMapper;
     }
 
+
     @Override
-    public Object apply( Map<String, Object> input ) {
-
-        if (transforms.size() == 0){
-            throw new IllegalStateException( String
-                    .format( "At least 1 transformation should be specified (or left blank for columntransform)." ) );
+    public String apply( Map<String, Object> row ) {
+        StringBuilder sb = new StringBuilder();
+        String sep = "";
+        for ( TransformValueMapper t : transformValueMapper ) {
+            String toAdd = t.apply(row).toString();
+            sb.append(sep).append(toAdd);
         }
 
-        Object value = input;
-        for ( Transformation t : transforms ) {
-            value = t.apply( value );
-        }
-        return value == "" ? null : value;
+        return sb.toString();
     }
 }

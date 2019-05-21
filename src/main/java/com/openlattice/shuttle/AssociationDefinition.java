@@ -66,6 +66,7 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.NAME ) String alias,
+            @JsonProperty( Constants.GENERATOR ) Optional<SerializableFunction<Map<String, Object>, String>> generator,
             @JsonProperty( Constants.UPDATE_TYPE ) Optional<UpdateType> updateType ) {
         super( Optional.empty(),
                 entityTypeFqn,
@@ -74,6 +75,7 @@ public class AssociationDefinition extends EntityDefinition implements Serializa
                 propertyDefinitions,
                 alias,
                 condition,
+                generator,
                 updateType );
         this.srcAlias = srcAlias;
         this.dstAlias = dstAlias;

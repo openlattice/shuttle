@@ -1,6 +1,12 @@
 entityDefinitions:
   cyphers:
     entitySetName: "XXSr4"
+    generator: !<generators.TransformSeriesGenerator>
+      transformValueMapper:
+        - !<com.openlattice.shuttle.transformations.TransformValueMapper>
+            transforms:
+              - !<transforms.ValueTransform>
+                value: "ladadiiii-ladada"
     propertyDefinitions:
       CoSoB.9BK4n:
         type: "CoSoB.9BK4n"
@@ -45,5 +51,5 @@ associationDefinitions:
         type: "MbX2C.Htjnc"
     name: "cypherToCypher"
     updateType: PartialReplace
-    entityIdGenerator: null
+    generator: null
 name: "Anon"
