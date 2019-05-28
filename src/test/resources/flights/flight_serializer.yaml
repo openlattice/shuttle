@@ -2,11 +2,11 @@ entityDefinitions:
   cyphers:
     entitySetName: "XXSr4"
     generator: !<generators.TransformSeriesGenerator>
-      transformValueMapper:
-        - !<com.openlattice.shuttle.transformations.TransformValueMapper>
-            transforms:
-              - !<transforms.ValueTransform>
-                value: "ladadiiii-ladada"
+      transforms:
+        - !<transforms.ValueTransform>
+          value: "ladadiiii-ladada"
+        - !<transforms.ColumnTransform>
+          column: "algo"
     propertyDefinitions:
       CoSoB.9BK4n:
         type: "CoSoB.9BK4n"

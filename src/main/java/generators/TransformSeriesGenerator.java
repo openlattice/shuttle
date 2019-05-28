@@ -25,36 +25,31 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.shuttle.transformations.TransformValueMapper;
+import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 
 import java.util.List;
 import java.util.Map;
 
 public class TransformSeriesGenerator implements SerializableFunction<Map<String, Object>, String> {
-    private final List<TransformValueMapper> transformValueMapper;
+    private final TransformValueMapper transformValueMapper;
 
     /**
      * Represents a generator to create a String from a combination of transformations
      *
-     * @param transformValueMapper:   list of transformationValueMappers
+     * @param transforms:   list of transformations
      */
     @JsonCreator
     public TransformSeriesGenerator(
-            @JsonProperty( Constants.TRANSFORM_VALUE_MAPPER) List<TransformValueMapper> transformValueMapper
+            @JsonProperty( Constants.TRANSFORMS) List<Transformation> transforms
     ) {
-        this.transformValueMapper = transformValueMapper;
+        this.transformValueMapper = new TransformValueMapper(transforms);
     }
 
 
     @Override
     public String apply( Map<String, Object> row ) {
-        StringBuilder sb = new StringBuilder();
-        String sep = "";
-        for ( TransformValueMapper t : transformValueMapper ) {
-            String toAdd = t.apply(row).toString();
-            sb.append(sep).append(toAdd);
-        }
 
-        return sb.toString();
+        return this.transformValueMapper.apply(row).toString();
     }
 }
