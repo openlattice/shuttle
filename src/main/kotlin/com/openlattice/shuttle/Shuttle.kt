@@ -101,7 +101,7 @@ fun main(args: Array<String>) {
     val flight: Flight
     val createEntitySets: Boolean
     val contacts: Set<String>
-    val primaryKeyCols: List<String>
+    val rowColsToPrint: List<String>
 
     if (cl.hasOption(HELP)) {
         ShuttleCli.printHelp()
@@ -155,7 +155,7 @@ fun main(args: Array<String>) {
             // get JDBC payload
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
             val sql = cl.getOptionValue(SQL)
-            primaryKeyCols = configuration.primaryKeyColumns
+            rowColsToPrint = configuration.primaryKeyColumns
 
             payload = if (cl.hasOption(FETCHSIZE)) {
                 val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
@@ -171,11 +171,11 @@ fun main(args: Array<String>) {
                 ShuttleCli.printHelp()
                 return
             }
-            primaryKeyCols = listOf()
+            rowColsToPrint = listOf()
             payload = SimplePayload(cl.getOptionValue(CSV))
         }
         cl.hasOption(XML) -> {// get xml payload
-            primaryKeyCols = listOf()
+            rowColsToPrint = listOf()
              if (cl.hasOption(DATA_ORIGIN) ) {
                  val arguments = cl.getOptionValues(DATA_ORIGIN);
                  val dataOrigin = when (arguments[0]) {
@@ -288,7 +288,7 @@ fun main(args: Array<String>) {
 
     try {
         MissionControl.setEmailConfiguration(emailConfiguration)
-        val shuttle = missionControl.prepare(flightPlan, createEntitySets, primaryKeyCols, contacts)
+        val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts)
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()
     } catch (ex: Exception) {
@@ -382,7 +382,7 @@ class Shuttle(
         private val propertyTypesById: Map<UUID, PropertyType>,
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
         private val dataIntegrationApi: DataIntegrationApi,
-        private val primaryKeyCols: List<String>
+        private val tableColsToPrint: List<String>
 ) {
     private val uploadingExecutor = Executors.newSingleThreadExecutor()
 
@@ -400,7 +400,7 @@ class Shuttle(
         val sw = Stopwatch.createStarted()
         val total = flightPlan.entries.map { entry ->
             logger.info("Launching flight: {}", entry.key.name)
-            val count = takeoff(entry.key, entry.value.payload, uploadBatchSize, primaryKeyCols)
+            val count = takeoff(entry.key, entry.value.payload, uploadBatchSize, tableColsToPrint)
             logger.info("Finished flight: {}", entry.key.name)
             count
         }.sum()
@@ -431,7 +431,7 @@ class Shuttle(
         return if (keyValuesPresent) ApiUtil.generateDefaultEntityId(key.stream(), properties) else ""
     }
 
-    private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int, primaryKeyCols: List<String>): Long {
+    private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int, rowColsToPrint: List<String>): Long {
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integrationQueue = Queues
@@ -493,15 +493,15 @@ class Shuttle(
                             logger.info("Current entities progress: {}", integratedEntities)
                             logger.info("Current edges progress: {}", integratedEdges)
                         } catch (ex: Exception) {
-                            if ( primaryKeyCols.isNotEmpty() ){
+                            if ( rowColsToPrint.isNotEmpty() ){
                                 logger.info("Earliest unintegrated row:")
-                                printRow( minRows.firstEntry().value, primaryKeyCols )
+                                printRow( minRows.firstEntry().value, rowColsToPrint )
                             }
                             MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
                         } catch (err: OutOfMemoryError) {
-                            if ( primaryKeyCols.isNotEmpty() ){
+                            if ( rowColsToPrint.isNotEmpty() ){
                                 logger.info("Earliest unintegrated row:")
-                                printRow( minRows.firstEntry().value, primaryKeyCols )
+                                printRow( minRows.firstEntry().value, rowColsToPrint )
                             }
                             MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
                         } finally {
@@ -535,10 +535,10 @@ class Shuttle(
         }.sum()
     }
 
-    private fun printRow( row: Map<String, Any>, primaryKeyCols: List<String> ) {
+    private fun printRow( row: Map<String, Any>, rowColsToPrint: List<String> ) {
         var rowHeaders = ""
         var contents = ""
-        primaryKeyCols.forEach { colName ->
+        rowColsToPrint.forEach { colName ->
             rowHeaders += "$colName\t|\t"
             contents += "${row[colName].toString()}\t|\t"
         }
