@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
+@Deprecated(since = "Use JavaDateTimeHelper instead", forRemoval = true)
 public class DateTimeHelper implements Serializable {
 
     private static final Logger logger = LoggerFactory.getLogger( DateTimeHelper.class );
