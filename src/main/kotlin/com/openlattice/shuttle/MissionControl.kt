@@ -48,11 +48,12 @@ import jodd.mail.MailServer
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
+import java.util.Optional
+import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
-import java.util.Optional
-import java.util.UUID
+import kotlin.NoSuchElementException
 
 
 private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
@@ -239,6 +240,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
     fun prepare(
             flightPlan: Map<Flight, Payload>,
             createEntitySets: Boolean = false,
+            primaryKeyCols: List<String> = listOf(),
             contacts: Set<String> = setOf()
     ): Shuttle {
         if (createEntitySets) {
@@ -252,7 +254,8 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                 propertyTypes,
                 propertyTypesById,
                 integrationDestinations,
-                dataIntegrationApi
+                dataIntegrationApi,
+                primaryKeyCols
         )
     }
 
