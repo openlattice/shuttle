@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicLong
  */
 data class AddressedDataHolder(
         val entities: MutableMap<StorageDestination, MutableSet<Entity>>,
-        val associations: MutableMap<StorageDestination, MutableSet<Association>>
-
+        val associations: MutableMap<StorageDestination, MutableSet<Association>>,
+        val batchId: Long
 ) {
     val integratedEntities: Map<StorageDestination, AtomicLong> = StorageDestination
             .values().map { it to AtomicLong(0) }.toMap()
