@@ -37,6 +37,12 @@ public class TransformValueMapper implements SerializableFunction<Map<String, Ob
     }
 
     @Override public Object apply( Map<String, Object> input ) {
+
+        if (transforms.size() == 0){
+            throw new IllegalStateException( String
+                    .format( "At least 1 transformation should be specified (or left blank for columntransform)." ) );
+        }
+
         Object value = input;
         for ( Transformation t : transforms ) {
             value = t.apply( value );
