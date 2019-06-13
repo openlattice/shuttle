@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -25,11 +26,11 @@ public class IntegrationConfig {
     @JsonCreator
     public IntegrationConfig(
             @JsonProperty( "primaryKeyColumns" )
-                    List<String> primaryKeyColumns,
+                    Optional<List<String>> primaryKeyColumns,
             @JsonProperty( "hikariConfigs" )
                     Map<String, Properties> hikariConfigurations ) {
         this.hikariConfigurations = hikariConfigurations;
-        this.primaryKeyColumns = primaryKeyColumns;
+        this.primaryKeyColumns = primaryKeyColumns.orElse( List.of() );
     }
 
     @JsonProperty( "hikariConfigs" )
