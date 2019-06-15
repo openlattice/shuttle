@@ -15,7 +15,7 @@ data class S3BucketOrigin(val bucketName: String, val s3Client: AmazonS3) : Inte
     }
 
     override fun iterator(): Iterator<InputStream> {
-        val inBucket = S3Objects.inBucket(s3Client, bucketName);
+        val inBucket = S3Objects.inBucket(s3Client, bucketName)
 
         return StreamSupport.stream( inBucket.spliterator(), false ).map {
             s3Client.getObject(GetObjectRequest(bucketName, it.key)).objectContent
