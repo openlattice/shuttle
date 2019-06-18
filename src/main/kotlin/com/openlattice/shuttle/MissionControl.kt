@@ -212,6 +212,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
 
     private val apiClient = ApiClient(environment) { authToken.get() }
     private val edmApi = apiClient.edmApi
+    private val entitySetsApi = apiClient.entitySetsApi
     private val dataApi = apiClient.dataApi
     private val dataIntegrationApi = apiClient.dataIntegrationApi
 
@@ -223,7 +224,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
             .client(RetrofitBuilders.okHttpClient().build())
             .build().create(S3Api::class.java)
 
-    private val entitySets = edmApi.entitySets.mapNotNull {
+    private val entitySets = entitySetsApi.getEntitySets().mapNotNull {
         if (it == null) return@mapNotNull null
         else it.name to it
     }.toMap().toMutableMap()
@@ -274,7 +275,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                             Optional.of(entityDefinition.getEntitySetName()),
                             contacts
                     )
-                    val entitySetId = edmApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
+                    val entitySetId = entitySetsApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[entityDefinition.entitySetName] = entitySet
                 }
@@ -293,7 +294,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                             Optional.of(associationDefinition.getEntitySetName()),
                             contacts
                     )
-                    val entitySetId = edmApi.createEntitySets(
+                    val entitySetId = entitySetsApi.createEntitySets(
                             setOf(entitySet)
                     )[associationDefinition.entitySetName]!!
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
