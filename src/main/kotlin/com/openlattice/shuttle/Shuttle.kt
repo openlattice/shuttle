@@ -224,7 +224,7 @@ fun main(args: Array<String>) {
         }
         RetrofitFactory.Environment.valueOf(env)
     } else {
-        RetrofitFactory.Environment.PRODUCTION
+        RetrofitFactory.Environment.PROD_INTEGRATION
     }
 
 
