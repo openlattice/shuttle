@@ -218,7 +218,11 @@ fun main(args: Array<String>) {
     }
 
     environment = if (cl.hasOption(ENVIRONMENT)) {
-        RetrofitFactory.Environment.valueOf(cl.getOptionValue(ENVIRONMENT).toUpperCase())
+        val env = cl.getOptionValue(ENVIRONMENT).toUpperCase()
+        if ("PRODUCTION" == env){
+            MissionControl.fail(-999, flight, Throwable( "PRODUCTION is not a valid integration environment. The valid environments are PROD_INTEGRATION and LOCAL") )
+        }
+        RetrofitFactory.Environment.valueOf(env)
     } else {
         RetrofitFactory.Environment.PRODUCTION
     }

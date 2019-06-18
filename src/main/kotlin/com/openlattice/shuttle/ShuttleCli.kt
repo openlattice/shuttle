@@ -81,7 +81,7 @@ class ShuttleCli {
 
         private val environmentOption = Option.builder()
                 .longOpt(ENVIRONMENT)
-                .desc("Specifies an environment to run the integration against. Possible values are LOCAL or PRODUCTION")
+                .desc("Specifies an environment to run the integration against. Possible values are LOCAL or PROD_INTEGRATION")
                 .required(false)
                 .hasArg()
                 .argName("environment")
