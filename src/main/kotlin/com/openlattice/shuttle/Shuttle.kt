@@ -75,9 +75,11 @@ import java.io.File
 import java.lang.System.exit
 import java.nio.file.Paths
 import java.util.*
+import java.util.concurrent.ConcurrentSkipListMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.LongAdder
 import java.util.function.Supplier
 import java.util.stream.Stream
 import kotlin.streams.asSequence
@@ -99,7 +101,7 @@ fun main(args: Array<String>) {
     val flight: Flight
     val createEntitySets: Boolean
     val contacts: Set<String>
-
+    val rowColsToPrint: List<String>
 
     if (cl.hasOption(HELP)) {
         ShuttleCli.printHelp()
@@ -114,7 +116,7 @@ fun main(args: Array<String>) {
         return
     }
 
-    //You can have a configuration without any JDBC datasrouces
+    //You can have a configuration without any JDBC datasources
     when {
         cl.hasOption(CONFIGURATION) -> {
             configuration = ObjectMappers.getYamlMapper()
@@ -153,6 +155,7 @@ fun main(args: Array<String>) {
             // get JDBC payload
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
             val sql = cl.getOptionValue(SQL)
+            rowColsToPrint = configuration.primaryKeyColumns
 
             payload = if (cl.hasOption(FETCHSIZE)) {
                 val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
@@ -168,9 +171,11 @@ fun main(args: Array<String>) {
                 ShuttleCli.printHelp()
                 return
             }
+            rowColsToPrint = listOf()
             payload = SimplePayload(cl.getOptionValue(CSV))
         }
         cl.hasOption(XML) -> {// get xml payload
+            rowColsToPrint = listOf()
              if (cl.hasOption(DATA_ORIGIN) ) {
                  val arguments = cl.getOptionValues(DATA_ORIGIN);
                  val dataOrigin = when (arguments[0]) {
@@ -213,9 +218,13 @@ fun main(args: Array<String>) {
     }
 
     environment = if (cl.hasOption(ENVIRONMENT)) {
-        RetrofitFactory.Environment.valueOf(cl.getOptionValue(ENVIRONMENT).toUpperCase())
+        val env = cl.getOptionValue(ENVIRONMENT).toUpperCase()
+        if ("PRODUCTION" == env){
+            MissionControl.fail(-999, flight, Throwable( "PRODUCTION is not a valid integration environment. The valid environments are PROD_INTEGRATION and LOCAL") )
+        }
+        RetrofitFactory.Environment.valueOf(env)
     } else {
-        RetrofitFactory.Environment.PRODUCTION
+        RetrofitFactory.Environment.PROD_INTEGRATION
     }
 
 
@@ -283,7 +292,7 @@ fun main(args: Array<String>) {
 
     try {
         MissionControl.setEmailConfiguration(emailConfiguration)
-        val shuttle = missionControl.prepare(flightPlan, createEntitySets, contacts)
+        val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts)
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()
     } catch (ex: Exception) {
@@ -376,7 +385,8 @@ class Shuttle(
         private val propertyTypes: Map<FullQualifiedName, PropertyType>,
         private val propertyTypesById: Map<UUID, PropertyType>,
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
-        private val dataIntegrationApi: DataIntegrationApi
+        private val dataIntegrationApi: DataIntegrationApi,
+        private val tableColsToPrint: List<String>
 ) {
     private val uploadingExecutor = Executors.newSingleThreadExecutor()
 
@@ -394,7 +404,7 @@ class Shuttle(
         val sw = Stopwatch.createStarted()
         val total = flightPlan.entries.map { entry ->
             logger.info("Launching flight: {}", entry.key.name)
-            val count = takeoff(entry.key, entry.value.payload, uploadBatchSize)
+            val count = takeoff(entry.key, entry.value.payload, uploadBatchSize, tableColsToPrint)
             logger.info("Finished flight: {}", entry.key.name)
             count
         }.sum()
@@ -425,23 +435,27 @@ class Shuttle(
         return if (keyValuesPresent) ApiUtil.generateDefaultEntityId(key.stream(), properties) else ""
     }
 
-    private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int): Long {
+    private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int, rowColsToPrint: List<String>): Long {
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integrationQueue = Queues
                 .newArrayBlockingQueue<List<Map<String, Any>>>(
                         Math.max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
                 )
-        val rows = AtomicLong(0)
+        val rows = LongAdder()
         val sw = Stopwatch.createStarted()
         val remaining = AtomicLong(0)
+        val batchCounter = AtomicLong(0)
+        val minRows = ConcurrentSkipListMap<Long, Map<String, Any>>()
 
         uploadingExecutor.execute {
             Stream.generate { integrationQueue.take() }.parallel()
                     .map { batch ->
                         try {
-                            rows.addAndGet(batch.size.toLong())
-                            return@map impulse(flight, batch)
+                            rows.add(batch.size.toLong())
+                            val batchCtr = batchCounter.incrementAndGet()
+                            minRows[batchCtr] = batch[0]
+                            return@map impulse(flight, batch, batchCtr)
                         } catch (ex: Exception) {
                             MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
                         } catch (err: OutOfMemoryError) {
@@ -455,7 +469,6 @@ class Shuttle(
                             val entityKeyIds = entityKeys.zip(
                                     dataIntegrationApi.getEntityKeyIds(entityKeys)
                             ).toMap()
-
 
                             integrationDestinations.forEach { (storageDestination, integrationDestination) ->
                                 if (batch.entities.containsKey(storageDestination)) {
@@ -478,12 +491,22 @@ class Shuttle(
                                     )
                                 }
                             }
-                            logger.info("Processed {} rows.", rows)
+
+                            minRows.remove(batch.batchId)
+                            logger.info("Processed {} rows.", rows.sum())
                             logger.info("Current entities progress: {}", integratedEntities)
                             logger.info("Current edges progress: {}", integratedEdges)
                         } catch (ex: Exception) {
+                            if ( rowColsToPrint.isNotEmpty() ){
+                                logger.info("Earliest unintegrated row:")
+                                printRow( minRows.firstEntry().value, rowColsToPrint )
+                            }
                             MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
                         } catch (err: OutOfMemoryError) {
+                            if ( rowColsToPrint.isNotEmpty() ){
+                                logger.info("Earliest unintegrated row:")
+                                printRow( minRows.firstEntry().value, rowColsToPrint )
+                            }
                             MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
                         } finally {
                             remaining.decrementAndGet()
@@ -499,7 +522,7 @@ class Shuttle(
                 }
         //Wait on upload thread to finish emptying queue.
         while (remaining.get() > 0) {
-            logger.info("Waiting on upload to finish...")
+            logger.info("Waiting on upload to finish... ${remaining.get()} batches left")
             Thread.sleep(1000)
         }
 
@@ -514,6 +537,16 @@ class Shuttle(
             )
             integratedEntities.getValue(it).get() + integratedEdges.getValue(it).get()
         }.sum()
+    }
+
+    private fun printRow( row: Map<String, Any>, rowColsToPrint: List<String> ) {
+        var rowHeaders = ""
+        var contents = ""
+        rowColsToPrint.forEach { colName ->
+            rowHeaders += "$colName\t|\t"
+            contents += "${row[colName].toString()}\t|\t"
+        }
+        logger.info("Row Contents:\n$rowHeaders\n$contents")
     }
 
     private fun buildPropertiesFromPropertyDefinitions( row: Map<String, Any>,
@@ -553,8 +586,8 @@ class Shuttle(
         return Pair(properties, addressedProperties);
     }
 
-    private fun impulse(flight: Flight, batch: List<Map<String, Any>>): AddressedDataHolder {
-        val addressedDataHolder = AddressedDataHolder(mutableMapOf(), mutableMapOf())
+    private fun impulse(flight: Flight, batch: List<Map<String, Any>>, batchNumber: Long): AddressedDataHolder {
+        val addressedDataHolder = AddressedDataHolder(mutableMapOf(), mutableMapOf(), batchNumber)
 
         batch.forEach { row ->
             val aliasesToEntityKey = mutableMapOf<String, EntityKey>()
