@@ -77,7 +77,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
 
     companion object {
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
-        private val client = MissionControl.buildClient(AUTH0_CLIENT_ID)
+        private val client = buildClient(AUTH0_CLIENT_ID)
         private var emailConfiguration: Optional<EmailConfiguration> = Optional.empty()
         private var terminateOnSuccess = true
 
@@ -208,6 +208,9 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
     //by retrofit clients.
     init {
         FullQualifiedNameJacksonSerializer.registerWithMapper(ObjectMappers.getJsonMapper())
+        if ( environment == RetrofitFactory.Environment.PRODUCTION) {
+            fail(-999, Flight.newFlight().done(), Throwable( "PRODUCTION is not a valid integration environment. The valid environments are PROD_INTEGRATION and LOCAL") )
+        }
     }
 
     private val apiClient = ApiClient(environment) { authToken.get() }
