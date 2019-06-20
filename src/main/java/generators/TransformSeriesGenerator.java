@@ -19,41 +19,37 @@
  *
  */
 
-package com.openlattice.shuttle.transformations;
+package generators;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.shuttle.transformations.TransformValueMapper;
+import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 
 import java.util.List;
 import java.util.Map;
 
-/**
- * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
- */
-public class TransformValueMapper implements SerializableFunction<Map<String, Object>, Object> {
-    private final List<Transformation> transforms;
+public class TransformSeriesGenerator implements SerializableFunction<Map<String, Object>, String> {
+    private final TransformValueMapper transformValueMapper;
 
+    /**
+     * Represents a generator to create a String from a combination of transformations
+     *
+     * @param transforms:   list of transformations
+     */
     @JsonCreator
-    public TransformValueMapper(
-            @JsonProperty(Constants.TRANSFORMS) List<Transformation> transforms
+    public TransformSeriesGenerator(
+            @JsonProperty( Constants.TRANSFORMS) List<Transformation> transforms
     ) {
-        this.transforms = transforms;
+        this.transformValueMapper = new TransformValueMapper(transforms);
     }
 
+
     @Override
-    public Object apply( Map<String, Object> input ) {
+    public String apply( Map<String, Object> row ) {
 
-        if (transforms.size() == 0){
-            throw new IllegalStateException( String
-                    .format( "At least 1 transformation should be specified (or left blank for columntransform)." ) );
-        }
-
-        Object value = input;
-        for ( Transformation t : transforms ) {
-            value = t.apply( value );
-        }
-        return value == "" ? null : value;
+        return this.transformValueMapper.apply(row).toString();
     }
 }
