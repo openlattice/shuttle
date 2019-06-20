@@ -30,7 +30,9 @@ public final class Constants {
     public static final String TARGET              = "target";
     public static final String TIME_COLUMN         = "timeColumn";
     public static final String TIME_PATTERN        = "timePattern";
+    public static final String GENERATOR           = "generator";
     public static final String TRANSFORMS          = "transforms";
+    public static final String TRANSFORM_VALUE_MAPPER = "transformValueMapper";
     public static final String TRANSFORMS_IF_FALSE = "transformsIfFalse";
     public static final String TRANSFORMS_IF_TRUE  = "transformsIfTrue";
     public static final String TYPE                = "type";

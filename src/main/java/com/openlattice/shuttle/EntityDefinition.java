@@ -74,6 +74,7 @@ public class EntityDefinition implements Serializable {
                     Map<FullQualifiedName, PropertyDefinition> propertyDefinitions,
             @JsonProperty( SerializationConstants.NAME ) String alias,
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
+            @JsonProperty( Constants.GENERATOR ) Optional<SerializableFunction<Map<String, Object>, String>> generator,
             @JsonProperty( Constants.UPDATE_TYPE ) Optional<UpdateType> updateType ) {
 
         this.id = id;
@@ -82,9 +83,9 @@ public class EntityDefinition implements Serializable {
         this.propertyDefinitions = propertyDefinitions;
         this.key = key;
         this.alias = alias == null ? entitySetName : alias;
-        this.generator = Optional.empty();
         this.condition = condition;
         this.updateType = updateType.orElse( UpdateType.Merge );
+        this.generator = generator;
 
         if ( condition.isPresent() ) {
             final List<Condition> internalConditions;
