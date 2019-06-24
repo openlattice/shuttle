@@ -45,7 +45,11 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
         this.datePattern = datePattern;
         this.timeColumn = timeColumn;
         this.timePattern = timePattern;
-        this.timezone = TimeZone.getTimeZone( timezone.orElse("America/New_York") );
+        if (timezone.isPresent()){
+            this.timezone = TimeZone.getTimeZone( timezone.get() );
+        } else {
+            this.timezone = Constants.DEFAULT_TIMEZONE;
+        }
     }
 
     @Override
