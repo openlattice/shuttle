@@ -32,8 +32,7 @@ import java.util.*
  * Writes data using the REST API
  */
 class RestDestination(
-        private val dataApi: DataApi,
-        private val updateType: UpdateType = UpdateType.Merge
+        private val dataApi: DataApi
 ) : IntegrationDestination {
     override fun integrateEntities(
             data: Set<Entity>,
@@ -45,7 +44,7 @@ class RestDestination(
                 .mapValues { it.value.toMap() }
 
         return entitiesByEntitySet.entries.parallelStream().mapToLong { (entitySetId, entities) ->
-            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType).toLong()
+            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateTypes[entitySetId]).toLong()
         }.sum()
     }
 
@@ -67,7 +66,7 @@ class RestDestination(
         }.toSet()
 
         return entitiesByEntitySet.map { (entitySetId, entities) ->
-            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateType).toLong()
+            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateTypes[entitySetId]).toLong()
         }.sum() + dataApi.createAssociations(entities).toLong()
     }
 

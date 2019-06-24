@@ -3,13 +3,16 @@ package com.openlattice.shuttle.payload;
 import com.dataloom.streams.StreamUtil;
 import com.google.common.util.concurrent.RateLimiter;
 import com.zaxxer.hikari.HikariDataSource;
-import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;

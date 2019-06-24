@@ -48,11 +48,12 @@ import jodd.mail.MailServer
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
+import java.util.Optional
+import java.util.UUID
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
-import java.util.Optional
-import java.util.UUID
+import kotlin.NoSuchElementException
 
 
 private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
@@ -76,7 +77,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
 
     companion object {
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
-        private val client = MissionControl.buildClient(AUTH0_CLIENT_ID)
+        private val client = buildClient(AUTH0_CLIENT_ID)
         private var emailConfiguration: Optional<EmailConfiguration> = Optional.empty()
         private var terminateOnSuccess = true
 
@@ -207,6 +208,9 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
     //by retrofit clients.
     init {
         FullQualifiedNameJacksonSerializer.registerWithMapper(ObjectMappers.getJsonMapper())
+        if ( environment == RetrofitFactory.Environment.PRODUCTION) {
+            fail(-999, Flight.newFlight().done(), Throwable( "PRODUCTION is not a valid integration environment. The valid environments are PROD_INTEGRATION and LOCAL") )
+        }
     }
 
     private val apiClient = ApiClient(environment) { authToken.get() }
@@ -239,6 +243,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
     fun prepare(
             flightPlan: Map<Flight, Payload>,
             createEntitySets: Boolean = false,
+            primaryKeyCols: List<String> = listOf(),
             contacts: Set<String> = setOf()
     ): Shuttle {
         if (createEntitySets) {
@@ -252,7 +257,8 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                 propertyTypes,
                 propertyTypesById,
                 integrationDestinations,
-                dataIntegrationApi
+                dataIntegrationApi,
+                primaryKeyCols
         )
     }
 

@@ -1,7 +1,6 @@
 package transforms;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.openlattice.shuttle.dates.DateTimeHelper;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
@@ -17,7 +16,7 @@ public class ArithmeticTransform extends Transformation<Map<String, String>> {
     private String               operator;
     private List<Transformation> leftTransforms, rightTransforms;
     private              Double alternative;
-    private static final Logger logger = LoggerFactory.getLogger( DateTimeHelper.class );
+    private static final Logger logger = LoggerFactory.getLogger( ArithmeticTransform.class );
 
     /**
      * Represents a transformation from string to datetime.
