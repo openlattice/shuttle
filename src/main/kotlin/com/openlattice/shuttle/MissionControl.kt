@@ -169,14 +169,14 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                         val errorEmail = "An error occurred while running integration ${flight.name}. $errorInfo \n" +
                                 "The cause is ${ex.message} \n The stack trace is $stackTraceText"
                         val emailAddresses = emailConfiguration.notificationEmails
-                                .map(EmailAddress::of)
+                                .map { address -> EmailAddress.of (address) }
                                 .toTypedArray()
                         val email = Email.create()
                                 .from(emailConfiguration.fromEmail)
                                 .subject("Integration error in $flight.name")
                                 .textMessage(errorEmail)
                         emailConfiguration.notificationEmails
-                                .map(EmailAddress::of)
+                                .map { address -> EmailAddress.of (address) }
                                 .forEach { emailAddress -> email.to(emailAddress) }
 
                         val smtpServer = MailServer.create()
