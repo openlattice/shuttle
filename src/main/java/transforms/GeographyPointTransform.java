@@ -51,7 +51,18 @@ public class GeographyPointTransform extends Transformation<Map<String, String>>
         lon = Parsers.parseDouble( lon );
 
         if (  lat != null && lon != null  ) {
-            return lat.toString() + "," + lon.toString();
+            String latitude = lat.toString();
+
+            if (!latitude.contains(".")) {
+                latitude += ".0";
+            }
+
+            String longitude = lon.toString();
+
+            if (!longitude.contains(".")) {
+                longitude += ".0";
+            }
+            return latitude + "," + longitude;
         } else {
             return null;
         }

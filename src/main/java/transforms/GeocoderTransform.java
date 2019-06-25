@@ -17,6 +17,7 @@ import java.util.Optional;
 import retrofit2.Retrofit;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
+import java.util.regex.Pattern;
 
 public class GeocoderTransform extends Transformation<Object> {
     protected static final String       NOMINATIM_SERVICE_URL = "https://osm.openlattice.com/nominatim/";
@@ -60,7 +61,7 @@ public class GeocoderTransform extends Transformation<Object> {
         Map<String, Object> address = map.get( 0 );
 
         if ( address.isEmpty() ) {
-            System.out.println( "Can't parse address " + input );
+            //System.out.println( "Can't parse address " + input );
             return null;
         }
 
@@ -68,7 +69,22 @@ public class GeocoderTransform extends Transformation<Object> {
         if ( outercodes.contains( addressObject ) ) {
             return (String) address.get( addressObject );
         } else if ( addressObject.equals("geographypoint") ) {
-            return address.get( "lat" ) + "," + address.get("lon");
+            String latitude = address.get( "lat" ).toString();
+            String longitude = address.get("lon").toString();
+            if (!latitude.contains(".")) {
+                latitude += ".0";
+            }
+            if (!longitude.contains(".")) {
+                longitude += ".0";
+            }
+
+            String out = latitude + "," + longitude;
+
+            boolean match = Pattern.matches("(\\-)?[0-9]+(\\.[0-9]+){0,1}(\\,)(\\-)?[0-9]+(\\.[0-9]+){0,1}", out);
+            if (!match) {
+                System.out.println("HEY!!! THIS DIDN'T PASS: " + out);
+            }
+            return out;
         } else {
             Map<String, Object> hlpr = (Map<String, Object>) address.get( "address" );
             return (String) hlpr.get( addressObject );
