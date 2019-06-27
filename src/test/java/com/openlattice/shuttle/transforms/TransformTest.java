@@ -363,7 +363,7 @@ public class TransformTest {
         Object geocoderTest3 = new GeocoderTransform( "type", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
-        String expectedGeoPoint4 = "37.7748313877551,-122.435947714286";
+        String expectedGeoPoint = "37.7748313877551,-122.435947714286";
         Object geocoderTest4 = new GeocoderTransform( "geographypoint", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
@@ -371,7 +371,7 @@ public class TransformTest {
         Assert.assertEquals( expectedStreet, geocoderTest1 );
         Assert.assertEquals( expectedNo, geocoderTest2 );
         Assert.assertEquals( expectedType, geocoderTest3 );
-        Assert.assertEquals( expectedGeoPoint4, geocoderTest4 );
+        Assert.assertEquals( expectedGeoPoint, geocoderTest4 );
 
     }
 
