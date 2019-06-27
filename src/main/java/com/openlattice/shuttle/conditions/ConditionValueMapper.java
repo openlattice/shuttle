@@ -5,6 +5,8 @@ import com.openlattice.client.serialization.SerializableFunction;
 import java.util.List;
 import java.util.Map;
 
+
+@Deprecated
 public class ConditionValueMapper implements SerializableFunction<Map<String, Object>, Object> {
     private final List<Condition> conditions;
 
@@ -25,10 +27,21 @@ public class ConditionValueMapper implements SerializableFunction<Map<String, Ob
                 schedule = "or";
             } else {
                 Boolean temp = ( (Boolean) t.apply( input ) ).booleanValue();
-                if ( schedule == "and" ) {
-                    if ( out == null ) {out = temp;} else if ( out ) {out = temp;} else if ( !out ) {}
-                } else if ( schedule == "or" ) {
-                    if ( out == null ) {out = temp;} else if ( out ) {} else if ( !out ) {out = temp;}
+                if ( "and".equals(schedule ) ) {
+                    if ( out == null ) {
+                        out = temp;
+                    } else if ( out ) {
+                        out = temp;
+                    } else if ( !out ) {
+                    }
+                } else if ( "or".equals(schedule) ) {
+                    if ( out == null ) {
+                        out = temp;
+                    } else if ( out ) {
+
+                    } else if ( !out ) {
+                        out = temp;
+                    }
                 }
             }
         }
