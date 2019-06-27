@@ -363,14 +363,16 @@ public class TransformTest {
         Object geocoderTest3 = new GeocoderTransform( "type", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
-        String expectedGeoPoint = "37.7748313877551,-122.435947714286";
+        String expectedGeoPoint4 = "37.7748313877551,-122.435947714286";
         Object geocoderTest4 = new GeocoderTransform( "geographypoint", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
+
 
         Assert.assertEquals( expectedStreet, geocoderTest1 );
         Assert.assertEquals( expectedNo, geocoderTest2 );
         Assert.assertEquals( expectedType, geocoderTest3 );
-        Assert.assertEquals( expectedGeoPoint, geocoderTest4 );
+        Assert.assertEquals( expectedGeoPoint4, geocoderTest4 );
+
     }
 
 
@@ -491,6 +493,33 @@ public class TransformTest {
         ).apply( getTestRow() );
 
 
+    }
+
+    @Test
+    public void testPaddingTransform() {
+        Object paddingTransformTest1 = new PaddingTransform("dog", 21, true)
+                .applyValue( getTestRow().get( "FirstName" ) );
+        Assert.assertEquals( "ogdogdogdogdogdogJohn", paddingTransformTest1 );
+
+
+        Object paddingTransformTest2 = new PaddingTransform("dog", 21, false)
+                .applyValue( getTestRow().get( "FirstName" ) );
+        Assert.assertEquals( "Johndogdogdogdogdogdo", paddingTransformTest2 );
+
+
+
+        Object paddingTransformTest3 = new PaddingTransform("dog", 21, true, true)
+                .applyValue( getTestRow().get( "Address" ) );
+        Assert.assertEquals( "n Francisco, CA 94117", paddingTransformTest3 );
+
+
+        Object paddingTransformTest4 = new PaddingTransform("dog", 21, false, true)
+                .applyValue( getTestRow().get( "Address" ) );
+        Assert.assertEquals( "560 Scott Street, San", paddingTransformTest4 );
+
+        Object paddingTransformTest5 = new PaddingTransform("dog", 21, false, false)
+                .applyValue( getTestRow().get( "Address" ) );
+        Assert.assertEquals( "560 Scott Street, San Francisco, CA 94117", paddingTransformTest5 );
     }
 
 }
