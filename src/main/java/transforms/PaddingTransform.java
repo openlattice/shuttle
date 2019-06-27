@@ -96,17 +96,18 @@ public class PaddingTransform extends Transformation<Map<String, String>> {
             return o;
         }
 
+        StringBuilder builder = new StringBuilder(o);
         if (pre) {
-            while (length > o.length()) {
-                o = pattern + o;
+            while (length > builder.length()) {
+                builder.insert(0,pattern);
             }
-            return o.substring(o.length() - length);
+            return builder.substring(builder.length() - length);
         }
         else {
-            while (length > o.length()) {
-                o += pattern;
+            while (length > builder.length()) {
+                builder.append(pattern);
             }
-            return o.substring(0, length);
+            return builder.substring(0, length);
         }
     }
 
