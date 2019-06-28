@@ -31,27 +31,14 @@ public class PaddingTransform extends Transformation<Map<String, String>> {
     public PaddingTransform(
             @JsonProperty( Constants.PATTERN ) String pattern,
             @JsonProperty( Constants.LENGTH ) int length,
-            @JsonProperty( Constants.PRE ) boolean pre,
-            @JsonProperty( Constants.CUTOFF ) boolean cutoff
+            @JsonProperty( Constants.PRE ) Optional<Boolean> pre,
+            @JsonProperty( Constants.CUTOFF ) Optional<Boolean> cutoff
             ) {
         this.pattern = pattern;
         this.length = length;
-        this.pre = pre;
-        this.cutoff = cutoff;
+        this.pre = pre.orElse(false);
+        this.cutoff = cutoff.orElse(false);
     }
-
-    @JsonCreator
-    public PaddingTransform(
-            @JsonProperty( Constants.PATTERN ) String pattern,
-            @JsonProperty( Constants.LENGTH ) int length,
-            @JsonProperty( Constants.PRE ) boolean pre
-    ) {
-        this.pattern = pattern;
-        this.length = length;
-        this.pre = pre;
-        this.cutoff = false;
-    }
-
 
     @JsonProperty( Constants.PATTERN )
     public String getPattern() {
