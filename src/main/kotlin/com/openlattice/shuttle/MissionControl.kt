@@ -169,14 +169,14 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                         val errorEmail = "An error occurred while running integration ${flight.name}. $errorInfo \n" +
                                 "The cause is ${ex.message} \n The stack trace is $stackTraceText"
                         val emailAddresses = emailConfiguration.notificationEmails
-                                .map(EmailAddress::of)
+                                .map { address -> EmailAddress.of (address) }
                                 .toTypedArray()
                         val email = Email.create()
                                 .from(emailConfiguration.fromEmail)
                                 .subject("Integration error in $flight.name")
                                 .textMessage(errorEmail)
                         emailConfiguration.notificationEmails
-                                .map(EmailAddress::of)
+                                .map { address -> EmailAddress.of (address) }
                                 .forEach { emailAddress -> email.to(emailAddress) }
 
                         val smtpServer = MailServer.create()
@@ -215,6 +215,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
 
     private val apiClient = ApiClient(environment) { authToken.get() }
     private val edmApi = apiClient.edmApi
+    private val entitySetsApi = apiClient.entitySetsApi
     private val dataApi = apiClient.dataApi
     private val dataIntegrationApi = apiClient.dataIntegrationApi
 
@@ -226,7 +227,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
             .client(RetrofitBuilders.okHttpClient().build())
             .build().create(S3Api::class.java)
 
-    private val entitySets = edmApi.entitySets.mapNotNull {
+    private val entitySets = entitySetsApi.getEntitySets().mapNotNull {
         if (it == null) return@mapNotNull null
         else it.name to it
     }.toMap().toMutableMap()
@@ -277,7 +278,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                             Optional.of(entityDefinition.getEntitySetName()),
                             contacts
                     )
-                    val entitySetId = edmApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
+                    val entitySetId = entitySetsApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[entityDefinition.entitySetName] = entitySet
                 }
@@ -296,7 +297,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                             Optional.of(associationDefinition.getEntitySetName()),
                             contacts
                     )
-                    val entitySetId = edmApi.createEntitySets(
+                    val entitySetId = entitySetsApi.createEntitySets(
                             setOf(entitySet)
                     )[associationDefinition.entitySetName]!!
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
