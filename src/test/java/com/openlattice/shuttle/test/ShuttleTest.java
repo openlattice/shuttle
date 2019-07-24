@@ -103,7 +103,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         ApiFactoryFactory apiFactorySupplier = () -> {
 
             EdmApi edmApi = mock( EdmApi.class );
-            EdmApi entitySetsApi = mock( EdmApi.class );
+            EntitySetsApi entitySetsApi = mock( EntitySetsApi.class );
             DataApi mockDataApi = mock( DataApi.class );
             PermissionsApi mockPermissionsApi = mock( PermissionsApi.class );
             DataIntegrationApi mockDataIntegrationApi = mock( DataIntegrationApi.class );
