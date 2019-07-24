@@ -1,5 +1,6 @@
 package com.openlattice.shuttle.transforms;
 
+import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transformations.Transformations;
 import org.junit.Assert;
 import org.junit.Test;
@@ -46,6 +47,11 @@ public class TransformTest {
         return testrow;
     }
 
+    public Map<String, Object> getObjectTestRow() {
+        Map<String, Object> testrow = new HashMap<String, Object>();
+        testrow.put( "FirstName", first );
+        return testrow;
+    }
     //==================//
     // HELPER FUNCTIONS //
     //==================//
@@ -296,6 +302,29 @@ public class TransformTest {
         Object concatTest1 = new ConcatTransform( cols, " " ).apply( getTestRow() );
         Assert.assertEquals( expected, concatTest1 );
     }
+
+    @Test
+    public void testConcatCombineTransform() {
+        String expected = "John_Doe";
+        List<Transformation> transformations = Arrays.asList(
+                new ValueTransform("John"),
+                new ColumnTransform("LastName")
+        );
+        Object concatcombineTest1 = new ConcatCombineTransform( transformations, "_" ).apply( getTestRow() );
+        Assert.assertEquals( expected, concatcombineTest1 );
+    }
+
+    @Test
+    public void testNestedTransformsTransform() {
+        String expected = "John Doe";
+        List<Transformation> transformations = Arrays.asList(
+                new ValueTransform("john doe"),
+                new CaseTransform(CaseTransform.CaseType.name )
+        );
+        Object nestedTransformsTest1 = new NestedTransformsTransform( transformations ).apply( getObjectTestRow() );
+        Assert.assertEquals( expected, nestedTransformsTest1 );
+    }
+
 
     @Test( expected = IllegalStateException.class )
     public void testColumnAbsence() {
