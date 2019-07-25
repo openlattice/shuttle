@@ -60,6 +60,15 @@ public class PaddingTransform extends Transformation<Map<String, String>> {
         return cutoff;
     }
 
+    private String getTrimmedString( String input ) {
+        if ( !cutoff ) {
+            return input;
+        }
+
+        int startIndex = pre ? input.length() - length : 0;
+        return input.substring( startIndex, startIndex + length );
+    }
+
     @Override
     public Object applyValue( String o ) {
 
@@ -72,29 +81,23 @@ public class PaddingTransform extends Transformation<Map<String, String>> {
         }
 
         if (o.length() > length) {
-            if (cutoff) {
-                if (pre) {
-                    return o.substring(o.length() - length);
-                }
-                else {
-                    return o.substring(0, length);
-                }
-            }
-            return o;
+            return getTrimmedString( o );
         }
+
+        // The input string is small. Iteratively append pattern.
 
         StringBuilder builder = new StringBuilder(o);
         if (pre) {
             while (length > builder.length()) {
                 builder.insert(0,pattern);
             }
-            return builder.substring(builder.length() - length);
+            return builder.substring(builder.length() - length);  //trim excess pattern that was added and return.
         }
         else {
             while (length > builder.length()) {
                 builder.append(pattern);
             }
-            return builder.substring(0, length);
+            return builder.substring(0, length);  //trim excess pattern that was added and return.
         }
     }
 
