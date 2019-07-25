@@ -85,7 +85,6 @@ public class PaddingTransform extends Transformation<Map<String, String>> {
         }
 
         // The input string is small. Iteratively append pattern.
-
         StringBuilder builder = new StringBuilder(o);
         if (pre) {
             while (length > builder.length()) {
@@ -100,5 +99,4 @@ public class PaddingTransform extends Transformation<Map<String, String>> {
             return builder.substring(0, length);  //trim excess pattern that was added and return.
         }
     }
-
 }
