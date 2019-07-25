@@ -1,5 +1,8 @@
 package com.openlattice.shuttle.util;
 
+import com.openlattice.shuttle.dates.TimeZones;
+import java.util.TimeZone;
+
 public final class Constants {
     public static final String ADDRESS_OBJECT      = "addressObject";
     public static final String COLUMN              = "column";
@@ -45,4 +48,5 @@ public final class Constants {
     public static final String COMPARISON          = "comparison";
     public static final String TIMEZONE            = "timezone";
     public static final String OPERATOR            = "operator";
+    public static final TimeZone DEFAULT_TIMEZONE    = TimeZones.America_NewYork;
 }
