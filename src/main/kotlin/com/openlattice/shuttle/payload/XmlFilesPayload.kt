@@ -11,17 +11,29 @@ import kotlin.streams.asStream
 
 data class XmlFilesPayload(val origin: IntegrationOrigin) : Payload {
 
-    constructor( source: String ) : this( LocalFileOrigin( Paths.get( source ), { it.toString().endsWith(xmlSuffix) } ) )
+    constructor( source: String ) : this( LocalFileOrigin( Paths.get( source ) ) { it.toString().endsWith(XML_SUFFIX) } )
 
     companion object {
         private val logger = LoggerFactory.getLogger(XmlFilesPayload::class.java)
-        private val xmlSuffix = ".xml"
+        private const val XML_SUFFIX = ".xml"
         private val mapper = XmlMapper()
     }
 
     override fun getPayload(): Stream<MutableMap<String, Any>> {
         return origin.map {
-            mapper.readValue(it, object : TypeReference<MutableMap<String, Any>>(){}) as MutableMap<String, Any>
+            val value = mapper.readValue(it, object : TypeReference<MutableMap<String, Any>>(){}) as MutableMap<String, Any>
+            return@map recFlatten(value).toMap(mutableMapOf())
         }.asStream()
+    }
+
+    private fun recFlatten(map: Map<String, Any>, keyPrefix: String="" ): List<Pair<String, Any>>{
+        val prefix = if (!keyPrefix.isBlank()) "$keyPrefix." else  keyPrefix
+
+        return map.flatMap {(key, value) ->
+            if (value is Map<*, *>) {
+                return@flatMap recFlatten(value as Map<String, Any>, "$prefix$key")
+            }
+            return@flatMap listOf("$prefix$key" to value)
+        }
     }
 }
