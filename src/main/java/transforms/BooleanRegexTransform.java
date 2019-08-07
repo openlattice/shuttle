@@ -57,10 +57,6 @@ public class BooleanRegexTransform<I extends Object> extends BooleanTransformati
         if (input == null) return false;
         String o = input.toString();
 
-        if ( StringUtils.isBlank( o ) ) {
-            return false;
-        }
-
         Matcher m = Cached.getInsensitiveMatcherForString( o, this.pattern );
         return m.find();
 
