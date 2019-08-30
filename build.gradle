@@ -32,8 +32,8 @@ jacoco {
 
 mainClassName = "com.openlattice.shuttle.ShuttleKt"
 applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server"]
-sourceCompatibility = JavaVersion.VERSION_1_10
-targetCompatibility = JavaVersion.VERSION_1_10
+sourceCompatibility = JavaVersion.VERSION_11
+targetCompatibility = JavaVersion.VERSION_11
 
 def S_ARGS = "$System.env.SHUTTLE_ARGS"
 
@@ -129,8 +129,8 @@ eclipse {
     ext.downloadSources = true
     ext.downloadJavadoc = true
 
-    ext.sourceCompatibility = JavaVersion.VERSION_1_10
-    ext.targetCompatibility = JavaVersion.VERSION_1_10
+    ext.sourceCompatibility = JavaVersion.VERSION_11
+    ext.targetCompatibility = JavaVersion.VERSION_11
 }
 
 eclipse.classpath.plusConfigurations += [configurations.provided]
