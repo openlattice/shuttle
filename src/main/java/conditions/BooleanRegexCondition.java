@@ -52,6 +52,10 @@ public class BooleanRegexCondition extends Condition<Map<String, String>> {
     public Boolean apply( Map<String, String> row ) {
         String o = row.get( column );
 
+        if ( o == null ) {
+            o = "";
+        }
+
         Matcher m = Cached.getInsensitiveMatcherForString( o, this.pattern );
 
         Boolean out = false;

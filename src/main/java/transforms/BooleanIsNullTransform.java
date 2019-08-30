@@ -46,7 +46,15 @@ public class BooleanIsNullTransform<I extends Object> extends BooleanTransformat
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
 
-        return row.get( column ) == null || row.get( column ).equals( "" ) ;
+        if ( row.get( column ) == null ) {
+            return true;
+        }
+
+        if ( row.get( column ) instanceof String ) {
+            return StringUtils.isEmpty( (String) row.get( column ) );
+        }
+
+        return false;
     }
 }
 
