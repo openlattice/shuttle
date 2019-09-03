@@ -90,7 +90,7 @@ import kotlin.streams.asSequence
  */
 
 private val logger = LoggerFactory.getLogger(ShuttleCli::class.java)
-const val DEFAULT_UPLOAD_SIZE = 100000
+const val DEFAULT_UPLOAD_SIZE = 100_000
 
 fun main(args: Array<String>) {
 
