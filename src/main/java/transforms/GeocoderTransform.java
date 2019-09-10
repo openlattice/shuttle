@@ -68,7 +68,20 @@ public class GeocoderTransform extends Transformation<Object> {
         if ( outercodes.contains( addressObject ) ) {
             return (String) address.get( addressObject );
         } else if ( addressObject.equals("geographypoint") ) {
-            return address.get( "lat" ) + "," + address.get("lon");
+            String latitude = address.get( "lat" ).toString();
+            String longitude = address.get("lon").toString();
+
+            String lat_suffix = "", lon_suffix = "";
+            if (!latitude.contains(".")) {
+                lat_suffix = ".0";
+            }
+
+            if (!longitude.contains(".")) {
+                lon_suffix = ".0";
+            }
+            
+            String out = new StringBuilder(latitude).append(",").append(longitude).toString();;
+            return out;
         } else {
             Map<String, Object> hlpr = (Map<String, Object>) address.get( "address" );
             return (String) hlpr.get( addressObject );

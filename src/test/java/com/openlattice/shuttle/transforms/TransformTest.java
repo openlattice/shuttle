@@ -13,7 +13,7 @@ import java.util.*;
 
 public class TransformTest {
 
-    String lat               = "36.23452";
+    String lat               = "36";
     String lon               = "30.34573";
     String sex               = "f";
     String first             = "John";
@@ -65,19 +65,6 @@ public class TransformTest {
     //==================//
     // BOOLEAN TESTS    //
     //==================//
-
-    @Test
-    public void testGeographyPointTransform() {
-        Transformations latTransfos = new Transformations();
-        latTransfos.add( new ColumnTransform( "Lat" ) );
-        Transformations lonTransfos = new Transformations();
-        lonTransfos.add( new ColumnTransform( "Long" ) );
-        Object geographypointTest1 = new GeographyPointTransform(
-                latTransfos, lonTransfos
-        ).apply( getTestRow() );
-        Assert.assertEquals( lat + "," + lon, geographypointTest1 );
-
-    }
 
     @Test
     public void testBooleanContainsTransform() {
@@ -349,6 +336,19 @@ public class TransformTest {
 
     }
 
+    @Test
+    public void testGeographyPointTransform() {
+        Transformations latTransfos = new Transformations();
+        latTransfos.add( new ColumnTransform( "Lat" ) );
+        Transformations lonTransfos = new Transformations();
+        lonTransfos.add( new ColumnTransform( "Long" ) );
+        Object geographypointTest1 = new GeographyPointTransform(
+                latTransfos, lonTransfos
+        ).apply( getTestRow() );
+        Assert.assertEquals( "36.0,30.34573", geographypointTest1 );
+
+    }
+
     @Test( timeout = 3000 )
     public void testGeocoderTransform() {
         String expectedStreet = "Scott Street";
@@ -392,11 +392,11 @@ public class TransformTest {
 
     @Test
     public void testArithmeticTransform() {
-        double expectedSum = 36.23452 + 30.34573;
-        double expectedDiff = 36.23452 - 30.34573;
-        double expectedProd = 36.23452 * 30.34573;
-        double expectedQuo = 36.23452 / 30.34573;
-        double expectedSumLeft = 36.23452;
+        double expectedSum = 36 + 30.34573;
+        double expectedDiff = 36 - 30.34573;
+        double expectedProd = 36 * 30.34573;
+        double expectedQuo = 36 / 30.34573;
+        double expectedSumLeft = 36;
 
         Transformations leftTransfos = new Transformations();
         leftTransfos.add( new ColumnTransform( "Lat" ) );
