@@ -493,4 +493,37 @@ public class TransformTest {
 
     }
 
+
+    @Test
+    public void testPaddingTransform() {
+
+        Optional<Boolean> optrue = Optional.of(true);
+        Optional<Boolean> opfalse = Optional.of(false);
+        Optional<Boolean> opnull = Optional.empty();
+
+
+        Object paddingTransformTest1 = new PaddingTransform("dog", 21, optrue, opnull)
+                .applyValue( getTestRow().get( "FirstName" ) );
+        Assert.assertEquals( "ogdogdogdogdogdogJohn", paddingTransformTest1 );
+
+
+        Object paddingTransformTest2 = new PaddingTransform("dog", 21, opfalse, opnull)
+                .applyValue( getTestRow().get( "FirstName" ) );
+        Assert.assertEquals( "Johndogdogdogdogdogdo", paddingTransformTest2 );
+
+
+        Object paddingTransformTest3 = new PaddingTransform("dog", 21, optrue, optrue)
+                .applyValue( getTestRow().get( "Address" ) );
+        Assert.assertEquals( "n Francisco, CA 94117", paddingTransformTest3 );
+
+
+        Object paddingTransformTest4 = new PaddingTransform("dog", 21, opfalse, optrue)
+                .applyValue( getTestRow().get( "Address" ) );
+        Assert.assertEquals( "560 Scott Street, San", paddingTransformTest4 );
+
+        Object paddingTransformTest5 = new PaddingTransform("dog", 21, opfalse, opfalse)
+                .applyValue( getTestRow().get( "Address" ) );
+        Assert.assertEquals( "560 Scott Street, San Francisco, CA 94117", paddingTransformTest5 );
+    }
+
 }
