@@ -79,9 +79,8 @@ public class GeocoderTransform extends Transformation<Object> {
             if (!longitude.contains(".")) {
                 lon_suffix = ".0";
             }
-            
-            String out = new StringBuilder(latitude).append(",").append(longitude).toString();;
-            return out;
+            return new StringBuilder(latitude).append(lat_suffix).append(",")
+                    .append(longitude).append(lon_suffix).toString();
         } else {
             Map<String, Object> hlpr = (Map<String, Object>) address.get( "address" );
             return (String) hlpr.get( addressObject );

@@ -52,17 +52,19 @@ public class GeographyPointTransform extends Transformation<Map<String, String>>
 
         if (  lat != null && lon != null  ) {
             String latitude = lat.toString();
-
-            if (!latitude.contains(".")) {
-                latitude += ".0";
-            }
-
             String longitude = lon.toString();
 
-            if (!longitude.contains(".")) {
-                longitude += ".0";
+            String lat_suffix = "", lon_suffix = "";
+            if (!latitude.contains(".")) {
+                lat_suffix = ".0";
             }
-            return latitude + "," + longitude;
+
+            if (!longitude.contains(".")) {
+                lon_suffix = ".0";
+            }
+
+            return new StringBuilder(latitude).append(lat_suffix).append(",")
+                    .append(longitude).append(lon_suffix).toString();
         } else {
             return null;
         }
