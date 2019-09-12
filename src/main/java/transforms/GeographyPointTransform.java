@@ -50,26 +50,10 @@ public class GeographyPointTransform extends Transformation<Map<String, String>>
         lon = lon == "" ? null : lon;
         lon = Parsers.parseDouble( lon );
 
-        if (  lat != null && lon != null  ) {
-            String latitude = lat.toString();
-            String longitude = lon.toString();
-
-            String lat_suffix = "", lon_suffix = "";
-            if (!latitude.contains(".")) {
-                lat_suffix = ".0";
-            }
-
-            if (!longitude.contains(".")) {
-                lon_suffix = ".0";
-            }
-
-            return new StringBuilder(latitude).append(lat_suffix).append(",")
-                    .append(longitude).append(lon_suffix).toString();
-        } else {
+        if ( lat == null || lon == null ) {
             return null;
         }
-
+        return String.format("%.5f", lat) + "," + String.format("%.5f", lon);
     }
-
 }
 

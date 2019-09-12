@@ -14,6 +14,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import com.openlattice.shuttle.util.Parsers;
 import retrofit2.Retrofit;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
@@ -65,26 +67,23 @@ public class GeocoderTransform extends Transformation<Object> {
         }
 
         List<String> outercodes = Arrays.asList( "lat", "lon", "type" );
+
         if ( outercodes.contains( addressObject ) ) {
             return (String) address.get( addressObject );
-        } else if ( addressObject.equals("geographypoint") ) {
-            String latitude = address.get( "lat" ).toString();
-            String longitude = address.get("lon").toString();
-
-            String lat_suffix = "", lon_suffix = "";
-            if (!latitude.contains(".")) {
-                lat_suffix = ".0";
-            }
-
-            if (!longitude.contains(".")) {
-                lon_suffix = ".0";
-            }
-            return new StringBuilder(latitude).append(lat_suffix).append(",")
-                    .append(longitude).append(lon_suffix).toString();
-        } else {
-            Map<String, Object> hlpr = (Map<String, Object>) address.get( "address" );
-            return (String) hlpr.get( addressObject );
         }
+
+        if ( addressObject.equals("geographypoint") ) {
+            Double lat = Parsers.parseDouble(address.get("lat"));
+            Double lon = Parsers.parseDouble(address.get("lon"));
+            if ( lat == null || lon == null ) {
+                return null;
+            }
+            return String.format("%.5f", lat) + "," + String.format("%.5f", lon);
+        }
+
+        Map<String, Object> hlpr = (Map<String, Object>) address.get( "address" );
+        return (String) hlpr.get( addressObject );
+
     }
 
     @Override

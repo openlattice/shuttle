@@ -14,7 +14,7 @@ import java.util.*;
 public class TransformTest {
 
     String lat               = "36";
-    String lon               = "30.34573";
+    String lon               = "30.345734932";
     String sex               = "f";
     String first             = "John";
     String last              = "Doe";
@@ -345,7 +345,7 @@ public class TransformTest {
         Object geographypointTest1 = new GeographyPointTransform(
                 latTransfos, lonTransfos
         ).apply( getTestRow() );
-        Assert.assertEquals( "36.0,30.34573", geographypointTest1 );
+        Assert.assertEquals( "36.00000,30.34573", geographypointTest1 );
 
     }
 
@@ -363,7 +363,7 @@ public class TransformTest {
         Object geocoderTest3 = new GeocoderTransform( "type", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
-        String expectedGeoPoint = "37.7748313877551,-122.435947714286";
+        String expectedGeoPoint = "37.77483,-122.43595";
         Object geocoderTest4 = new GeocoderTransform( "geographypoint", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
@@ -392,10 +392,10 @@ public class TransformTest {
 
     @Test
     public void testArithmeticTransform() {
-        double expectedSum = 36 + 30.34573;
-        double expectedDiff = 36 - 30.34573;
-        double expectedProd = 36 * 30.34573;
-        double expectedQuo = 36 / 30.34573;
+        double expectedSum = 36 + 30.345734932;
+        double expectedDiff = 36 - 30.345734932;
+        double expectedProd = 36 * 30.345734932;
+        double expectedQuo = 36 / 30.345734932;
         double expectedSumLeft = 36;
 
         Transformations leftTransfos = new Transformations();
