@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.NoSuchElementException;
 
 import com.openlattice.shuttle.util.Parsers;
 import retrofit2.Retrofit;
@@ -24,6 +25,20 @@ public class GeocoderTransform extends Transformation<Object> {
     protected static final String       NOMINATIM_SERVICE_URL = "https://osm.openlattice.com/nominatim/";
     private final          String       addressObject;
     private final          GeocodingApi geocodingApi;
+
+    // string constants for flight + geocoder api options
+    private final          String       LAT = "lat";
+    private final          String       LON = "lon";
+    private final          String       GEOGRAPHY_POINT = "geographypoint";
+    private final          String       TYPE = "type";
+    private final          String       HOUSE_NUMBER = "house_number";
+    private final          String       ROAD = "road";
+    private final          String       NEIGHBORHOOD = "neighborhood";
+    private final          String       CITY = "city";
+    private final          String       POSTCODE = "postcode";
+    private final          String       COUNTY = "county";
+    private final          String       STATE = "state";
+    private final          String       ADDRESS = "address";
 
     /**
      * A transformation that runs a string address through a geolocation API and returns a user-specified part of the
@@ -52,6 +67,10 @@ public class GeocoderTransform extends Transformation<Object> {
     }
 
     public String getAddress( String input, String addressObject ) {
+        if ( !Arrays.asList(LAT, LON, GEOGRAPHY_POINT, TYPE, HOUSE_NUMBER,
+                ROAD, NEIGHBORHOOD, CITY, POSTCODE, COUNTY, STATE).contains(this.addressObject) ) {
+            throw new NoSuchElementException("addressObject invalid: " + this.addressObject);
+        }
         List<Map<String, Object>> map = geocodingApi.geocode( input );
 
         if ( map.size() == 0 ) {
@@ -66,22 +85,20 @@ public class GeocoderTransform extends Transformation<Object> {
             return null;
         }
 
-        List<String> outercodes = Arrays.asList( "lat", "lon", "type" );
-
-        if ( outercodes.contains( addressObject ) ) {
+        if ( Arrays.asList( LAT, LON, TYPE ).contains( addressObject ) ) {
             return (String) address.get( addressObject );
         }
 
-        if ( addressObject.equals("geographypoint") ) {
-            Double lat = Parsers.parseDouble(address.get("lat"));
-            Double lon = Parsers.parseDouble(address.get("lon"));
+        if ( addressObject.equals(GEOGRAPHY_POINT) ) {
+            Double lat = Parsers.parseDouble(address.get(LAT));
+            Double lon = Parsers.parseDouble(address.get(LON));
             if ( lat == null || lon == null ) {
                 return null;
             }
             return String.format("%.5f", lat) + "," + String.format("%.5f", lon);
         }
 
-        Map<String, Object> hlpr = (Map<String, Object>) address.get( "address" );
+        Map<String, Object> hlpr = (Map<String, Object>) address.get( ADDRESS );
         return (String) hlpr.get( addressObject );
 
     }
