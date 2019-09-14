@@ -10,11 +10,7 @@ import com.openlattice.rhizome.proxy.RetrofitBuilders;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 import com.openlattice.shuttle.util.Parsers;
 import retrofit2.Retrofit;
@@ -23,22 +19,38 @@ import retrofit2.http.Query;
 
 public class GeocoderTransform extends Transformation<Object> {
     protected static final String       NOMINATIM_SERVICE_URL = "https://osm.openlattice.com/nominatim/";
+
+    // catalog of constants expected as input by this transformation OR by the geocodingAPI
+    private static final   Map<String, String> KEYWORD_MAP;
+    static {
+        HashMap<String, String> dummyMap = new HashMap<>();
+        dummyMap.put( "lat", "lat" );
+        dummyMap.put( "lon", "lon" );
+        dummyMap.put( "geographypoint", "geographypoint" );
+        dummyMap.put( "type", "type" );
+        dummyMap.put( "house_number", "house_number" );
+        dummyMap.put( "road", "road" );
+        dummyMap.put( "neighborhood", "neighborhood" );
+        dummyMap.put( "city", "city" );
+        dummyMap.put( "postcode", "postcode" );
+        dummyMap.put( "county", "county" );
+        dummyMap.put( "state", "state" );
+        dummyMap.put( "address", "address" );
+        KEYWORD_MAP = Collections.unmodifiableMap(dummyMap);
+    }
+
+    // values of addressObject that can be looked up directly in geocoder api output
+    private static final   HashSet<String> SIMPLE_LOOKUP;
+    static {
+        HashSet<String> dummySet = new HashSet<>();
+        dummySet.add( "lat" );
+        dummySet.add( "lon" );
+        dummySet.add( "type" );
+        SIMPLE_LOOKUP = dummySet;
+    }
+
     private final          String       addressObject;
     private final          GeocodingApi geocodingApi;
-
-    // string constants for flight + geocoder api options
-    private final          String       LAT = "lat";
-    private final          String       LON = "lon";
-    private final          String       GEOGRAPHY_POINT = "geographypoint";
-    private final          String       TYPE = "type";
-    private final          String       HOUSE_NUMBER = "house_number";
-    private final          String       ROAD = "road";
-    private final          String       NEIGHBORHOOD = "neighborhood";
-    private final          String       CITY = "city";
-    private final          String       POSTCODE = "postcode";
-    private final          String       COUNTY = "county";
-    private final          String       STATE = "state";
-    private final          String       ADDRESS = "address";
 
     /**
      * A transformation that runs a string address through a geolocation API and returns a user-specified part of the
@@ -67,8 +79,7 @@ public class GeocoderTransform extends Transformation<Object> {
     }
 
     public String getAddress( String input, String addressObject ) {
-        if ( !Arrays.asList(LAT, LON, GEOGRAPHY_POINT, TYPE, HOUSE_NUMBER,
-                ROAD, NEIGHBORHOOD, CITY, POSTCODE, COUNTY, STATE).contains(this.addressObject) ) {
+        if ( !KEYWORD_MAP.containsKey( addressObject ) || addressObject.equals( "address" ) ) {
             throw new NoSuchElementException("addressObject invalid: " + this.addressObject);
         }
         List<Map<String, Object>> map = geocodingApi.geocode( input );
@@ -85,20 +96,20 @@ public class GeocoderTransform extends Transformation<Object> {
             return null;
         }
 
-        if ( Arrays.asList( LAT, LON, TYPE ).contains( addressObject ) ) {
+        if ( SIMPLE_LOOKUP.contains( addressObject ) ) {
             return (String) address.get( addressObject );
         }
 
-        if ( addressObject.equals(GEOGRAPHY_POINT) ) {
-            Double lat = Parsers.parseDouble(address.get(LAT));
-            Double lon = Parsers.parseDouble(address.get(LON));
+        if ( addressObject.equals( KEYWORD_MAP.get( "geographypoint" ) ) ) {
+            Double lat = Parsers.parseDouble(address.get( KEYWORD_MAP.get( "lat" ) ));
+            Double lon = Parsers.parseDouble(address.get( KEYWORD_MAP.get( "lon" ) ));
             if ( lat == null || lon == null ) {
                 return null;
             }
             return String.format("%.5f", lat) + "," + String.format("%.5f", lon);
         }
 
-        Map<String, Object> hlpr = (Map<String, Object>) address.get( ADDRESS );
+        Map<String, Object> hlpr = (Map<String, Object>) address.get( KEYWORD_MAP.get( "address" ) );
         return (String) hlpr.get( addressObject );
 
     }
