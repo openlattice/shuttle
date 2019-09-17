@@ -21,20 +21,22 @@
 
 package transforms;
 
-import static java.lang.Integer.parseInt;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Optional;
+
+import static java.lang.Integer.parseInt;
+
 public class SplitTransform extends Transformation<String> {
 
     private final String  separator;
-    private final String  valueElse;
     private final String  index;
-    private final Integer ifMoreThan;
+    private final Optional<String>  valueElse;
+    private final Optional<Integer> ifMoreThan;
 
     /**
      * Represents a transformation to split a string. Example:
@@ -52,20 +54,17 @@ public class SplitTransform extends Transformation<String> {
     public SplitTransform(
             @JsonProperty( Constants.SEP ) String separator,
             @JsonProperty( Constants.INDEX ) String index,
-            @JsonProperty( Constants.ELSE ) String valueElse,
-            @JsonProperty( Constants.IF_MORE_THAN ) Integer ifMoreThan
+            @JsonProperty( Constants.ELSE ) Optional<String> valueElse,
+            @JsonProperty( Constants.IF_MORE_THAN ) Optional<Integer> ifMoreThan
     ) {
         this.separator = separator;
         this.index = index;
         this.ifMoreThan = ifMoreThan;
-        this.valueElse = valueElse == null ? "" : valueElse;
+        this.valueElse = valueElse;
     }
 
     @Override
     public Object applyValue( String o ) {
-        if ( StringUtils.isBlank( o ) | o == "" ) {
-            return null;
-        }
         String[] strNames = o.trim().split( separator );
 
         int idx = 0;
@@ -75,19 +74,11 @@ public class SplitTransform extends Transformation<String> {
             idx = parseInt( index );
         }
 
-        if ( !( ifMoreThan == null ) ) {
-            if ( !( ifMoreThan < strNames.length ) ) {
-                return null;
-            }
-        }
-
-        if ( strNames.length > idx ) {
+         if ( strNames.length > ifMoreThan.orElse(idx ) ) {
             return strNames[ idx ].trim();
         }
-        if ( !StringUtils.isBlank( valueElse ) ) {
-            return valueElse;
-        }
-        return null;
+
+        return this.valueElse.orElse(null);
     }
 
 }

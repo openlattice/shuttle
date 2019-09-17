@@ -40,8 +40,21 @@ class ShuttleCli {
         const val ENVIRONMENT = "environment"
         const val SQL = "sql"
         const val CSV = "csv"
+        const val XML = "xml"
+        const val DATA_ORIGIN = "data-origin"
         const val DATASOURCE = "datasource"
+        const val FETCHSIZE = "fetchsize"
         const val CONFIGURATION = "config"
+        const val S3 = "s3"
+        const val UPLOAD_SIZE = "upload-size"
+        const val NOTIFICATION_EMAILS = "notify-emails"
+        const val FROM_EMAIL = "from-email"
+        const val FROM_EMAIL_PASSWORD = "from-email-password"
+        const val SMTP_SERVER = "smtp-server"
+        const val SMTP_SERVER_PORT = "smtp-server-port"
+
+        const val S3_ORIGIN_EXPECTED_ARGS_COUNT = 3
+        const val LOCAL_ORIGIN_EXPECTED_ARGS_COUNT = 2
 
         private val options = Options()
         private val clp = DefaultParser()
@@ -49,14 +62,26 @@ class ShuttleCli {
 
         private val flightOption = Option.builder()
                 .longOpt(FLIGHT)
-                .desc("Attempt to load configuration from AWS.")
+                .desc("Attempt to load configuration from S3.")
                 .hasArg(true)
                 .argName("file")
                 .build()
 
+        private val fetchSize = Option.builder()
+                .longOpt(FETCHSIZE)
+                .hasArg(true)
+                .argName("fetch size")
+                .build()
+
+        private val uploadSize = Option.builder()
+                .longOpt(UPLOAD_SIZE)
+                .hasArg(true)
+                .argName("upload size")
+                .build()
+
         private val environmentOption = Option.builder()
                 .longOpt(ENVIRONMENT)
-                .desc("Specifies an environment to run the integration against. Possible values are LOCAL or PRODUCTION")
+                .desc("Specifies an environment to run the integration against. Possible values are LOCAL or PROD_INTEGRATION")
                 .required(false)
                 .hasArg()
                 .argName("environment")
@@ -69,6 +94,19 @@ class ShuttleCli {
                 .argName("file")
                 .build()
 
+        // --data-origin    S3       region      bucketName
+        // --data-origin    local    filepath
+        private val dataOriginOption = Option.builder()
+                .longOpt(DATA_ORIGIN)
+                .hasArg(true)
+                .desc("Source location of the data to be integrated\n" +
+                        " Current options are:\n" +
+                        "     S3 <S3 endpoint> <AWS Region> <S3 bucket name>\n" +
+                        "     local <path to a data file>")
+                .argName("data origin")
+                .numberOfArgs(S3_ORIGIN_EXPECTED_ARGS_COUNT)
+                .build()
+
         private val datasourceOption = Option.builder()
                 .longOpt(DATASOURCE)
                 .hasArg()
@@ -77,29 +115,31 @@ class ShuttleCli {
 
         private val userOption = Option.builder()
                 .longOpt(USER)
-                .desc("Creates any entity sets that are missing ")
+                .desc("Username to use for authentication ")
                 .hasArg(true)
                 .argName("Auth0 username")
                 .build()
 
         private val passwordOption = Option.builder()
                 .longOpt(PASSWORD)
-                .desc("Creates any entity sets that are missing ")
+                .desc("Password for the username ")
                 .hasArg(true)
                 .argName("password")
                 .build()
 
         private val tokenOption = Option.builder()
                 .longOpt(TOKEN)
-                .desc("Creates any entity sets that are missing ")
+                .desc("Token to use for authentication ")
                 .hasArg(true)
                 .argName("Auth0 JWT Token")
                 .build()
 
         private val createOption = Option.builder()
                 .longOpt(CREATE)
-                .desc("Creates any entity sets that are missing ")
-                .hasArg(false)
+                .desc("Creates any entity sets that are missing with the provided contacts in the argument ")
+                .hasArgs()
+                .argName("Contacts")
+                .valueSeparator(',')
                 .build()
 
         private val helpOption = Option.builder(HELP.first().toString())
@@ -115,6 +155,13 @@ class ShuttleCli {
                 .hasArg(true)
                 .build()
 
+        private val xmlOption = Option.builder()
+                .longOpt(XML)
+                .desc("Directory of XML files to use as the datasource for a specific flight.")
+                .hasArg(true)
+                .argName("directory")
+                .build()
+
         private val csvOption = Option.builder()
                 .longOpt(CSV)
                 .desc("CSV file to use as the datasource for a specific flight.")
@@ -122,22 +169,77 @@ class ShuttleCli {
                 .argName("file")
                 .build()
 
+        private val s3Option = Option.builder()
+                .longOpt(S3)
+                .desc("S3 bucket to use for storing binary. Possible values are TEST or PRODUCTION. Defaults to test bucket.")
+                .hasArg()
+                .argName("bucket")
+                .build()
+
+        private val notificationEmailsOption = Option.builder()
+                .longOpt(NOTIFICATION_EMAILS)
+                .desc("E-mails to notify if an issue occurs with integration")
+                .hasArgs()
+                .argName("version")
+                .valueSeparator(',')
+                .build()
+
+        private val fromEmailOption = Option.builder()
+                .longOpt(FROM_EMAIL)
+                .hasArg(true)
+                .argName("E-mail account being used to send notifications an issues occurs with integration")
+                .build()
+
+        private val fromEmailPasswordOption = Option.builder()
+                .longOpt(FROM_EMAIL_PASSWORD)
+                .hasArg(true)
+                .argName("Password of account being used to send e-mails an issues occurs with integration")
+                .build()
+
+        private val smtpServerOption = Option.builder()
+                .longOpt(SMTP_SERVER)
+                .hasArg(true)
+                .argName("Hostname of smtp server")
+                .build()
+
+        private val smtpServerPortOption = Option.builder()
+                .longOpt(SMTP_SERVER_PORT)
+                .hasArg(true)
+                .argName("Port used to connect to smtp server")
+                .build()
 
         init {
-            options.addOption(helpOption)
-            options.addOption(configurationOption)
-            options.addOption(datasourceOption)
-            options.addOption(flightOption)
-            options.addOption(environmentOption)
-            options.addOption(tokenOption)
-            options.addOption(userOption)
-            options.addOption(passwordOption)
-            options.addOption(createOption)
+            options
+                    .addOption(helpOption)
+                    .addOption(configurationOption)
+                    .addOption(datasourceOption)
+                    .addOption(flightOption)
+                    .addOption(environmentOption)
+                    .addOption(tokenOption)
+                    .addOption(userOption)
+                    .addOption(passwordOption)
+                    .addOption(createOption)
+                    .addOption(s3Option)
+                    .addOption(fetchSize)
+                    .addOption(uploadSize)
+                    .addOption(notificationEmailsOption)
+                    .addOption(fromEmailOption)
+                    .addOption(fromEmailPasswordOption)
+                    .addOption(smtpServerOption)
+                    .addOption(smtpServerPortOption)
 
             options.addOptionGroup(
                     OptionGroup()
                             .addOption(sqlOption)
                             .addOption(csvOption)
+                            .addOption(xmlOption)
+            )
+
+            options.addOptionGroup(
+                    OptionGroup()
+                            .addOption(dataOriginOption)
+                            .addOption(csvOption)
+                            .addOption(sqlOption)
             )
 
             options.addOptionGroup(

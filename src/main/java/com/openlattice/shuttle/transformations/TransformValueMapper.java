@@ -21,7 +21,10 @@
 
 package com.openlattice.shuttle.transformations;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.shuttle.util.Constants;
 
 import java.util.List;
 import java.util.Map;
@@ -29,14 +32,24 @@ import java.util.Map;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class TransformValueMapper implements SerializableFunction<Map<String, String>, Object> {
+public class TransformValueMapper implements SerializableFunction<Map<String, Object>, Object> {
     private final List<Transformation> transforms;
 
-    public TransformValueMapper( List<Transformation> transforms ) {
+    @JsonCreator
+    public TransformValueMapper(
+            @JsonProperty(Constants.TRANSFORMS) List<Transformation> transforms
+    ) {
         this.transforms = transforms;
     }
 
-    @Override public Object apply( Map<String, String> input ) {
+    @Override
+    public Object apply( Map<String, Object> input ) {
+
+        if (transforms.size() == 0){
+            throw new IllegalStateException( String
+                    .format( "At least 1 transformation should be specified (or left blank for columntransform)." ) );
+        }
+
         Object value = input;
         for ( Transformation t : transforms ) {
             value = t.apply( value );

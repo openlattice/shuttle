@@ -24,8 +24,8 @@ public class FilterablePayload implements Payload {
         this.path = path;
     }
 
-    public Payload filterPayload( Predicate<Map<String, String>>... filters ) {
-        Predicate<Map<String, String>> filter = row -> true;
+    public Payload filterPayload( Predicate<Map<String, Object>>... filters ) {
+        Predicate<Map<String, Object>> filter = row -> true;
         for ( int i = 0; i < filters.length; i++ ) {
             filter = filter.and( filters[ i ] );
         }
@@ -33,7 +33,7 @@ public class FilterablePayload implements Payload {
     }
 
     @Override
-    public Stream<Map<String, String>> getPayload() {
+    public Stream<Map<String, Object>> getPayload() {
         return StreamUtil.stream( () -> {
             try {
                 return newDefaultMapper()
@@ -42,16 +42,16 @@ public class FilterablePayload implements Payload {
                         .readValues( new File( path ) );
             } catch ( IOException e ) {
                 logger.error( "Unable to read csv file", e );
-                return ImmutableList.<Map<String, String>>of().iterator();
+                return ImmutableList.<Map<String, Object>>of().iterator();
             }
         } );
     }
 
-    public static Predicate<Map<String, String>> equalPredicate( String colName, String value ) {
+    public static Predicate<Map<String, Object>> equalPredicate( String colName, String value ) {
         return row -> row.get( colName ).equals( value );
     }
 
-    public static Predicate<Map<String, String>> notEqualPredicate( String colName, String value ) {
+    public static Predicate<Map<String, Object>> notEqualPredicate( String colName, String value ) {
         return row -> !row.get( colName ).equals( value );
     }
 
