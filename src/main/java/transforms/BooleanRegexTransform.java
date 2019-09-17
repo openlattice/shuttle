@@ -2,22 +2,17 @@ package transforms;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.BooleanTransformation;
-import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-public class BooleanRegexTransform extends BooleanTransformation {
+public class BooleanRegexTransform<I extends Object> extends BooleanTransformation<I> {
     private final String column;
     private final String pattern;
 
@@ -52,19 +47,21 @@ public class BooleanRegexTransform extends BooleanTransformation {
     }
 
     @Override
-    public boolean applyCondition( Map<String, String> row ) {
+    public boolean applyCondition( Map<String, Object> row ) {
 
         if ( !( row.containsKey( column ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
 
-        String o = row.get( column );
+        Object input = row.get( column );
+        if (input == null) return false;
+        String o = input.toString();
+
         if ( StringUtils.isBlank( o ) ) {
             return false;
         }
-        Pattern p = Pattern
-                .compile( this.pattern, Pattern.CASE_INSENSITIVE );
-        Matcher m = p.matcher( o );
+
+        Matcher m = Cached.getInsensitiveMatcherForString( o, this.pattern );
         return m.find();
 
     }

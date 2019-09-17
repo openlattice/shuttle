@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BooleanContainsTransform extends BooleanTransformation {
+public class BooleanContainsTransform<I extends Object> extends BooleanTransformation<I> {
     private final String  column;
     private final String  string;
     private final Boolean ignoreCase;
@@ -54,13 +54,14 @@ public class BooleanContainsTransform extends BooleanTransformation {
     }
 
     @Override
-    public boolean applyCondition( Map<String, String> row ) {
-
+    public boolean applyCondition( Map<String, Object> row ) {
         if ( !( row.containsKey( column ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
 
-        String o = row.get( column );
+        Object input = row.get( column );
+        if (input == null) return false;
+        String o = input.toString();
 
         if ( StringUtils.isBlank( o ) ) {
             return false;

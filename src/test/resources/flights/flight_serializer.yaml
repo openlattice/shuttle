@@ -1,6 +1,12 @@
 entityDefinitions:
   cyphers:
     entitySetName: "XXSr4"
+    generator: !<generators.TransformSeriesGenerator>
+      transforms:
+        - !<transforms.ValueTransform>
+          value: "ladadiiii-ladada"
+        - !<transforms.ColumnTransform>
+          column: "algo"
     propertyDefinitions:
       CoSoB.9BK4n:
         type: "CoSoB.9BK4n"
@@ -17,7 +23,7 @@ entityDefinitions:
         type: "2jMG7.l0ovJ"
         column: "mode"
     name: "cyphers"
-    currentSync: false
+    updateType: Merge
   moreCyphers:
     entitySetName: "C0YVJ"
     propertyDefinitions:
@@ -32,7 +38,7 @@ entityDefinitions:
       2jMG7.l0ovJ:
         type: "2jMG7.l0ovJ"
     name: "moreCyphers"
-    currentSync: false
+    updateType: Replace
 associationDefinitions:
   cypherToCypher:
     fqn: null
@@ -44,6 +50,6 @@ associationDefinitions:
       MbX2C.Htjnc:
         type: "MbX2C.Htjnc"
     name: "cypherToCypher"
-    currentSync: false
-    entityIdGenerator: null
+    updateType: PartialReplace
+    generator: null
 name: "Anon"

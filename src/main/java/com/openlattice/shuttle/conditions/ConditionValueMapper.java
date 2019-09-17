@@ -5,14 +5,14 @@ import com.openlattice.client.serialization.SerializableFunction;
 import java.util.List;
 import java.util.Map;
 
-public class ConditionValueMapper implements SerializableFunction<Map<String, String>, Object> {
+public class ConditionValueMapper implements SerializableFunction<Map<String, Object>, Object> {
     private final List<Condition> conditions;
 
     public ConditionValueMapper( List<Condition> conditions ) {
         this.conditions = conditions;
     }
 
-    @Override public Object apply( Map<String, String> input ) {
+    @Override public Object apply( Map<String, Object> input ) {
         Boolean out = null;
         String schedule = "and";
 

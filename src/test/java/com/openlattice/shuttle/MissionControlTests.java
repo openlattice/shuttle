@@ -35,6 +35,7 @@ public class MissionControlTests {
 
     @Test
     public void testAuth() throws Auth0Exception {
+
         AuthAPI api = MissionControl.buildClient( AUTH0_CLIENT_ID );
         String idToken = MissionControl.getIdToken( api, AUTH0_CONNECTION, "tests@openlattice.com", "openlattice" );
         Assert.assertTrue( "Id token cannot be blank", StringUtils.isNotBlank( idToken ) );

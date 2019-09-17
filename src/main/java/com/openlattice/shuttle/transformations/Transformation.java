@@ -21,21 +21,26 @@
 
 package com.openlattice.shuttle.transformations;
 
-import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
-
+import com.dataloom.mappers.ObjectMappers;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
+
 @JsonTypeInfo( use = Id.CLASS, include = As.PROPERTY, property = TRANSFORM )
 public abstract class Transformation<I extends Object> implements Function<I, Object> {
+    protected final Logger logger = LoggerFactory.getLogger( getClass() );
     public static final String TRANSFORM = "@transform";
 
     private final Optional<String> column;
@@ -54,23 +59,31 @@ public abstract class Transformation<I extends Object> implements Function<I, Ob
     }
 
     protected String getInputString( Object o, Optional<String> column ) {
-        final String input;
         if ( o == null ) {
             return null;
         }
-        if ( !( column.isPresent() ) ) {
-            input = o.toString();
-        } else {
-            ObjectMapper m = new ObjectMapper();
-            Map<String, String> row = m.convertValue( o, Map.class );
-            String col = getColumn();
-            if ( !( row.containsKey( col ) ) ) {
-                throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
-            }
-            input = row.get( col );
+        if ( !column.isPresent() ) {
+            return o.toString();
         }
+        ObjectMapper m = ObjectMappers.getJsonMapper();
+        Map<String, String> row = m.convertValue( o, Map.class );
+        String col = getColumn();
+        if ( !row.containsKey(col) ) {
+            throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
+        }
+        return row.get( col );
+    }
 
-        return input;
+    protected String applyValueWrapper( String s ) {
+
+        if ( StringUtils.isBlank(s)) return null;
+
+        Object out = applyValue( s );
+
+        if ( out == null ) return null;
+
+        return out.toString();
+
     }
 
     protected Object applyValue( String s ) {
@@ -79,7 +92,6 @@ public abstract class Transformation<I extends Object> implements Function<I, Ob
 
     @Override
     public Object apply( I o ) {
-
-        return applyValue( getInputString( o, column ) );
+        return applyValueWrapper( getInputString( o, column ) );
     }
 }

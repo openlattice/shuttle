@@ -28,13 +28,13 @@ import java.util.stream.Stream;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class StreamPayload implements Payload {
-    private final Stream<Map<String, String>> streamPayload;
+    private final Stream<Map<String, Object>> streamPayload;
 
-    public StreamPayload( Stream<Map<String, String>> streamPayload ) {
+    public StreamPayload( Stream<Map<String, Object>> streamPayload ) {
         this.streamPayload = streamPayload;
     }
 
-    @Override public Stream<Map<String, String>> getPayload() {
+    @Override public Stream<Map<String, Object>> getPayload() {
         return null;
     }
 }
