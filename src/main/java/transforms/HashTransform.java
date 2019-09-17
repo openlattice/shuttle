@@ -30,6 +30,7 @@ import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -40,32 +41,36 @@ import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-@JsonIgnoreProperties( value = { TRANSFORM } )
-public class HashTransform extends Transformation<Map<String, String>> {
+public class HashTransform extends Transformation<Object> {
     private final List<String> columns;
-    private final String       hashFunction;
+    private final HashType     hashFunction;
+
+    public enum HashType {murmur128, sha256}
+
+    ;
+
     private final HashFunction hf;
 
     @JsonCreator
     public HashTransform(
             @JsonProperty( Constants.COLUMNS ) List<String> columns,
-            @JsonProperty( Constants.HASH_FUNCTION ) String hashFunction ) {
+            @JsonProperty( Constants.HASH_FUNCTION ) HashType hashFunction ) {
         this.columns = columns;
-        this.hashFunction = hashFunction;
-        switch ( hashFunction ) {
-            default:
-            case "":
-            case "murmur128":
+        this.hashFunction = hashFunction == null ? HashType.sha256 : hashFunction ;
+        switch ( this.hashFunction ) {
+            case murmur128:
                 hf = Hashing.murmur3_128();
                 break;
-            case "sha256":
+            case sha256:
                 hf = Hashing.sha256();
                 break;
+            default:
+                hf = Hashing.sha256();
         }
     }
 
     @JsonProperty( Constants.HASH_FUNCTION )
-    public String getHashFunction() {
+    public HashType getHashFunction() {
         return hashFunction;
     }
 
@@ -75,9 +80,27 @@ public class HashTransform extends Transformation<Map<String, String>> {
     }
 
     @Override
-    public Object apply( Map<String, String> row ) {
+    public Object apply( Object input ) {
+        if (input instanceof Map){
+            Map<String, String> row = (Map) input;
+            Hasher hasher = hf.newHasher();
+            for ( String s : columns ) {
+                if ( !StringUtils.isBlank( row.get( s ) ) ) {
+                    hasher.putString( row.get( s ), Charsets.UTF_8 );
+                }
+            }
+            return hasher.hash().toString();
+        } else if (input instanceof String) {
+            return super.apply( input );
+        } else {
+            throw  new IllegalArgumentException("This isn't a known input datatype");
+        }
+    }
+
+    @Override
+    public Object applyValue( String inString ) {
         Hasher hasher = hf.newHasher();
-        columns.stream().map( row::get ).forEach( s -> hasher.putString( s, Charsets.UTF_8 ) );
+        hasher.putString( inString,  Charsets.UTF_8 );
         return hasher.hash().toString();
     }
 
