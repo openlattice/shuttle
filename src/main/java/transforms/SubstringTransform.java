@@ -4,37 +4,44 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
+
+import java.util.Objects;
 
 public class SubstringTransform extends Transformation<String> {
     private final int index;
+    private final int endIndex;
 
     /**
      * Represents a transformation to get a substring starting from a certain index (eg 3th character: index = 2).
      *
      * @param index: where to start subsetting if prefix is found
+     * @param endIndex: where to start subsetting if prefix is found
      */
     @JsonCreator
     public SubstringTransform(
-            @JsonProperty( Constants.INDEX ) int index ) {
+            @JsonProperty( Constants.INDEX ) int index,
+            @JsonProperty( Constants.END_INDEX ) int endIndex ) {
         this.index = index;
+        this.endIndex = endIndex;
     }
 
-    @JsonProperty( Constants.LOC )
-    public int getSubstringLocation() {
+    @JsonProperty( Constants.INDEX )
+    public int getIndex() {
         return index;
+    }
+
+    @JsonProperty( Constants.END_INDEX )
+    public int getEndIndex() {
+        return endIndex;
     }
 
     @Override
     public Object applyValue( String o ) {
         final String output;
-        if ( StringUtils.isBlank( o ) ) {
-            return null;
-        } else {
+        if ( Objects.equals( endIndex, null ) ){
             output = o.substring( index );
-        }
-        if ( !StringUtils.isBlank( output ) ) {
-            return null;
+        } else {
+            output = o.substring( index, endIndex );
         }
         return output;
     }
