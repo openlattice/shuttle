@@ -75,7 +75,7 @@ class S3Destination(
             if (maybeUrls == null) {
                 currentRetryCount++
                 if (currentRetryCount <= MAX_RETRY_COUNT) {
-                    logger.info("Unable to retrieve url waiting $currentDelayMillis to try again".)
+                    logger.info("Unable to retrieve url waiting $currentDelayMillis to try again.")
                     Thread.sleep(currentDelayMillis)
                     currentDelayMillis = max(
                             MAX_DELAY_MILLIS,
