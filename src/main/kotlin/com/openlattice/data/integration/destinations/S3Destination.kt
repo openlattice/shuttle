@@ -33,7 +33,7 @@ import java.util.stream.Collectors
 import kotlin.math.max
 
 private val logger = LoggerFactory.getLogger(S3Destination::class.java)
-const val MAX_DELAY_MILLIS = 60 * 60 * 1000L
+const val MAX_DELAY_MILLIS = 60 * 1000L
 const val MAX_RETRY_COUNT = 22
 
 /**
@@ -75,12 +75,14 @@ class S3Destination(
             if (maybeUrls == null) {
                 currentRetryCount++
                 if (currentRetryCount <= MAX_RETRY_COUNT) {
+                    logger.info("Unable to retrieve url waiting $currentDelayMillis to try again".)
                     Thread.sleep(currentDelayMillis)
                     currentDelayMillis = max(
                             MAX_DELAY_MILLIS,
                             (currentDelayMillis * RandomUtils.nextDouble(1.25, 2.0).toLong())
                     )
                 } else {
+                    logger.info("Exceeded max retry attempts to S3. Shutting down.")
                     throw IllegalStateException("Unable to retrieve presigned urls. Maybe prod is down?")
                 }
             } else {
