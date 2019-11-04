@@ -127,30 +127,30 @@ fun main(args: Array<String>) {
 
             if (!cl.hasOption(DATASOURCE)) {
                 // check datasource presence
-                System.out.println("Datasource must be specified when doing a JDBC datasource based integration.")
+                println("Datasource must be specified when doing a JDBC datasource based integration.")
                 ShuttleCli.printHelp()
                 return
             }
             if (!cl.hasOption(SQL)) {
                 // check SQL presence
-                System.out.println("SQL expression must be specified when doing a JDBC datasource based integration.")
+                println("SQL expression must be specified when doing a JDBC datasource based integration.")
                 ShuttleCli.printHelp()
                 return
             }
             if (cl.hasOption(CSV)) {
                 // check csv ABsence
-                System.out.println("Cannot specify CSV datasource and JDBC datasource simultaneously.")
+                println("Cannot specify CSV datasource and JDBC datasource simultaneously.")
                 ShuttleCli.printHelp()
                 return
             }
             if (cl.hasOption(XML)) {
                 // check xml Absence
-                System.out.println("Cannot specify XML datasource and JDBC datasource simultaneously.")
+                println("Cannot specify XML datasource and JDBC datasource simultaneously.")
                 ShuttleCli.printHelp()
                 return
             }
             if (cl.hasOption(DATA_ORIGIN)) {
-                System.out.println("SQL cannot be specified when performing a data origin integration")
+                println("SQL cannot be specified when performing a data origin integration")
                 ShuttleCli.printHelp()
                 return
             }
@@ -170,7 +170,7 @@ fun main(args: Array<String>) {
         }
         cl.hasOption(CSV) -> {// get csv payload
             if (cl.hasOption(DATA_ORIGIN)) {
-                System.out.println("CSV cannot be specified when performing a data origin integration")
+                println("CSV cannot be specified when performing a data origin integration")
                 ShuttleCli.printHelp()
                 return
             }
