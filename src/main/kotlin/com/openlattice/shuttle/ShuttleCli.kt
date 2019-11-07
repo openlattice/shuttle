@@ -38,6 +38,7 @@ class ShuttleCli {
         const val TOKEN = "token"
         const val CREATE = "create"
         const val ENVIRONMENT = "environment"
+        const val DIRECT = "direct"
         const val SQL = "sql"
         const val CSV = "csv"
         const val XML = "xml"
