@@ -38,7 +38,6 @@ class ShuttleCli {
         const val TOKEN = "token"
         const val CREATE = "create"
         const val ENVIRONMENT = "environment"
-        const val DIRECT = "direct"
         const val SQL = "sql"
         const val CSV = "csv"
         const val XML = "xml"
@@ -46,11 +45,13 @@ class ShuttleCli {
         const val DATASOURCE = "datasource"
         const val FETCHSIZE = "fetchsize"
         const val CONFIGURATION = "config"
+        const val PROFILES = "profiles"
         const val S3 = "s3"
         const val UPLOAD_SIZE = "upload-size"
         const val NOTIFICATION_EMAILS = "notify-emails"
         const val FROM_EMAIL = "from-email"
         const val FROM_EMAIL_PASSWORD = "from-email-password"
+        const val SERVER = "server"
         const val SMTP_SERVER = "smtp-server"
         const val SMTP_SERVER_PORT = "smtp-server-port"
 
@@ -177,11 +178,19 @@ class ShuttleCli {
                 .argName("bucket")
                 .build()
 
+        private val profilesOption = Option.builder()
+                .longOpt(PROFILES)
+                .desc("Profiles to use when running shuttle service as a server.")
+                .hasArgs()
+                .argName("profile")
+                .valueSeparator(',')
+                .build()
+
         private val notificationEmailsOption = Option.builder()
                 .longOpt(NOTIFICATION_EMAILS)
                 .desc("E-mails to notify if an issue occurs with integration")
                 .hasArgs()
-                .argName("version")
+                .argName("e-mail")
                 .valueSeparator(',')
                 .build()
 
@@ -195,6 +204,12 @@ class ShuttleCli {
                 .longOpt(FROM_EMAIL_PASSWORD)
                 .hasArg(true)
                 .argName("Password of account being used to send e-mails an issues occurs with integration")
+                .build()
+
+        private val serverOption = Option.builder()
+                .longOpt(SERVER)
+                .hasArg(false)
+                .desc("Whether to run in server mode.")
                 .build()
 
         private val smtpServerOption = Option.builder()
@@ -218,6 +233,7 @@ class ShuttleCli {
                     .addOption(environmentOption)
                     .addOption(tokenOption)
                     .addOption(userOption)
+                    .addOption(profilesOption)
                     .addOption(passwordOption)
                     .addOption(createOption)
                     .addOption(s3Option)
@@ -255,7 +271,7 @@ class ShuttleCli {
             try {
                 return clp.parse(options, args)
             } catch (ex: AlreadySelectedException) {
-                System.out.println(ex.message)
+                println(ex.message)
                 printHelp()
                 exitProcess(1)
             }

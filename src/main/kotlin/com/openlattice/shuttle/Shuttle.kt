@@ -30,29 +30,20 @@ import com.google.common.base.Preconditions
 import com.google.common.base.Stopwatch
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Queues
-import com.kryptnostic.rhizome.configuration.websockets.BaseRhizomeServer
 import com.openlattice.ApiUtil
-import com.openlattice.auditing.pods.AuditingConfigurationPod
-import com.openlattice.auth0.Auth0Pod
-import com.openlattice.aws.AwsS3Pod
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKey
 import com.openlattice.data.integration.*
-import com.openlattice.datastore.pods.ByteBlobServicePod
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
-import com.openlattice.hazelcast.pods.MapstoresPod
-import com.openlattice.hazelcast.pods.SharedStreamSerializersPod
-import com.openlattice.jdbc.JdbcPod
-import com.openlattice.postgres.PostgresPod
-import com.openlattice.postgres.PostgresTablesPod
 import com.openlattice.shuttle.ShuttleCli.Companion.CONFIGURATION
 import com.openlattice.shuttle.ShuttleCli.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCli.Companion.CSV
 import com.openlattice.shuttle.ShuttleCli.Companion.DATASOURCE
 import com.openlattice.shuttle.ShuttleCli.Companion.DATA_ORIGIN
+import com.openlattice.shuttle.ShuttleCli.Companion.SERVER
 import com.openlattice.shuttle.ShuttleCli.Companion.ENVIRONMENT
 import com.openlattice.shuttle.ShuttleCli.Companion.FETCHSIZE
 import com.openlattice.shuttle.ShuttleCli.Companion.FLIGHT
@@ -62,6 +53,7 @@ import com.openlattice.shuttle.ShuttleCli.Companion.HELP
 import com.openlattice.shuttle.ShuttleCli.Companion.LOCAL_ORIGIN_EXPECTED_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCli.Companion.NOTIFICATION_EMAILS
 import com.openlattice.shuttle.ShuttleCli.Companion.PASSWORD
+import com.openlattice.shuttle.ShuttleCli.Companion.PROFILES
 import com.openlattice.shuttle.ShuttleCli.Companion.S3
 import com.openlattice.shuttle.ShuttleCli.Companion.S3_ORIGIN_EXPECTED_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCli.Companion.SMTP_SERVER
@@ -76,10 +68,8 @@ import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.openlattice.shuttle.payload.SimplePayload
 import com.openlattice.shuttle.payload.XmlFilesPayload
-import com.openlattice.shuttle.pods.ShuttleServicesPod
 import com.openlattice.shuttle.source.LocalFileOrigin
 import com.openlattice.shuttle.source.S3BucketOrigin
-import com.openlattice.tasks.pods.TaskSchedulerPod
 import org.apache.commons.cli.CommandLine
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
@@ -121,6 +111,17 @@ fun main(args: Array<String>) {
     if (cl.hasOption(HELP)) {
         ShuttleCli.printHelp()
         return
+    }
+
+    if(cl.hasOption(SERVER)) {
+        if( cl.hasOption(PROFILES) ) {
+            val shuttleServer = ShuttleServer()
+            println("Server mode specifying ignoring other arguments and starting server.")
+            shuttleServer.start(*cl.getOptionValues(PROFILES) )
+            return
+        } else {
+            println("Server mode was specified but not profiles were provided.")
+        }
     }
 
     if (cl.hasOption(FLIGHT)) {
@@ -392,18 +393,6 @@ fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
 
 }
 
-private val shuttlePods = arrayOf(
-        AuditingConfigurationPod::class.java,
-        AwsS3Pod::class.java,
-        ByteBlobServicePod::class.java,
-        ShuttleServicesPod::class.java,
-        JdbcPod::class.java,
-        MapstoresPod::class.java,
-        PostgresPod::class.java,
-        SharedStreamSerializersPod::class.java,
-        TaskSchedulerPod::class.java
-);
-
 
 /**
  *
@@ -418,7 +407,7 @@ class Shuttle(
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
         private val dataIntegrationApi: DataIntegrationApi,
         private val tableColsToPrint: List<String>
-) : BaseRhizomeServer() {
+)  {
     private val uploadingExecutor = Executors.newSingleThreadExecutor()
 
     companion object {
@@ -432,9 +421,7 @@ class Shuttle(
                 .build()
 
         init {
-
             reporter.start(1, TimeUnit.MINUTES)
-
         }
     }
 
