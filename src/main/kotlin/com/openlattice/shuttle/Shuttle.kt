@@ -336,14 +336,14 @@ fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
             } else {
                 System.err.println("No smtp server port was specified")
                 ShuttleCli.printHelp()
-                kotlin.system.exitProcess(1)
+                exitProcess(1)
             }
 
             val notificationEmails = cl.getOptionValues(NOTIFICATION_EMAILS).toSet()
             if (notificationEmails.isEmpty()) {
                 System.err.println("No notification e-mails were actually specified.")
                 ShuttleCli.printHelp()
-                kotlin.system.exitProcess(1)
+                exitProcess(1)
             }
 
             val fromEmail = if (cl.hasOption(FROM_EMAIL)) {
@@ -351,7 +351,7 @@ fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
             } else {
                 System.err.println("If notification e-mails are specified must also specify a sending account.")
                 ShuttleCli.printHelp()
-                kotlin.system.exitProcess(1)
+                exitProcess(1)
             }
 
             val fromEmailPassword = if (cl.hasOption(FROM_EMAIL_PASSWORD)) {
@@ -361,7 +361,7 @@ fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
                         "If notification e-mails are specified must also specify an e-mail password for sending account."
                 )
                 ShuttleCli.printHelp()
-                kotlin.system.exitProcess(1)
+                exitProcess(1)
             }
             Optional.of(
                     EmailConfiguration(fromEmail, fromEmailPassword, notificationEmails, smtpServer, smtpServerPort)
@@ -370,22 +370,22 @@ fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
         cl.hasOption(SMTP_SERVER_PORT) -> {
             System.err.println("Port was specified, no smtp server was specified")
             ShuttleCli.printHelp()
-            kotlin.system.exitProcess(1)
+            exitProcess(1)
         }
         cl.hasOption(FROM_EMAIL) -> {
             System.err.println("From e-mail was specified, no smtp server was specified")
             ShuttleCli.printHelp()
-            kotlin.system.exitProcess(1)
+            exitProcess(1)
         }
         cl.hasOption(FROM_EMAIL_PASSWORD) -> {
             System.err.println("From e-mail password was specified, no smtp server was specified")
             ShuttleCli.printHelp()
-            kotlin.system.exitProcess(1)
+            exitProcess(1)
         }
         cl.hasOption(NOTIFICATION_EMAILS) -> {
             System.err.println("Notification e-mails were specified, no smtp server was specified")
             ShuttleCli.printHelp()
-            kotlin.system.exitProcess(1)
+            exitProcess(1)
         }
         else -> Optional.empty()
     }
@@ -425,8 +425,8 @@ class Shuttle(
     }
 
     private val updateTypes = flightPlan.keys.flatMap { flight ->
-        flight.entities.map { entitySets[it.entitySetName]!!.id to it.updateType } +
-                flight.associations.map { entitySets[it.entitySetName]!!.id to it.updateType }
+        flight.entities.map { entitySets.getValue(it.entitySetName).id to it.updateType } +
+                flight.associations.map { entitySets.getValue(it.entitySetName).id to it.updateType }
     }.toMap()
 
 
@@ -446,7 +446,7 @@ class Shuttle(
      * This function works under the assumption that the set returned from key is a unmodifiable linked hash set.
      */
     private fun getKeys(entitySetName: String): Set<UUID> {
-        return entityTypes[entitySets[entitySetName]!!.entityTypeId]!!.key
+        return entityTypes.getValue(entitySets.getValue(entitySetName).entityTypeId).key
     }
 
     /**
@@ -460,13 +460,16 @@ class Shuttle(
             key: Set<UUID>,
             properties: Map<UUID, Set<Any>>
     ): String {
-        val keyValuesPresent = key.filter { !properties[it].isNullOrEmpty() }.isNotEmpty()
+        val keyValuesPresent = key.any { !properties[it].isNullOrEmpty() }
 
         return if (keyValuesPresent) ApiUtil.generateDefaultEntityId(key.stream(), properties) else ""
     }
 
     private fun takeoff(
-            flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int, rowColsToPrint: List<String>
+            flight: Flight,
+            payload: Stream<Map<String, Any>>,
+            uploadBatchSize: Int,
+            rowColsToPrint: List<String>
     ): Long {
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
@@ -719,7 +722,7 @@ class Shuttle(
                         val key = EntityKey(entitySetId, entityId)
                         val src = aliasesToEntityKey[associationDefinition.srcAlias]
                         val dst = aliasesToEntityKey[associationDefinition.dstAlias]
-                        addressedProperties.forEach { storageDestination, data ->
+                        addressedProperties.forEach { (storageDestination, data) ->
                             addressedDataHolder.associations
                                     .getOrPut(storageDestination) { mutableSetOf() }
                                     .add(Association(key, src, dst, data))
