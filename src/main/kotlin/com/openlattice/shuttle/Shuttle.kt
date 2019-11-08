@@ -88,6 +88,7 @@ import java.util.function.Supplier
 import java.util.stream.Stream
 import kotlin.math.max
 import kotlin.streams.asSequence
+import kotlin.system.exitProcess
 
 /**
  *
@@ -113,11 +114,11 @@ fun main(args: Array<String>) {
         return
     }
 
-    if(cl.hasOption(SERVER)) {
-        if( cl.hasOption(PROFILES) ) {
+    if (cl.hasOption(SERVER)) {
+        if (cl.hasOption(PROFILES)) {
             val shuttleServer = ShuttleServer()
             println("Server mode specifying ignoring other arguments and starting server.")
-            shuttleServer.start(*cl.getOptionValues(PROFILES) )
+            shuttleServer.start(*cl.getOptionValues(PROFILES))
             return
         } else {
             println("Server mode was specified but not profiles were provided.")
@@ -199,7 +200,7 @@ fun main(args: Array<String>) {
                         if (arguments.size < S3_ORIGIN_EXPECTED_ARGS_COUNT) {
                             println("Not enough arguments provided for S3 data origin, provide AWS region, S3 URL and bucket name")
                             ShuttleCli.printHelp()
-                            exit(1)
+                            exitProcess(1)
                             return
                         }
                         S3BucketOrigin(arguments[2], makeAWSS3Client(arguments[1]))
@@ -208,7 +209,7 @@ fun main(args: Array<String>) {
                         if (arguments.size < LOCAL_ORIGIN_EXPECTED_ARGS_COUNT) {
                             println("Not enough arguments provided for local data origin, provide a local file path")
                             ShuttleCli.printHelp()
-                            exit(1)
+                            exitProcess(1)
                             return
                         }
                         LocalFileOrigin(Paths.get(arguments[1]))
@@ -216,7 +217,7 @@ fun main(args: Array<String>) {
                     else -> {
                         println("The specified configuration is invalid ${cl.getOptionValues(DATA_ORIGIN)}")
                         ShuttleCli.printHelp()
-                        exit(1)
+                        exitProcess(1)
                         return
                     }
                 }
@@ -228,7 +229,7 @@ fun main(args: Array<String>) {
         else -> {
             System.err.println("At least one valid data origin must be specified.")
             ShuttleCli.printHelp()
-            exit(1)
+            exitProcess(1)
             return
         }
     }
@@ -250,7 +251,7 @@ fun main(args: Array<String>) {
 
     val s3BucketUrl = if (cl.hasOption(S3)) {
         val bucketCategory = cl.getOptionValue(S3)
-        check(bucketCategory.toUpperCase() in setOf("TEST", "PRODUCTION")) { "Invalid option $bucketCategory for $S3." }
+        require(bucketCategory.toUpperCase() in setOf("TEST", "PRODUCTION")) { "Invalid option $bucketCategory for $S3." }
         when (bucketCategory) {
             "TEST" -> "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
             "PRODUCTION" -> "http://openlattice-media-storage.s3-website-us-gov-west-1.amazonaws.com"
@@ -283,11 +284,9 @@ fun main(args: Array<String>) {
 
     createEntitySets = cl.hasOption(CREATE)
     if (createEntitySets) {
-        if (environment == RetrofitFactory.Environment.PRODUCTION) {
-            throw IllegalArgumentException(
-                    "It is not allowed to automatically create entity sets on " +
-                            "${RetrofitFactory.Environment.PRODUCTION} environment"
-            )
+        require(environment != RetrofitFactory.Environment.PRODUCTION) {
+            "It is not allowed to automatically create entity sets on " +
+                    "${RetrofitFactory.Environment.PRODUCTION} environment"
         }
 
         contacts = cl.getOptionValues(CREATE).toSet()
@@ -407,7 +406,7 @@ class Shuttle(
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
         private val dataIntegrationApi: DataIntegrationApi,
         private val tableColsToPrint: List<String>
-)  {
+) {
     private val uploadingExecutor = Executors.newSingleThreadExecutor()
 
     companion object {
