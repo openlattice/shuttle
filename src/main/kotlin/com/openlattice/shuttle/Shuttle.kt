@@ -23,6 +23,8 @@ package com.openlattice.shuttle
 
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
+import com.codahale.metrics.MetricRegistry
+import com.codahale.metrics.Slf4jReporter
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions
 import com.google.common.base.Stopwatch
@@ -62,7 +64,7 @@ import com.openlattice.shuttle.ShuttleCli.Companion.XML
 import com.openlattice.shuttle.config.IntegrationConfig
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
-import com.openlattice.shuttle.payload.SimplePayload
+import com.openlattice.shuttle.payload.CsvPayload
 import com.openlattice.shuttle.payload.XmlFilesPayload
 import com.openlattice.shuttle.source.LocalFileOrigin
 import com.openlattice.shuttle.source.S3BucketOrigin
@@ -82,6 +84,7 @@ import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
 import java.util.function.Supplier
 import java.util.stream.Stream
+import kotlin.math.max
 import kotlin.streams.asSequence
 
 /**
@@ -90,7 +93,7 @@ import kotlin.streams.asSequence
  */
 
 private val logger = LoggerFactory.getLogger(ShuttleCli::class.java)
-const val DEFAULT_UPLOAD_SIZE = 100000
+const val DEFAULT_UPLOAD_SIZE = 100_000
 
 fun main(args: Array<String>) {
 
@@ -146,7 +149,7 @@ fun main(args: Array<String>) {
                 ShuttleCli.printHelp()
                 return
             }
-            if ( cl.hasOption(DATA_ORIGIN) ) {
+            if (cl.hasOption(DATA_ORIGIN)) {
                 System.out.println("SQL cannot be specified when performing a data origin integration")
                 ShuttleCli.printHelp()
                 return
@@ -166,48 +169,48 @@ fun main(args: Array<String>) {
             }
         }
         cl.hasOption(CSV) -> {// get csv payload
-            if ( cl.hasOption(DATA_ORIGIN) ) {
+            if (cl.hasOption(DATA_ORIGIN)) {
                 System.out.println("CSV cannot be specified when performing a data origin integration")
                 ShuttleCli.printHelp()
                 return
             }
             rowColsToPrint = listOf()
-            payload = SimplePayload(cl.getOptionValue(CSV))
+            payload = CsvPayload(cl.getOptionValue(CSV))
         }
         cl.hasOption(XML) -> {// get xml payload
             rowColsToPrint = listOf()
-             if (cl.hasOption(DATA_ORIGIN) ) {
-                 val arguments = cl.getOptionValues(DATA_ORIGIN);
-                 val dataOrigin = when (arguments[0]) {
-                     "S3" -> {
-                         if ( arguments.size < S3_ORIGIN_EXPECTED_ARGS_COUNT ){
-                             println("Not enough arguments provided for S3 data origin, provide AWS region, S3 URL and bucket name")
-                             ShuttleCli.printHelp()
-                             exit(1)
-                             return
-                         }
-                         S3BucketOrigin( arguments[2], makeAWSS3Client( arguments[1] ) )
-                     }
-                     "local" -> {
-                         if ( arguments.size < LOCAL_ORIGIN_EXPECTED_ARGS_COUNT ){
-                             println("Not enough arguments provided for local data origin, provide a local file path")
-                             ShuttleCli.printHelp()
-                             exit(1)
-                             return
-                         }
-                         LocalFileOrigin( Paths.get( arguments[1] ) )
-                     }
-                     else -> {
-                         println("The specified configuration is invalid ${cl.getOptionValues(DATA_ORIGIN)}")
-                         ShuttleCli.printHelp()
-                         exit(1)
-                         return
-                     }
-                 }
-                 payload = XmlFilesPayload( dataOrigin )
-             } else {
-                 payload = XmlFilesPayload( cl.getOptionValue(XML) )
-             }
+            if (cl.hasOption(DATA_ORIGIN)) {
+                val arguments = cl.getOptionValues(DATA_ORIGIN);
+                val dataOrigin = when (arguments[0]) {
+                    "S3" -> {
+                        if (arguments.size < S3_ORIGIN_EXPECTED_ARGS_COUNT) {
+                            println("Not enough arguments provided for S3 data origin, provide AWS region, S3 URL and bucket name")
+                            ShuttleCli.printHelp()
+                            exit(1)
+                            return
+                        }
+                        S3BucketOrigin(arguments[2], makeAWSS3Client(arguments[1]))
+                    }
+                    "local" -> {
+                        if (arguments.size < LOCAL_ORIGIN_EXPECTED_ARGS_COUNT) {
+                            println("Not enough arguments provided for local data origin, provide a local file path")
+                            ShuttleCli.printHelp()
+                            exit(1)
+                            return
+                        }
+                        LocalFileOrigin(Paths.get(arguments[1]))
+                    }
+                    else -> {
+                        println("The specified configuration is invalid ${cl.getOptionValues(DATA_ORIGIN)}")
+                        ShuttleCli.printHelp()
+                        exit(1)
+                        return
+                    }
+                }
+                payload = XmlFilesPayload(dataOrigin)
+            } else {
+                payload = XmlFilesPayload(cl.getOptionValue(XML))
+            }
         }
         else -> {
             System.err.println("At least one valid data origin must be specified.")
@@ -219,14 +222,17 @@ fun main(args: Array<String>) {
 
     environment = if (cl.hasOption(ENVIRONMENT)) {
         val env = cl.getOptionValue(ENVIRONMENT).toUpperCase()
-        if ("PRODUCTION" == env){
-            MissionControl.fail(-999, flight, Throwable( "PRODUCTION is not a valid integration environment. The valid environments are PROD_INTEGRATION and LOCAL") )
+        if ("PRODUCTION" == env) {
+            MissionControl.fail(
+                    -999, flight, Throwable(
+                    "PRODUCTION is not a valid integration environment. The valid environments are PROD_INTEGRATION and LOCAL"
+            )
+            )
         }
         RetrofitFactory.Environment.valueOf(env)
     } else {
         RetrofitFactory.Environment.PROD_INTEGRATION
     }
-
 
     val s3BucketUrl = if (cl.hasOption(S3)) {
         val bucketCategory = cl.getOptionValue(S3)
@@ -300,11 +306,11 @@ fun main(args: Array<String>) {
     }
 }
 
-fun makeAWSS3Client( region: String ): AmazonS3 {
+fun makeAWSS3Client(region: String): AmazonS3 {
     return AmazonS3ClientBuilder
             .standard()
             .withPathStyleAccessEnabled(true)
-            .withRegion( region )
+            .withRegion(region)
             .build();
 }
 
@@ -392,6 +398,19 @@ class Shuttle(
 
     companion object {
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
+        private val metrics = MetricRegistry()
+        private val uploadRate = metrics.meter(MetricRegistry.name(Shuttle::class.java, "uploads"))
+        private val reporter = Slf4jReporter.forRegistry(metrics)
+                .outputTo(LoggerFactory.getLogger(Shuttle::class.java))
+                .convertRatesTo(TimeUnit.SECONDS)
+                .convertDurationsTo(TimeUnit.MILLISECONDS)
+                .build()
+
+        init {
+
+            reporter.start(1, TimeUnit.MINUTES)
+
+        }
     }
 
     private val updateTypes = flightPlan.keys.flatMap { flight ->
@@ -435,12 +454,14 @@ class Shuttle(
         return if (keyValuesPresent) ApiUtil.generateDefaultEntityId(key.stream(), properties) else ""
     }
 
-    private fun takeoff(flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int, rowColsToPrint: List<String>): Long {
+    private fun takeoff(
+            flight: Flight, payload: Stream<Map<String, Any>>, uploadBatchSize: Int, rowColsToPrint: List<String>
+    ): Long {
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integrationQueue = Queues
                 .newArrayBlockingQueue<List<Map<String, Any>>>(
-                        Math.max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
+                        max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
                 )
         val rows = LongAdder()
         val sw = Stopwatch.createStarted()
@@ -464,11 +485,18 @@ class Shuttle(
                     }
                     .forEach { batch ->
                         try {
+                            val sw = Stopwatch.createStarted()
                             val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
                                     + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
                             val entityKeyIds = entityKeys.zip(
                                     dataIntegrationApi.getEntityKeyIds(entityKeys)
                             ).toMap()
+
+                            logger.info(
+                                    "Generated {} entity key ids in {} ms",
+                                    entityKeys.size,
+                                    sw.elapsed(TimeUnit.MILLISECONDS)
+                            )
 
                             integrationDestinations.forEach { (storageDestination, integrationDestination) ->
                                 if (batch.entities.containsKey(storageDestination)) {
@@ -493,19 +521,20 @@ class Shuttle(
                             }
 
                             minRows.remove(batch.batchId)
+                            uploadRate.mark(entityKeys.size.toLong())
                             logger.info("Processed {} rows.", rows.sum())
                             logger.info("Current entities progress: {}", integratedEntities)
                             logger.info("Current edges progress: {}", integratedEdges)
                         } catch (ex: Exception) {
-                            if ( rowColsToPrint.isNotEmpty() ){
+                            if (rowColsToPrint.isNotEmpty()) {
                                 logger.info("Earliest unintegrated row:")
-                                printRow( minRows.firstEntry().value, rowColsToPrint )
+                                printRow(minRows.firstEntry().value, rowColsToPrint)
                             }
                             MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
                         } catch (err: OutOfMemoryError) {
-                            if ( rowColsToPrint.isNotEmpty() ){
+                            if (rowColsToPrint.isNotEmpty()) {
                                 logger.info("Earliest unintegrated row:")
-                                printRow( minRows.firstEntry().value, rowColsToPrint )
+                                printRow(minRows.firstEntry().value, rowColsToPrint)
                             }
                             MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
                         } finally {
@@ -521,9 +550,13 @@ class Shuttle(
                     integrationQueue.put(it)
                 }
         //Wait on upload thread to finish emptying queue.
-        while (remaining.get() > 0) {
-            logger.info("Waiting on upload to finish... ${remaining.get()} batches left")
-            Thread.sleep(1000)
+        try {
+            while (remaining.get() > 0) {
+                logger.info("Waiting on upload to finish... ${remaining.get()} batches left")
+                Thread.sleep(1000)
+            }
+        } catch (ex: Exception) {
+            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
         }
 
         return StorageDestination.values().map {
@@ -539,7 +572,7 @@ class Shuttle(
         }.sum()
     }
 
-    private fun printRow( row: Map<String, Any>, rowColsToPrint: List<String> ) {
+    private fun printRow(row: Map<String, Any>, rowColsToPrint: List<String>) {
         var rowHeaders = ""
         var contents = ""
         rowColsToPrint.forEach { colName ->
@@ -549,16 +582,18 @@ class Shuttle(
         logger.info("Row Contents:\n$rowHeaders\n$contents")
     }
 
-    private fun buildPropertiesFromPropertyDefinitions( row: Map<String, Any>,
-                     propertyDefinitions: Collection<PropertyDefinition> )
+    private fun buildPropertiesFromPropertyDefinitions(
+            row: Map<String, Any>,
+            propertyDefinitions: Collection<PropertyDefinition>
+    )
             : Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
         val properties = mutableMapOf<UUID, MutableSet<Any>>()
         val addressedProperties = mutableMapOf<StorageDestination, MutableMap<UUID, MutableSet<Any>>>()
-        
-        for (propertyDefinition in propertyDefinitions ) {
+
+        for (propertyDefinition in propertyDefinitions) {
             val propertyValue = propertyDefinition.propertyValue.apply(row)
 
-            if ( propertyValue == null || !( (propertyValue !is String) || propertyValue.isNotBlank() ) ){
+            if (propertyValue == null || !((propertyValue !is String) || propertyValue.isNotBlank())) {
                 continue
             }
 
@@ -602,7 +637,9 @@ class Shuttle(
                     true
                 }
 
-                val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(row, entityDefinition.properties)
+                val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(
+                        row, entityDefinition.properties
+                )
 
                 /*
                  * For entityId generation to work correctly it is very important that Stream remain ordered.
@@ -654,7 +691,9 @@ class Shuttle(
                 }
                 if ((wasCreated[associationDefinition.srcAlias]!! && wasCreated[associationDefinition.dstAlias]!!)) {
 
-                    val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(row, associationDefinition.properties)
+                    val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(
+                            row, associationDefinition.properties
+                    )
 
                     val entityId = associationDefinition.generator
                             .map { it.apply(row) }
