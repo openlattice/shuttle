@@ -36,6 +36,13 @@ import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.shuttle.payload.Payload
+
+import com.openlattice.shuttle.payload.CsvPayload
+import com.openlattice.shuttle.payload.XmlFilesPayload
+import com.openlattice.shuttle.source.LocalFileOrigin
+import com.openlattice.shuttle.source.S3BucketOrigin
+import org.apache.commons.cli.CommandLine
+
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -55,8 +62,10 @@ import kotlin.streams.asSequence
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 
+
 private val logger = LoggerFactory.getLogger(Shuttle::class.java)
-const val DEFAULT_UPLOAD_SIZE = 100000
+const val DEFAULT_UPLOAD_SIZE = 100_000
+
 
 
 /**

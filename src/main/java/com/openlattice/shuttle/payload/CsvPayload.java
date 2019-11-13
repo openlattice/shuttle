@@ -1,7 +1,6 @@
 package com.openlattice.shuttle.payload;
 
 import com.dataloom.streams.StreamUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.openlattice.shuttle.util.CsvUtil;
 import org.slf4j.Logger;
@@ -14,12 +13,12 @@ import java.util.stream.Stream;
 
 import static com.openlattice.shuttle.util.CsvUtil.newDefaultMapper;
 
-public class SimplePayload implements Payload {
-    protected static final Logger logger = LoggerFactory.getLogger( SimplePayload.class );
+public class CsvPayload implements Payload {
+    protected static final Logger logger = LoggerFactory.getLogger( CsvPayload.class );
 
     private final String path;
 
-    public SimplePayload( String path ) {
+    public CsvPayload( String path ) {
         this.path = path;
     }
 

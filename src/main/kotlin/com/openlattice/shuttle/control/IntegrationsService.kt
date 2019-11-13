@@ -29,15 +29,15 @@ class IntegrationsService(hazelcastInstance: HazelcastInstance) {
     fun runIntegration(integration: Integration) {
         val payload = JdbcPayload(getDatasource(integration.source), integration.sql)
         val ptValues = propertyTypes.values
-        Shuttle(
-                mapOf(integration.flight to payload),
-                entitySets.values.associateBy { it.name },
-                entityTypes.values.associateBy { it.id },
-                ptValues.associateBy { it.type },
-                ptValues.associateBy { it.id },
-                mapOf(StorageDestination),
-
-        )
+//        Shuttle(
+//                mapOf(integration.flight to payload),
+//                entitySets.values.associateBy { it.name },
+//                entityTypes.values.associateBy { it.id },
+//                ptValues.associateBy { it.type },
+//                ptValues.associateBy { it.id },
+//                mapOf(StorageDestination),
+//
+//        )
     }
 
     fun getJdbcPayload(hds: HikariDataSource, sql: String): JdbcPayload {

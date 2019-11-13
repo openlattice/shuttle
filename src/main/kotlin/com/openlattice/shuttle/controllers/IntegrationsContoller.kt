@@ -18,12 +18,12 @@ import javax.inject.Inject
 class IntegrationsContoller {
     @Inject
     private lateinit var integrations: IntegrationsService
-
-    @GetMapping(value = ["","/"])
-    fun getIntegrations() : Map<String, Integration> {
-        return integrations.getIntegrations();
-    }
-
-    @PostMapping(value = ["","/"],consumes = MediaType.APPLICATION_JSON_VALUE)
-    fun createIntegration( integration: Integration) {}
+//
+//    @GetMapping(value = ["","/"])
+//    fun getIntegrations() : Map<String, Integration> {
+//        return integrations.getIntegrations();
+//    }
+//
+//    @PostMapping(value = ["","/"],consumes = MediaType.APPLICATION_JSON_VALUE)
+//    fun createIntegration( integration: Integration) {}
 }
