@@ -222,14 +222,14 @@ class ShuttleCli {
             "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
         }
 
-        val shuttlePostgressConfig = if (cl.hasOption(POSTGRES)) {
+        val shuttleConfig = if (cl.hasOption(POSTGRES)) {
             val pgCfg = cl.getOptionValues(POSTGRES)
             require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
             val bucket = pgCfg[0]
             val region = pgCfg[1]
             val s3Client = AmazonS3ClientBuilder.standard().withRegion(region).build()
             ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle", MissionParameters::class.java )
-        } else { MissionParameters(Properties()) }
+        } else { MissionParameters.empty() }
 
         //TODO: Use the right method to select the JWT token for the appropriate environment.
 
@@ -237,13 +237,13 @@ class ShuttleCli {
             cl.hasOption(TOKEN) -> {
                 Preconditions.checkArgument(!cl.hasOption(PASSWORD))
                 val jwt = cl.getOptionValue(TOKEN)
-                MissionControl(environment, Supplier { jwt }, s3BucketUrl)
+                MissionControl(environment, Supplier { jwt }, s3BucketUrl,shuttleConfig)
             }
             cl.hasOption(USER) -> {
                 Preconditions.checkArgument(cl.hasOption(PASSWORD))
                 val user = cl.getOptionValue(USER)
                 val password = cl.getOptionValue(PASSWORD)
-                MissionControl(environment, user, password, s3BucketUrl)
+                MissionControl(environment, user, password, s3BucketUrl, shuttleConfig)
             }
             else -> {
                 System.err.println("User or token must be provided for authentication.")

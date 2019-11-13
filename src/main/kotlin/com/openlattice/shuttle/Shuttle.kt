@@ -76,8 +76,6 @@ class Shuttle(
                 Executors.newSingleThreadExecutor()
         )
 ) {
-
-
     companion object {
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
         private val metrics = MetricRegistry()
@@ -244,7 +242,7 @@ class Shuttle(
             val storageDestination = propertyDefinition.storageDestination.orElseGet {
                 when (propertyType.datatype) {
                     EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
-                    else -> StorageDestination.REST
+                    else -> if (parameters.postgres.enabled) StorageDestination.POSTGRES else StorageDestination.REST
                 }
             }
 
@@ -300,7 +298,7 @@ class Shuttle(
 
                     val key = EntityKey(entitySetId, entityId)
                     aliasesToEntityKey[entityDefinition.alias] = key
-                    addressedProperties.forEach { storageDestination, data ->
+                    addressedProperties.forEach { (storageDestination, data) ->
                         addressedDataHolder.entities
                                 .getOrPut(storageDestination) { mutableSetOf() }
                                 .add(Entity(key, data))

@@ -77,12 +77,13 @@ class MissionControl(
             environment: RetrofitFactory.Environment,
             username: String,
             password: String,
-            s3BucketUrl: String
+            s3BucketUrl: String,
+            parameters: MissionParameters = MissionParameters.empty()
     ) : this(
             environment,
             Suppliers.memoizeWithExpiration({ getIdToken(username, password) }, 1, TimeUnit.HOURS),
             s3BucketUrl,
-            MissionParameters(PostgresConfiguration(false, Properties()))
+            parameters
     )
 
     companion object {
