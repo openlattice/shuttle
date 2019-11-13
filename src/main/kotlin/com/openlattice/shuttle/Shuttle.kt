@@ -64,7 +64,7 @@ import com.openlattice.shuttle.ShuttleCli.Companion.XML
 import com.openlattice.shuttle.config.IntegrationConfig
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
-import com.openlattice.shuttle.payload.SimplePayload
+import com.openlattice.shuttle.payload.CsvPayload
 import com.openlattice.shuttle.payload.XmlFilesPayload
 import com.openlattice.shuttle.source.LocalFileOrigin
 import com.openlattice.shuttle.source.S3BucketOrigin
@@ -93,7 +93,7 @@ import kotlin.streams.asSequence
  */
 
 private val logger = LoggerFactory.getLogger(ShuttleCli::class.java)
-const val DEFAULT_UPLOAD_SIZE = 100000
+const val DEFAULT_UPLOAD_SIZE = 100_000
 
 fun main(args: Array<String>) {
 
@@ -175,7 +175,7 @@ fun main(args: Array<String>) {
                 return
             }
             rowColsToPrint = listOf()
-            payload = SimplePayload(cl.getOptionValue(CSV))
+            payload = CsvPayload(cl.getOptionValue(CSV))
         }
         cl.hasOption(XML) -> {// get xml payload
             rowColsToPrint = listOf()
@@ -233,7 +233,6 @@ fun main(args: Array<String>) {
     } else {
         RetrofitFactory.Environment.PROD_INTEGRATION
     }
-
 
     val s3BucketUrl = if (cl.hasOption(S3)) {
         val bucketCategory = cl.getOptionValue(S3)

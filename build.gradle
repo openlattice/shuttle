@@ -129,8 +129,8 @@ eclipse {
     ext.downloadSources = true
     ext.downloadJavadoc = true
 
-    ext.sourceCompatibility = JavaVersion.VERSION_1_10
-    ext.targetCompatibility = JavaVersion.VERSION_1_10
+    ext.sourceCompatibility = JavaVersion.VERSION_11
+    ext.targetCompatibility = JavaVersion.VERSION_11
 }
 
 eclipse.classpath.plusConfigurations += [configurations.provided]
