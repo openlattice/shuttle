@@ -21,26 +21,56 @@
 
 package com.openlattice.data.integration.destinations
 
+import com.hazelcast.core.HazelcastInstance
+import com.openlattice.data.DataGraphManager
+import com.openlattice.data.DataGraphService
 import com.openlattice.data.EntityKey
 import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.*
+import com.openlattice.data.storage.ByteBlobDataManager
+import com.openlattice.data.storage.PostgresEntityDataQueryService
+import com.openlattice.data.storage.partitions.PartitionManager
+import com.openlattice.datastore.services.EntitySetManager
+import com.openlattice.datastore.services.EntitySetService
+import com.openlattice.edm.type.PropertyType
+import com.openlattice.graph.Graph
+import com.openlattice.graph.core.GraphService
+import com.zaxxer.hikari.HikariDataSource
 import java.util.*
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class PostgresDestination : IntegrationDestination {
+class PostgresDestination(
+        private val propertyTypes: Map<UUID, PropertyType>,
+        hazelcastInstance: HazelcastInstance,
+        hds: HikariDataSource, byteBlobDataManager: ByteBlobDataManager,
+        partitionManager: PartitionManager = PartitionManager(hazelcastInstance, hds)
+) : IntegrationDestination {
+    private val pgedqs = PostgresEntityDataQueryService(hds, byteBlobDataManager, partitionManager)
+
+    private val graphService = Graph(hds, entitySetsManager, partitionManager)
+    private val graphManager = DataGraphService()
     override fun integrateEntities(
             data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
     ): Long {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        data
+                .groupBy({ it.entitySetId }, { entityKeyIds.getValue(it.key) to it.details })
+                .forEach { (entitySetId, entities) ->
+                    pgedqs.upsertEntities(entitySetId, entities.toMap(), propertyTypes)
+                }
+
     }
 
     override fun integrateAssociations(
             data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
     ): Long {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        data
+                .groupBy({ it.entitySetId }, { entityKeyIds.getValue(it.key) to it.details })
+                .forEach { (entitySetId, entities) ->
+                    pgedqs.upsertEntities(entitySetId, entities.toMap(), propertyTypes)
+                }
     }
 
     override fun accepts(): StorageDestination {

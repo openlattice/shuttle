@@ -233,7 +233,6 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
     }.toMap().toMutableMap()
     private val entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
     private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
-    private val propertyTypesById = propertyTypes.values.map { it.id to it }.toMap().toMutableMap()
     private val integrationDestinations = mapOf(
             StorageDestination.REST to RestDestination(dataApi),
             StorageDestination.POSTGRES to PostgresDestination(),
@@ -256,7 +255,6 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                 entitySets,
                 entityTypes,
                 propertyTypes,
-                propertyTypesById,
                 integrationDestinations,
                 dataIntegrationApi,
                 primaryKeyCols
