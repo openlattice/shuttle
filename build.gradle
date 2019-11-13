@@ -54,7 +54,7 @@ tasks.withType(com.github.spotbugs.SpotBugsTask) {
     }
 }
 
-mainClassName = "com.openlattice.shuttle.ShuttleKt"
+mainClassName = "com.openlattice.shuttle.ShuttleCliKt"
 
 def S_ARGS = "$System.env.SHUTTLE_ARGS"
 def S_XMS = "$System.env.SHUTTLE_XMS"

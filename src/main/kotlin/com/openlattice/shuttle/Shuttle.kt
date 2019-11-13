@@ -71,6 +71,7 @@ class Shuttle(
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
         private val dataIntegrationApi: DataIntegrationApi,
         private val tableColsToPrint: List<String>,
+        private val parameters: MissionParameters,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
                 Executors.newSingleThreadExecutor()
         )

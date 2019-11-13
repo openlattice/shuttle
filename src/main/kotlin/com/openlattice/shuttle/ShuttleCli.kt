@@ -4,6 +4,7 @@ import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions
+import com.openlattice.ResourceConfigurationLoader
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.integration.EmailConfiguration
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CONFIGURATION
@@ -20,6 +21,7 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.HELP
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.LOCAL_ORIGIN_EXPECTED_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.NOTIFICATION_EMAILS
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PASSWORD
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.POSTGRES
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PROFILES
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_EXPECTED_ARGS_COUNT
@@ -220,6 +222,15 @@ class ShuttleCli {
             "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
         }
 
+        val shuttlePostgressConfig = if (cl.hasOption(POSTGRES)) {
+            val pgCfg = cl.getOptionValues(POSTGRES)
+            require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
+            val bucket = pgCfg[0]
+            val region = pgCfg[1]
+            val s3Client = AmazonS3ClientBuilder.standard().withRegion(region).build()
+            ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle", MissionParameters::class.java )
+        } else { MissionParameters(Properties()) }
+
         //TODO: Use the right method to select the JWT token for the appropriate environment.
 
         val missionControl = when {
@@ -264,13 +275,14 @@ class ShuttleCli {
             DEFAULT_UPLOAD_SIZE
         }
 
+
         val emailConfiguration = getEmailConfiguration(cl)
 
         val flightPlan = mapOf(flight to payload)
 
         try {
             MissionControl.setEmailConfiguration(emailConfiguration)
-            val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts)
+            val shuttle = missionControl.prepare(flightPlan, createEntitySets,  rowColsToPrint, contacts)
             shuttle.launch(uploadBatchSize)
             MissionControl.succeed()
         } catch (ex: Exception) {

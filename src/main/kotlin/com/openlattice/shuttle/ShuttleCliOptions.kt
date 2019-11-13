@@ -45,6 +45,7 @@ class ShuttleCliOptions {
         const val DATASOURCE = "datasource"
         const val FETCHSIZE = "fetchsize"
         const val CONFIGURATION = "config"
+        const val POSTGRES = "postgres"
         const val PROFILES = "profiles"
         const val S3 = "s3"
         const val UPLOAD_SIZE = "upload-size"
@@ -176,6 +177,14 @@ class ShuttleCliOptions {
                 .desc("S3 bucket to use for storing binary. Possible values are TEST or PRODUCTION. Defaults to test bucket.")
                 .hasArg()
                 .argName("bucket")
+                .build()
+
+        private val postgresOption = Option.builder()
+                .longOpt(POSTGRES)
+                .desc("Bucket and region to be used for postgres configuration")
+                .hasArgs()
+                .argName("bucket,region")
+                .valueSeparator(',')
                 .build()
 
         private val profilesOption = Option.builder()
