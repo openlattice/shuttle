@@ -15,12 +15,12 @@ public class SubstringTransform extends Transformation<String> {
      * Represents a transformation to get a substring starting from a certain index (eg 3th character: index = 2).
      *
      * @param index: where to start subsetting if prefix is found
-     * @param endIndex: where to start subsetting if prefix is found
+     * @param endIndex: where to end subsetting if prefix is found
      */
     @JsonCreator
     public SubstringTransform(
-            @JsonProperty( Constants.INDEX ) int index,
-            @JsonProperty( Constants.END_INDEX ) int endIndex ) {
+            @JsonProperty( Constants.INDEX ) Integer index,
+            @JsonProperty( Constants.END_INDEX ) Integer endIndex ) {
         this.index = index;
         this.endIndex = endIndex;
     }
