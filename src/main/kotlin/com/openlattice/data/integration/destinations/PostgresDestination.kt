@@ -151,7 +151,7 @@ class PostgresDestination(
     }
 
     private fun normalize(entityKeyIds: Map<EntityKey, UUID>, entity: Entity): Pair<UUID, Map<UUID, Set<Any>>> {
-        val propertyValues = mapper.readValue<Map<UUID, Set<Any>>>(mapper.writeValueAsBytes(entity))
+        val propertyValues = mapper.readValue<Map<UUID, Set<Any>>>(mapper.writeValueAsBytes(entity.details))
         val validatedPropertyValues = Multimaps.asMap(
                 JsonDeserializer.validateFormatAndNormalize(propertyValues, propertyTypes) {
                     "Error validating during integration"
