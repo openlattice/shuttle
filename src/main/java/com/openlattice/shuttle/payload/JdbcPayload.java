@@ -22,8 +22,8 @@ import java.util.stream.Stream;
  */
 public class JdbcPayload implements Payload {
     private static final Logger logger                     = LoggerFactory.getLogger( JdbcPayload.class );
-    private static final int    DEFAULT_FETCH_SIZE         = 50000;
-    private static final double DEFAULT_PERMITS_PER_SECOND = 10000.0;
+    private static final int    DEFAULT_FETCH_SIZE         = 50_000;
+    private static final double DEFAULT_PERMITS_PER_SECOND = 10_000.0;
 
     private final HikariDataSource hds;
     private final String           sql;
@@ -60,7 +60,7 @@ public class JdbcPayload implements Payload {
     }
 
     static final class ResultSetStringIterator implements Iterator<Map<String, Object>> {
-        private static long READ_COUNT_THRESHOLD = 100000L;
+        private static long READ_COUNT_THRESHOLD = 100_000L;
 
         private final Connection    connection;
         private final Statement     stmt;
