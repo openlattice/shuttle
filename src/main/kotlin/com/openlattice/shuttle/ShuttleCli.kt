@@ -362,3 +362,6 @@ fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
     }
 
 }
+
+class ShuttleCli {
+}
