@@ -49,6 +49,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentSkipListMap
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
@@ -56,6 +57,7 @@ import java.util.concurrent.atomic.LongAdder
 import java.util.stream.Stream
 import kotlin.math.max
 import kotlin.streams.asSequence
+import kotlin.streams.asStream
 
 /**
  *
@@ -96,7 +98,7 @@ class Shuttle(
                 .build()
 
         init {
-            reporter.start(1, TimeUnit.MINUTES)
+            reporter.start(15, TimeUnit.SECONDS)
         }
     }
 
@@ -119,9 +121,10 @@ class Shuttle(
         val remaining = AtomicLong(0)
         val batchCounter = AtomicLong(0)
         val minRows = ConcurrentSkipListMap<Long, Map<String, Any>>()
+        val integrationCompletedLatch = CountDownLatch(1);
 
         uploadingExecutor.execute {
-            integrationSequence.map { batch ->
+            integrationSequence.asStream().parallel().map { batch ->
                 try {
                     rows.add(batch.size.toLong())
                     val batchCtr = batchCounter.incrementAndGet()
@@ -187,7 +190,11 @@ class Shuttle(
                     }
                     MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
                 } finally {
-                    remaining.decrementAndGet()
+                    if( remaining.decrementAndGet() == 0L ){
+                        integrationCompletedLatch.countDown()
+                    } else {
+                        logger.info("There are ${remaining.get()} batches remaining for upload." )
+                    }
                 }
             }
         }
@@ -197,16 +204,8 @@ class Shuttle(
                 .forEach {
                     remaining.incrementAndGet()
                     integrationQueue.put(it)
+                    logger.info("There are ${remaining.get()} batches remaining for upload." )
                 }
-        //Wait on upload thread to finish emptying queue.
-        try {
-            while (remaining.get() > 0) {
-                logger.info("Waiting on upload to finish... ${remaining.get()} batches left")
-                Thread.sleep(1000)
-            }
-        } catch (ex: Exception) {
-            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
-        }
 
         return StorageDestination.values().map {
             logger.info(

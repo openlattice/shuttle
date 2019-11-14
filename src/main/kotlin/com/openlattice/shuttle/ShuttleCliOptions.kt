@@ -55,7 +55,7 @@ class ShuttleCliOptions {
         const val SERVER = "server"
         const val SMTP_SERVER = "smtp-server"
         const val SMTP_SERVER_PORT = "smtp-server-port"
-
+        const val THREADS = "threads"
         const val S3_ORIGIN_EXPECTED_ARGS_COUNT = 3
         const val LOCAL_ORIGIN_EXPECTED_ARGS_COUNT = 2
 
@@ -187,6 +187,13 @@ class ShuttleCliOptions {
                 .valueSeparator(',')
                 .build()
 
+        private val threadsOption = Option.builder()
+                .longOpt(THREADS)
+                .desc("Number of integration threads to use.")
+                .hasArg()
+                .argName("threads")
+                .build()
+
         private val profilesOption = Option.builder()
                 .longOpt(PROFILES)
                 .desc("Profiles to use when running shuttle service as a server.")
@@ -254,6 +261,7 @@ class ShuttleCliOptions {
                     .addOption(smtpServerOption)
                     .addOption(smtpServerPortOption)
                     .addOption(postgresOption)
+                    .addOption(threadsOption)
 
             options.addOptionGroup(
                     OptionGroup()

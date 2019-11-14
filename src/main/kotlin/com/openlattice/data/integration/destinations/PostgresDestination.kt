@@ -23,7 +23,10 @@ package com.openlattice.data.integration.destinations
 
 import com.dataloom.mappers.ObjectMappers
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.google.common.collect.ImmutableList
 import com.google.common.collect.Multimaps
+import com.openlattice.data.DataEdgeKey
+import com.openlattice.data.EntityDataKey
 import com.openlattice.data.EntityKey
 import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.Association
@@ -38,6 +41,8 @@ import com.openlattice.data.util.PostgresDataHasher
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
+import com.openlattice.graph.EDGES_UPSERT_SQL
+import com.openlattice.graph.bindColumnsForEdge
 import com.openlattice.postgres.JsonDeserializer
 import com.openlattice.postgres.PostgresArrays
 import com.zaxxer.hikari.HikariDataSource
@@ -143,12 +148,51 @@ class PostgresDestination(
     override fun integrateAssociations(
             data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
     ): Long {
-        return integrateEntities(data.map { Entity(it.key, it.details) }.toSet(), entityKeyIds, updateTypes)
+        val dataEdgeKeys = data.map {
+            val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])
+            val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds[it.dst])
+            val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds[it.key])
+            DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
+        }.toSet()
+        val numCreatedEdges = createEdges(dataEdgeKeys)
+        val numIntegratedEdges = integrateEntities(
+                data.map { Entity(it.key, it.details) }.toSet(), entityKeyIds, updateTypes
+        )
+        if (numCreatedEdges != numIntegratedEdges) {
+            logger.warn("Created $numCreatedEdges edges, but only integrated $numIntegratedEdges.")
+        }
+        return numIntegratedEdges
     }
 
     override fun accepts(): StorageDestination {
         return StorageDestination.POSTGRES
     }
+
+    private fun createEdges(keys: Set<DataEdgeKey>): Long {
+        val partitionsInfoByEntitySet = keys
+                .flatMap { listOf(it.src.entitySetId, it.dst.entitySetId, it.edge.entitySetId) }
+                .toSet()
+                .associateWith { entitySetId ->
+                    val entitySet = entitySets.getValue(entitySetId)
+                    entitySet.partitionsVersion to entitySet.partitions.toList()
+
+                }
+
+        return hds.connection.use { connection ->
+            val ps = connection.prepareStatement(EDGES_UPSERT_SQL)
+            val version = System.currentTimeMillis()
+            val versions = PostgresArrays.createLongArray(connection, ImmutableList.of(version))
+
+            ps.use {
+                keys.forEach { dataEdgeKey ->
+                    bindColumnsForEdge(ps, dataEdgeKey, version, versions, partitionsInfoByEntitySet)
+                }
+
+                ps.executeBatch().sum().toLong()
+            }
+        }
+    }
+
 
     private fun normalize(entityKeyIds: Map<EntityKey, UUID>, entity: Entity): Pair<UUID, Map<UUID, Set<Any>>> {
         val propertyValues = mapper.readValue<Map<UUID, Set<Any>>>(mapper.writeValueAsBytes(entity.details))
