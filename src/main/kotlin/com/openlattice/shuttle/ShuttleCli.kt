@@ -234,7 +234,7 @@ fun main(args: Array<String>) {
         logger.info("REGION IS {}", region)
         logger.info("this should be something: {}", RegionUtils.getRegion(region))
         val s3Client = AmazonS3ClientBuilder.standard().withCredentials(InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)).withRegion(RegionUtils.getRegion(region).name).build()
-        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle", MissionParameters::class.java )
+        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java )
     } else { MissionParameters.empty() }
 
     //TODO: Use the right method to select the JWT token for the appropriate environment.
