@@ -34,9 +34,9 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.UPLOAD_SIZE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.USER
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.XML
 import com.openlattice.shuttle.config.IntegrationConfig
+import com.openlattice.shuttle.payload.CsvPayload
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
-import com.openlattice.shuttle.payload.SimplePayload
 import com.openlattice.shuttle.payload.XmlFilesPayload
 import com.openlattice.shuttle.source.LocalFileOrigin
 import com.openlattice.shuttle.source.S3BucketOrigin
@@ -146,7 +146,7 @@ class ShuttleCli {
                     return
                 }
                 rowColsToPrint = listOf()
-                payload = SimplePayload(cl.getOptionValue(CSV))
+                payload = CsvPayload(cl.getOptionValue(CSV))
             }
             cl.hasOption(XML) -> {// get xml payload
                 rowColsToPrint = listOf()
