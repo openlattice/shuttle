@@ -242,7 +242,7 @@ class MissionControl(
             .client(RetrofitBuilders.okHttpClient().build())
             .build().create(S3Api::class.java)
 
-    private val entitySets = entitySetsApi.getEntitySets().mapNotNull { it.name to it }.toMap().toMutableMap()
+    private val entitySets = entitySetsApi.getEntitySets().filter { it != null }.map { it.name to it }.toMap().toMutableMap()
     private val entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
     private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
     private val propertyTypesById = propertyTypes.mapKeys { it.value.id }
