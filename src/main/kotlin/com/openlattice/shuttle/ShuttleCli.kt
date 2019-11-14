@@ -278,9 +278,6 @@ fun main(args: Array<String>) {
         DEFAULT_UPLOAD_SIZE
     }
 
-    val threads
-
-
     val emailConfiguration = getEmailConfiguration(cl)
 
     val flightPlan = mapOf(flight to payload)
