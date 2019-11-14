@@ -1,5 +1,6 @@
 package com.openlattice.shuttle
 
+import com.amazonaws.auth.InstanceProfileCredentialsProvider
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.dataloom.mappers.ObjectMappers
@@ -221,13 +222,12 @@ fun main(args: Array<String>) {
     } else {
         "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
     }
-
     val shuttleConfig = if (cl.hasOption(POSTGRES)) {
         val pgCfg = cl.getOptionValues(POSTGRES)
         require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
         val bucket = pgCfg[0]
         val region = pgCfg[1]
-        val s3Client = AmazonS3ClientBuilder.standard().withRegion(region).build()
+        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)).withRegion(region).build()
         ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle", MissionParameters::class.java )
     } else { MissionParameters.empty() }
 
