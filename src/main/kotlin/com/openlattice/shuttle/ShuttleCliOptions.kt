@@ -253,6 +253,7 @@ class ShuttleCliOptions {
                     .addOption(fromEmailPasswordOption)
                     .addOption(smtpServerOption)
                     .addOption(smtpServerPortOption)
+                    .addOption(postgresOption)
 
             options.addOptionGroup(
                     OptionGroup()
