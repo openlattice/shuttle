@@ -137,6 +137,7 @@ class Shuttle(
                 }
             }.forEach { batch ->
                 try {
+                    logger.info("Starting entity key id generation.")
                     val sw = Stopwatch.createStarted()
                     val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
                             + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
