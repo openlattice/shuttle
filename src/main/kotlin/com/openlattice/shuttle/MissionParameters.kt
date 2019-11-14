@@ -1,6 +1,7 @@
 package com.openlattice.shuttle
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration
 import java.util.*
 
 /**
@@ -12,6 +13,7 @@ data class PostgresConfiguration(
         @JsonProperty("config") val config: Properties
 )
 
+@ReloadableConfiguration(uri = "shuttle.yaml")
 data class MissionParameters(
         @JsonProperty("postgres") val postgres: PostgresConfiguration
 ) {
