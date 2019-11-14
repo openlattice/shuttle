@@ -230,9 +230,6 @@ fun main(args: Array<String>) {
         require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
         val bucket = pgCfg[0]
         val region = pgCfg[1]
-        logger.info("BUCKET IS {}", bucket)
-        logger.info("REGION IS {}", region)
-        logger.info("this should be something: {}", RegionUtils.getRegion(region))
         val s3Client = AmazonS3ClientBuilder.standard().withCredentials(InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)).withRegion(RegionUtils.getRegion(region).name).build()
         ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java )
     } else { MissionParameters.empty() }
