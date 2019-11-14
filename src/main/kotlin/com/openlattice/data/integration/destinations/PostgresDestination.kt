@@ -84,7 +84,14 @@ class PostgresDestination(
                                 .getValue(entitySets.getValue(entitySetId).entityTypeId)
                                 .properties
                                 .associateWith(propertyTypes::getValue)
-                        val propertyTypeIdsArr = PostgresArrays.createUuidArray(connection, relevantPropertyTypes.keys)
+                        val propertyTypeIdsArr = when (updateTypes.getValue(entitySetId)) {
+                            UpdateType.Replace -> PostgresArrays.createUuidArray(connection, relevantPropertyTypes.keys)
+                            UpdateType.PartialReplace -> PostgresArrays.createUuidArray(
+                                    connection, data.flatMap { it.details.keys }.toSet()
+                            )
+                            else -> PostgresArrays.createUuidArray(connection, setOf())
+                        }
+
                         val writeVersionArray = PostgresArrays.createLongArray(connection, writeVersion)
 
                         entities.groupBy { getPartition(it.first, partitions) }
@@ -95,8 +102,8 @@ class PostgresDestination(
                                             connection, entityMap.keys.map { getPartition(it, partitions) }
                                     )
 
-                                    if (updateTypes.getValue(entitySetId) == UpdateType.Replace) {
-                                        tombstone(
+                                    when (updateTypes.getValue(entitySetId)) {
+                                        UpdateType.Replace, UpdateType.PartialReplace -> tombstone(
                                                 connection,
                                                 entitySet,
                                                 partitionsVersion,
@@ -106,6 +113,7 @@ class PostgresDestination(
                                                 tombstoneVersion
                                         )
                                     }
+
 
                                     upsertEntities(
                                             connection,
