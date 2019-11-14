@@ -1,6 +1,9 @@
 package com.openlattice.shuttle
 
 import com.amazonaws.auth.InstanceProfileCredentialsProvider
+import com.amazonaws.regions.Region
+import com.amazonaws.regions.RegionUtils
+import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.dataloom.mappers.ObjectMappers
@@ -229,7 +232,8 @@ fun main(args: Array<String>) {
         val region = pgCfg[1]
         logger.info("BUCKET IS {}", bucket)
         logger.info("REGION IS {}", region)
-        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)).withRegion(region).build()
+        logger.info("this should be something: {}", RegionUtils.getRegion(region))
+        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)).withRegion(RegionUtils.getRegion(region).name).build()
         ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle", MissionParameters::class.java )
     } else { MissionParameters.empty() }
 
