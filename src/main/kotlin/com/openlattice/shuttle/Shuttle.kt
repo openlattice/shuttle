@@ -207,6 +207,8 @@ class Shuttle(
                     logger.info("There are ${remaining.get()} batches remaining for upload." )
                 }
 
+        integrationCompletedLatch.await()
+
         return StorageDestination.values().map {
             logger.info(
                     "Integrated {} entities and {} edges in {} ms for flight {} to {}",
