@@ -144,9 +144,9 @@ fun main(args: Array<String>) {
             payload = if (cl.hasOption(FETCHSIZE)) {
                 val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
                 logger.info("Using a fetch size of $fetchSize")
-                JdbcPayload(hds, sql, readRateLimit.toDouble(), fetchSize, readRateLimit != 0)
+                JdbcPayload(hds, sql, if(readRateLimit == 0) 1.0 else readRateLimit.toDouble(), fetchSize, readRateLimit != 0)
             } else {
-                JdbcPayload(hds, sql, readRateLimit.toDouble(), readRateLimit != 0)
+                JdbcPayload(hds, sql, if(readRateLimit == 0) 1.0 else readRateLimit.toDouble(), readRateLimit != 0)
             }
         }
         cl.hasOption(CSV) -> {// get csv payload
