@@ -23,6 +23,7 @@ package com.openlattice.data.integration.destinations
 
 import com.dataloom.mappers.ObjectMappers
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.google.common.base.Stopwatch
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.Multimaps
 import com.openlattice.data.DataEdgeKey
@@ -52,6 +53,7 @@ import java.security.InvalidParameterException
 import java.sql.Connection
 import java.sql.PreparedStatement
 import java.util.*
+import java.util.concurrent.TimeUnit
 
 /**
  *
@@ -73,8 +75,8 @@ class PostgresDestination(
     ): Long {
 
         return hds.connection.use { connection ->
-
-            data
+            val sw = Stopwatch.createStarted()
+            val count = data
                     .groupBy({ it.entitySetId }, { normalize(entityKeyIds, it) })
                     .map { (entitySetId, entities) ->
                         val entitySet = entitySets.getValue(entitySetId)
@@ -141,6 +143,8 @@ class PostgresDestination(
                                     )
                                 }.sum().toLong()
                     }.sum()
+            logger.info("Integration $count properties took ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
+            count
         }
 
     }
@@ -148,6 +152,7 @@ class PostgresDestination(
     override fun integrateAssociations(
             data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
     ): Long {
+        val sw = Stopwatch.createStarted()
         val dataEdgeKeys = data.map {
             val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])
             val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds[it.dst])
@@ -161,6 +166,7 @@ class PostgresDestination(
         if (numCreatedEdges != numIntegratedEdges) {
             logger.warn("Created $numCreatedEdges edges, but only integrated $numIntegratedEdges.")
         }
+        logger.info("Integration $numIntegratedEdges edges took ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
         return numIntegratedEdges
     }
 
