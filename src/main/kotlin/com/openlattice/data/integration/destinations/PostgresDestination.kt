@@ -76,6 +76,14 @@ class PostgresDestination(
 
         return hds.connection.use { connection ->
             val sw = Stopwatch.createStarted()
+            val upsertEntities = connection.prepareStatement(buildUpsertEntitiesAndLinkedData())
+            val upsertPropertyValues = mutableMapOf<UUID, PreparedStatement>()
+            val updatePropertyValueVersion = connection.prepareStatement(
+                    updateVersionsForPropertyTypesInEntitiesInEntitySet()
+            )
+            val tombstoneLinks = connection.prepareStatement(
+                    updateVersionsForPropertyTypesInEntitiesInEntitySet(linking = true)
+            )
             val count = data
                     .groupBy({ it.entitySetId }, { normalize(entityKeyIds, it) })
                     .map { (entitySetId, entities) ->
@@ -111,7 +119,8 @@ class PostgresDestination(
 
                                     when (updateTypes.getValue(entitySetId)) {
                                         UpdateType.Replace, UpdateType.PartialReplace -> tombstone(
-                                                connection,
+                                                updatePropertyValueVersion,
+                                                tombstoneLinks,
                                                 entitySet,
                                                 partitionsVersion,
                                                 entityKeyIdsArr,
@@ -124,6 +133,7 @@ class PostgresDestination(
 
                                     upsertEntities(
                                             connection,
+                                            upsertPropertyValues,
                                             entitySet,
                                             partition,
                                             partitionsVersion,
@@ -134,7 +144,7 @@ class PostgresDestination(
                                     )
 
                                     commitEntities(
-                                            connection,
+                                            upsertEntities,
                                             entitySetId,
                                             partition,
                                             entityKeyIdsArr,
@@ -211,6 +221,7 @@ class PostgresDestination(
 
     private fun upsertEntities(
             connection: Connection,
+            upsertPropertyValues: MutableMap<UUID, PreparedStatement>,
             entitySet: EntitySet,
             partition: Int,
             partitionsVersion: Int,
@@ -229,7 +240,7 @@ class PostgresDestination(
          */
 
         //Update property values. We use multiple prepared statements in batch while re-using ARRAY[version].
-        val upsertPropertyValues = mutableMapOf<UUID, PreparedStatement>()
+
 
         return entities.entries.map { (entityKeyId, entityData) ->
             entityData.map { (propertyTypeId, values) ->
@@ -266,7 +277,8 @@ class PostgresDestination(
     }
 
     private fun tombstone(
-            connection: Connection,
+            updatePropertyValueVersion: PreparedStatement,
+            tombstoneLinks: PreparedStatement,
             entitySet: EntitySet,
             partitionsVersion: Int,
             entityKeyIdsArr: java.sql.Array,
@@ -275,14 +287,6 @@ class PostgresDestination(
             version: Long,
             entitySetId: UUID = entitySet.id
     ) {
-
-
-        val updatePropertyValueVersion = connection.prepareStatement(
-                updateVersionsForPropertyTypesInEntitiesInEntitySet()
-        )
-        val tombstoneLinks = connection.prepareStatement(
-                updateVersionsForPropertyTypesInEntitiesInEntitySet(linking = true)
-        )
 
         updatePropertyValueVersion.setLong(1, -version)
         updatePropertyValueVersion.setLong(2, -version)
@@ -314,16 +318,14 @@ class PostgresDestination(
     }
 
     private fun commitEntities(
-            connection: Connection,
+            upsertEntities: PreparedStatement,
             entitySetId: UUID,
             partition: Int,
             entityKeyIdsArr: java.sql.Array,
             versionArray: java.sql.Array,
             version: Long
     ): Int {
-//Make data visible by marking new version in ids table.
-        val upsertEntities = connection.prepareStatement(buildUpsertEntitiesAndLinkedData())
-
+        //Make data visible by marking new version in ids table.
 
         upsertEntities.setObject(1, versionArray)
         upsertEntities.setObject(2, version)
@@ -334,9 +336,8 @@ class PostgresDestination(
         upsertEntities.setInt(7, partition)
         upsertEntities.setLong(8, version)
 
-
         val updatedLinkedEntities = upsertEntities.executeUpdate()
-        logger.debug("Updated $updatedLinkedEntities linked entities as part of insert.")
+        logger.info("Updated $updatedLinkedEntities linked entities as part of insert.")
         return updatedLinkedEntities
     }
 
