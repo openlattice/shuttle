@@ -146,6 +146,11 @@ class PostgresDestination(
                                             writeVersion
                                     )
 
+                                    logger.info(
+                                            "Upserted $committedProperties properties in {} ms ",
+                                            partSw.elapsed(TimeUnit.MILLISECONDS)
+                                    )
+
                                     commitEntities(
                                             upsertEntities,
                                             entitySetId,
