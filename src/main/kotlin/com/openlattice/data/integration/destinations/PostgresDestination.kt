@@ -165,7 +165,7 @@ class PostgresDestination(
                         )
                         esCount
                     }.sum()
-            logger.info("Integration $count properties took ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
+            logger.info("Integrating $count properties took ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
             count
         }
     }

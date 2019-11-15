@@ -174,7 +174,7 @@ class Shuttle(
 
                     minRows.remove(batch.batchId)
                     uploadRate.mark(entityKeys.size.toLong())
-                    logger.info("Processed {} current batch in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.", batch.batchId)
+                    logger.info("Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.", batch.batchId)
                     logger.info("Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.", rows.sum())
                     logger.info("Current entities progress: {}", integratedEntities)
                     logger.info("Current edges progress: {}", integratedEdges)

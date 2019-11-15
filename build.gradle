@@ -85,7 +85,7 @@ if (GC == 'null' || GC == null || GC == "") {
 
 println "Using java args for running ${projectName}: Xms=" + S_XMS + ",Xmx=" + S_XMX + " -server"
 
-applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server"]
+applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server", PARALLEL]
 applicationDefaultJvmArgs += ["--add-modules", "java.se",
                               "--add-exports", "java.base/jdk.internal.ref=ALL-UNNAMED",
                               "--add-opens", "java.base/java.lang=ALL-UNNAMED",
