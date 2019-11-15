@@ -120,8 +120,8 @@ class Shuttle(
 
         uploadingExecutor.execute {
             integrationStream.parallel().map { batch ->
+                val batchSw = Stopwatch.createStarted()
                 try {
-                    val batchSw = Stopwatch.createStarted()
                     rows.add(batch.size.toLong())
                     val batchCtr = batchCounter.incrementAndGet()
                     minRows[batchCtr] = batch[0]
