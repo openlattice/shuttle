@@ -52,6 +52,7 @@ import java.util.concurrent.locks.ReentrantLock
 import java.util.stream.Stream
 import kotlin.math.max
 import kotlin.streams.asSequence
+import kotlin.streams.asStream
 
 /**
  *
@@ -106,125 +107,107 @@ class Shuttle(
         logger.info("Takeoff! Starting primary thrusters.")
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
-        val integrationQueue = Queues
-                .newArrayBlockingQueue<List<Map<String, Any>>>(
-                        max(2, 2 * Runtime.getRuntime().availableProcessors())
-                )
-        val integrationStream = Stream.generate { integrationQueue.take() }
+
         val rows = LongAdder()
         val sw = Stopwatch.createStarted()
         val remaining = AtomicLong(0)
         val batchCounter = AtomicLong(0)
         val minRows = ConcurrentSkipListMap<Long, Map<String, Any>>()
         val fullyQueuedLock = ReentrantLock()
-        val integrationCompletedLatch = CountDownLatch(1)
+
 
         fullyQueuedLock.lock()
 
-        uploadingExecutor.execute {
-            integrationStream.parallel().map { batch ->
-                val batchSw = Stopwatch.createStarted()
-                try {
-                    rows.add(batch.size.toLong())
-                    val batchCtr = batchCounter.incrementAndGet()
-                    minRows[batchCtr] = batch[0]
-                    return@map impulse(flight, batch, batchCtr)
-                } catch (ex: Exception) {
-                    MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
-                } catch (err: OutOfMemoryError) {
-                    MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
-                } finally {
-                    transformRate.mark()
-                    logger.info("Batch took to {} ms to transform.", batchSw.elapsed(TimeUnit.MILLISECONDS))
-                }
-            }.forEach { batch ->
-                try {
-                    logger.info("Starting entity key id generation in thread {}", Thread.currentThread().id)
-                    val ekSw = Stopwatch.createStarted()
-                    val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
-                            + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
-                    val entityKeyIds = entityKeys.zip(
-                            dataIntegrationApi.getEntityKeyIds(entityKeys)
-                    ).toMap()
-
-                    logger.info(
-                            "Generated {} entity key ids in {} ms",
-                            entityKeys.size,
-                            ekSw.elapsed(TimeUnit.MILLISECONDS)
-                    )
-
-                    integrationDestinations.forEach { (storageDestination, integrationDestination) ->
-                        if (batch.entities.containsKey(storageDestination)) {
-                            integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                    integrationDestination.integrateEntities(
-                                            batch.entities.getValue(storageDestination),
-                                            entityKeyIds,
-                                            updateTypes
-                                    )
-                            )
-                        }
-
-                        if (batch.associations.containsKey(storageDestination)) {
-                            integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                    integrationDestination.integrateAssociations(
-                                            batch.associations.getValue(storageDestination),
-                                            entityKeyIds,
-                                            updateTypes
-                                    )
-                            )
-                        }
-                    }
-
-                    minRows.remove(batch.batchId)
-                    uploadRate.mark(entityKeys.size.toLong())
-                    logger.info(
-                            "Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.", batch.batchId
-                    )
-                    logger.info("Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.", rows.sum())
-                    logger.info("Current entities progress: {}", integratedEntities)
-                    logger.info("Current edges progress: {}", integratedEdges)
-
-                } catch (ex: Exception) {
-                    if (rowColsToPrint.isNotEmpty()) {
-                        logger.info("Earliest unintegrated row:")
-                        printRow(minRows.firstEntry().value, rowColsToPrint)
-                    }
-                    MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
-                } catch (err: OutOfMemoryError) {
-                    if (rowColsToPrint.isNotEmpty()) {
-                        logger.info("Earliest unintegrated row:")
-                        printRow(minRows.firstEntry().value, rowColsToPrint)
-                    }
-                    MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
-                } finally {
-                    if (remaining.decrementAndGet() == 0L) {
-                        if (fullyQueuedLock.tryLock()) {
-                            integrationCompletedLatch.countDown()
-                        }
-                    } else {
-                        logger.info("There are ${remaining.get()} batches remaining for upload.")
-                    }
-                }
-            }
-        }
-
         payload.asSequence()
                 .chunked(uploadBatchSize)
-                .forEach {
-                    remaining.incrementAndGet()
-                    integrationQueue.put(it)
+                .asStream()
+                .peek { remaining.incrementAndGet() }
+                .parallel()
+                .map { batch ->
+
                     logger.info("There are ${remaining.get()} batches remaining for upload.")
+                    val batchSw = Stopwatch.createStarted()
+                    try {
+                        rows.add(batch.size.toLong())
+                        val batchCtr = batchCounter.incrementAndGet()
+                        minRows[batchCtr] = batch[0]
+                        return@map impulse(flight, batch, batchCtr)
+                    } catch (ex: Exception) {
+                        MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
+                    } catch (err: OutOfMemoryError) {
+                        MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
+                    } finally {
+                        transformRate.mark()
+                        logger.info("Batch took to {} ms to transform.", batchSw.elapsed(TimeUnit.MILLISECONDS))
+                    }
+                }.forEach { batch ->
+                    try {
+                        logger.info("Starting entity key id generation in thread {}", Thread.currentThread().id)
+                        val ekSw = Stopwatch.createStarted()
+                        val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
+                                + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
+                        val entityKeyIds = entityKeys.zip(
+                                dataIntegrationApi.getEntityKeyIds(entityKeys)
+                        ).toMap()
+
+                        logger.info(
+                                "Generated {} entity key ids in {} ms",
+                                entityKeys.size,
+                                ekSw.elapsed(TimeUnit.MILLISECONDS)
+                        )
+
+                        integrationDestinations.forEach { (storageDestination, integrationDestination) ->
+                            if (batch.entities.containsKey(storageDestination)) {
+                                integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                        integrationDestination.integrateEntities(
+                                                batch.entities.getValue(storageDestination),
+                                                entityKeyIds,
+                                                updateTypes
+                                        )
+                                )
+                            }
+
+                            if (batch.associations.containsKey(storageDestination)) {
+                                integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                        integrationDestination.integrateAssociations(
+                                                batch.associations.getValue(storageDestination),
+                                                entityKeyIds,
+                                                updateTypes
+                                        )
+                                )
+                            }
+                        }
+
+                        minRows.remove(batch.batchId)
+                        uploadRate.mark(entityKeys.size.toLong())
+                        logger.info(
+                                "Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.",
+                                batch.batchId
+                        )
+                        logger.info("Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.", rows.sum())
+                        logger.info("Current entities progress: {}", integratedEntities)
+                        logger.info("Current edges progress: {}", integratedEdges)
+
+                    } catch (ex: Exception) {
+                        if (rowColsToPrint.isNotEmpty()) {
+                            logger.info("Earliest unintegrated row:")
+                            printRow(minRows.firstEntry().value, rowColsToPrint)
+                        }
+                        MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
+                    } catch (err: OutOfMemoryError) {
+                        if (rowColsToPrint.isNotEmpty()) {
+                            logger.info("Earliest unintegrated row:")
+                            printRow(minRows.firstEntry().value, rowColsToPrint)
+                        }
+                        MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
+                    } finally {
+
+                        logger.info("There are ${remaining.get()} batches remaining for upload.")
+
+                    }
                 }
 
-        logger.info("Done reading in data. There are ${remaining.get()} batches remaining for upload.")
 
-        fullyQueuedLock.unlock()
-        //Just in case remaining hit zero and failed to acquire lock before unlock.
-        if (remaining.decrementAndGet() == 0L) {
-            integrationCompletedLatch.countDown()
-        }
-
-        integrationCompletedLatch.await()
 
         return StorageDestination.values().map {
             logger.info(
