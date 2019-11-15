@@ -33,19 +33,18 @@ import java.util.*
 import java.util.stream.Collectors
 import kotlin.math.max
 
-private val logger = LoggerFactory.getLogger(S3Destination::class.java)
-
+private val logger = LoggerFactory.getLogger(PostgresS3Destination::class.java)
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class S3Destination(
-        private val dataApi: DataApi,
+class PostgresS3Destination(
+        private val postgresDestination: PostgresDestination,
         s3Api: S3Api,
         dataIntegrationApi: DataIntegrationApi
 ) : BaseS3Destination(s3Api, dataIntegrationApi) {
     override fun createAssociations(entities: Set<DataEdgeKey>): Long {
-        return dataApi.createAssociations(entities).toLong()
+        return postgresDestination.createEdges(entities)
     }
 }

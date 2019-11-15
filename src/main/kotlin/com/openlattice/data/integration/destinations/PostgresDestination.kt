@@ -208,7 +208,7 @@ class PostgresDestination(
         return StorageDestination.POSTGRES
     }
 
-    private fun createEdges(keys: Set<DataEdgeKey>): Long {
+    internal fun createEdges(keys: Set<DataEdgeKey>): Long {
         val partitionsInfoByEntitySet = keys
                 .flatMap { listOf(it.src.entitySetId, it.dst.entitySetId, it.edge.entitySetId) }
                 .toSet()
