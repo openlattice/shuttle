@@ -87,6 +87,7 @@ class PostgresDestination(
             val count = data
                     .groupBy({ it.entitySetId }, { normalize(entityKeyIds, it) })
                     .map { (entitySetId, entities) ->
+                        logger.info("Integrating entity set {}", entitySets.getValue( entitySetId).name )
                         val esSw = Stopwatch.createStarted()
                         val entitySet = entitySets.getValue(entitySetId)
 
@@ -124,7 +125,7 @@ class PostgresDestination(
                                                 updatePropertyValueVersion,
                                                 tombstoneLinks,
                                                 entitySet,
-                                                partitionsVersion,
+                                                partiWhy dtionsVersion,
                                                 entityKeyIdsArr,
                                                 partitionsArr,
                                                 propertyTypeIdsArr,
