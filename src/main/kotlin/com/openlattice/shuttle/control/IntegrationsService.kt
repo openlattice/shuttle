@@ -27,7 +27,7 @@ class IntegrationsService(hazelcastInstance: HazelcastInstance) {
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     fun runIntegration(integration: Integration) {
-        val payload = JdbcPayload(getDatasource(integration.source), integration.sql)
+//        val payload = JdbcPayload(getDatasource(integration.source), integration.sql)
         val ptValues = propertyTypes.values
 //        Shuttle(
 //                mapOf(integration.flight to payload),
@@ -40,9 +40,9 @@ class IntegrationsService(hazelcastInstance: HazelcastInstance) {
 //        )
     }
 
-    fun getJdbcPayload(hds: HikariDataSource, sql: String): JdbcPayload {
-        return JdbcPayload(hds, sql)
-    }
+//    fun getJdbcPayload(hds: HikariDataSource, sql: String): JdbcPayload {
+//        return JdbcPayload(hds, sql)
+//    }
 
     fun getDatasource(properties: Properties): HikariDataSource {
         val hc = HikariConfig(properties)
