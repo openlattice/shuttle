@@ -172,13 +172,13 @@ class PostgresDestination(
                                     committed
                                 }.sum()
                         logger.info(
-                                "Integrating $esCount entities for entity set {} took {} ms",
+                                "Integrated $esCount entities for entity set {} in {} ms",
                                 entitySets.getValue(entitySetId).name,
                                 esSw.elapsed(TimeUnit.MILLISECONDS)
                         )
                         esCount
                     }.sum()
-            logger.info("Integrating $count entities took ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
+            logger.info("Integrated $count entities in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
             count
         }
     }
@@ -200,7 +200,7 @@ class PostgresDestination(
         if (numCreatedEdges != numIntegratedEdges) {
             logger.warn("Created $numCreatedEdges edges, but only integrated $numIntegratedEdges.")
         }
-        logger.info("Integration $numIntegratedEdges edges took ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
+        logger.info("Integrated $numIntegratedEdges edges in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
         return numIntegratedEdges
     }
 
@@ -241,7 +241,7 @@ class PostgresDestination(
                 JsonDeserializer.validateFormatAndNormalize(propertyValues, propertyTypes) {
                     "Error validating during integration"
                 })
-        logger.info("Normalizing took {} ms", sw.elapsed(TimeUnit.MILLISECONDS))
+        logger.debug("Normalizing took {} ms", sw.elapsed(TimeUnit.MILLISECONDS))
         return entityKeyIds.getValue(entity.key) to validatedPropertyValues
     }
 

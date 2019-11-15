@@ -48,6 +48,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
+import java.util.concurrent.locks.ReentrantLock
 import java.util.stream.Stream
 import kotlin.math.max
 import kotlin.streams.asSequence
@@ -60,7 +61,6 @@ import kotlin.streams.asSequence
 
 private val logger = LoggerFactory.getLogger(Shuttle::class.java)
 const val DEFAULT_UPLOAD_SIZE = 100_000
-
 
 
 /**
@@ -92,7 +92,7 @@ class Shuttle(
                 .build()
 
         init {
-            reporter.start(15, TimeUnit.SECONDS)
+            reporter.start(1, TimeUnit.MINUTES)
         }
     }
 
@@ -108,7 +108,7 @@ class Shuttle(
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integrationQueue = Queues
                 .newArrayBlockingQueue<List<Map<String, Any>>>(
-                        max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
+                        max(2, 2 * Runtime.getRuntime().availableProcessors())
                 )
         val integrationStream = Stream.generate { integrationQueue.take() }
         val rows = LongAdder()
@@ -116,7 +116,10 @@ class Shuttle(
         val remaining = AtomicLong(0)
         val batchCounter = AtomicLong(0)
         val minRows = ConcurrentSkipListMap<Long, Map<String, Any>>()
-        val integrationCompletedLatch = CountDownLatch(1);
+        val fullyQueuedLock = ReentrantLock()
+        val integrationCompletedLatch = CountDownLatch(1)
+
+        fullyQueuedLock.lock()
 
         uploadingExecutor.execute {
             integrationStream.parallel().map { batch ->
@@ -136,7 +139,7 @@ class Shuttle(
                 }
             }.forEach { batch ->
                 try {
-                    logger.info("Starting entity key id generation.")
+                    logger.info("Starting entity key id generation in thread {}", Thread.currentThread().id)
                     val ekSw = Stopwatch.createStarted()
                     val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
                             + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
@@ -174,7 +177,9 @@ class Shuttle(
 
                     minRows.remove(batch.batchId)
                     uploadRate.mark(entityKeys.size.toLong())
-                    logger.info("Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.", batch.batchId)
+                    logger.info(
+                            "Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.", batch.batchId
+                    )
                     logger.info("Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.", rows.sum())
                     logger.info("Current entities progress: {}", integratedEntities)
                     logger.info("Current edges progress: {}", integratedEdges)
@@ -192,10 +197,12 @@ class Shuttle(
                     }
                     MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
                 } finally {
-                    if( remaining.decrementAndGet() == 0L ){
-                        integrationCompletedLatch.countDown()
+                    if (remaining.decrementAndGet() == 0L) {
+                        if (fullyQueuedLock.tryLock()) {
+                            integrationCompletedLatch.countDown()
+                        }
                     } else {
-                        logger.info("There are ${remaining.get()} batches remaining for upload." )
+                        logger.info("There are ${remaining.get()} batches remaining for upload.")
                     }
                 }
             }
@@ -206,8 +213,16 @@ class Shuttle(
                 .forEach {
                     remaining.incrementAndGet()
                     integrationQueue.put(it)
-                    logger.info("There are ${remaining.get()} batches remaining for upload." )
+                    logger.info("There are ${remaining.get()} batches remaining for upload.")
                 }
+
+        logger.info("Done reading in data. There are ${remaining.get()} batches remaining for upload.")
+
+        fullyQueuedLock.unlock()
+        //Just in case remaining hit zero and failed to acquire lock before unlock.
+        if (remaining.decrementAndGet() == 0L) {
+            integrationCompletedLatch.countDown()
+        }
 
         integrationCompletedLatch.await()
 
