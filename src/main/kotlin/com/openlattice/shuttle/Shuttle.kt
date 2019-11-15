@@ -103,7 +103,7 @@ class Shuttle(
             uploadBatchSize: Int,
             rowColsToPrint: List<String>
     ): Long {
-        logger.info("Ta")
+        logger.info("Takeoff! Starting primary thrusters.")
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integrationQueue = Queues
