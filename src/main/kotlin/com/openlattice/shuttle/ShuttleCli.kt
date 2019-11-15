@@ -27,6 +27,7 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.NOTIFICATION_EMAILS
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PASSWORD
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.POSTGRES
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PROFILES
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.READ_RATE_LIMIT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_EXPECTED_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SERVER
@@ -134,13 +135,18 @@ fun main(args: Array<String>) {
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
             val sql = cl.getOptionValue(SQL)
             rowColsToPrint = configuration.primaryKeyColumns
+            val readRateLimit = if (cl.hasOption(READ_RATE_LIMIT)) {
+                cl.getOptionValue(READ_RATE_LIMIT).toInt()
+            } else {
+                JdbcPayload.DEFAULT_PERMITS_PER_SECOND.toInt()
+            }
 
             payload = if (cl.hasOption(FETCHSIZE)) {
                 val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
                 logger.info("Using a fetch size of $fetchSize")
-                JdbcPayload(hds, sql, fetchSize)
+                JdbcPayload(hds, sql, readRateLimit.toDouble(), fetchSize, readRateLimit != 0)
             } else {
-                JdbcPayload(hds, sql)
+                JdbcPayload(hds, sql, readRateLimit.toDouble(), readRateLimit != 0)
             }
         }
         cl.hasOption(CSV) -> {// get csv payload
@@ -230,9 +236,13 @@ fun main(args: Array<String>) {
         require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
         val bucket = pgCfg[0]
         val region = pgCfg[1]
-        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)).withRegion(RegionUtils.getRegion(region).name).build()
-        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java )
-    } else { MissionParameters.empty() }
+        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(
+                InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)
+        ).withRegion(RegionUtils.getRegion(region).name).build()
+        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java)
+    } else {
+        MissionParameters.empty()
+    }
 
     //TODO: Use the right method to select the JWT token for the appropriate environment.
 
@@ -240,7 +250,7 @@ fun main(args: Array<String>) {
         cl.hasOption(TOKEN) -> {
             Preconditions.checkArgument(!cl.hasOption(PASSWORD))
             val jwt = cl.getOptionValue(TOKEN)
-            MissionControl(environment, Supplier { jwt }, s3BucketUrl,shuttleConfig)
+            MissionControl(environment, Supplier { jwt }, s3BucketUrl, shuttleConfig)
         }
         cl.hasOption(USER) -> {
             Preconditions.checkArgument(cl.hasOption(PASSWORD))
@@ -284,7 +294,7 @@ fun main(args: Array<String>) {
 
     try {
         MissionControl.setEmailConfiguration(emailConfiguration)
-        val shuttle = missionControl.prepare(flightPlan, createEntitySets,  rowColsToPrint, contacts)
+        val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts)
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()
     } catch (ex: Exception) {

@@ -52,6 +52,7 @@ class ShuttleCliOptions {
         const val NOTIFICATION_EMAILS = "notify-emails"
         const val FROM_EMAIL = "from-email"
         const val FROM_EMAIL_PASSWORD = "from-email-password"
+        const val READ_RATE_LIMIT = "read-rate-limit"
         const val SERVER = "server"
         const val SMTP_SERVER = "smtp-server"
         const val SMTP_SERVER_PORT = "smtp-server-port"
@@ -80,6 +81,12 @@ class ShuttleCliOptions {
                 .longOpt(UPLOAD_SIZE)
                 .hasArg(true)
                 .argName("upload size")
+                .build()
+
+        private val readRateLimit = Option.builder()
+                .longOpt(READ_RATE_LIMIT)
+                .hasArg(true)
+                .argName("read-rate-limit")
                 .build()
 
         private val environmentOption = Option.builder()
@@ -255,6 +262,7 @@ class ShuttleCliOptions {
                     .addOption(s3Option)
                     .addOption(fetchSize)
                     .addOption(uploadSize)
+                    .addOption(readRateLimit)
                     .addOption(notificationEmailsOption)
                     .addOption(fromEmailOption)
                     .addOption(fromEmailPasswordOption)

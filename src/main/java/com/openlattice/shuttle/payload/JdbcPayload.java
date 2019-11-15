@@ -21,28 +21,39 @@ import java.util.stream.Stream;
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class JdbcPayload implements Payload {
-    private static final Logger logger                     = LoggerFactory.getLogger( JdbcPayload.class );
-    private static final int    DEFAULT_FETCH_SIZE         = 50_000;
-    private static final double DEFAULT_PERMITS_PER_SECOND = 10_000.0;
+    public static final  double           DEFAULT_PERMITS_PER_SECOND = 10_000.0;
+    private static final Logger           logger                     = LoggerFactory.getLogger( JdbcPayload.class );
+    private static final int              DEFAULT_FETCH_SIZE         = 50_000;
+    private final        HikariDataSource hds;
+    private final        String           sql;
+    private final        RateLimiter      rateLimiter;
+    private final        boolean          rateLimited;
+    private final        int              fetchSize;
 
-    private final HikariDataSource hds;
-    private final String           sql;
-    private final RateLimiter      rateLimiter;
-    private final int              fetchSize;
-
-    public JdbcPayload( HikariDataSource hds, String sql ) {
-        this( hds, sql, DEFAULT_PERMITS_PER_SECOND, DEFAULT_FETCH_SIZE );
+    public JdbcPayload( HikariDataSource hds, String sql, double permitsPerSecond, boolean rateLimited ) {
+        this( hds, sql, permitsPerSecond, DEFAULT_FETCH_SIZE, rateLimited );
     }
 
-    public JdbcPayload( HikariDataSource hds, String sql, int fetchSize ) {
-        this( hds, sql, DEFAULT_PERMITS_PER_SECOND, fetchSize );
+    public JdbcPayload(
+            HikariDataSource hds,
+            String sql,
+            int fetchSize,
+            double permitsPerSecond,
+            boolean rateLimited ) {
+        this( hds, sql, permitsPerSecond, fetchSize, rateLimited );
     }
 
-    public JdbcPayload( HikariDataSource hds, String sql, double permitsPerSecond, int fetchSize ) {
+    public JdbcPayload(
+            HikariDataSource hds,
+            String sql,
+            double permitsPerSecond,
+            int fetchSize,
+            boolean rateLimited ) {
         this.rateLimiter = RateLimiter.create( permitsPerSecond );
         this.hds = hds;
         this.sql = sql;
         this.fetchSize = fetchSize;
+        this.rateLimited = rateLimited;
     }
 
     @Override public Stream<Map<String, Object>> getPayload() {
@@ -52,7 +63,8 @@ public class JdbcPayload implements Payload {
             Statement statement = conn.createStatement( ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY );
             statement.setFetchSize( fetchSize );
             final ResultSet rs = statement.executeQuery( sql );
-            return StreamUtil.stream( () -> new ResultSetStringIterator( conn, statement, rs, rateLimiter, sql ) );
+            return StreamUtil
+                    .stream( () -> new ResultSetStringIterator( conn, statement, rs, rateLimiter, rateLimited, sql ) );
         } catch ( SQLException e ) {
             logger.info( "Unable to get payload.", e );
         }
@@ -68,6 +80,7 @@ public class JdbcPayload implements Payload {
         private final List<String>  columns;
         private final int           columnCount;
         private final RateLimiter   rateLimiter;
+        private final boolean       rateLimited;
         private final String        sql;
         private final AtomicLong    readCount = new AtomicLong( 0 );
         private       AtomicBoolean hasNext   = new AtomicBoolean( false );
@@ -77,12 +90,14 @@ public class JdbcPayload implements Payload {
                 Statement stmt,
                 ResultSet rs,
                 RateLimiter rateLimiter,
+                boolean rateLimited,
                 String sql ) {
             this.connection = connection;
             this.stmt = stmt;
             this.rs = rs;
             this.rateLimiter = rateLimiter;
             this.sql = sql;
+            this.rateLimited = rateLimited;
             ResultSetMetaData rsm = null;
             try {
                 rsm = rs.getMetaData();
@@ -102,7 +117,7 @@ public class JdbcPayload implements Payload {
         }
 
         @Override public Map<String, Object> next() {
-            rateLimiter.acquire();
+            if ( rateLimited ) { rateLimiter.acquire(); }
             Map<String, Object> data = read( columns, rs );
             try {
                 boolean hn = rs.next();
@@ -115,6 +130,7 @@ public class JdbcPayload implements Payload {
                 }
             } catch ( SQLException e ) {
                 logger.error( "Unable to advance to next item.", e );
+                throw new IllegalStateException( "Issue while performing SQL operation!", e );
             }
             final var currentReadCount = readCount.incrementAndGet();
             if ( ( currentReadCount % READ_COUNT_THRESHOLD ) == 0 ) {
