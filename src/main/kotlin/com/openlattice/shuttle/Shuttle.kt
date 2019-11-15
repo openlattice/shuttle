@@ -37,12 +37,6 @@ import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.shuttle.payload.Payload
 
-import com.openlattice.shuttle.payload.CsvPayload
-import com.openlattice.shuttle.payload.XmlFilesPayload
-import com.openlattice.shuttle.source.LocalFileOrigin
-import com.openlattice.shuttle.source.S3BucketOrigin
-import org.apache.commons.cli.CommandLine
-
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -57,7 +51,6 @@ import java.util.concurrent.atomic.LongAdder
 import java.util.stream.Stream
 import kotlin.math.max
 import kotlin.streams.asSequence
-import kotlin.streams.asStream
 
 /**
  *
@@ -91,6 +84,7 @@ class Shuttle(
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
         private val metrics = MetricRegistry()
         private val uploadRate = metrics.meter(MetricRegistry.name(Shuttle::class.java, "uploads"))
+        private val transformRate = metrics.meter(MetricRegistry.name(Shuttle::class.java, "transforms"))
         private val reporter = Slf4jReporter.forRegistry(metrics)
                 .outputTo(LoggerFactory.getLogger(Shuttle::class.java))
                 .convertRatesTo(TimeUnit.SECONDS)
@@ -109,13 +103,14 @@ class Shuttle(
             uploadBatchSize: Int,
             rowColsToPrint: List<String>
     ): Long {
+        logger.info("Ta")
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integrationQueue = Queues
                 .newArrayBlockingQueue<List<Map<String, Any>>>(
                         max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
                 )
-        val integrationSequence = generateSequence { integrationQueue.take() }
+        val integrationStream = Stream.generate { integrationQueue.take() }
         val rows = LongAdder()
         val sw = Stopwatch.createStarted()
         val remaining = AtomicLong(0)
@@ -124,8 +119,9 @@ class Shuttle(
         val integrationCompletedLatch = CountDownLatch(1);
 
         uploadingExecutor.execute {
-            integrationSequence.asStream().parallel().map { batch ->
+            integrationStream.parallel().map { batch ->
                 try {
+                    val batchSw = Stopwatch.createStarted()
                     rows.add(batch.size.toLong())
                     val batchCtr = batchCounter.incrementAndGet()
                     minRows[batchCtr] = batch[0]
@@ -134,11 +130,14 @@ class Shuttle(
                     MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
                 } catch (err: OutOfMemoryError) {
                     MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
+                } finally {
+                    transformRate.mark()
+                    logger.info("Batch took to {} ms to transform.")
                 }
             }.forEach { batch ->
                 try {
                     logger.info("Starting entity key id generation.")
-                    val sw = Stopwatch.createStarted()
+                    val ekSw = Stopwatch.createStarted()
                     val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
                             + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
                     val entityKeyIds = entityKeys.zip(
@@ -148,7 +147,7 @@ class Shuttle(
                     logger.info(
                             "Generated {} entity key ids in {} ms",
                             entityKeys.size,
-                            sw.elapsed(TimeUnit.MILLISECONDS)
+                            ekSw.elapsed(TimeUnit.MILLISECONDS)
                     )
 
                     integrationDestinations.forEach { (storageDestination, integrationDestination) ->
@@ -175,9 +174,11 @@ class Shuttle(
 
                     minRows.remove(batch.batchId)
                     uploadRate.mark(entityKeys.size.toLong())
-                    logger.info("Processed {} rows.", rows.sum())
+                    logger.info("Processed {} current batch in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.", rows.sum())
+                    logger.info("Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.", rows.sum())
                     logger.info("Current entities progress: {}", integratedEntities)
                     logger.info("Current edges progress: {}", integratedEdges)
+
                 } catch (ex: Exception) {
                     if (rowColsToPrint.isNotEmpty()) {
                         logger.info("Earliest unintegrated row:")
