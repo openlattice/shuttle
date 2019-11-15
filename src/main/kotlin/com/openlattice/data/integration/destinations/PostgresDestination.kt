@@ -125,7 +125,7 @@ class PostgresDestination(
                                                 updatePropertyValueVersion,
                                                 tombstoneLinks,
                                                 entitySet,
-                                                partiWhy dtionsVersion,
+                                                partitionsVersion,
                                                 entityKeyIdsArr,
                                                 partitionsArr,
                                                 propertyTypeIdsArr,
