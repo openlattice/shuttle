@@ -87,6 +87,7 @@ class PostgresDestination(
             val count = data
                     .groupBy({ it.entitySetId }, { normalize(entityKeyIds, it) })
                     .map { (entitySetId, entities) ->
+                        val esSw = Stopwatch.createStarted()
                         val entitySet = entitySets.getValue(entitySetId)
 
                         val partitions = entitySet.partitions.toList()
@@ -109,8 +110,9 @@ class PostgresDestination(
 
                         val writeVersionArray = PostgresArrays.createLongArray(connection, writeVersion)
 
-                        entities.groupBy { getPartition(it.first, partitions) }
+                        val esCount = entities.groupBy { getPartition(it.first, partitions) }
                                 .map { (partition, entityPairs) ->
+                                    val partSw = Stopwatch.createStarted()
                                     val entityMap = entityPairs.toMap()
                                     val entityKeyIdsArr = PostgresArrays.createUuidArray(connection, entityMap.keys)
                                     val partitionsArr = PostgresArrays.createIntArray(
@@ -143,7 +145,7 @@ class PostgresDestination(
                                             writeVersion
                                     )
 
-                                    commitEntities(
+                                    val committed = commitEntities(
                                             upsertEntities,
                                             entitySetId,
                                             partition,
@@ -151,12 +153,21 @@ class PostgresDestination(
                                             writeVersionArray,
                                             writeVersion
                                     )
-                                }.sum().toLong()
+                                    logger.info(
+                                            "Integrating $committed entities for partition $partition took {} ms",
+                                            partSw.elapsed(TimeUnit.MILLISECONDS)
+                                    )
+                                    committed.toLong()
+                                }.sum()
+                        logger.info(
+                                "Integrating $esCount entities for entity set $entitySetId took {} ms",
+                                esSw.elapsed(TimeUnit.MILLISECONDS)
+                        )
+                        esCount
                     }.sum()
             logger.info("Integration $count properties took ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
             count
         }
-
     }
 
     override fun integrateAssociations(
@@ -211,11 +222,13 @@ class PostgresDestination(
 
 
     private fun normalize(entityKeyIds: Map<EntityKey, UUID>, entity: Entity): Pair<UUID, Map<UUID, Set<Any>>> {
+        val sw = Stopwatch.createStarted()
         val propertyValues = mapper.readValue<Map<UUID, Set<Any>>>(mapper.writeValueAsBytes(entity.details))
         val validatedPropertyValues = Multimaps.asMap(
                 JsonDeserializer.validateFormatAndNormalize(propertyValues, propertyTypes) {
                     "Error validating during integration"
                 })
+        logger.info("Normalizing took {} ms", sw.elapsed(TimeUnit.MILLISECONDS))
         return entityKeyIds.getValue(entity.key) to validatedPropertyValues
     }
 
