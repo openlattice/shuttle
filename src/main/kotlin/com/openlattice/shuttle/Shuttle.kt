@@ -132,7 +132,7 @@ class Shuttle(
                     MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
                 } finally {
                     transformRate.mark()
-                    logger.info("Batch took to {} ms to transform.")
+                    logger.info("Batch took to {} ms to transform.", batchSw.elapsed(TimeUnit.MILLISECONDS))
                 }
             }.forEach { batch ->
                 try {
