@@ -87,7 +87,7 @@ class PostgresDestination(
             val count = data
                     .groupBy({ it.entitySetId }, { normalize(entityKeyIds, it) })
                     .map { (entitySetId, entities) ->
-                        logger.info("Integrating entity set {}", entitySets.getValue( entitySetId).name )
+                        logger.info("Integrating entity set {}", entitySets.getValue(entitySetId).name)
                         val esSw = Stopwatch.createStarted()
                         val entitySet = entitySets.getValue(entitySetId)
 
@@ -134,7 +134,7 @@ class PostgresDestination(
                                     }
 
 
-                                    upsertEntities(
+                                    val committedProperties = upsertEntities(
                                             connection,
                                             upsertPropertyValues,
                                             entitySet,
@@ -146,7 +146,7 @@ class PostgresDestination(
                                             writeVersion
                                     )
 
-                                    val committed = commitEntities(
+                                    commitEntities(
                                             upsertEntities,
                                             entitySetId,
                                             partition,
@@ -154,11 +154,13 @@ class PostgresDestination(
                                             writeVersionArray,
                                             writeVersion
                                     )
+                                    val committed = entityMap.size.toLong()
                                     logger.info(
-                                            "Integrating $committed entities for partition $partition took {} ms",
+                                            "Integrated $committed entities and $committedProperties properties for partition $partition in {} ms",
+                                            entityMap.size,
                                             partSw.elapsed(TimeUnit.MILLISECONDS)
                                     )
-                                    committed.toLong()
+                                    committed
                                 }.sum()
                         logger.info(
                                 "Integrating $esCount entities for entity set $entitySetId took {} ms",
@@ -166,7 +168,7 @@ class PostgresDestination(
                         )
                         esCount
                     }.sum()
-            logger.info("Integrating $count properties took ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
+            logger.info("Integrating $count entities took ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
             count
         }
     }
