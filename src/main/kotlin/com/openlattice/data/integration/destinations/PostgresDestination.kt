@@ -110,7 +110,9 @@ class PostgresDestination(
                         }
 
                         val writeVersionArray = PostgresArrays.createLongArray(connection, writeVersion)
-
+                        logger.info("Preparing queries for entity set {} took {} ms",
+                                    entitySets.getValue(entitySetId).name,
+                                    esSw.elapsed(TimeUnit.MILLISECONDS))
                         val esCount = entities.groupBy { getPartition(it.first, partitions) }
                                 .map { (partition, entityPairs) ->
                                     val partSw = Stopwatch.createStarted()
@@ -147,7 +149,9 @@ class PostgresDestination(
                                     )
 
                                     logger.info(
-                                            "Upserted $committedProperties properties in {} ms ",
+                                            "Upserted $committedProperties properties for partition $partition and entity set {} in {} ms ",
+                                            partition,
+
                                             partSw.elapsed(TimeUnit.MILLISECONDS)
                                     )
 
@@ -161,14 +165,15 @@ class PostgresDestination(
                                     )
                                     val committed = entityMap.size.toLong()
                                     logger.info(
-                                            "Integrated $committed entities and $committedProperties properties for partition $partition in {} ms",
-                                            entityMap.size,
+                                            "Integrated $committed entities and $committedProperties properties for partition $partition and entity set {} in {} ms",
+                                            entitySets.getValue(entitySetId).name,
                                             partSw.elapsed(TimeUnit.MILLISECONDS)
                                     )
                                     committed
                                 }.sum()
                         logger.info(
-                                "Integrating $esCount entities for entity set $entitySetId took {} ms",
+                                "Integrating $esCount entities for entity set {} took {} ms",
+                                entitySets.getValue(entitySetId).name,
                                 esSw.elapsed(TimeUnit.MILLISECONDS)
                         )
                         esCount
