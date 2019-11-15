@@ -256,7 +256,7 @@ class PostgresDestination(
             versionArray: java.sql.Array,
             version: Long,
             entitySetId: UUID = entitySet.id
-    ): Int {
+    ): Long {
 
         /*
          * We do not need entity level locking as our version field ensures that data is consistent even across
@@ -298,7 +298,7 @@ class PostgresDestination(
                     upsertPropertyValue.addBatch()
                 }
             }
-            upsertPropertyValues.values.map { it.executeBatch().sum() }.sum()
+            upsertPropertyValues.values.map { it.executeBatch().sum().toLong() }.sum()
         }.sum()
     }
 
@@ -322,7 +322,6 @@ class PostgresDestination(
         updatePropertyValueVersion.setArray(6, entityKeyIdsArr)
         updatePropertyValueVersion.setArray(7, partitionsArr)
         updatePropertyValueVersion.setInt(8, partitionsVersion)
-        updatePropertyValueVersion.addBatch()
 
         tombstoneLinks.setLong(1, -version)
         tombstoneLinks.setLong(2, -version)
@@ -332,7 +331,6 @@ class PostgresDestination(
         tombstoneLinks.setArray(6, entityKeyIdsArr)
         tombstoneLinks.setArray(7, partitionsArr)
         tombstoneLinks.setInt(8, partitionsVersion)
-        tombstoneLinks.addBatch()
 
 
         val numUpdated = updatePropertyValueVersion.executeUpdate()
