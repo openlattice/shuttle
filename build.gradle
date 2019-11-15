@@ -83,7 +83,7 @@ if (GC == 'null' || GC == null || GC == "") {
     GC = "-XX:+UseG1GC"
 }
 
-println "Using java args for running ${projectName}: Xms=" + S_XMS + ",Xmx=" + S_XMX + " -server"
+println "Using java args for running ${projectName}: Xms=" + S_XMS + ",Xmx=" + S_XMX + ",forkJoinPool=" + PARALLEL + " -server"
 
 applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server", PARALLEL]
 applicationDefaultJvmArgs += ["--add-modules", "java.se",
@@ -109,7 +109,6 @@ run {
 }
 
 println "Enabled profiles: " + Arrays.toString(run.args)
-
 
 
 def versions = [
