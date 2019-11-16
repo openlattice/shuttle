@@ -21,6 +21,8 @@
 
 package com.openlattice.testing.util
 
+import org.apache.commons.lang3.RandomUtils
+import org.junit.Ignore
 import org.junit.Test
 import kotlin.streams.asStream
 
@@ -30,11 +32,16 @@ import kotlin.streams.asStream
  */
 class ParallelPayloadTester {
     @Test
+    @Ignore
     fun testPayload() {
-        Payload( 100_000_000 ) .asSequence().chunked(10).asStream().parallel()
-                .map { it.sum() }
+        Payload(1000).asSequence().chunked(10).asStream().parallel()
+                .map {
+                    println("Start ${Thread.currentThread().id}")
+                    Thread.sleep(RandomUtils.nextLong(1, 500))
+                    it.max()
+                }
                 .forEach {
-                    println(it)
+                    println("Thread ${Thread.currentThread().id} = $it")
                 }
     }
 }

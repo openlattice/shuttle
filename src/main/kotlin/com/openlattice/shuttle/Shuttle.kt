@@ -121,11 +121,9 @@ class Shuttle(
         payload.asSequence()
                 .chunked(uploadBatchSize)
                 .asStream()
-                .peek { remaining.incrementAndGet() }
                 .parallel()
                 .map { batch ->
-
-                    logger.info("There are ${remaining.get()} batches remaining for upload.")
+                    logger.info("There are ${remaining.incrementAndGet()} batches in process for upload.")
                     val batchSw = Stopwatch.createStarted()
                     try {
                         rows.add(batch.size.toLong())
@@ -201,13 +199,9 @@ class Shuttle(
                         }
                         MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
                     } finally {
-
-                        logger.info("There are ${remaining.get()} batches remaining for upload.")
-
+                        logger.info("There are ${remaining.decrementAndGet()} batches remaining for upload.")
                     }
                 }
-
-
 
         return StorageDestination.values().map {
             logger.info(
