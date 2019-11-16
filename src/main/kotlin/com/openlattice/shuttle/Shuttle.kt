@@ -42,18 +42,15 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.concurrent.Executors
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
-import java.util.concurrent.locks.ReentrantLock
-import kotlin.streams.asStream
-
-
-
 
 
 const val DEFAULT_UPLOAD_SIZE = 100_000
 
+private val threads = Runtime.getRuntime().availableProcessors()
 
 /**
  *
@@ -69,7 +66,7 @@ class Shuttle(
         private val tableColsToPrint: List<String>,
         private val parameters: MissionParameters,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
-                Executors.newSingleThreadExecutor()
+                Executors.newFixedThreadPool(2 * threads)
         )
 ) {
     companion object {
@@ -88,6 +85,7 @@ class Shuttle(
         }
     }
 
+    private val uploadRegulator = Semaphore(threads)
 
     private fun takeoff(
             flight: Flight,
@@ -107,93 +105,96 @@ class Shuttle(
 
         payload.asSequence()
                 .chunked(uploadBatchSize)
-                .asStream()
-                .parallel()
-                .map { batch ->
-                    logger.info("There are ${remaining.incrementAndGet()} batches in process for upload.")
-                    val batchSw = Stopwatch.createStarted()
-                    try {
-                        rows.add(batch.size.toLong())
-                        val batchCtr = batchCounter.incrementAndGet()
-                        minRows[batchCtr] = batch[0]
-                        return@map impulse(flight, batch, batchCtr)
-                    } catch (ex: Exception) {
-                        MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
-                    } catch (err: OutOfMemoryError) {
-                        MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
-                    } finally {
-                        transformRate.mark()
-                        logger.info("Batch took to {} ms to transform.", batchSw.elapsed(TimeUnit.MILLISECONDS))
-                    }
-                }.forEach { batch ->
-                    try {
-                        logger.info("Starting entity key id generation in thread {}", Thread.currentThread().id)
-                        val ekSw = Stopwatch.createStarted()
-                        val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
-                                + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
-                        val entityKeyIds = entityKeys.zip(
-                                dataIntegrationApi.getEntityKeyIds(entityKeys)
-                        ).toMap()
+                .forEach { chunk ->
+                    uploadRegulator.acquire()
+                    uploadingExecutor.submit {
+                        logger.info("There are ${remaining.incrementAndGet()} batches in process for upload.")
+                        val batchSw = Stopwatch.createStarted()
+                        val batch = try {
+                            rows.add(chunk.size.toLong())
+                            val batchCtr = batchCounter.incrementAndGet()
+                            minRows[batchCtr] = chunk[0]
+                            impulse(flight, chunk, batchCtr)
+                        } catch (ex: Exception) {
+                            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
+                        } catch (err: OutOfMemoryError) {
+                            MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
+                        } finally {
+                            transformRate.mark()
+                            logger.info("Batch took to {} ms to transform.", batchSw.elapsed(TimeUnit.MILLISECONDS))
+                        }
 
-                        logger.info(
-                                "Generated {} entity key ids in {} ms",
-                                entityKeys.size,
-                                ekSw.elapsed(TimeUnit.MILLISECONDS)
-                        )
+                        try {
+                            logger.info("Starting entity key id generation in thread {}", Thread.currentThread().id)
+                            val ekSw = Stopwatch.createStarted()
+                            val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
+                                    + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
+                            val entityKeyIds = entityKeys.zip(
+                                    dataIntegrationApi.getEntityKeyIds(entityKeys)
+                            ).toMap()
 
-                        integrationDestinations.forEach { (storageDestination, integrationDestination) ->
-                            if (batch.entities.containsKey(storageDestination)) {
-                                integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                        integrationDestination.integrateEntities(
-                                                batch.entities.getValue(storageDestination),
-                                                entityKeyIds,
-                                                updateTypes
-                                        )
-                                )
+                            logger.info(
+                                    "Generated {} entity key ids in {} ms",
+                                    entityKeys.size,
+                                    ekSw.elapsed(TimeUnit.MILLISECONDS)
+                            )
+
+                            integrationDestinations.forEach { (storageDestination, integrationDestination) ->
+                                if (batch.entities.containsKey(storageDestination)) {
+                                    integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                            integrationDestination.integrateEntities(
+                                                    batch.entities.getValue(storageDestination),
+                                                    entityKeyIds,
+                                                    updateTypes
+                                            )
+                                    )
+                                }
+
+                                if (batch.associations.containsKey(storageDestination)) {
+                                    integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                            integrationDestination.integrateAssociations(
+                                                    batch.associations.getValue(storageDestination),
+                                                    entityKeyIds,
+                                                    updateTypes
+                                            )
+                                    )
+                                }
                             }
 
-                            if (batch.associations.containsKey(storageDestination)) {
-                                integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                        integrationDestination.integrateAssociations(
-                                                batch.associations.getValue(storageDestination),
-                                                entityKeyIds,
-                                                updateTypes
-                                        )
-                                )
+                            minRows.remove(batch.batchId)
+                            uploadRate.mark(entityKeys.size.toLong())
+                            logger.info(
+                                    "Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.",
+                                    batch.batchId
+                            )
+                            logger.info(
+                                    "=================================================================================="
+                            )
+                            logger.info(
+                                    "Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.", rows.sum()
+                            )
+                            logger.info("Current entities progress: {}", integratedEntities)
+                            logger.info("Current edges progress: {}", integratedEdges)
+                            logger.info(
+                                    "==================================================================================="
+                            )
+
+                        } catch (ex: Exception) {
+                            if (rowColsToPrint.isNotEmpty()) {
+                                logger.info("Earliest unintegrated row:")
+                                printRow(minRows.firstEntry().value, rowColsToPrint)
                             }
+                            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
+                        } catch (err: OutOfMemoryError) {
+                            if (rowColsToPrint.isNotEmpty()) {
+                                logger.info("Earliest unintegrated row:")
+                                printRow(minRows.firstEntry().value, rowColsToPrint)
+                            }
+                            MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
+                        } finally {
+                            logger.info("There are ${remaining.decrementAndGet()} batches remaining for upload.")
                         }
-
-                        minRows.remove(batch.batchId)
-                        uploadRate.mark(entityKeys.size.toLong())
-                        logger.info(
-                                "Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.",
-                                batch.batchId
-                        )
-                        logger.info(
-                                "=================================================================================="
-                        )
-                        logger.info("Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.", rows.sum())
-                        logger.info("Current entities progress: {}", integratedEntities)
-                        logger.info("Current edges progress: {}", integratedEdges)
-                        logger.info(
-                                "==================================================================================="
-                        )
-
-                    } catch (ex: Exception) {
-                        if (rowColsToPrint.isNotEmpty()) {
-                            logger.info("Earliest unintegrated row:")
-                            printRow(minRows.firstEntry().value, rowColsToPrint)
-                        }
-                        MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
-                    } catch (err: OutOfMemoryError) {
-                        if (rowColsToPrint.isNotEmpty()) {
-                            logger.info("Earliest unintegrated row:")
-                            printRow(minRows.firstEntry().value, rowColsToPrint)
-                        }
-                        MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
-                    } finally {
-                        logger.info("There are ${remaining.decrementAndGet()} batches remaining for upload.")
-                    }
+                    }.addListener(Runnable { uploadRegulator.release() }, uploadingExecutor)
                 }
 
         return StorageDestination.values().map {
