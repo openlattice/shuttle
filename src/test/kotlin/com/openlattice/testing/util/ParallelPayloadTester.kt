@@ -35,13 +35,11 @@ class ParallelPayloadTester {
     @Ignore
     fun testPayload() {
         Payload(1000).asSequence().chunked(10).asStream().parallel()
-                .map {
+                .forEach {
                     println("Start ${Thread.currentThread().id}")
                     Thread.sleep(RandomUtils.nextLong(1, 500))
-                    it.max()
-                }
-                .forEach {
-                    println("Thread ${Thread.currentThread().id} = $it")
+                    val m = it.max()
+                    println("Thread ${Thread.currentThread().id} = $m")
                 }
     }
 }

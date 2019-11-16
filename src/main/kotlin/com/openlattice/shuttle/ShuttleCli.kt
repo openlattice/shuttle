@@ -1,9 +1,7 @@
 package com.openlattice.shuttle
 
 import com.amazonaws.auth.InstanceProfileCredentialsProvider
-import com.amazonaws.regions.Region
 import com.amazonaws.regions.RegionUtils
-import com.amazonaws.regions.Regions
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.dataloom.mappers.ObjectMappers
@@ -39,10 +37,7 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.UPLOAD_SIZE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.USER
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.XML
 import com.openlattice.shuttle.config.IntegrationConfig
-import com.openlattice.shuttle.payload.CsvPayload
-import com.openlattice.shuttle.payload.JdbcPayload
-import com.openlattice.shuttle.payload.Payload
-import com.openlattice.shuttle.payload.XmlFilesPayload
+import com.openlattice.shuttle.payload.*
 import com.openlattice.shuttle.source.LocalFileOrigin
 import com.openlattice.shuttle.source.S3BucketOrigin
 import org.apache.commons.cli.CommandLine
@@ -138,15 +133,15 @@ fun main(args: Array<String>) {
             val readRateLimit = if (cl.hasOption(READ_RATE_LIMIT)) {
                 cl.getOptionValue(READ_RATE_LIMIT).toInt()
             } else {
-                JdbcPayload.DEFAULT_PERMITS_PER_SECOND.toInt()
+                DEFAULT_PERMITS_PER_SECOND.toInt()
             }
 
             payload = if (cl.hasOption(FETCHSIZE)) {
                 val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
                 logger.info("Using a fetch size of $fetchSize")
-                JdbcPayload(hds, sql, if(readRateLimit == 0) 1.0 else readRateLimit.toDouble(), fetchSize, readRateLimit != 0)
+                JdbcPayload(readRateLimit.toDouble(), hds, sql, fetchSize, readRateLimit != 0)
             } else {
-                JdbcPayload(hds, sql, if(readRateLimit == 0) 1.0 else readRateLimit.toDouble(), readRateLimit != 0)
+                JdbcPayload(readRateLimit.toDouble(), hds, sql, 0, readRateLimit != 0)
             }
         }
         cl.hasOption(CSV) -> {// get csv payload

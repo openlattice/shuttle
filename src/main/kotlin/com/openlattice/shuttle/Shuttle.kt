@@ -25,7 +25,6 @@ import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.Slf4jReporter
 import com.google.common.base.Stopwatch
 import com.google.common.collect.ImmutableList
-import com.google.common.collect.Queues
 import com.google.common.util.concurrent.ListeningExecutorService
 import com.google.common.util.concurrent.MoreExecutors
 import com.openlattice.ApiUtil
@@ -36,37 +35,29 @@ import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.shuttle.payload.Payload
-
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentSkipListMap
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
 import java.util.concurrent.locks.ReentrantLock
-import java.util.stream.Stream
-import kotlin.math.max
-import kotlin.streams.asSequence
 import kotlin.streams.asStream
 
-/**
- *
- * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
- */
 
 
-private val logger = LoggerFactory.getLogger(Shuttle::class.java)
+
+
 const val DEFAULT_UPLOAD_SIZE = 100_000
 
 
 /**
  *
- * This is the primary class for driving an integration. It is designed to cache all
+ * Integration driving logic.
  */
 class Shuttle(
         private val flightPlan: Map<Flight, Payload>,
@@ -100,7 +91,7 @@ class Shuttle(
 
     private fun takeoff(
             flight: Flight,
-            payload: Stream<Map<String, Any>>,
+            payload: Iterable<Map<String, Any?>>,
             uploadBatchSize: Int,
             rowColsToPrint: List<String>
     ): Long {
@@ -112,7 +103,7 @@ class Shuttle(
         val sw = Stopwatch.createStarted()
         val remaining = AtomicLong(0)
         val batchCounter = AtomicLong(0)
-        val minRows = ConcurrentSkipListMap<Long, Map<String, Any>>()
+        val minRows = ConcurrentSkipListMap<Long, Map<String, Any?>>()
         val fullyQueuedLock = ReentrantLock()
 
 
@@ -182,11 +173,15 @@ class Shuttle(
                                 "Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.",
                                 batch.batchId
                         )
-                        logger.info("==================================================================================")
+                        logger.info(
+                                "=================================================================================="
+                        )
                         logger.info("Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.", rows.sum())
                         logger.info("Current entities progress: {}", integratedEntities)
                         logger.info("Current edges progress: {}", integratedEdges)
-                        logger.info("===================================================================================")
+                        logger.info(
+                                "==================================================================================="
+                        )
 
                     } catch (ex: Exception) {
                         if (rowColsToPrint.isNotEmpty()) {
@@ -218,7 +213,7 @@ class Shuttle(
         }.sum()
     }
 
-    private fun printRow(row: Map<String, Any>, rowColsToPrint: List<String>) {
+    private fun printRow(row: Map<String, Any?>, rowColsToPrint: List<String>) {
         var rowHeaders = ""
         var contents = ""
         rowColsToPrint.forEach { colName ->
@@ -229,7 +224,7 @@ class Shuttle(
     }
 
     private fun buildPropertiesFromPropertyDefinitions(
-            row: Map<String, Any>,
+            row: Map<String, Any?>,
             propertyDefinitions: Collection<PropertyDefinition>
     )
             : Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
@@ -267,7 +262,7 @@ class Shuttle(
         return Pair(properties, addressedProperties);
     }
 
-    private fun impulse(flight: Flight, batch: List<Map<String, Any>>, batchNumber: Long): AddressedDataHolder {
+    private fun impulse(flight: Flight, batch: List<Map<String, Any?>>, batchNumber: Long): AddressedDataHolder {
         val addressedDataHolder = AddressedDataHolder(mutableMapOf(), mutableMapOf(), batchNumber)
 
         batch.forEach { row ->
@@ -382,7 +377,7 @@ class Shuttle(
         val sw = Stopwatch.createStarted()
         val total = flightPlan.entries.map { entry ->
             logger.info("Launching flight: {}", entry.key.name)
-            val count = takeoff(entry.key, entry.value.payload, uploadBatchSize, tableColsToPrint)
+            val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrint)
             logger.info("Finished flight: {}", entry.key.name)
             count
         }.sum()
