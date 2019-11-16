@@ -12,7 +12,7 @@ private val logger = LoggerFactory.getLogger(CsvPayload::class.java)
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class CsvPayload(val path: String) : Payload {
+open class CsvPayload(val path: String) : Payload {
     override fun getPayload(): Iterable<Map<String, Any?>> {
         return try {
             return object : Iterable<Map<String, Any?>> {

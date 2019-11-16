@@ -104,10 +104,6 @@ class Shuttle(
         val remaining = AtomicLong(0)
         val batchCounter = AtomicLong(0)
         val minRows = ConcurrentSkipListMap<Long, Map<String, Any?>>()
-        val fullyQueuedLock = ReentrantLock()
-
-
-        fullyQueuedLock.lock()
 
         payload.asSequence()
                 .chunked(uploadBatchSize)
