@@ -24,7 +24,7 @@ class JdbcPayload @JvmOverloads constructor(
         val fetchSize: Int = DEFAULT_FETCH_SIZE,
         val rateLimited: Boolean = true
 ) : Payload {
-    private val rateLimiter = RateLimiter.create(if( rateLimited ) 1.0 else permitsPerSecond)
+    private val rateLimiter = RateLimiter.create(if (rateLimited) permitsPerSecond else Double.MAX_VALUE)
     private lateinit var columns: List<String>
 
     override fun getPayload(): BasePostgresIterable<Map<String, Any?>> {
