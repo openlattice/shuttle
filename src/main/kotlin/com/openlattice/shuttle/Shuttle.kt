@@ -196,6 +196,7 @@ class Shuttle(
                         }
                     }.addListener(Runnable { uploadRegulator.release() }, uploadingExecutor)
                 }
+        uploadRegulator.acquire(threads)
 
         return StorageDestination.values().map {
             logger.info(
