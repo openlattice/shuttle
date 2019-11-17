@@ -82,31 +82,6 @@ abstract class BaseS3Destination(
         }
     }
 
-    private fun getS3Urls(s3entities: List<S3EntityData>): List<String> {
-        var currentDelayMillis = 1L
-        var currentRetryCount = 0
-        while (true) {
-            val maybeUrls: List<String>? = dataIntegrationApi.generatePresignedUrls(s3entities)
-            if (maybeUrls == null) {
-                currentRetryCount++
-                if (currentRetryCount <= MAX_RETRY_COUNT) {
-                    logger.info("Unable to retrieve url waiting $currentDelayMillis to try again.")
-                    Thread.sleep(currentDelayMillis)
-                    currentDelayMillis = max(
-                            MAX_DELAY_MILLIS,
-                            (currentDelayMillis * RandomUtils.nextDouble(1.25, 2.0).toLong())
-                    )
-                } else {
-                    logger.info("Exceeded max retry attempts to S3. Shutting down.")
-                    throw IllegalStateException("Unable to retrieve presigned urls. Maybe prod is down?")
-                }
-            } else {
-                return maybeUrls
-            }
-        }
-
-    }
-
     abstract fun createAssociations(entities: Set<DataEdgeKey>): Long
 
     override fun integrateAssociations(
@@ -126,30 +101,35 @@ abstract class BaseS3Destination(
     }
 
     private fun uploadToS3WithRetry(s3entitiesAndValues: List<Pair<S3EntityData, ByteArray>>) {
-        var s3eds = s3entitiesAndValues
+
 
         var currentDelayMillis = 1L
         var currentRetryCount = 0
         val retryStrategy = ExponentialBackoff(MAX_DELAY_MILLIS)
-        while (s3eds.isNotEmpty()) {
-            val (s3entities, values) = s3eds.unzip()
-            val presignedUrls =
-                    attempt(retryStrategy, MAX_RETRY_COUNT) {
-                        getS3Urls(s3entities)
-                    }
-            s3eds = s3entities
-                    .mapIndexed { index, s3EntityData ->
-                        Triple(s3EntityData, presignedUrls[index], values[index])
-                    }
+
+        val (s3entities, values) = s3entitiesAndValues.unzip()
+        val presignedUrls = attempt(retryStrategy, MAX_RETRY_COUNT) {
+            dataIntegrationApi.generatePresignedUrls(s3entities)
+        }
+
+        var s3eds = s3entities
+                .mapIndexed { index, s3EntityData ->
+                    Triple(s3EntityData, presignedUrls[index], values[index])
+                }
+
+        while (s3eds.isNotEmpty() && (currentRetryCount <= MAX_RETRY_COUNT)) {
+            s3eds = s3eds
                     .parallelStream()
                     .filter { (s3ed, url, bytes) ->
                         attempt(retryStrategy, MAX_RETRY_COUNT) {
                             try {
-                                s3Api.writeToS3(url, bytes as ByteArray)
+                                s3Api.writeToS3(url, bytes)
                                 false
                             } catch (ex: Exception) {
                                 logger.warn(
-                                        "Encountered an issue when uploading data (entitySetId=${s3ed.entitySetId}, entityKeyId=${s3ed.entityKeyId}, PropertType=${s3ed.propertyTypeId}). Retrying...",
+                                        "Encountered an issue when uploading data (entitySetId=${s3ed.entitySetId}, " +
+                                                "entityKeyId=${s3ed.entityKeyId}, PropertType=${s3ed.propertyTypeId}). " +
+                                                "Retrying...",
                                         ex
                                 )
                                 throw ex
@@ -157,25 +137,9 @@ abstract class BaseS3Destination(
                             }
                         }
                     }
-                    .map { (s3ed, _, bytes) ->
-                        s3ed to bytes
-                    }.collect(Collectors.toList())
-
-            if (s3eds.isNotEmpty()) {
-                currentRetryCount++
-                if (currentRetryCount <= MAX_RETRY_COUNT) {
-
-                    Thread.sleep(currentDelayMillis)
-                    currentDelayMillis = max(
-                            MAX_DELAY_MILLIS,
-                            (currentDelayMillis * RandomUtils.nextDouble(1.25, 2.0)).toLong()
-                    )
-
-                } else {
-                    throw IllegalStateException("Unable to retrieve presigned urls. Maybe prod is down?")
-                }
-            }
+                    .collect(Collectors.toList())
         }
+
     }
 
     override fun accepts(): StorageDestination {
