@@ -21,17 +21,8 @@
 
 package com.openlattice.data.integration.destinations
 
-import com.geekbeast.util.StopWatch
 import com.openlattice.data.*
-import com.openlattice.data.integration.*
-import com.openlattice.data.integration.Entity
-import com.openlattice.data.util.PostgresDataHasher
-import org.apache.commons.lang3.RandomUtils
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.slf4j.LoggerFactory
-import java.util.*
-import java.util.stream.Collectors
-import kotlin.math.max
 
 private val logger = LoggerFactory.getLogger(S3Destination::class.java)
 

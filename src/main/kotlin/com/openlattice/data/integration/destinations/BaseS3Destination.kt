@@ -21,7 +21,10 @@
 
 package com.openlattice.data.integration.destinations
 
+import com.geekbeast.util.ExponentialBackoff
+import com.geekbeast.util.Retryable
 import com.geekbeast.util.StopWatch
+import com.geekbeast.util.attempt
 import com.openlattice.data.*
 import com.openlattice.data.integration.*
 import com.openlattice.data.integration.Entity
@@ -46,19 +49,31 @@ abstract class BaseS3Destination(
         private val dataIntegrationApi: DataIntegrationApi
 ) : IntegrationDestination {
     override fun integrateEntities(
-            data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+            data: Collection<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
     ): Long {
         return StopWatch("Uploading ${data.size} entities to s3").use {
+
             val s3entities = data.flatMap { entity ->
                 val entityKeyId = entityKeyIds.getValue(entity.key)
+
                 entity.details.entries.flatMap { (propertyTypeId, properties) ->
-                    properties.map {
-                        S3EntityData(
-                                entity.entitySetId,
-                                entityKeyId,
-                                propertyTypeId,
-                                PostgresDataHasher.hashObjectToHex(it, EdmPrimitiveTypeKind.Binary)
-                        ) to it
+                    try {
+                        properties.map {
+                            S3EntityData(
+                                    entity.entitySetId,
+                                    entityKeyId,
+                                    propertyTypeId,
+                                    PostgresDataHasher.hashObjectToHex(it, EdmPrimitiveTypeKind.Binary)
+                            ) to it as ByteArray
+                        }
+                    } catch (ex: Exception) {
+                        if (ex is ClassCastException) {
+                            logger.error(
+                                    "Expected byte array, but found wrong data type for upload (entitySetId=${entity.key.entitySetId}, entityKeyId=$entityKeyId, PropertType=$propertyTypeId).",
+                                    ex
+                            )
+                        }
+                        throw ex
                     }
                 }
             }
@@ -92,70 +107,53 @@ abstract class BaseS3Destination(
 
     }
 
-    abstract fun createAssociations( entities: Set<DataEdgeKey> ) : Long
+    abstract fun createAssociations(entities: Set<DataEdgeKey>): Long
 
     override fun integrateAssociations(
-            data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+            data: Collection<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
     ): Long {
         return StopWatch("Uploading ${data.size} edges to s3").use {
-            val s3entities = data.flatMap { entity ->
-                val entityKeyId = entityKeyIds.getValue(entity.key)
-                entity.details.entries.flatMap { (propertyTypeId, properties) ->
-                    properties.map {
-                        S3EntityData(
-                                entity.key.entitySetId,
-                                entityKeyId,
-                                propertyTypeId,
-                                PostgresDataHasher.hashObjectToHex(it, EdmPrimitiveTypeKind.Binary)
-                        ) to it
-                    }
-                }
-            }
+            val entities = data.map { Entity(it.key, it.details) }
 
-            uploadToS3WithRetry(s3entities)
-
-            val entities = data.map {
+            val edges = data.map {
                 val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])
                 val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds[it.dst])
                 val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds[it.key])
                 DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
             }.toSet()
-            s3entities.size.toLong() + createAssociations(entities)
+            integrateEntities(entities, entityKeyIds, updateTypes) + createAssociations(edges)
         }
     }
 
-    private fun uploadToS3WithRetry(s3entitiesAndValues: List<Pair<S3EntityData, Any>>) {
+    private fun uploadToS3WithRetry(s3entitiesAndValues: List<Pair<S3EntityData, ByteArray>>) {
         var s3eds = s3entitiesAndValues
 
         var currentDelayMillis = 1L
         var currentRetryCount = 0
-
+        val retryStrategy = ExponentialBackoff(MAX_DELAY_MILLIS)
         while (s3eds.isNotEmpty()) {
             val (s3entities, values) = s3eds.unzip()
-            val presignedUrls = getS3Urls(s3entities)
-
+            val presignedUrls =
+                    attempt(retryStrategy, MAX_RETRY_COUNT) {
+                        getS3Urls(s3entities)
+                    }
             s3eds = s3entities
                     .mapIndexed { index, s3EntityData ->
                         Triple(s3EntityData, presignedUrls[index], values[index])
                     }
                     .parallelStream()
                     .filter { (s3ed, url, bytes) ->
-                        try {
-                            s3Api.writeToS3(url, bytes as ByteArray)
-                            false
-                        } catch (ex: Exception) {
-                            if (ex is ClassCastException) {
-                                logger.error(
-                                        "Expected byte array, but found wrong data type for upload (entitySetId=${s3ed.entitySetId}, entityKeyId=${s3ed.entityKeyId}, PropertType=${s3ed.propertyTypeId}).",
-                                        ex
-                                )
-                                throw ex
-                            } else {
+                        attempt(retryStrategy, MAX_RETRY_COUNT) {
+                            try {
+                                s3Api.writeToS3(url, bytes as ByteArray)
+                                false
+                            } catch (ex: Exception) {
                                 logger.warn(
                                         "Encountered an issue when uploading data (entitySetId=${s3ed.entitySetId}, entityKeyId=${s3ed.entityKeyId}, PropertType=${s3ed.propertyTypeId}). Retrying...",
                                         ex
                                 )
-                                true
+                                throw ex
+
                             }
                         }
                     }
@@ -166,7 +164,7 @@ abstract class BaseS3Destination(
             if (s3eds.isNotEmpty()) {
                 currentRetryCount++
                 if (currentRetryCount <= MAX_RETRY_COUNT) {
-                    logger.info("Waiting $currentDelayMillis to retry upload.")
+
                     Thread.sleep(currentDelayMillis)
                     currentDelayMillis = max(
                             MAX_DELAY_MILLIS,
@@ -183,4 +181,5 @@ abstract class BaseS3Destination(
     override fun accepts(): StorageDestination {
         return StorageDestination.S3
     }
+
 }
