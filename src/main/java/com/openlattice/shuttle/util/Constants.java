@@ -48,5 +48,8 @@ public final class Constants {
     public static final String COMPARISON          = "comparison";
     public static final String TIMEZONE            = "timezone";
     public static final String OPERATOR            = "operator";
-    public static final TimeZone DEFAULT_TIMEZONE    = TimeZones.America_NewYork;
+    public static final TimeZone DEFAULT_TIMEZONE  = TimeZones.America_NewYork;
+    public static final String LENGTH              = "length";
+    public static final String PRE                 = "pre";
+    public static final String CUTOFF              = "cutoff";
 }
