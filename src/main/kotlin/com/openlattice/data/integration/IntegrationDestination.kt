@@ -30,9 +30,9 @@ import java.util.*
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 interface IntegrationDestination {
-    fun integrateEntities(data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>) : Long
+    fun integrateEntities(data: Collection<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>) : Long
     fun integrateAssociations(
-            data: Set<Association>,
+            data: Collection<Association>,
             entityKeyIds: Map<EntityKey, UUID>,
             updateTypes: Map<UUID, UpdateType>
     ) : Long

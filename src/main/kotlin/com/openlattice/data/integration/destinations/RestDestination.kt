@@ -21,11 +21,14 @@
 
 package com.openlattice.data.integration.destinations
 
+import com.geekbeast.util.ExponentialBackoff
+import com.geekbeast.util.attempt
 import com.openlattice.data.*
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
 import com.openlattice.data.integration.IntegrationDestination
 import com.openlattice.data.integration.StorageDestination
+import com.openlattice.shuttle.MAX_DELAY
 import java.util.*
 
 /**
@@ -35,7 +38,7 @@ class RestDestination(
         private val dataApi: DataApi
 ) : IntegrationDestination {
     override fun integrateEntities(
-            data: Set<Entity>,
+            data: Collection<Entity>,
             entityKeyIds: Map<EntityKey, UUID>,
             updateTypes: Map<UUID, UpdateType>
     ): Long {
@@ -44,30 +47,29 @@ class RestDestination(
                 .mapValues { it.value.toMap() }
 
         return entitiesByEntitySet.entries.parallelStream().mapToLong { (entitySetId, entities) ->
-            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateTypes[entitySetId]).toLong()
+            attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRY_COUNT) {
+                dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateTypes[entitySetId]).toLong()
+            }
         }.sum()
     }
 
     override fun integrateAssociations(
-            data: Set<Association>,
+            data: Collection<Association>,
             entityKeyIds: Map<EntityKey, UUID>,
             updateTypes: Map<UUID, UpdateType>
     ): Long {
-
-        val entitiesByEntitySet = data
-                .groupBy({ it.key.entitySetId }, { entityKeyIds.getValue(it.key) to it.details })
-                .mapValues { it.value.toMap() }
-
-        val entities = data.map {
+        val entities = data.map { Entity(it.key, it.details) }
+        val edges = data.map {
             val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])
             val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds[it.dst])
             val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds[it.key])
             DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
         }.toSet()
 
-        return entitiesByEntitySet.map { (entitySetId, entities) ->
-            dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateTypes[entitySetId]).toLong()
-        }.sum() + dataApi.createAssociations(entities).toLong()
+        return integrateEntities(entities, entityKeyIds, updateTypes) +
+                attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRY_COUNT) {
+                    dataApi.createAssociations(edges).toLong()
+                }
     }
 
     override fun accepts(): StorageDestination {
