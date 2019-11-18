@@ -187,6 +187,15 @@ public class TransformTest {
                 falsetransfo
         ).apply( getTestRow() );
         Assert.assertEquals( "yup", booleanRegexTest1 );
+
+        Object booleanRegexTest2 = new BooleanRegexTransform(
+                "SSN",
+                "^$",
+                truetransfo,
+                falsetransfo
+        ).apply( getTestRow() );
+
+        Assert.assertEquals( "yup", booleanRegexTest1 );
     }
 
     //==================//

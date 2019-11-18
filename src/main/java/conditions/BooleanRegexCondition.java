@@ -51,8 +51,9 @@ public class BooleanRegexCondition extends Condition<Map<String, String>> {
     @Override
     public Boolean apply( Map<String, String> row ) {
         String o = row.get( column );
-        if ( StringUtils.isBlank( o ) ) {
-            return false;
+
+        if ( o == null ) {
+            o = "";
         }
 
         Matcher m = Cached.getInsensitiveMatcherForString( o, this.pattern );
