@@ -52,10 +52,11 @@ class ShuttleCliOptions {
         const val NOTIFICATION_EMAILS = "notify-emails"
         const val FROM_EMAIL = "from-email"
         const val FROM_EMAIL_PASSWORD = "from-email-password"
+        const val READ_RATE_LIMIT = "read-rate-limit"
         const val SERVER = "server"
         const val SMTP_SERVER = "smtp-server"
         const val SMTP_SERVER_PORT = "smtp-server-port"
-
+        const val THREADS = "threads"
         const val S3_ORIGIN_EXPECTED_ARGS_COUNT = 3
         const val LOCAL_ORIGIN_EXPECTED_ARGS_COUNT = 2
 
@@ -80,6 +81,12 @@ class ShuttleCliOptions {
                 .longOpt(UPLOAD_SIZE)
                 .hasArg(true)
                 .argName("upload size")
+                .build()
+
+        private val readRateLimit = Option.builder()
+                .longOpt(READ_RATE_LIMIT)
+                .hasArg(true)
+                .argName("read-rate-limit")
                 .build()
 
         private val environmentOption = Option.builder()
@@ -187,6 +194,13 @@ class ShuttleCliOptions {
                 .valueSeparator(',')
                 .build()
 
+        private val threadsOption = Option.builder()
+                .longOpt(THREADS)
+                .desc("Number of integration threads to use.")
+                .hasArg()
+                .argName("threads")
+                .build()
+
         private val profilesOption = Option.builder()
                 .longOpt(PROFILES)
                 .desc("Profiles to use when running shuttle service as a server.")
@@ -248,11 +262,14 @@ class ShuttleCliOptions {
                     .addOption(s3Option)
                     .addOption(fetchSize)
                     .addOption(uploadSize)
+                    .addOption(readRateLimit)
                     .addOption(notificationEmailsOption)
                     .addOption(fromEmailOption)
                     .addOption(fromEmailPasswordOption)
                     .addOption(smtpServerOption)
                     .addOption(smtpServerPortOption)
+                    .addOption(postgresOption)
+                    .addOption(threadsOption)
 
             options.addOptionGroup(
                     OptionGroup()

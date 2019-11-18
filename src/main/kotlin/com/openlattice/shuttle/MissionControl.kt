@@ -32,6 +32,7 @@ import com.openlattice.data.S3Api
 import com.openlattice.data.integration.EmailConfiguration
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.data.integration.destinations.PostgresDestination
+import com.openlattice.data.integration.destinations.PostgresS3Destination
 import com.openlattice.data.integration.destinations.RestDestination
 import com.openlattice.data.integration.destinations.S3Destination
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
@@ -242,22 +243,23 @@ class MissionControl(
             .client(RetrofitBuilders.okHttpClient().build())
             .build().create(S3Api::class.java)
 
-    private val entitySets = entitySetsApi.getEntitySets().mapNotNull { it.name to it }.toMap().toMutableMap()
+    private val entitySets = entitySetsApi.getEntitySets().filter { it as EntitySet? != null }.map { it.name to it }.toMap().toMutableMap()
     private val entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
     private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
     private val propertyTypesById = propertyTypes.mapKeys { it.value.id }
 
     private val integrationDestinations =
             if (parameters.postgres.enabled) {
+                val pgDestination = PostgresDestination(
+                        entitySets.mapKeys { it.value.id },
+                        entityTypes,
+                        propertyTypes.mapKeys { it.value.id },
+                        HikariDataSource(HikariConfig(parameters.postgres.config))
+                )
                 mapOf(
                         StorageDestination.REST to RestDestination(dataApi),
-                        StorageDestination.POSTGRES to PostgresDestination(
-                                entitySets.mapKeys { it.value.id },
-                                entityTypes,
-                                propertyTypes.mapKeys { it.value.id },
-                                HikariDataSource(HikariConfig(parameters.postgres.config))
-                        ),
-                        StorageDestination.S3 to S3Destination(dataApi, s3Api, dataIntegrationApi)
+                        StorageDestination.POSTGRES to pgDestination,
+                        StorageDestination.S3 to PostgresS3Destination(pgDestination, s3Api, dataIntegrationApi)
 
                 )
             } else {

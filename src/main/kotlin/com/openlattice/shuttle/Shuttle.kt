@@ -23,9 +23,10 @@ package com.openlattice.shuttle
 
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.Slf4jReporter
+import com.geekbeast.util.ExponentialBackoff
+import com.geekbeast.util.attempt
 import com.google.common.base.Stopwatch
 import com.google.common.collect.ImmutableList
-import com.google.common.collect.Queues
 import com.google.common.util.concurrent.ListeningExecutorService
 import com.google.common.util.concurrent.MoreExecutors
 import com.openlattice.ApiUtil
@@ -36,13 +37,6 @@ import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.shuttle.payload.Payload
-
-import com.openlattice.shuttle.payload.CsvPayload
-import com.openlattice.shuttle.payload.XmlFilesPayload
-import com.openlattice.shuttle.source.LocalFileOrigin
-import com.openlattice.shuttle.source.S3BucketOrigin
-import org.apache.commons.cli.CommandLine
-
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -50,27 +44,21 @@ import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.concurrent.Executors
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.LongAdder
-import java.util.stream.Stream
-import kotlin.math.max
-import kotlin.streams.asSequence
-
-/**
- *
- * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
- */
 
 
-private val logger = LoggerFactory.getLogger(Shuttle::class.java)
 const val DEFAULT_UPLOAD_SIZE = 100_000
+const val MAX_DELAY = 8L * 60L * 1000L
+const val MAX_RETRIES = 128
 
-
+private val threads = Runtime.getRuntime().availableProcessors()
 
 /**
  *
- * This is the primary class for driving an integration. It is designed to cache all
+ * Integration driving logic.
  */
 class Shuttle(
         private val flightPlan: Map<Flight, Payload>,
@@ -82,13 +70,14 @@ class Shuttle(
         private val tableColsToPrint: List<String>,
         private val parameters: MissionParameters,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
-                Executors.newSingleThreadExecutor()
+                Executors.newFixedThreadPool(2 * threads)
         )
 ) {
     companion object {
         private val logger = LoggerFactory.getLogger(Shuttle::class.java)
         private val metrics = MetricRegistry()
         private val uploadRate = metrics.meter(MetricRegistry.name(Shuttle::class.java, "uploads"))
+        private val transformRate = metrics.meter(MetricRegistry.name(Shuttle::class.java, "transforms"))
         private val reporter = Slf4jReporter.forRegistry(metrics)
                 .outputTo(LoggerFactory.getLogger(Shuttle::class.java))
                 .convertRatesTo(TimeUnit.SECONDS)
@@ -100,113 +89,46 @@ class Shuttle(
         }
     }
 
+    private val uploadRegulator = Semaphore(threads)
 
     private fun takeoff(
             flight: Flight,
-            payload: Stream<Map<String, Any>>,
+            payload: Iterable<Map<String, Any?>>,
             uploadBatchSize: Int,
             rowColsToPrint: List<String>
     ): Long {
+        logger.info("Takeoff! Starting primary thrusters.")
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
-        val integrationQueue = Queues
-                .newArrayBlockingQueue<List<Map<String, Any>>>(
-                        max(2, 2 * (Runtime.getRuntime().availableProcessors() - 2))
-                )
-        val integrationSequence = generateSequence { integrationQueue.take() }
+
         val rows = LongAdder()
         val sw = Stopwatch.createStarted()
         val remaining = AtomicLong(0)
         val batchCounter = AtomicLong(0)
-        val minRows = ConcurrentSkipListMap<Long, Map<String, Any>>()
+        val minRows = ConcurrentSkipListMap<Long, Map<String, Any?>>()
 
-        uploadingExecutor.execute {
-            integrationSequence.map { batch ->
-                try {
-                    rows.add(batch.size.toLong())
-                    val batchCtr = batchCounter.incrementAndGet()
-                    minRows[batchCtr] = batch[0]
-                    return@map impulse(flight, batch, batchCtr)
-                } catch (ex: Exception) {
-                    MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
-                } catch (err: OutOfMemoryError) {
-                    MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
-                }
-            }.forEach { batch ->
-                try {
-                    val sw = Stopwatch.createStarted()
-                    val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
-                            + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
-                    val entityKeyIds = entityKeys.zip(
-                            dataIntegrationApi.getEntityKeyIds(entityKeys)
-                    ).toMap()
-
-                    logger.info(
-                            "Generated {} entity key ids in {} ms",
-                            entityKeys.size,
-                            sw.elapsed(TimeUnit.MILLISECONDS)
-                    )
-
-                    integrationDestinations.forEach { (storageDestination, integrationDestination) ->
-                        if (batch.entities.containsKey(storageDestination)) {
-                            integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                    integrationDestination.integrateEntities(
-                                            batch.entities.getValue(storageDestination),
-                                            entityKeyIds,
-                                            updateTypes
-                                    )
-                            )
-                        }
-
-                        if (batch.associations.containsKey(storageDestination)) {
-                            integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                    integrationDestination.integrateAssociations(
-                                            batch.associations.getValue(storageDestination),
-                                            entityKeyIds,
-                                            updateTypes
-                                    )
-                            )
-                        }
-                    }
-
-                    minRows.remove(batch.batchId)
-                    uploadRate.mark(entityKeys.size.toLong())
-                    logger.info("Processed {} rows.", rows.sum())
-                    logger.info("Current entities progress: {}", integratedEntities)
-                    logger.info("Current edges progress: {}", integratedEdges)
-                } catch (ex: Exception) {
-                    if (rowColsToPrint.isNotEmpty()) {
-                        logger.info("Earliest unintegrated row:")
-                        printRow(minRows.firstEntry().value, rowColsToPrint)
-                    }
-                    MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
-                } catch (err: OutOfMemoryError) {
-                    if (rowColsToPrint.isNotEmpty()) {
-                        logger.info("Earliest unintegrated row:")
-                        printRow(minRows.firstEntry().value, rowColsToPrint)
-                    }
-                    MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
-                } finally {
-                    remaining.decrementAndGet()
-                }
-            }
-        }
-
-        payload.asSequence()
+        payload
+                .asSequence()
                 .chunked(uploadBatchSize)
-                .forEach {
-                    remaining.incrementAndGet()
-                    integrationQueue.put(it)
+                .forEach { chunk ->
+                    uploadRegulator.acquire()
+                    uploadingExecutor.submit {
+                        ignition(
+                                chunk,
+                                flight,
+                                integratedEntities,
+                                integratedEdges,
+                                rows,
+                                batchCounter,
+                                minRows,
+                                remaining,
+                                rowColsToPrint,
+                                sw
+                        )
+
+                    }.addListener(Runnable { uploadRegulator.release() }, uploadingExecutor)
                 }
-        //Wait on upload thread to finish emptying queue.
-        try {
-            while (remaining.get() > 0) {
-                logger.info("Waiting on upload to finish... ${remaining.get()} batches left")
-                Thread.sleep(1000)
-            }
-        } catch (ex: Exception) {
-            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
-        }
+        uploadRegulator.acquire(threads)
 
         return StorageDestination.values().map {
             logger.info(
@@ -221,7 +143,113 @@ class Shuttle(
         }.sum()
     }
 
-    private fun printRow(row: Map<String, Any>, rowColsToPrint: List<String>) {
+    private fun ignition(
+            chunk: List<Map<String, Any?>>,
+            flight: Flight,
+            integratedEntities: MutableMap<StorageDestination, AtomicLong>,
+            integratedEdges: MutableMap<StorageDestination, AtomicLong>,
+            rows: LongAdder,
+            batchCounter: AtomicLong,
+            minRows: ConcurrentSkipListMap<Long, Map<String, Any?>>,
+            remaining: AtomicLong,
+            rowColsToPrint: List<String>,
+            sw: Stopwatch
+    ) {
+        logger.info("There are ${remaining.incrementAndGet()} batches in process for upload.")
+        val batchSw = Stopwatch.createStarted()
+        val batch = try {
+            rows.add(chunk.size.toLong())
+            val batchCtr = batchCounter.incrementAndGet()
+            minRows[batchCtr] = chunk[0]
+            impulse(flight, chunk, batchCtr)
+        } catch (ex: Exception) {
+            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
+        } catch (err: OutOfMemoryError) {
+            MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
+        } finally {
+            transformRate.mark()
+            logger.info("Batch took to {} ms to transform.", batchSw.elapsed(TimeUnit.MILLISECONDS))
+        }
+
+        try {
+            logger.info("Starting entity key id generation in thread {}", Thread.currentThread().id)
+            val ekSw = Stopwatch.createStarted()
+            val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
+                    + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
+            val entityKeyIds = attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
+                entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
+            }
+
+            logger.info(
+                    "Generated {} entity key ids in {} ms",
+                    entityKeys.size,
+                    ekSw.elapsed(TimeUnit.MILLISECONDS)
+            )
+
+            integrationDestinations.forEach { (storageDestination, integrationDestination) ->
+                if (batch.entities.containsKey(storageDestination)) {
+                    integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                            attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
+                                integrationDestination.integrateEntities(
+                                        batch.entities.getValue(storageDestination),
+                                        entityKeyIds,
+                                        updateTypes
+                                )
+                            }
+                    )
+                }
+
+                if (batch.associations.containsKey(storageDestination)) {
+                    integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                            attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
+                                integrationDestination.integrateAssociations(
+                                        batch.associations.getValue(storageDestination),
+                                        entityKeyIds,
+                                        updateTypes
+                                )
+                            }
+                    )
+                }
+            }
+
+            minRows.remove(batch.batchId)
+            uploadRate.mark(entityKeys.size.toLong())
+            logger.info(
+                    "Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.",
+                    batch.batchId
+            )
+            logger.info(
+                    "=================================================================================="
+            )
+            logger.info(
+                    "Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.",
+                    rows.sum()
+            )
+            logger.info("Current entities progress: {}", integratedEntities)
+            logger.info("Current edges progress: {}", integratedEdges)
+            logger.info(
+                    "==================================================================================="
+            )
+
+        } catch (ex: Exception) {
+            if (rowColsToPrint.isNotEmpty()) {
+                logger.info("Earliest unintegrated row:")
+                printRow(minRows.firstEntry().value, rowColsToPrint)
+            }
+            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
+        } catch (err: OutOfMemoryError) {
+            if (rowColsToPrint.isNotEmpty()) {
+                logger.info("Earliest unintegrated row:")
+                printRow(minRows.firstEntry().value, rowColsToPrint)
+            }
+            MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
+        } finally {
+            logger.info("There are ${remaining.decrementAndGet()} batches remaining for upload.")
+        }
+
+    }
+
+    private fun printRow(row: Map<String, Any?>, rowColsToPrint: List<String>) {
         var rowHeaders = ""
         var contents = ""
         rowColsToPrint.forEach { colName ->
@@ -231,8 +259,9 @@ class Shuttle(
         logger.info("Row Contents:\n$rowHeaders\n$contents")
     }
 
+
     private fun buildPropertiesFromPropertyDefinitions(
-            row: Map<String, Any>,
+            row: Map<String, Any?>,
             propertyDefinitions: Collection<PropertyDefinition>
     )
             : Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
@@ -270,7 +299,7 @@ class Shuttle(
         return Pair(properties, addressedProperties);
     }
 
-    private fun impulse(flight: Flight, batch: List<Map<String, Any>>, batchNumber: Long): AddressedDataHolder {
+    private fun impulse(flight: Flight, batch: List<Map<String, Any?>>, batchNumber: Long): AddressedDataHolder {
         val addressedDataHolder = AddressedDataHolder(mutableMapOf(), mutableMapOf(), batchNumber)
 
         batch.forEach { row ->
@@ -385,7 +414,7 @@ class Shuttle(
         val sw = Stopwatch.createStarted()
         val total = flightPlan.entries.map { entry ->
             logger.info("Launching flight: {}", entry.key.name)
-            val count = takeoff(entry.key, entry.value.payload, uploadBatchSize, tableColsToPrint)
+            val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrint)
             logger.info("Finished flight: {}", entry.key.name)
             count
         }.sum()

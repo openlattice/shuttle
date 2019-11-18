@@ -4,7 +4,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.50'
     id 'org.jetbrains.kotlin.plugin.spring' version '1.3.50'
     id 'org.jetbrains.dokka' version '0.9.18'
-    id 'com.github.spotbugs' version '1.6.6'
+    id 'com.github.spotbugs' version '2.0.1'
     id "signing"
     id "eclipse"
     id "checkstyle"
@@ -44,7 +44,7 @@ tasks.withType(Checkstyle) {
 }
 
 spotbugs {
-    toolVersion = '3.1.9'
+    toolVersion = '3.1.12'
 }
 
 tasks.withType(com.github.spotbugs.SpotBugsTask) {
@@ -83,9 +83,9 @@ if (GC == 'null' || GC == null || GC == "") {
     GC = "-XX:+UseG1GC"
 }
 
-println "Using java args for running ${projectName}: Xms=" + S_XMS + ",Xmx=" + S_XMX + " -server"
+println "Using java args for running ${projectName}: Xms=" + S_XMS + ",Xmx=" + S_XMX + ",forkJoinPool=" + PARALLEL + " -server"
 
-applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server"]
+applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server", PARALLEL]
 applicationDefaultJvmArgs += ["--add-modules", "java.se",
                               "--add-exports", "java.base/jdk.internal.ref=ALL-UNNAMED",
                               "--add-opens", "java.base/java.lang=ALL-UNNAMED",
@@ -109,7 +109,6 @@ run {
 }
 
 println "Enabled profiles: " + Arrays.toString(run.args)
-
 
 
 def versions = [
@@ -209,7 +208,7 @@ tasks.withType(JavaCompile) {
 }
 
 tasks.withType(Test) {
-    jvmArgs += ["--add-modules", "java.se",
+    jvmArgs += [PARALLEL,"--add-modules", "java.se",
                 "--add-exports", "java.base/jdk.internal.ref=ALL-UNNAMED",
                 "--add-opens", "java.base/java.lang=ALL-UNNAMED",
                 "--add-opens", "java.base/java.nio=ALL-UNNAMED",

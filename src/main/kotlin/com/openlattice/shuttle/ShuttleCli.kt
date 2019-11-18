@@ -1,5 +1,7 @@
 package com.openlattice.shuttle
 
+import com.amazonaws.auth.InstanceProfileCredentialsProvider
+import com.amazonaws.regions.RegionUtils
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.dataloom.mappers.ObjectMappers
@@ -23,6 +25,7 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.NOTIFICATION_EMAILS
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PASSWORD
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.POSTGRES
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PROFILES
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.READ_RATE_LIMIT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_EXPECTED_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SERVER
@@ -34,10 +37,7 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.UPLOAD_SIZE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.USER
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.XML
 import com.openlattice.shuttle.config.IntegrationConfig
-import com.openlattice.shuttle.payload.CsvPayload
-import com.openlattice.shuttle.payload.JdbcPayload
-import com.openlattice.shuttle.payload.Payload
-import com.openlattice.shuttle.payload.XmlFilesPayload
+import com.openlattice.shuttle.payload.*
 import com.openlattice.shuttle.source.LocalFileOrigin
 import com.openlattice.shuttle.source.S3BucketOrigin
 import org.apache.commons.cli.CommandLine
@@ -130,13 +130,18 @@ fun main(args: Array<String>) {
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
             val sql = cl.getOptionValue(SQL)
             rowColsToPrint = configuration.primaryKeyColumns
+            val readRateLimit = if (cl.hasOption(READ_RATE_LIMIT)) {
+                cl.getOptionValue(READ_RATE_LIMIT).toInt()
+            } else {
+                DEFAULT_PERMITS_PER_SECOND.toInt()
+            }
 
             payload = if (cl.hasOption(FETCHSIZE)) {
                 val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
                 logger.info("Using a fetch size of $fetchSize")
-                JdbcPayload(hds, sql, fetchSize)
+                JdbcPayload(readRateLimit.toDouble(), hds, sql, fetchSize, readRateLimit != 0)
             } else {
-                JdbcPayload(hds, sql)
+                JdbcPayload(readRateLimit.toDouble(), hds, sql, 0, readRateLimit != 0)
             }
         }
         cl.hasOption(CSV) -> {// get csv payload
@@ -221,15 +226,18 @@ fun main(args: Array<String>) {
     } else {
         "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
     }
-
     val shuttleConfig = if (cl.hasOption(POSTGRES)) {
         val pgCfg = cl.getOptionValues(POSTGRES)
         require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
         val bucket = pgCfg[0]
         val region = pgCfg[1]
-        val s3Client = AmazonS3ClientBuilder.standard().withRegion(region).build()
-        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle", MissionParameters::class.java )
-    } else { MissionParameters.empty() }
+        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(
+                InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)
+        ).withRegion(RegionUtils.getRegion(region).name).build()
+        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java)
+    } else {
+        MissionParameters.empty()
+    }
 
     //TODO: Use the right method to select the JWT token for the appropriate environment.
 
@@ -237,7 +245,7 @@ fun main(args: Array<String>) {
         cl.hasOption(TOKEN) -> {
             Preconditions.checkArgument(!cl.hasOption(PASSWORD))
             val jwt = cl.getOptionValue(TOKEN)
-            MissionControl(environment, Supplier { jwt }, s3BucketUrl,shuttleConfig)
+            MissionControl(environment, Supplier { jwt }, s3BucketUrl, shuttleConfig)
         }
         cl.hasOption(USER) -> {
             Preconditions.checkArgument(cl.hasOption(PASSWORD))
@@ -275,14 +283,15 @@ fun main(args: Array<String>) {
         DEFAULT_UPLOAD_SIZE
     }
 
-
     val emailConfiguration = getEmailConfiguration(cl)
 
     val flightPlan = mapOf(flight to payload)
 
     try {
         MissionControl.setEmailConfiguration(emailConfiguration)
-        val shuttle = missionControl.prepare(flightPlan, createEntitySets,  rowColsToPrint, contacts)
+        logger.info("Preparing flight plan.")
+        val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts)
+        logger.info("Pre-flight check list complete. ")
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()
     } catch (ex: Exception) {
@@ -361,4 +370,7 @@ fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
         else -> Optional.empty()
     }
 
+}
+
+class ShuttleCli {
 }
