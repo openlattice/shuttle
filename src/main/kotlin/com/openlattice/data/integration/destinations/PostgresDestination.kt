@@ -181,13 +181,19 @@ class PostgresDestination(
                         esCount
                     }.sum()
 
-            logger.info("Integrated ${data.size} entities and update $count rows in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
+            logger.info(
+                    "Integrated ${data.size} entities and update $count rows in ${sw.elapsed(
+                            TimeUnit.MILLISECONDS
+                    )} ms."
+            )
             data.size.toLong()
         }
     }
 
     override fun integrateAssociations(
-            data: Collection<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+            data: Collection<Association>,
+            entityKeyIds: Map<EntityKey, UUID>,
+            updateTypes: Map<UUID, UpdateType>
     ): Long {
         val sw = Stopwatch.createStarted()
         val dataEdgeKeys = data.map {
@@ -198,13 +204,21 @@ class PostgresDestination(
         }.toSet()
         val numCreatedEdges = createEdges(dataEdgeKeys)
         val numIntegratedEdges = integrateEntities(
-                data.map { Entity(it.key, it.details) }.toSet(), entityKeyIds, updateTypes
+                data.map { Entity(it.key, it.details) }.toSet(),
+                entityKeyIds,
+                updateTypes
         )
+
         if (numCreatedEdges != numIntegratedEdges) {
             logger.warn("Created $numCreatedEdges edges, but only integrated $numIntegratedEdges.")
         }
-        logger.info("Integrated $numIntegratedEdges edges in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
-        return numIntegratedEdges
+
+        logger.info(
+                "Integrated ${data.size} edges and update $numIntegratedEdges rows in {} ms.",
+                sw.elapsed(TimeUnit.MILLISECONDS)
+        )
+
+        return data.size.toLong()
     }
 
     override fun accepts(): StorageDestination {
