@@ -71,7 +71,7 @@ class PostgresDestination(
     }
 
     override fun integrateEntities(
-            data: Set<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+            data: Collection<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
     ): Long {
 
         return hds.connection.use { connection ->
@@ -110,9 +110,11 @@ class PostgresDestination(
                         }
 
                         val writeVersionArray = PostgresArrays.createLongArray(connection, writeVersion)
-                        logger.info("Preparing queries for entity set {} took {} ms",
-                                    entitySets.getValue(entitySetId).name,
-                                    esSw.elapsed(TimeUnit.MILLISECONDS))
+                        logger.info(
+                                "Preparing queries for entity set {} took {} ms",
+                                entitySets.getValue(entitySetId).name,
+                                esSw.elapsed(TimeUnit.MILLISECONDS)
+                        )
                         val esCount = entities.groupBy { getPartition(it.first, partitions) }
                                 .map { (partition, entityPairs) ->
                                     val partSw = Stopwatch.createStarted()
@@ -184,7 +186,7 @@ class PostgresDestination(
     }
 
     override fun integrateAssociations(
-            data: Set<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+            data: Collection<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
     ): Long {
         val sw = Stopwatch.createStarted()
         val dataEdgeKeys = data.map {

@@ -23,6 +23,8 @@ package com.openlattice.shuttle
 
 import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.Slf4jReporter
+import com.geekbeast.util.ExponentialBackoff
+import com.geekbeast.util.attempt
 import com.google.common.base.Stopwatch
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListeningExecutorService
@@ -49,6 +51,8 @@ import java.util.concurrent.atomic.LongAdder
 
 
 const val DEFAULT_UPLOAD_SIZE = 100_000
+const val MAX_DELAY = 10L * 60L * 1000L
+const val MAX_RETRIES = 100
 
 private val threads = Runtime.getRuntime().availableProcessors()
 
@@ -103,97 +107,25 @@ class Shuttle(
         val batchCounter = AtomicLong(0)
         val minRows = ConcurrentSkipListMap<Long, Map<String, Any?>>()
 
-        payload.asSequence()
+        payload
+                .asSequence()
                 .chunked(uploadBatchSize)
                 .forEach { chunk ->
                     uploadRegulator.acquire()
                     uploadingExecutor.submit {
-                        logger.info("There are ${remaining.incrementAndGet()} batches in process for upload.")
-                        val batchSw = Stopwatch.createStarted()
-                        val batch = try {
-                            rows.add(chunk.size.toLong())
-                            val batchCtr = batchCounter.incrementAndGet()
-                            minRows[batchCtr] = chunk[0]
-                            impulse(flight, chunk, batchCtr)
-                        } catch (ex: Exception) {
-                            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
-                        } catch (err: OutOfMemoryError) {
-                            MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
-                        } finally {
-                            transformRate.mark()
-                            logger.info("Batch took to {} ms to transform.", batchSw.elapsed(TimeUnit.MILLISECONDS))
-                        }
+                        ignition(
+                                chunk,
+                                flight,
+                                integratedEntities,
+                                integratedEdges,
+                                rows,
+                                batchCounter,
+                                minRows,
+                                remaining,
+                                rowColsToPrint,
+                                sw
+                        )
 
-                        try {
-                            logger.info("Starting entity key id generation in thread {}", Thread.currentThread().id)
-                            val ekSw = Stopwatch.createStarted()
-                            val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
-                                    + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
-                            val entityKeyIds = entityKeys.zip(
-                                    dataIntegrationApi.getEntityKeyIds(entityKeys)
-                            ).toMap()
-
-                            logger.info(
-                                    "Generated {} entity key ids in {} ms",
-                                    entityKeys.size,
-                                    ekSw.elapsed(TimeUnit.MILLISECONDS)
-                            )
-
-                            integrationDestinations.forEach { (storageDestination, integrationDestination) ->
-                                if (batch.entities.containsKey(storageDestination)) {
-                                    integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                            integrationDestination.integrateEntities(
-                                                    batch.entities.getValue(storageDestination),
-                                                    entityKeyIds,
-                                                    updateTypes
-                                            )
-                                    )
-                                }
-
-                                if (batch.associations.containsKey(storageDestination)) {
-                                    integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                                            integrationDestination.integrateAssociations(
-                                                    batch.associations.getValue(storageDestination),
-                                                    entityKeyIds,
-                                                    updateTypes
-                                            )
-                                    )
-                                }
-                            }
-
-                            minRows.remove(batch.batchId)
-                            uploadRate.mark(entityKeys.size.toLong())
-                            logger.info(
-                                    "Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.",
-                                    batch.batchId
-                            )
-                            logger.info(
-                                    "=================================================================================="
-                            )
-                            logger.info(
-                                    "Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.", rows.sum()
-                            )
-                            logger.info("Current entities progress: {}", integratedEntities)
-                            logger.info("Current edges progress: {}", integratedEdges)
-                            logger.info(
-                                    "==================================================================================="
-                            )
-
-                        } catch (ex: Exception) {
-                            if (rowColsToPrint.isNotEmpty()) {
-                                logger.info("Earliest unintegrated row:")
-                                printRow(minRows.firstEntry().value, rowColsToPrint)
-                            }
-                            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
-                        } catch (err: OutOfMemoryError) {
-                            if (rowColsToPrint.isNotEmpty()) {
-                                logger.info("Earliest unintegrated row:")
-                                printRow(minRows.firstEntry().value, rowColsToPrint)
-                            }
-                            MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
-                        } finally {
-                            logger.info("There are ${remaining.decrementAndGet()} batches remaining for upload.")
-                        }
                     }.addListener(Runnable { uploadRegulator.release() }, uploadingExecutor)
                 }
         uploadRegulator.acquire(threads)
@@ -211,6 +143,108 @@ class Shuttle(
         }.sum()
     }
 
+    private fun ignition(
+            chunk: List<Map<String, Any?>>,
+            flight: Flight,
+            integratedEntities: MutableMap<StorageDestination, AtomicLong>,
+            integratedEdges: MutableMap<StorageDestination, AtomicLong>,
+            rows: LongAdder,
+            batchCounter: AtomicLong,
+            minRows: ConcurrentSkipListMap<Long, Map<String, Any?>>,
+            remaining: AtomicLong,
+            rowColsToPrint: List<String>,
+            sw: Stopwatch
+    ) {
+        logger.info("There are ${remaining.incrementAndGet()} batches in process for upload.")
+        val batchSw = Stopwatch.createStarted()
+        val batch = try {
+            rows.add(chunk.size.toLong())
+            val batchCtr = batchCounter.incrementAndGet()
+            minRows[batchCtr] = chunk[0]
+            impulse(flight, chunk, batchCtr)
+        } catch (ex: Exception) {
+            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
+        } catch (err: OutOfMemoryError) {
+            MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
+        } finally {
+            transformRate.mark()
+            logger.info("Batch took to {} ms to transform.", batchSw.elapsed(TimeUnit.MILLISECONDS))
+        }
+
+        try {
+            logger.info("Starting entity key id generation in thread {}", Thread.currentThread().id)
+            val ekSw = Stopwatch.createStarted()
+            val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
+                    + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
+            val entityKeyIds = attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
+                entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
+            }
+
+            logger.info(
+                    "Generated {} entity key ids in {} ms",
+                    entityKeys.size,
+                    ekSw.elapsed(TimeUnit.MILLISECONDS)
+            )
+            attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
+                integrationDestinations.forEach { (storageDestination, integrationDestination) ->
+                    if (batch.entities.containsKey(storageDestination)) {
+                        integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                integrationDestination.integrateEntities(
+                                        batch.entities.getValue(storageDestination),
+                                        entityKeyIds,
+                                        updateTypes
+                                )
+                        )
+                    }
+
+                    if (batch.associations.containsKey(storageDestination)) {
+                        integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                                integrationDestination.integrateAssociations(
+                                        batch.associations.getValue(storageDestination),
+                                        entityKeyIds,
+                                        updateTypes
+                                )
+                        )
+                    }
+                }
+            }
+            minRows.remove(batch.batchId)
+            uploadRate.mark(entityKeys.size.toLong())
+            logger.info(
+                    "Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.",
+                    batch.batchId
+            )
+            logger.info(
+                    "=================================================================================="
+            )
+            logger.info(
+                    "Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.",
+                    rows.sum()
+            )
+            logger.info("Current entities progress: {}", integratedEntities)
+            logger.info("Current edges progress: {}", integratedEdges)
+            logger.info(
+                    "==================================================================================="
+            )
+
+        } catch (ex: Exception) {
+            if (rowColsToPrint.isNotEmpty()) {
+                logger.info("Earliest unintegrated row:")
+                printRow(minRows.firstEntry().value, rowColsToPrint)
+            }
+            MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
+        } catch (err: OutOfMemoryError) {
+            if (rowColsToPrint.isNotEmpty()) {
+                logger.info("Earliest unintegrated row:")
+                printRow(minRows.firstEntry().value, rowColsToPrint)
+            }
+            MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
+        } finally {
+            logger.info("There are ${remaining.decrementAndGet()} batches remaining for upload.")
+        }
+
+    }
+
     private fun printRow(row: Map<String, Any?>, rowColsToPrint: List<String>) {
         var rowHeaders = ""
         var contents = ""
@@ -220,6 +254,7 @@ class Shuttle(
         }
         logger.info("Row Contents:\n$rowHeaders\n$contents")
     }
+
 
     private fun buildPropertiesFromPropertyDefinitions(
             row: Map<String, Any?>,

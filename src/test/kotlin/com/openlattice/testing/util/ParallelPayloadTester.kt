@@ -138,7 +138,7 @@ class ParallelPayloadTester {
         val seq = Payload(1000)
                 .asSequence()
                 .chunked(10)
-                .forEach { p ->
+                .map { p ->
                     s.acquire()
                     executor.submit {
 
@@ -148,7 +148,12 @@ class ParallelPayloadTester {
                         order.add(m ?: -1)
                         println("Thread ${Thread.currentThread().id} = $m")
 
-                    }.addListener(Runnable { s.release() }, executor)
+                    }
+                }.forEach {
+                    executor.submit {
+                        it.get()
+                        s.release()
+                    }
                 }
         s.acquire(500);
         println(order)

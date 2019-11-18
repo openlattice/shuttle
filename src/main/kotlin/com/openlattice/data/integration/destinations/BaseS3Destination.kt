@@ -101,9 +101,6 @@ abstract class BaseS3Destination(
     }
 
     private fun uploadToS3WithRetry(s3entitiesAndValues: List<Pair<S3EntityData, ByteArray>>) {
-
-
-        var currentDelayMillis = 1L
         var currentRetryCount = 0
         val retryStrategy = ExponentialBackoff(MAX_DELAY_MILLIS)
 
@@ -133,7 +130,6 @@ abstract class BaseS3Destination(
                                         ex
                                 )
                                 throw ex
-
                             }
                         }
                     }
