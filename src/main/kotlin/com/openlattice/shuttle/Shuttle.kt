@@ -185,29 +185,33 @@ class Shuttle(
                     entityKeys.size,
                     ekSw.elapsed(TimeUnit.MILLISECONDS)
             )
-            attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
-                integrationDestinations.forEach { (storageDestination, integrationDestination) ->
-                    if (batch.entities.containsKey(storageDestination)) {
-                        integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+
+            integrationDestinations.forEach { (storageDestination, integrationDestination) ->
+                if (batch.entities.containsKey(storageDestination)) {
+                    integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                            attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
                                 integrationDestination.integrateEntities(
                                         batch.entities.getValue(storageDestination),
                                         entityKeyIds,
                                         updateTypes
                                 )
-                        )
-                    }
+                            }
+                    )
+                }
 
-                    if (batch.associations.containsKey(storageDestination)) {
-                        integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                if (batch.associations.containsKey(storageDestination)) {
+                    integratedEdges.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
+                            attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
                                 integrationDestination.integrateAssociations(
                                         batch.associations.getValue(storageDestination),
                                         entityKeyIds,
                                         updateTypes
                                 )
-                        )
-                    }
+                            }
+                    )
                 }
             }
+
             minRows.remove(batch.batchId)
             uploadRate.mark(entityKeys.size.toLong())
             logger.info(
