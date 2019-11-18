@@ -51,8 +51,8 @@ import java.util.concurrent.atomic.LongAdder
 
 
 const val DEFAULT_UPLOAD_SIZE = 100_000
-const val MAX_DELAY = 10L * 60L * 1000L
-const val MAX_RETRIES = 100
+const val MAX_DELAY = 8L * 60L * 1000L
+const val MAX_RETRIES = 128
 
 private val threads = Runtime.getRuntime().availableProcessors()
 

@@ -180,8 +180,9 @@ class PostgresDestination(
                         )
                         esCount
                     }.sum()
-            logger.info("Integrated $count entities in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
-            count
+
+            logger.info("Integrated ${data.size} entities and update $count rows in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.")
+            data.size.toLong()
         }
     }
 
