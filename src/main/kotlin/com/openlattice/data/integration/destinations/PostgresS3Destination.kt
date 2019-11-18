@@ -19,22 +19,23 @@
  *
  */
 
-package com.openlattice.shuttle.payload;
+package com.openlattice.data.integration.destinations
 
-import java.util.Map;
-import java.util.stream.Stream;
+import com.openlattice.data.*
+import org.slf4j.LoggerFactory
+
+private val logger = LoggerFactory.getLogger(PostgresS3Destination::class.java)
 
 /**
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class StreamPayload implements Payload {
-    private final Stream<Map<String, Object>> streamPayload;
-
-    public StreamPayload( Stream<Map<String, Object>> streamPayload ) {
-        this.streamPayload = streamPayload;
-    }
-
-    @Override public Stream<Map<String, Object>> getPayload() {
-        return null;
+class PostgresS3Destination(
+        private val postgresDestination: PostgresDestination,
+        s3Api: S3Api,
+        dataIntegrationApi: DataIntegrationApi
+) : BaseS3Destination(s3Api, dataIntegrationApi) {
+    override fun createAssociations(entities: Set<DataEdgeKey>): Long {
+        return postgresDestination.createEdges(entities)
     }
 }
