@@ -79,7 +79,7 @@ internal class XmlFilesPayloadTest {
 
     fun basicTestFile( xmlPayloadUnderTest: XmlFilesPayload, expectedKeys: Set<String>, absentKeys: Set<String> ): Int {
         var count = 0
-        xmlPayloadUnderTest.payload.forEach {row ->
+        xmlPayloadUnderTest.getPayload().forEach {row ->
             count++
             //assert all keys present
             assertEquals(expectedKeys, row.keys)
@@ -93,3 +93,4 @@ internal class XmlFilesPayloadTest {
         return count
     }
 }
+
