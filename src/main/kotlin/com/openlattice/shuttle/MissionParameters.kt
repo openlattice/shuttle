@@ -18,6 +18,7 @@ data class MissionParameters(
         @JsonProperty("postgres") val postgres: PostgresConfiguration
 ) {
     companion object {
+        @JvmStatic
         fun empty(): MissionParameters {
             return MissionParameters(PostgresConfiguration(false, Properties()))
         }
