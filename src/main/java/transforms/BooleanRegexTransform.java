@@ -54,14 +54,16 @@ public class BooleanRegexTransform<I extends Object> extends BooleanTransformati
         }
 
         Object input = row.get( column );
-        if (input == null) return false;
-        String o = input.toString();
 
-        if ( StringUtils.isBlank( o ) ) {
+        if (! (input instanceof String) ) {
             return false;
         }
 
-        Matcher m = Cached.getInsensitiveMatcherForString( o, this.pattern );
+        if (input == null) {
+            input = "";
+        }
+
+        Matcher m = Cached.getInsensitiveMatcherForString( (String) input, this.pattern );
         return m.find();
 
     }
