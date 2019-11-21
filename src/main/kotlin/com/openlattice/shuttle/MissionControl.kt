@@ -236,7 +236,7 @@ class MissionControl(
     private val dataApi = apiClient.dataApi
     private val dataIntegrationApi = apiClient.dataIntegrationApi
 
-    private val s3Api = Retrofit.Builder()
+    private val s3Api = if (s3BucketUrl.isBlank()) null else Retrofit.Builder()
             .baseUrl(s3BucketUrl)
             .addConverterFactory(RhizomeByteConverterFactory())
             .addConverterFactory(RhizomeJacksonConverterFactory(ObjectMappers.getJsonMapper()))
@@ -272,13 +272,13 @@ class MissionControl(
             destinations[StorageDestination.POSTGRES] = pgDestination
 
             if (s3BucketUrl.isNotBlank()) {
-                destinations[StorageDestination.S3] = PostgresS3Destination(pgDestination, s3Api, dataIntegrationApi)
+                destinations[StorageDestination.S3] = PostgresS3Destination(pgDestination, s3Api!!, dataIntegrationApi)
             }
         } else {
             destinations[StorageDestination.REST] = RestDestination(dataApi)
 
             if (s3BucketUrl.isNotBlank()) {
-                destinations[StorageDestination.S3] = S3Destination(dataApi, s3Api, dataIntegrationApi)
+                destinations[StorageDestination.S3] = S3Destination(dataApi, s3Api!!, dataIntegrationApi)
             }
         }
 
