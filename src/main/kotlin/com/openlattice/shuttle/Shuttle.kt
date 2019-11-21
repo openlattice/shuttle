@@ -69,6 +69,7 @@ class Shuttle(
         private val dataIntegrationApi: DataIntegrationApi,
         private val tableColsToPrint: List<String>,
         private val parameters: MissionParameters,
+        private val binaryDestination: StorageDestination,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
                 Executors.newFixedThreadPool(2 * threads)
         )
@@ -279,7 +280,7 @@ class Shuttle(
 
             val storageDestination = propertyDefinition.storageDestination.orElseGet {
                 when (propertyType.datatype) {
-                    EdmPrimitiveTypeKind.Binary -> StorageDestination.S3
+                    EdmPrimitiveTypeKind.Binary -> binaryDestination
                     else -> if (parameters.postgres.enabled) StorageDestination.POSTGRES else StorageDestination.REST
                 }
             }

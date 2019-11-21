@@ -30,6 +30,7 @@ import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
 import com.openlattice.data.integration.EmailConfiguration
+import com.openlattice.data.integration.IntegrationDestination
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.data.integration.destinations.PostgresDestination
 import com.openlattice.data.integration.destinations.PostgresS3Destination
@@ -248,26 +249,41 @@ class MissionControl(
     private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
     private val propertyTypesById = propertyTypes.mapKeys { it.value.id }
 
-    private val integrationDestinations =
-            if (parameters.postgres.enabled) {
-                val pgDestination = PostgresDestination(
-                        entitySets.mapKeys { it.value.id },
-                        entityTypes,
-                        propertyTypes.mapKeys { it.value.id },
-                        HikariDataSource(HikariConfig(parameters.postgres.config))
-                )
-                mapOf(
-                        StorageDestination.REST to RestDestination(dataApi),
-                        StorageDestination.POSTGRES to pgDestination,
-                        StorageDestination.S3 to PostgresS3Destination(pgDestination, s3Api, dataIntegrationApi)
+    private val binaryStorageDestination = if (s3BucketUrl.isBlank()) {
+        StorageDestination.REST
+    } else {
+        StorageDestination.S3
+    }
 
-                )
-            } else {
-                mapOf(
-                        StorageDestination.REST to RestDestination(dataApi),
-                        StorageDestination.S3 to S3Destination(dataApi, s3Api, dataIntegrationApi)
-                )
+    private val integrationDestinations: Map<StorageDestination, IntegrationDestination>
+
+    init {
+        val destinations = mutableMapOf<StorageDestination, IntegrationDestination>()
+        destinations[StorageDestination.REST] = RestDestination(dataApi)
+
+        if (parameters.postgres.enabled) {
+            val pgDestination = PostgresDestination(
+                    entitySets.mapKeys { it.value.id },
+                    entityTypes,
+                    propertyTypes.mapKeys { it.value.id },
+                    HikariDataSource(HikariConfig(parameters.postgres.config))
+            )
+
+            destinations[StorageDestination.POSTGRES] = pgDestination
+
+            if (s3BucketUrl.isNotBlank()) {
+                destinations[StorageDestination.S3] = PostgresS3Destination(pgDestination, s3Api, dataIntegrationApi)
             }
+        } else {
+            destinations[StorageDestination.REST] = RestDestination(dataApi)
+
+            if (s3BucketUrl.isNotBlank()) {
+                destinations[StorageDestination.S3] = S3Destination(dataApi, s3Api, dataIntegrationApi)
+            }
+        }
+
+        integrationDestinations = destinations.toMap()
+    }
 
 
     fun prepare(
@@ -280,6 +296,7 @@ class MissionControl(
             createMissingEntitySets(flightPlan, contacts)
         }
         ensureValidIntegration(flightPlan)
+
         return Shuttle(
                 flightPlan,
                 entitySets,
@@ -288,7 +305,8 @@ class MissionControl(
                 integrationDestinations,
                 dataIntegrationApi,
                 primaryKeyCols,
-                parameters
+                parameters,
+                binaryStorageDestination
         )
     }
 
