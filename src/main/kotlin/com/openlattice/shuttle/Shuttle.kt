@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListeningExecutorService
 import com.google.common.util.concurrent.MoreExecutors
 import com.openlattice.ApiUtil
+import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKey
 import com.openlattice.data.integration.*
@@ -55,12 +56,14 @@ const val MAX_DELAY = 8L * 60L * 1000L
 const val MAX_RETRIES = 128
 
 private val threads = Runtime.getRuntime().availableProcessors()
+private val encoder = Base64.getEncoder()
 
 /**
  *
  * Integration driving logic.
  */
 class Shuttle(
+        private val environment: RetrofitFactory.Environment,
         private val flightPlan: Map<Flight, Payload>,
         private val entitySets: Map<String, EntitySet>,
         private val entityTypes: Map<UUID, EntityType>,
@@ -285,10 +288,20 @@ class Shuttle(
                 }
             }
 
-            val propertyValueAsCollection: Collection<Any> =
+            var propertyValueAsCollection: Collection<Any> =
                     if (propertyValue is Collection<*>) propertyValue as Collection<Any>
                     else ImmutableList.of(propertyValue)
 
+            if (propertyType.datatype == EdmPrimitiveTypeKind.Binary
+                    && storageDestination == StorageDestination.REST
+                    && environment == RetrofitFactory.Environment.LOCAL) {
+                propertyValueAsCollection = propertyValueAsCollection.map {
+                    mapOf(
+                            "content-type" to "application/octet-stream",
+                            "data" to encoder.encodeToString(it as ByteArray)
+                    )
+                }
+            }
             val propertyId = propertyType.id
 
             addressedProperties

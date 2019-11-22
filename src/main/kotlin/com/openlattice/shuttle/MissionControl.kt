@@ -69,7 +69,7 @@ private const val AUTH0_SCOPES = "openid email nickname roles user_id organizati
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 class MissionControl(
-        environment: RetrofitFactory.Environment,
+        private val environment: RetrofitFactory.Environment,
         authToken: Supplier<String>,
         s3BucketUrl: String,
         private val parameters: MissionParameters
@@ -298,6 +298,7 @@ class MissionControl(
         ensureValidIntegration(flightPlan)
 
         return Shuttle(
+                environment,
                 flightPlan,
                 entitySets,
                 entityTypes,
