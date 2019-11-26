@@ -224,8 +224,9 @@ fun main(args: Array<String>) {
             else -> "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
         }
     } else {
-        "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
+        ""
     }
+
     val shuttleConfig = if (cl.hasOption(POSTGRES)) {
         val pgCfg = cl.getOptionValues(POSTGRES)
         require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
