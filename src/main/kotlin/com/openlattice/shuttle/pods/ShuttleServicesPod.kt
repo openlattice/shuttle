@@ -6,6 +6,7 @@ import com.google.common.util.concurrent.ListeningExecutorService
 import com.hazelcast.core.HazelcastInstance
 import com.kryptnostic.rhizome.pods.hazelcast.RegistryBasedHazelcastInstanceConfigurationPod
 import com.openlattice.auditing.AuditingConfiguration
+import com.openlattice.auditing.pods.AuditingConfigurationPod
 import com.openlattice.authorization.AuthorizationQueryService
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.HazelcastAuthorizationService
@@ -38,7 +39,7 @@ import javax.inject.Inject
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @Configuration
-@Import(value = [JdbcPod::class, RegistryBasedHazelcastInstanceConfigurationPod::class, ByteBlobServicePod::class])
+@Import(value = [ByteBlobServicePod::class, AuditingConfigurationPod::class])
 class ShuttleServicesPod {
 
     @Inject
@@ -51,15 +52,15 @@ class ShuttleServicesPod {
     private lateinit var hazelcastClientProvider: HazelcastClientProvider
 
     @Inject
-    private lateinit var executor: ListeningExecutorService //TODO pipe this in
+    private lateinit var executor: ListeningExecutorService
 
     @Inject
     private lateinit var byteBlobDataManager: ByteBlobDataManager
 
     @Inject
-    private lateinit var eventBus: EventBus //TODO pipe this in
+    private lateinit var eventBus: EventBus
 
-    @Inject lateinit var auditingConfiguration: AuditingConfiguration //TODO pipe this in
+    @Inject lateinit var auditingConfiguration: AuditingConfiguration
 
     @Bean
     fun recurringIntegrationService() = RecurringIntegrationService(hds)
