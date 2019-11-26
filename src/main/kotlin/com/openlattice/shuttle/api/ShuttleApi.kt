@@ -14,6 +14,11 @@ const val FLIGHT_PATH = "{$FLIGHT}"
 
 interface ShuttleApi {
 
+    /**
+     * Starts an integration on Shuttle Server for a given flight
+     * @param flightName the name of the flight to be run
+     * @param lastRow the last row that has already been integrated
+     */
     @PATCH(BASE + FLIGHT_PATH)
     fun startIntegration(
             @Path(FLIGHT) flightName: String,
