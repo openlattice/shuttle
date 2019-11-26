@@ -15,9 +15,24 @@ cassandra:
 hazelcast:
     server: true
     group: "local"
-    password: "kryptodoge4life"
+    password: "trellis"
+    cp-member-count: 0
     seed-nodes:
-        - "conductor"
+        - "localhost"
+    scheduled-executor:
+        name: "hazelcast_scheduled_tasks"
+        pool-size: 2
+        capacity: 128
+        durability: 1
+
+hazelcast-clients:
+    IDS:
+        server: false
+        group: "local_shuttle"
+        password: "trellis"
+        cp-member-count: 0
+        seed-nodes:
+            - "localhost"
 
 spark:
     appname: "shuttle"
