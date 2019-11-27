@@ -36,10 +36,4 @@ private val shuttlePods = arrayOf(
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class ShuttleServer : BaseRhizomeServer(*shuttlePods) {
-
-    fun main(args: Array<String>) {
-        ShuttleServer().start(*args)
-    }
-
-}
+class ShuttleServer : BaseRhizomeServer(*shuttlePods)
