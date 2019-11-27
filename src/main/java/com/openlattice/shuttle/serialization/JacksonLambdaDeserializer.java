@@ -44,7 +44,7 @@ public class JacksonLambdaDeserializer extends StdDeserializer<SerializableFunct
     private static       Decoder decoder = Base64.getDecoder();
     private static final Encoder encoder = Base64.getEncoder();
 
-    private static final ThreadLocal<Kryo> kryo = new ThreadLocal<Kryo>() {
+    private static final ThreadLocal<Kryo> kryo = new ThreadLocal<>() {
 
         @Override
         protected Kryo initialValue() {

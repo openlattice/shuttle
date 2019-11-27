@@ -54,7 +54,7 @@ public class ReplaceTransform extends Transformation<String> {
     @Override
     public Object applyValue( String o ) {
 
-        Map<String, String> tokens = new HashMap<String, String>();
+        Map<String, String> tokens = new HashMap<>();
         for ( int i = 0; i < target.size(); ++i ) {
             tokens.put( target.get( i ), goal.get( i ) );
         }
