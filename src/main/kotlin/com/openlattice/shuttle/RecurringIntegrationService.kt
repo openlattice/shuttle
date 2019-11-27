@@ -13,6 +13,7 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.READ_RATE_LIMIT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.UPLOAD_SIZE
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.zaxxer.hikari.HikariDataSource
+import org.apache.commons.cli.CommandLine
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.lang.Exception
@@ -20,6 +21,7 @@ import java.util.*
 
 private val logger = LoggerFactory.getLogger(RecurringIntegrationService::class.java)
 private val flightEntitySetId = IdConstants.FLIGHT_ENTITY_SET_ID.id
+
 @Service
 class RecurringIntegrationService(
         private val hds: HikariDataSource,
@@ -28,8 +30,6 @@ class RecurringIntegrationService(
 ) {
 
     fun loadCargo(entityKeyId: UUID, lastRow: String) {
-        //TODO get flight and other vals from entity set
-
         val env = RetrofitFactory.Environment.PRODUCTION //?????
         val flightProperties = entitySetManager.getPropertyTypesForEntitySet(flightEntitySetId)
         val flightEntity = dataGraphService.getEntity(
@@ -43,9 +43,7 @@ class RecurringIntegrationService(
         val sql = flightEntity.getValue(SQL.fqn).first() as String
         val args = flightEntity.getValue(ARGS.fqn).map { it as String }.toTypedArray()
         val cl = ShuttleCliOptions.parseCommandLine(args)
-        val rRL = cl.getOptionValue(READ_RATE_LIMIT).toInt()
-        val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
-        val payload = JdbcPayload(rRL.toDouble(), hds, sql, fetchSize, rRL != 0)
+        val payload = getPayload(cl, sql)
         val flightPlan = mapOf(flight to payload)
 
         //GET CONTACT
@@ -71,6 +69,12 @@ class RecurringIntegrationService(
         } catch (ex: Exception) {
             MissionControl.fail(1, flight, ex)
         }
+    }
+
+    private fun getPayload(cl: CommandLine, sql: String): JdbcPayload {
+        val rRL = cl.getOptionValue(READ_RATE_LIMIT).toInt()
+        val fetchSize = cl.getOptionValue(FETCHSIZE).toInt()
+        return JdbcPayload(rRL.toDouble(), hds, sql, fetchSize, rRL != 0)
     }
 
 }
