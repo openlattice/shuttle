@@ -58,7 +58,7 @@ public class BooleanRegexCondition extends Condition<Map<String, String>> {
 
         Matcher m = Cached.getInsensitiveMatcherForString( o, this.pattern );
 
-        Boolean out = false;
+        boolean out = false;
         if ( m.find() ) {
             out = true;
         }
