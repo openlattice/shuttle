@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.regex.Matcher;

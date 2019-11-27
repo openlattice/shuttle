@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
-import transforms.CaseTransform;
-import transforms.ConcatTransform;
 
 import java.util.List;
 import java.util.Map;

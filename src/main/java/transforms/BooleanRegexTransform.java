@@ -6,7 +6,6 @@ import com.openlattice.shuttle.transformations.BooleanTransformation;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.Optional;
