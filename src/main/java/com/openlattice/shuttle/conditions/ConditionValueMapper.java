@@ -28,7 +28,7 @@ public class ConditionValueMapper implements SerializableFunction<Map<String, Ob
             } else if ( t.toString().startsWith( "conditions.ConditionalOr" ) ) {
                 schedule = "or";
             } else {
-                Boolean temp = ( (Boolean) t.apply( input ) ).booleanValue();
+                Boolean temp = (Boolean) t.apply( input );
                 if ( schedule == "and" ) {
                     if ( out == null ) {out = temp;} else if ( out ) {out = temp;} else if ( !out ) {}
                 } else if ( schedule == "or" ) {
