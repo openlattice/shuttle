@@ -69,7 +69,7 @@ public class ReplaceTransform extends Transformation<String> {
             sbuild.append( "(?i)" );
         }
         String tokenlist = StringUtils.join( target, "|" );
-        sbuild.append( "(" + tokenlist + ")" );
+        sbuild.append( "(" ).append( tokenlist ).append( ")" );
         if ( !partial ) {
             sbuild.append( "$" );
         }

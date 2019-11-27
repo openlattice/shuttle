@@ -8,6 +8,10 @@ import java.util.Map;
 public class ConditionValueMapper implements SerializableFunction<Map<String, Object>, Object> {
     private final List<Condition> conditions;
 
+    public ConditionValueMapper( Conditions conditions ) {
+        this.conditions = conditions;
+    }
+
     public ConditionValueMapper( List<Condition> conditions ) {
         this.conditions = conditions;
     }
