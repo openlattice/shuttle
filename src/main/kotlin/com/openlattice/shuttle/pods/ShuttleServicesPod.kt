@@ -63,9 +63,6 @@ class ShuttleServicesPod {
     @Inject lateinit var auditingConfiguration: AuditingConfiguration
 
     @Bean
-    fun recurringIntegrationService() = RecurringIntegrationService(hds)
-
-    @Bean
     fun aclKeyReservationService() = HazelcastAclKeyReservationService(hazelcastInstance)
 
     @Bean
@@ -134,5 +131,9 @@ class ShuttleServicesPod {
 
     @Bean
     fun dataGraphService() = DataGraphService(graphApi(), idService(), entityDatastore(), postgresEntitySetSizeCacheManager())
+
+
+    @Bean
+    fun recurringIntegrationService() = RecurringIntegrationService(hds, entitySetManager(), dataGraphService())
 
 }
