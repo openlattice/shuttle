@@ -17,7 +17,7 @@ public class Cached {
     private static final LoadingCache<String, DateTimeFormatter> formatCache = buildFormatCache();
 
     private static LoadingCache<String, Pattern> buildRegexCache() {
-        return CacheBuilder.newBuilder().build( CacheLoader.from( Pattern::compile ) );
+        return CacheBuilder.newBuilder().build( CacheLoader.from( (key) -> Pattern.compile( key ) ) );
     }
 
     private static LoadingCache<String, Pattern> buildInsensitiveRegexCache() {
