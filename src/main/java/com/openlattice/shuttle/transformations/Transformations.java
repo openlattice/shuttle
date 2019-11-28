@@ -22,9 +22,14 @@
 package com.openlattice.shuttle.transformations;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class Transformations extends ArrayList<Transformation> {
+
+    public Transformations( final List<Transformation> transforms ) {
+        super(transforms);
+    }
 }
