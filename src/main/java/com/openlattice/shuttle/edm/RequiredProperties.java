@@ -19,15 +19,15 @@
 
 package com.openlattice.shuttle.edm;
 
-import com.openlattice.client.serialization.SerializationConstants;
-import com.openlattice.edm.type.Analyzer;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import com.openlattice.client.serialization.SerializationConstants;
+import com.openlattice.edm.type.Analyzer;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import java.util.Optional;
 import java.util.Set;
 
 public class RequiredProperties {
