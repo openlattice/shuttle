@@ -45,7 +45,7 @@ public class ReplaceTransform extends Transformation<String> {
         this.partial = partial.orElse( false );
 
         if ( this.ignoreCase ) {
-            this.target = target.stream().map( value -> value.toLowerCase() ).collect( Collectors.toList() );
+            this.target = target.stream().map( String::toLowerCase ).collect( Collectors.toList() );
         } else {
             this.target = target;
         }
