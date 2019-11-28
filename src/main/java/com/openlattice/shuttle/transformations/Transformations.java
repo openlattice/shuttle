@@ -21,31 +21,10 @@
 
 package com.openlattice.shuttle.transformations;
 
-import com.google.common.collect.Lists;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.ArrayList;
-import java.util.Collection;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class Transformations extends ArrayList<Transformation> {
-    public Transformations( int initialCapacity ) {
-        super( initialCapacity );
-    }
-
-    public Transformations() {
-        super();
-    }
-
-    public Transformations(
-            @NotNull
-                    Collection<? extends Transformation> c ) {
-        super( c );
-    }
-
-    public static Transformations of( Transformation... transformations ) {
-        return (Transformations) Lists.newArrayList(transformations);
-    }
 }
