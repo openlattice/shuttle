@@ -29,6 +29,10 @@ import java.util.List;
  */
 public class Transformations extends ArrayList<Transformation> {
 
+    public Transformations(){
+        super();
+    }
+
     public Transformations( final List<Transformation> transforms ) {
         super(transforms);
     }
