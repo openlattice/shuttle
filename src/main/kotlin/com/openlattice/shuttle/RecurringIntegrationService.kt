@@ -5,7 +5,7 @@ import com.openlattice.IdConstants
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataGraphService
 import com.openlattice.datastore.services.EntitySetService
-import com.openlattice.shuttle.FlightFqnConstants.*
+import com.openlattice.shuttle.FlightProperty.*
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.FETCHSIZE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.READ_RATE_LIMIT
@@ -14,10 +14,12 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.UPLOAD_SIZE
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.commons.cli.CommandLine
+import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.lang.Exception
 import java.util.*
+import javax.inject.Inject
 
 private val logger = LoggerFactory.getLogger(RecurringIntegrationService::class.java)
 private val flightEntitySetId = IdConstants.FLIGHT_ENTITY_SET_ID.id
@@ -26,7 +28,8 @@ private val flightEntitySetId = IdConstants.FLIGHT_ENTITY_SET_ID.id
 class RecurringIntegrationService(
         private val hds: HikariDataSource,
         private val entitySetManager: EntitySetService,
-        private val dataGraphService: DataGraphService
+        private val dataGraphService: DataGraphService,
+        private val flightConfig: FlightConfiguration
 ) {
 
     fun loadCargo(entityKeyId: UUID, lastRow: String) {
@@ -38,19 +41,20 @@ class RecurringIntegrationService(
                 flightProperties)
 
         //GET FLIGHTPLAN
-        val flightAsString = flightEntity.getValue(DEFINITION.fqn).first() as String
+        val fqns = flightConfig.fqns.map { it.key to FullQualifiedName(it.value) }.toMap()
+        val flightAsString = flightEntity.getValue(fqns[DEFINITION]!!).first().toString()
         val flight = ObjectMappers.getYamlMapper().readValue(flightAsString, Flight::class.java)
-        val sql = flightEntity.getValue(SQL.fqn).first() as String
-        val args = flightEntity.getValue(ARGS.fqn).map { it as String }.toTypedArray()
+        val sql = flightEntity.getValue(fqns[SQL]!!).first().toString()
+        val args = flightEntity.getValue(fqns[ARGS]!!).map { it.toString() }.toTypedArray()
         val cl = ShuttleCliOptions.parseCommandLine(args)
         val payload = getPayload(cl, sql)
         val flightPlan = mapOf(flight to payload)
 
         //GET CONTACT
-        val contacts = flightEntity.getValue(CONTACT.fqn).map { it as String }.toSet()
+        val contacts = flightEntity.getValue(fqns[CONTACT]!!).map { it.toString() }.toSet()
 
         //GET PKEY COLS
-        val pkeyCols = flightEntity.getValue(PKEY.fqn).map{it as String}
+        val pkeyCols = flightEntity.getValue(fqns[PKEY]!!).map { it.toString() }
 
         //GET UPLOAD BATCH SIZE
         val uploadBatchSize = if (cl.hasOption(UPLOAD_SIZE)) {
@@ -58,6 +62,8 @@ class RecurringIntegrationService(
         } else {
             DEFAULT_UPLOAD_SIZE
         }
+
+        //TODO generate bucket from profiles?!?!???!
 
         try {
             val missionControl = MissionControl(env, "username", "password", "bucket", MissionParameters.empty())

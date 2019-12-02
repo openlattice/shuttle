@@ -5,6 +5,7 @@ import com.google.common.eventbus.EventBus
 import com.google.common.util.concurrent.ListeningExecutorService
 import com.hazelcast.core.HazelcastInstance
 import com.kryptnostic.rhizome.pods.hazelcast.RegistryBasedHazelcastInstanceConfigurationPod
+import com.openlattice.ResourceConfigurationLoader
 import com.openlattice.auditing.AuditingConfiguration
 import com.openlattice.auditing.pods.AuditingConfigurationPod
 import com.openlattice.authorization.AuthorizationQueryService
@@ -27,6 +28,7 @@ import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
 import com.openlattice.graph.Graph
 import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.jdbc.JdbcPod
+import com.openlattice.shuttle.FlightConfiguration
 import com.openlattice.shuttle.RecurringIntegrationService
 import com.zaxxer.hikari.HikariDataSource
 import org.springframework.context.annotation.Bean
@@ -60,7 +62,8 @@ class ShuttleServicesPod {
     @Inject
     private lateinit var eventBus: EventBus
 
-    @Inject lateinit var auditingConfiguration: AuditingConfiguration
+    @Inject
+    private lateinit var auditingConfiguration: AuditingConfiguration
 
     @Bean
     fun aclKeyReservationService() = HazelcastAclKeyReservationService(hazelcastInstance)
@@ -132,8 +135,10 @@ class ShuttleServicesPod {
     @Bean
     fun dataGraphService() = DataGraphService(graphApi(), idService(), entityDatastore(), postgresEntitySetSizeCacheManager())
 
+    @Bean
+    fun flightConfiguration(): FlightConfiguration = ResourceConfigurationLoader.loadConfiguration(FlightConfiguration::class.java)
 
     @Bean
-    fun recurringIntegrationService() = RecurringIntegrationService(hds, entitySetManager(), dataGraphService())
+    fun recurringIntegrationService() = RecurringIntegrationService(hds, entitySetManager(), dataGraphService(), flightConfiguration())
 
 }
