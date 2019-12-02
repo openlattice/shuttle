@@ -4,6 +4,8 @@ import com.dataloom.mappers.ObjectMappers
 import com.openlattice.IdConstants
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataGraphService
+import com.openlattice.data.storage.ByteBlobDataManager
+import com.openlattice.datastore.configuration.DatastoreConfiguration
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.shuttle.FlightProperty.*
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CREATE
@@ -19,10 +21,14 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.lang.Exception
 import java.util.*
+import java.util.function.Supplier
 import javax.inject.Inject
 
 private val logger = LoggerFactory.getLogger(RecurringIntegrationService::class.java)
 private val flightEntitySetId = IdConstants.FLIGHT_ENTITY_SET_ID.id
+
+@Inject
+private lateinit var datastoreConfig: DatastoreConfiguration
 
 @Service
 class RecurringIntegrationService(
@@ -66,7 +72,8 @@ class RecurringIntegrationService(
         //TODO generate bucket from profiles?!?!???!
 
         try {
-            val missionControl = MissionControl(env, "username", "password", "bucket", MissionParameters.empty())
+            val s3BucketUrl = "https://" + datastoreConfig.bucketName + ".s3-website-us-gov-west-1.amazonaws.com"
+            val missionControl = MissionControl(env, Supplier{ "" }, s3BucketUrl, MissionParameters.empty())
             logger.info("Preparing flight plan.")
             val shuttle = missionControl.prepare(flightPlan, cl.hasOption(CREATE), pkeyCols, contacts)
             logger.info("Pre-flight check list complete.")
