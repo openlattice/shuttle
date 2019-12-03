@@ -16,6 +16,7 @@ import java.util.*
  * @param defaultStorage ?????
  * @param s3bucket the url of the s3bucket to be used
  * @param flight stringified version of a flight yaml
+ * @param contacts the set of email addresses of those responsible for the integration
  * @param recurring boolean denoting if the integration is recurring
  * @param start ??? datetime in ms of first integration?
  * @param period ??? how often it gets rerun?
@@ -29,6 +30,7 @@ data class Integration(
         val defaultStorage: StorageDestination,
         val s3bucket: String,
         val flight: Flight,
+        val contacts: Set<String>,
         val recurring: Boolean,
         val start: Long,
         val period: Long
