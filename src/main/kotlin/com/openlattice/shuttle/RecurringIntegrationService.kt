@@ -6,7 +6,6 @@ import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataGraphService
 import com.openlattice.datastore.configuration.DatastoreConfiguration
 import com.openlattice.datastore.services.EntitySetService
-import com.openlattice.shuttle.FlightProperty.*
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.FETCHSIZE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.READ_RATE_LIMIT
@@ -32,11 +31,10 @@ private lateinit var datastoreConfig: DatastoreConfiguration
 class RecurringIntegrationService(
         private val hds: HikariDataSource,
         private val entitySetManager: EntitySetService,
-        private val dataGraphService: DataGraphService,
-        private val flightConfig: FlightConfiguration
+        private val dataGraphService: DataGraphService
 ) {
 
-    fun loadCargo(entityKeyId: UUID, lastRow: String) {
+    fun loadCargo(flightName: String, lastRow: String) {
         val flightProperties = entitySetManager.getPropertyTypesForEntitySet(flightEntitySetId)
         val flightEntity = dataGraphService.getEntity(
                 flightEntitySetId,

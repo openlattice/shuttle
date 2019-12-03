@@ -20,13 +20,13 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     private lateinit var authorizationManager: AuthorizationManager
 
     @Timed
-    @PatchMapping(path = [EKID_PATH])
+    @PatchMapping(path = [FLIGHT_NAME_PATH])
     override fun startIntegration(
-            @PathVariable(EKID) entityKeyId: UUID,
+            @PathVariable(FLIGHT_NAME) flightName: String,
             @RequestBody lastRow: String
     ) {
         ensureAdminAccess()
-        recurringIntegrationService.loadCargo(entityKeyId, lastRow)
+        recurringIntegrationService.loadCargo(flightName, lastRow)
     }
 
     override fun getAuthorizationManager(): AuthorizationManager {
