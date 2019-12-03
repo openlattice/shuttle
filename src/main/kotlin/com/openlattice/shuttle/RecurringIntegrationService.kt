@@ -4,7 +4,6 @@ import com.dataloom.mappers.ObjectMappers
 import com.openlattice.IdConstants
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataGraphService
-import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.datastore.configuration.DatastoreConfiguration
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.shuttle.FlightProperty.*
@@ -21,7 +20,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.lang.Exception
 import java.util.*
-import java.util.function.Supplier
 import javax.inject.Inject
 
 private val logger = LoggerFactory.getLogger(RecurringIntegrationService::class.java)
@@ -39,18 +37,25 @@ class RecurringIntegrationService(
 ) {
 
     fun loadCargo(entityKeyId: UUID, lastRow: String) {
-        val env = RetrofitFactory.Environment.PRODUCTION //?????
         val flightProperties = entitySetManager.getPropertyTypesForEntitySet(flightEntitySetId)
         val flightEntity = dataGraphService.getEntity(
                 flightEntitySetId,
                 entityKeyId,
                 flightProperties)
 
-        //GET FLIGHTPLAN
+        //PARSE FLIGHT
         val fqns = flightConfig.fqns.map { it.key to FullQualifiedName(it.value) }.toMap()
+        val flightName = flightEntity.getValue(fqns[NAME]!!).first().toString()
+        val credentials = flightConfig.credentials.getValue(flightName)
+        val username = credentials.getValue("username")
+        val password = credentials.getValue("password")
         val flightAsString = flightEntity.getValue(fqns[DEFINITION]!!).first().toString()
         val flight = ObjectMappers.getYamlMapper().readValue(flightAsString, Flight::class.java)
         val sql = flightEntity.getValue(fqns[SQL]!!).first().toString()
+        val env = flightEntity.getValue(fqns[ENVIRONMENT]!!).first().toString().toUpperCase()
+        val retrofitEnv = RetrofitFactory.Environment.valueOf(env)
+
+        //GET FLIGHTPLAN
         val args = flightEntity.getValue(fqns[ARGS]!!).map { it.toString() }.toTypedArray()
         val cl = ShuttleCliOptions.parseCommandLine(args)
         val payload = getPayload(cl, sql)
@@ -69,11 +74,9 @@ class RecurringIntegrationService(
             DEFAULT_UPLOAD_SIZE
         }
 
-        //TODO generate bucket from profiles?!?!???!
-
         try {
             val s3BucketUrl = "https://" + datastoreConfig.bucketName + ".s3-website-us-gov-west-1.amazonaws.com"
-            val missionControl = MissionControl(env, Supplier{ "" }, s3BucketUrl, MissionParameters.empty())
+            val missionControl = MissionControl(retrofitEnv, username, password, s3BucketUrl, MissionParameters.empty())
             logger.info("Preparing flight plan.")
             val shuttle = missionControl.prepare(flightPlan, cl.hasOption(CREATE), pkeyCols, contacts)
             logger.info("Pre-flight check list complete.")
