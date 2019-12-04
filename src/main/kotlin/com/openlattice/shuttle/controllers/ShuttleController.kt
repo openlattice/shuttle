@@ -5,6 +5,7 @@ import com.openlattice.authorization.AuthorizationManager
 import com.openlattice.authorization.AuthorizingComponent
 import com.openlattice.shuttle.*
 import com.openlattice.shuttle.api.*
+import com.openlattice.shuttle.control.Integration
 import org.springframework.web.bind.annotation.*
 import java.util.*
 import javax.inject.Inject
@@ -22,11 +23,19 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     @Timed
     @PatchMapping(path = [FLIGHT_NAME_PATH])
     override fun startIntegration(
-            @PathVariable(FLIGHT_NAME) flightName: String,
-            @RequestBody lastRow: String
+            @PathVariable(FLIGHT_NAME) flightName: String
     ) {
         ensureAdminAccess()
-        recurringIntegrationService.loadCargo(flightName, lastRow)
+        recurringIntegrationService.loadCargo(flightName)
+    }
+
+    @Timed
+    @PostMapping(path = [DEFINITION + FLIGHT_NAME_PATH])
+    override fun createIntegrationDefinition(
+            @PathVariable flightName: String,
+            @RequestBody integrationDefinition: Integration) {
+        ensureAdminAccess()
+        recurringIntegrationService.createIntegration(flightName, integrationDefinition)
     }
 
     override fun getAuthorizationManager(): AuthorizationManager {
