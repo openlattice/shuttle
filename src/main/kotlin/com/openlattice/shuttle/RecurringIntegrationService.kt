@@ -1,21 +1,17 @@
 package com.openlattice.shuttle
 
-import com.openlattice.data.DataGraphService
-import com.openlattice.datastore.configuration.DatastoreConfiguration
-import com.openlattice.datastore.services.EntitySetService
-import com.openlattice.postgres.PostgresColumn.NAME
-import com.openlattice.postgres.PostgresTable.FLIGHTS
-import com.openlattice.shuttle.ShuttleCliOptions.Companion.CREATE
-import com.openlattice.shuttle.ShuttleCliOptions.Companion.FETCHSIZE
-import com.openlattice.shuttle.ShuttleCliOptions.Companion.READ_RATE_LIMIT
-
-import com.openlattice.shuttle.ShuttleCliOptions.Companion.UPLOAD_SIZE
-import com.openlattice.shuttle.control.IntegrationResultSetAdapter
+import com.dataloom.mappers.ObjectMappers
+import com.google.common.base.Preconditions.checkState
+import com.hazelcast.core.HazelcastInstance
+import com.openlattice.hazelcast.HazelcastMap
+import com.openlattice.shuttle.control.Integration
 import com.openlattice.shuttle.payload.JdbcPayload
+import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.lang.Exception
+import java.util.*
 import javax.inject.Inject
 
 private val logger = LoggerFactory.getLogger(RecurringIntegrationService::class.java)
@@ -28,20 +24,17 @@ private lateinit var missionParameters: MissionParameters
 
 @Service
 class RecurringIntegrationService(
-        private val hds: HikariDataSource
+        private val hazelcastInstance: HazelcastInstance
 ) {
 
-    fun loadCargo(flightName: String, lastRow: String) {
-        val integration = hds.connection.use{
-            val stmt = it.createStatement()
-            val getIntegrationConfigSql = "SELECT * FROM ${FLIGHTS.name} WHERE ${NAME.name} = $flightName"
-            val result = stmt.executeQuery(getIntegrationConfigSql)
-            return@use IntegrationResultSetAdapter.integration(result)
+    private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
 
-        }
+    fun loadCargo(flightName: String) {
+        val integration = integrations.getValue(flightName)
 
         //GET FLIGHTPLAN
-        val payload = JdbcPayload(readRateLimit.toDouble(), hds, integration.sql, fetchSize, readRateLimit != 0)
+        val dataSource = getDataSource(integration.source)
+        val payload = JdbcPayload(readRateLimit.toDouble(), dataSource, integration.sql, fetchSize, readRateLimit != 0)
         val flightPlan = mapOf(integration.flight to payload)
 
         try {
@@ -62,6 +55,18 @@ class RecurringIntegrationService(
         } catch (ex: Exception) {
             MissionControl.fail(1, integration.flight, ex)
         }
+    }
+
+    fun createIntegration(flightName: String, integration: Integration) {
+        val caseInsensitiveFlightName = flightName.toLowerCase()
+        checkState( !integrations.containsKey(caseInsensitiveFlightName), "An integration with name $flightName already exists." )
+
+        integrations[caseInsensitiveFlightName] = integration
+    }
+
+    private fun getDataSource(properties: Properties): HikariDataSource {
+        val hikariConfig = HikariConfig(properties)
+        return HikariDataSource(hikariConfig)
     }
 
 }
