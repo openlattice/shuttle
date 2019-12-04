@@ -22,33 +22,18 @@
 package com.openlattice.shuttle.transformations;
 
 import java.util.ArrayList;
-import java.util.Collection;
-
-import org.jetbrains.annotations.NotNull;
+import java.util.List;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 public class Transformations extends ArrayList<Transformation> {
-    public Transformations( int initialCapacity ) {
-        super( initialCapacity );
-    }
 
-    public Transformations() {
+    public Transformations(){
         super();
     }
 
-    public Transformations(
-            @NotNull
-                    Collection<? extends Transformation> c ) {
-        super( c );
-    }
-
-    public static Transformations of( Transformation... transformations ) {
-        Transformations t = new Transformations( transformations.length );
-        for ( Transformation transform : transformations ) {
-            t.add( transform );
-        }
-        return t;
+    public Transformations( final List<Transformation> transforms ) {
+        super(transforms);
     }
 }

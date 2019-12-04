@@ -7,12 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.shuttle.util.Constants;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BooleanTransformation<I extends Object> extends Transformation<I> {
+public class BooleanTransformation<I> extends Transformation<I> {
     private final SerializableFunction<Map<String, Object>, Object>              trueValueMapper;
     private final SerializableFunction<Map<String, Object>, Object>              falseValueMapper;
     private final Optional<Transformations>                                      transformsIfTrue;
@@ -34,20 +32,14 @@ public class BooleanTransformation<I extends Object> extends Transformation<I> {
 
         // true valuemapper
         if ( transformsIfTrue.isPresent() ) {
-            final List<Transformation> internalTrueTransforms;
-            internalTrueTransforms = new ArrayList<>( this.transformsIfTrue.get().size() );
-            transformsIfTrue.get().forEach( internalTrueTransforms::add );
-            this.trueValueMapper = new TransformValueMapper( internalTrueTransforms );
+            this.trueValueMapper = new TransformValueMapper( transformsIfTrue.get() );
         } else {
             this.trueValueMapper = row -> null;
         }
 
         // false valuemapper
         if ( transformsIfFalse.isPresent() ) {
-            final List<Transformation> internalFalseTransforms;
-            internalFalseTransforms = new ArrayList<>( this.transformsIfFalse.get().size() );
-            transformsIfFalse.get().forEach( internalFalseTransforms::add );
-            this.falseValueMapper = new TransformValueMapper( internalFalseTransforms );
+            this.falseValueMapper = new TransformValueMapper( transformsIfFalse.get() );
         } else {
             this.falseValueMapper = row -> null;
         }

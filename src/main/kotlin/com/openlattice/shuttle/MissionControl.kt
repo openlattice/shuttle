@@ -314,9 +314,7 @@ class MissionControl(
     private fun createMissingEntitySets(flightPlan: Map<Flight, Payload>, contacts: Set<String>) {
         flightPlan.keys.forEach {
             it.entities.forEach { entityDefinition ->
-                if (entitySets.containsKey(entityDefinition.entitySetName)) {
-
-                } else {
+                if (!entitySets.containsKey(entityDefinition.entitySetName)) {
                     val fqn = entityDefinition.getEntityTypeFqn()
                     val entitySet = EntitySet(
                             entityDefinition.getId().orElse(UUID.randomUUID()),
@@ -332,9 +330,7 @@ class MissionControl(
                 }
             }
             it.associations.forEach { associationDefinition ->
-                if (entitySets.containsKey(associationDefinition.entitySetName)) {
-
-                } else {
+                if (!entitySets.containsKey(associationDefinition.entitySetName)) {
                     val fqn = associationDefinition.getEntityTypeFqn()
                     val entityTypeId = edmApi.getEntityTypeId(fqn.namespace, fqn.name)
                     val entitySet = EntitySet(

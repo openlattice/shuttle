@@ -2,15 +2,11 @@ package transforms;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.BooleanTransformation;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
