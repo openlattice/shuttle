@@ -32,7 +32,6 @@ class RecurringIntegrationService(
     fun loadCargo(flightName: String) {
         val integration = integrations.getValue(flightName)
 
-        //GET FLIGHTPLAN
         val dataSource = getDataSource(integration.source)
         val payload = JdbcPayload(readRateLimit.toDouble(), dataSource, integration.sql, fetchSize, readRateLimit != 0)
         val flightPlan = mapOf(integration.flight to payload)
@@ -59,10 +58,18 @@ class RecurringIntegrationService(
     }
 
     fun createIntegration(flightName: String, integration: Integration) {
-        val caseInsensitiveFlightName = flightName.toLowerCase()
-        checkState( !integrations.containsKey(caseInsensitiveFlightName), "An integration with name $flightName already exists." )
+        checkState( !integrations.containsKey(flightName), "An integration with name $flightName already exists." )
+        integrations[flightName] = integration
+    }
 
-        integrations[caseInsensitiveFlightName] = integration
+    fun updateIntegration(flightName: String, integration: Integration) {
+        checkState( integrations.containsKey(flightName), "Integration with name $flightName does not exist." )
+        integrations[flightName] = integration
+    }
+
+    fun deleteIntegration(flightName: String) {
+        checkState( integrations.containsKey(flightName), "Integration with name $flightName does not exist." )
+        integrations[flightName] = null
     }
 
     private fun getDataSource(properties: Properties): HikariDataSource {

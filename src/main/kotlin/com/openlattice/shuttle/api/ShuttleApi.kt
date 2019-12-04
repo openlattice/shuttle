@@ -1,10 +1,7 @@
 package com.openlattice.shuttle.api
 
 import com.openlattice.shuttle.control.Integration
-import retrofit2.http.Body
-import retrofit2.http.PATCH
-import retrofit2.http.POST
-import retrofit2.http.Path
+import retrofit2.http.*
 import java.util.*
 
 
@@ -39,5 +36,16 @@ interface ShuttleApi {
     fun createIntegrationDefinition(
             @Path(FLIGHT_NAME) flightName: String,
             @Body integrationDefinition: Integration )
+
+    @PATCH(BASE + DEFINITION + FLIGHT_NAME_PATH)
+    fun updateIntegrationDefinition(
+            @Path(FLIGHT_NAME) flightName: String,
+            @Body integrationDefinition: Integration
+    )
+
+    @DELETE(BASE + DEFINITION + FLIGHT_NAME_PATH)
+    fun deleteIntegrationDefinition(
+            @Path(FLIGHT_NAME) flightName: String
+    )
 
 }

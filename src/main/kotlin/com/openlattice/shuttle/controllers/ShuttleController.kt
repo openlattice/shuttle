@@ -26,7 +26,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
             @PathVariable(FLIGHT_NAME) flightName: String
     ) {
         ensureAdminAccess()
-        recurringIntegrationService.loadCargo(flightName)
+        recurringIntegrationService.loadCargo(flightName.toLowerCase())
     }
 
     @Timed
@@ -35,7 +35,21 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
             @PathVariable flightName: String,
             @RequestBody integrationDefinition: Integration) {
         ensureAdminAccess()
-        recurringIntegrationService.createIntegration(flightName, integrationDefinition)
+        recurringIntegrationService.createIntegration(flightName.toLowerCase(), integrationDefinition)
+    }
+
+    @Timed
+    @PatchMapping(path = [DEFINITION + FLIGHT_NAME_PATH])
+    override fun updateIntegrationDefinition(flightName: String, integrationDefinition: Integration) {
+        ensureAdminAccess()
+        recurringIntegrationService.updateIntegration(flightName.toLowerCase(), integrationDefinition)
+    }
+
+    @Timed
+    @DeleteMapping(path = [DEFINITION + FLIGHT_NAME_PATH])
+    override fun deleteIntegrationDefinition(flightName: String) {
+        ensureAdminAccess()
+        recurringIntegrationService.deleteIntegration(flightName.toLowerCase())
     }
 
     override fun getAuthorizationManager(): AuthorizationManager {
