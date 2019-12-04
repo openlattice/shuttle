@@ -2,13 +2,13 @@ package com.openlattice.shuttle.control
 
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.integration.StorageDestination
+import com.openlattice.mapstores.TestDataFactory
 import com.openlattice.shuttle.Flight
 import java.util.*
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
- * @param name a unique name identifying the Integration
  * @param sql the sql query to be used to pull cleaned data from postgres
  * @param source details regarding the source of the data
  * @param sourcePrimaryKeyColumns the columns that are primary keys in the cleaned data
@@ -22,7 +22,6 @@ import java.util.*
  * @param period ??? how often it gets rerun?
  */
 data class Integration(
-        val name: String,
         val sql: String,
         val source: Properties,
         val sourcePrimaryKeyColumns: List<String> = listOf(),
@@ -34,4 +33,25 @@ data class Integration(
         val recurring: Boolean,
         val start: Long,
         val period: Long
-)
+) {
+    companion object {
+
+        @JvmStatic
+        fun testData(): Integration {
+            val sql = TestDataFactory.random(5)
+            val source = Properties()
+            val pkeyCols = listOf<String>()
+            val environment = RetrofitFactory.Environment.PROD_INTEGRATION
+            val defaultStorage = StorageDestination.POSTGRES
+            val s3bucket = TestDataFactory.random(10)
+            val flight = Flight(emptyMap(), Optional.empty(), emptyMap())
+            val contacts = setOf<String>(TestDataFactory.random(5))
+            val recurring = true
+            val start = 1000L
+            val period = 5L
+            return Integration(sql, source, pkeyCols, environment,
+                    defaultStorage, s3bucket, flight, contacts, recurring, start, period)
+        }
+
+    }
+}

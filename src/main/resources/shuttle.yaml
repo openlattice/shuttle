@@ -1,0 +1,6 @@
+postgres:
+  enabled: true
+  config:
+    username: "oltest"
+    password: "test"
+    jdbcUrl: "jdbc:postgresql://localhost:5432"

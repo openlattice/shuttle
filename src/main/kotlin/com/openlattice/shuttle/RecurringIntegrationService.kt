@@ -23,6 +23,9 @@ private val fetchSize = 10000
 private val readRateLimit = 1000
 private val uploadBatchSize = 10000
 
+@Inject
+private lateinit var missionParameters: MissionParameters
+
 @Service
 class RecurringIntegrationService(
         private val hds: HikariDataSource
@@ -44,10 +47,10 @@ class RecurringIntegrationService(
         try {
             val missionControl = MissionControl(
                     integration.environment,
-                    username,
-                    password,
+                    missionParameters.postgres.config.getProperty("username"),
+                    missionParameters.postgres.config.getProperty("password"),
                     integration.s3bucket,
-                    MissionParameters.empty())
+                    missionParameters)
             logger.info("Preparing flight plan.")
             val shuttle = missionControl.prepare(flightPlan,
                     false,
