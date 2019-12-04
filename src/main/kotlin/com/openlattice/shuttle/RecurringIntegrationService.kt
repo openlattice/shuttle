@@ -38,10 +38,11 @@ class RecurringIntegrationService(
         val flightPlan = mapOf(integration.flight to payload)
 
         try {
+            val config = missionParameters.postgres.config
             val missionControl = MissionControl(
                     integration.environment,
-                    missionParameters.postgres.config.getProperty("username"),
-                    missionParameters.postgres.config.getProperty("password"),
+                    config.getProperty("username"),
+                    config.getProperty("password"),
                     integration.s3bucket,
                     missionParameters)
             logger.info("Preparing flight plan.")
