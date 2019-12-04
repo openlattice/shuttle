@@ -16,9 +16,8 @@ import com.zaxxer.hikari.HikariDataSource
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 
-class IntegrationsMapstore(val hds: HikariDataSource) : AbstractBasePostgresMapstore<String, Integration>(
+class IntegrationsMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore<String, Integration>(
         HazelcastMap.INTEGRATIONS.name, INTEGRATIONS, hds
-
 ) {
     private val mapper = ObjectMappers.newJsonMapper()
 
