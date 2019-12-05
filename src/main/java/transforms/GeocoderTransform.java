@@ -11,7 +11,6 @@ import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import java.io.IOException;
 import java.util.*;
-
 import com.openlattice.shuttle.util.Parsers;
 import retrofit2.Retrofit;
 import retrofit2.http.GET;

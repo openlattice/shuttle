@@ -73,7 +73,7 @@ public class CompareCondition extends Condition<Map<String, String>> {
         Object rightTransformed = row.get( rightColumn );
 
         if ( leftColumn == null && rightColumn == null ) {
-            throw new IllegalStateException( String.format( "The comparison is not data dependent. No columns are specified." ) );
+            throw new IllegalStateException( "The comparison is not data dependent. No columns are specified." );
         }
         if ( leftColumn != null && !( row.containsKey( leftColumn ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", leftColumn ) );

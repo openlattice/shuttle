@@ -156,7 +156,7 @@ fun main(args: Array<String>) {
         cl.hasOption(XML) -> {// get xml payload
             rowColsToPrint = listOf()
             if (cl.hasOption(DATA_ORIGIN)) {
-                val arguments = cl.getOptionValues(DATA_ORIGIN);
+                val arguments = cl.getOptionValues(DATA_ORIGIN)
                 val dataOrigin = when (arguments[0]) {
                     "S3" -> {
                         if (arguments.size < S3_ORIGIN_EXPECTED_ARGS_COUNT) {
@@ -224,8 +224,9 @@ fun main(args: Array<String>) {
             else -> "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
         }
     } else {
-        "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
+        ""
     }
+
     val shuttleConfig = if (cl.hasOption(POSTGRES)) {
         val pgCfg = cl.getOptionValues(POSTGRES)
         require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
