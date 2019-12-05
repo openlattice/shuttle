@@ -21,8 +21,6 @@
 
 package com.openlattice.data.integration
 
-import java.util.concurrent.atomic.AtomicLong
-
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -31,9 +29,4 @@ data class AddressedDataHolder(
         val entities: MutableMap<StorageDestination, MutableSet<Entity>>,
         val associations: MutableMap<StorageDestination, MutableSet<Association>>,
         val batchId: Long
-) {
-    val integratedEntities: Map<StorageDestination, AtomicLong> = StorageDestination
-            .values().map { it to AtomicLong(0) }.toMap()
-    val integratedEdges: Map<StorageDestination, AtomicLong> = StorageDestination
-            .values().map { it to AtomicLong(0) }.toMap()
-}
+)
