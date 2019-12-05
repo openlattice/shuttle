@@ -1,6 +1,5 @@
 package com.openlattice.shuttle
 
-import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions.checkState
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.hazelcast.HazelcastMap
@@ -29,8 +28,8 @@ class RecurringIntegrationService(
 
     private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
 
-    fun loadCargo(flightName: String) {
-        val integration = integrations.getValue(flightName)
+    fun loadCargo(integrationName: String) {
+        val integration = integrations.getValue(integrationName)
 
         val dataSource = getDataSource(integration.source)
         val payload = JdbcPayload(readRateLimit.toDouble(), dataSource, integration.sql, fetchSize, readRateLimit != 0)
@@ -57,19 +56,19 @@ class RecurringIntegrationService(
         }
     }
 
-    fun createIntegration(flightName: String, integration: Integration) {
-        checkState( !integrations.containsKey(flightName), "An integration with name $flightName already exists." )
-        integrations[flightName] = integration
+    fun createIntegration(integrationName: String, integration: Integration) {
+        checkState( !integrations.containsKey(integrationName), "An integration with name $integrationName already exists." )
+        integrations[integrationName] = integration
     }
 
-    fun updateIntegration(flightName: String, integration: Integration) {
-        checkState( integrations.containsKey(flightName), "Integration with name $flightName does not exist." )
-        integrations[flightName] = integration
+    fun updateIntegration(integrationName: String, integration: Integration) {
+        checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
+        integrations[integrationName] = integration
     }
 
-    fun deleteIntegration(flightName: String) {
-        checkState( integrations.containsKey(flightName), "Integration with name $flightName does not exist." )
-        integrations[flightName] = null
+    fun deleteIntegration(integrationName: String) {
+        checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
+        integrations[integrationName] = null
     }
 
     private fun getDataSource(properties: Properties): HikariDataSource {

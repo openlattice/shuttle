@@ -7,7 +7,6 @@ import com.openlattice.shuttle.*
 import com.openlattice.shuttle.api.*
 import com.openlattice.shuttle.control.Integration
 import org.springframework.web.bind.annotation.*
-import java.util.*
 import javax.inject.Inject
 
 @RestController
@@ -21,39 +20,47 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     private lateinit var authorizationManager: AuthorizationManager
 
     @Timed
-    @PatchMapping(path = [FLIGHT_NAME_PATH])
+    @PatchMapping(path = [INTEGRATION_NAME_PATH])
     override fun startIntegration(
-            @PathVariable(FLIGHT_NAME) flightName: String
+            @PathVariable(INTEGRATION_NAME) integrationName: String
     ) {
         ensureAdminAccess()
-        recurringIntegrationService.loadCargo(flightName.toLowerCase())
+        val normalizedName = normalizeIntegrationName(integrationName)
+        recurringIntegrationService.loadCargo(normalizedName)
     }
 
     @Timed
-    @PostMapping(path = [DEFINITION + FLIGHT_NAME_PATH])
+    @PostMapping(path = [DEFINITION + INTEGRATION_NAME_PATH])
     override fun createIntegrationDefinition(
-            @PathVariable flightName: String,
+            @PathVariable integrationName: String,
             @RequestBody integrationDefinition: Integration) {
         ensureAdminAccess()
-        recurringIntegrationService.createIntegration(flightName.toLowerCase(), integrationDefinition)
+        val normalizedName = normalizeIntegrationName(integrationName)
+        recurringIntegrationService.createIntegration(normalizedName, integrationDefinition)
     }
 
     @Timed
-    @PatchMapping(path = [DEFINITION + FLIGHT_NAME_PATH])
-    override fun updateIntegrationDefinition(flightName: String, integrationDefinition: Integration) {
+    @PatchMapping(path = [DEFINITION + INTEGRATION_NAME_PATH])
+    override fun updateIntegrationDefinition(integrationName: String, integrationDefinition: Integration) {
         ensureAdminAccess()
-        recurringIntegrationService.updateIntegration(flightName.toLowerCase(), integrationDefinition)
+        val normalizedName = normalizeIntegrationName(integrationName)
+        recurringIntegrationService.updateIntegration(normalizedName, integrationDefinition)
     }
 
     @Timed
-    @DeleteMapping(path = [DEFINITION + FLIGHT_NAME_PATH])
-    override fun deleteIntegrationDefinition(flightName: String) {
+    @DeleteMapping(path = [DEFINITION + INTEGRATION_NAME_PATH])
+    override fun deleteIntegrationDefinition(integrationName: String) {
         ensureAdminAccess()
-        recurringIntegrationService.deleteIntegration(flightName.toLowerCase())
+        val normalizedName = normalizeIntegrationName(integrationName)
+        recurringIntegrationService.deleteIntegration(normalizedName)
     }
 
     override fun getAuthorizationManager(): AuthorizationManager {
         return authorizationManager
+    }
+
+    private fun normalizeIntegrationName(integrationName: String): String {
+        return integrationName.toLowerCase().trim()
     }
 
 }

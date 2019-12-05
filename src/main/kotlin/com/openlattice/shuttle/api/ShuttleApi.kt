@@ -2,7 +2,6 @@ package com.openlattice.shuttle.api
 
 import com.openlattice.shuttle.control.Integration
 import retrofit2.http.*
-import java.util.*
 
 
 const val SERVICE = "/shuttle"
@@ -11,41 +10,52 @@ const val BASE = SERVICE + CONTROLLER
 
 const val DEFINITION = "/definition"
 
-const val FLIGHT_NAME = "flight-name"
-const val FLIGHT_NAME_PATH = "{$FLIGHT_NAME}"
+const val INTEGRATION_NAME = "integration-name"
+const val INTEGRATION_NAME_PATH = "{$INTEGRATION_NAME}"
 
 interface ShuttleApi {
 
     /**
      * Starts an integration on Shuttle Server for a given flight
-     * @param entityKeyId the entity key id of the flight to be run (within the flights entity set)
-     * @param lastRow the last row that has already been integrated
+     * @param integrationName the name of the integration to be run
      */
-    @PATCH(BASE + FLIGHT_NAME_PATH)
+    @PATCH(BASE + INTEGRATION_NAME_PATH)
     fun startIntegration(
-            @Path(FLIGHT_NAME) flightName: String
+            @Path(INTEGRATION_NAME) integrationName: String
     )
 
     /**
-     * Creates a new Integration definition for running recurring integrations
+     * Creates a new integration definition for running recurring integrations
+     * @param integrationName the name of the integration definition to be created
      * @param integrationDefinition the definition of the integration. The path to
      * a flight yaml can be passed in place of a Flight object and will be converted
      * to an instance of Flight class
      */
-    @POST(BASE + DEFINITION + FLIGHT_NAME_PATH)
+    @POST(BASE + DEFINITION + INTEGRATION_NAME_PATH)
     fun createIntegrationDefinition(
-            @Path(FLIGHT_NAME) flightName: String,
+            @Path(INTEGRATION_NAME) integrationName: String,
             @Body integrationDefinition: Integration )
 
-    @PATCH(BASE + DEFINITION + FLIGHT_NAME_PATH)
+    /**
+     * Replaces an existing integration definition
+     * @param integrationName the name of the integration definition to be replaced
+     * @param integrationDefinition the integration definition to replace an
+     * existing one. The path to a flight yaml can be passed in place of a
+     * Flight object and will be converted to an instance of Flight class
+     */
+    @PATCH(BASE + DEFINITION + INTEGRATION_NAME_PATH)
     fun updateIntegrationDefinition(
-            @Path(FLIGHT_NAME) flightName: String,
+            @Path(INTEGRATION_NAME) integrationName: String,
             @Body integrationDefinition: Integration
     )
 
-    @DELETE(BASE + DEFINITION + FLIGHT_NAME_PATH)
+    /**
+     * Deleted an integration definition
+     * @param integrationName the name of the integration definition to be deleted
+     */
+    @DELETE(BASE + DEFINITION + INTEGRATION_NAME_PATH)
     fun deleteIntegrationDefinition(
-            @Path(FLIGHT_NAME) flightName: String
+            @Path(INTEGRATION_NAME) integrationName: String
     )
 
 }
