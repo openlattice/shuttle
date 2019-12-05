@@ -45,9 +45,9 @@ class ShuttleMvcPod : WebMvcConfigurationSupport() {
 
     protected override fun configureMessageConverters(converters: MutableList<HttpMessageConverter<*>>?) {
         super.addDefaultHttpMessageConverters(converters!!)
-        for (converter in converters!!) {
+        for (converter in converters) {
             if (converter is MappingJackson2HttpMessageConverter) {
-                converter.objectMapper = defaultObjectMapper!!
+                converter.objectMapper = defaultObjectMapper
             }
         }
         converters.add(CsvHttpMessageConverter())

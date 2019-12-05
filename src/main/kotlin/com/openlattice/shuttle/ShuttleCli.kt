@@ -156,7 +156,7 @@ fun main(args: Array<String>) {
         cl.hasOption(XML) -> {// get xml payload
             rowColsToPrint = listOf()
             if (cl.hasOption(DATA_ORIGIN)) {
-                val arguments = cl.getOptionValues(DATA_ORIGIN);
+                val arguments = cl.getOptionValues(DATA_ORIGIN)
                 val dataOrigin = when (arguments[0]) {
                     "S3" -> {
                         if (arguments.size < S3_ORIGIN_EXPECTED_ARGS_COUNT) {

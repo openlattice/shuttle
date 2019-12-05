@@ -310,7 +310,7 @@ class Shuttle(
                     .addAll(propertyValueAsCollection)
             properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValueAsCollection)
         }
-        return Pair(properties, addressedProperties);
+        return Pair(properties, addressedProperties)
     }
 
     private fun impulse(flight: Flight, batch: List<Map<String, Any?>>, batchNumber: Long): AddressedDataHolder {

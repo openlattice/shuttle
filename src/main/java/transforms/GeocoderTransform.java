@@ -9,7 +9,7 @@ import com.openlattice.retrofit.RhizomeJacksonConverterFactory;
 import com.openlattice.rhizome.proxy.RetrofitBuilders;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;

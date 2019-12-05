@@ -19,19 +19,20 @@
 
 package com.openlattice.shuttle;
 
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.Maps;
-import com.openlattice.shuttle.conditions.Condition;
+import com.openlattice.client.serialization.SerializableFunction;
+import com.openlattice.client.serialization.SerializationConstants;
 import com.openlattice.shuttle.conditions.ConditionValueMapper;
 import com.openlattice.shuttle.conditions.Conditions;
 import com.openlattice.shuttle.util.Constants;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
 
 public class Flight implements Serializable {
 
@@ -55,10 +56,7 @@ public class Flight implements Serializable {
         this.associationDefinitions = associationDefinitions;
 
         if ( condition.isPresent() ) {
-            final List<Condition> internalConditions;
-            internalConditions = new ArrayList<>( this.condition.get().size() + 1 );
-            condition.get().forEach( internalConditions::add );
-            this.valueMapper = new ConditionValueMapper( internalConditions );
+            this.valueMapper = new ConditionValueMapper( condition.get() );
         } else {
             this.valueMapper = null;
         }
