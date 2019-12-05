@@ -35,9 +35,9 @@ class MissionParametersPod {
             ConfigurationConstants.Profiles.AWS_CONFIGURATION_PROFILE)
     fun awsMissionParameterConfiguration(): MissionParameters {
         val config = ResourceConfigurationLoader.loadConfigurationFromS3(
-                awsS3!!,
-                awsLaunchConfig!!.bucket,
-                awsLaunchConfig!!.folder,
+                awsS3,
+                awsLaunchConfig.bucket,
+                awsLaunchConfig.folder,
                 MissionParameters::class.java
         )
         logger.info("Using aws shuttle server configuration $config")
