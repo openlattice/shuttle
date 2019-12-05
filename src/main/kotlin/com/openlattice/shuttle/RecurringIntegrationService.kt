@@ -18,12 +18,10 @@ private val fetchSize = 10000
 private val readRateLimit = 1000
 private val uploadBatchSize = 10000
 
-@Inject
-private lateinit var missionParameters: MissionParameters
-
 @Service
 class RecurringIntegrationService(
-        private val hazelcastInstance: HazelcastInstance
+        private val hazelcastInstance: HazelcastInstance,
+        private val missionParameters: MissionParameters
 ) {
 
     private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
