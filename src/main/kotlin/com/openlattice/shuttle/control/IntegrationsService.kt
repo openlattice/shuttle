@@ -1,13 +1,10 @@
 package com.openlattice.shuttle.control
 
 import com.hazelcast.core.HazelcastInstance
-import com.openlattice.data.integration.StorageDestination
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
-import com.openlattice.shuttle.Shuttle
-import com.openlattice.shuttle.payload.JdbcPayload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory

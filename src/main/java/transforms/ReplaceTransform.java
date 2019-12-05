@@ -45,7 +45,7 @@ public class ReplaceTransform extends Transformation<String> {
         this.partial = partial.orElse( false );
 
         if ( this.ignoreCase ) {
-            this.target = target.stream().map( value -> value.toLowerCase() ).collect( Collectors.toList() );
+            this.target = target.stream().map( String::toLowerCase ).collect( Collectors.toList() );
         } else {
             this.target = target;
         }
@@ -54,7 +54,7 @@ public class ReplaceTransform extends Transformation<String> {
     @Override
     public Object applyValue( String o ) {
 
-        Map<String, String> tokens = new HashMap<String, String>();
+        Map<String, String> tokens = new HashMap<>();
         for ( int i = 0; i < target.size(); ++i ) {
             tokens.put( target.get( i ), goal.get( i ) );
         }
@@ -69,7 +69,7 @@ public class ReplaceTransform extends Transformation<String> {
             sbuild.append( "(?i)" );
         }
         String tokenlist = StringUtils.join( target, "|" );
-        sbuild.append( "(" + tokenlist + ")" );
+        sbuild.append( "(" ).append( tokenlist ).append( ")" );
         if ( !partial ) {
             sbuild.append( "$" );
         }

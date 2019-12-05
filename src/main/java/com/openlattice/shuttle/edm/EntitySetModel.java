@@ -19,13 +19,13 @@
 
 package com.openlattice.shuttle.edm;
 
-import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
+import com.openlattice.client.serialization.SerializationConstants;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 
+import java.util.Optional;
 import java.util.Set;
 
 public class EntitySetModel {
@@ -49,9 +49,9 @@ public class EntitySetModel {
         this.type = new FullQualifiedName( type );
         this.name = name;
         this.title = title;
-        this.description = description.or( "" );
+        this.description = description.orElse( "" );
         this.contacts = contacts;
-        this.owners = owners.or( ImmutableSet::of );
+        this.owners = owners.orElseGet( ImmutableSet::of );
     }
 
     @JsonProperty( SerializationConstants.TYPE_FIELD )

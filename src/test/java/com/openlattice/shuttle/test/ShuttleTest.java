@@ -49,6 +49,7 @@ import transforms.PrefixTransform;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -264,7 +265,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .addProperty(
                                 ALGO_PT.getType().getFullQualifiedNameAsString(),
                                 "algo",
-                                Transformations.of(new PrefixTransform( "COWBELL_" ))  )
+                                new Transformations( Collections.singletonList( new PrefixTransform( "COWBELL_" ) ) )  )
                         .endEntity()
                     .endEntities()
                 .createAssociations()

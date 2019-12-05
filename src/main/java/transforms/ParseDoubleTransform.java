@@ -3,7 +3,6 @@ package transforms;
 import com.openlattice.shuttle.Shuttle;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Parsers;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

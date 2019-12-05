@@ -223,14 +223,10 @@ class PostgresDestination(
     }
 
     internal fun createEdges(keys: Set<DataEdgeKey>): Long {
-        val partitionsInfoByEntitySet = keys
+        val partitionsByEntitySet = keys
                 .flatMap { listOf(it.src.entitySetId, it.dst.entitySetId, it.edge.entitySetId) }
                 .toSet()
-                .associateWith { entitySetId ->
-                    val entitySet = entitySets.getValue(entitySetId)
-                    entitySet.partitions.toList()
-
-                }
+                .associateWith { entitySetId -> entitySets.getValue(entitySetId).partitions.toList() }
 
         return hds.connection.use { connection ->
             val ps = connection.prepareStatement(EDGES_UPSERT_SQL)
@@ -239,7 +235,7 @@ class PostgresDestination(
 
             ps.use {
                 keys.forEach { dataEdgeKey ->
-                    bindColumnsForEdge(ps, dataEdgeKey, version, versions, partitionsInfoByEntitySet)
+                    bindColumnsForEdge(ps, dataEdgeKey, version, versions, partitionsByEntitySet)
                 }
 
                 ps.executeBatch().sum().toLong()
