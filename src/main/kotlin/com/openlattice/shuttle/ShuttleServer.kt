@@ -10,6 +10,7 @@ import com.openlattice.hazelcast.pods.MapstoresPod
 import com.openlattice.hazelcast.pods.SharedStreamSerializersPod
 import com.openlattice.jdbc.JdbcPod
 import com.openlattice.postgres.PostgresPod
+import com.openlattice.shuttle.pods.MissionParametersPod
 import com.openlattice.shuttle.pods.ShuttleMvcPod
 import com.openlattice.shuttle.pods.ShuttleServicesPod
 import com.openlattice.shuttle.pods.ShuttleServletsPod
@@ -29,7 +30,8 @@ private val shuttlePods = arrayOf(
         ShuttleServletsPod::class.java,
         ShuttleMvcPod::class.java,
         RegistryBasedHazelcastInstanceConfigurationPod::class.java,
-        Auth0Pod::class.java
+        Auth0Pod::class.java,
+        MissionParametersPod::class.java
 )
 
 /**

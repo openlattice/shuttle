@@ -56,29 +56,28 @@ class RecurringIntegrationService(
         }
     }
 
-    fun createIntegration(integrationName: String, integration: Integration) {
+    fun createIntegrationDefinition(integrationName: String, integration: Integration) {
         checkState( !integrations.containsKey(integrationName), "An integration with name $integrationName already exists." )
         integrations[integrationName] = integration
     }
 
-    fun readIntegration(integrationName: String) : Integration {
+    fun readIntegrationDefinition(integrationName: String) : Integration {
         checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
         return integrations.getValue(integrationName)
     }
 
-    fun updateIntegration(integrationName: String, integration: Integration) {
+    fun updateIntegrationDefinition(integrationName: String, integration: Integration) {
         checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
         integrations[integrationName] = integration
     }
 
-    fun deleteIntegration(integrationName: String) {
+    fun deleteIntegrationDefinition(integrationName: String) {
         checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
         integrations[integrationName] = null
     }
 
     private fun getDataSource(properties: Properties): HikariDataSource {
-        val hikariConfig = HikariConfig(properties)
-        return HikariDataSource(hikariConfig)
+        return HikariDataSource(HikariConfig(properties))
     }
 
 }
