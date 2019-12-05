@@ -61,6 +61,11 @@ class RecurringIntegrationService(
         integrations[integrationName] = integration
     }
 
+    fun readIntegration(integrationName: String) : Integration {
+        checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
+        return integrations.getValue(integrationName)
+    }
+
     fun updateIntegration(integrationName: String, integration: Integration) {
         checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
         integrations[integrationName] = integration
