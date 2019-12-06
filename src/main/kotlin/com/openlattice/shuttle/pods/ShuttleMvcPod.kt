@@ -2,7 +2,7 @@ package com.openlattice.shuttle.pods
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.openlattice.data.DataApi
-import com.openlattice.shuttle.controllers.ShuttleControllers
+import com.openlattice.shuttle.controllers.ShuttleController
 import com.openlattice.web.converters.CsvHttpMessageConverter
 import com.openlattice.web.converters.YamlHttpMessageConverter
 import com.openlattice.web.mediatypes.CustomMediaType
@@ -27,7 +27,7 @@ import javax.inject.Inject
  */
 @Configuration
 @ComponentScan(
-        basePackageClasses = [ShuttleControllers::class],
+        basePackageClasses = [ShuttleController::class],
         includeFilters = [ComponentScan.Filter(
                 value = [org.springframework.stereotype.Controller::class,
                     org.springframework.web.bind.annotation.RestControllerAdvice::class],

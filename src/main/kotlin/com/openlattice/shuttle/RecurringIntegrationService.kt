@@ -20,9 +20,11 @@ private val uploadBatchSize = 10000
 
 @Service
 class RecurringIntegrationService(
-        private val hazelcastInstance: HazelcastInstance,
         private val missionParameters: MissionParameters
 ) {
+
+    @Inject
+    private lateinit var hazelcastInstance: HazelcastInstance
 
     private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
 

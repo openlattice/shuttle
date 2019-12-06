@@ -1,6 +1,7 @@
 package com.openlattice.shuttle
 
 import com.kryptnostic.rhizome.configuration.websockets.BaseRhizomeServer
+import com.kryptnostic.rhizome.pods.HazelcastPod
 import com.kryptnostic.rhizome.pods.hazelcast.RegistryBasedHazelcastInstanceConfigurationPod
 import com.openlattice.auditing.pods.AuditingConfigurationPod
 import com.openlattice.auth0.Auth0Pod
@@ -18,10 +19,10 @@ import com.openlattice.tasks.pods.TaskSchedulerPod
 
 
 private val shuttlePods = arrayOf(
+        JdbcPod::class.java,
         AuditingConfigurationPod::class.java,
         AwsS3Pod::class.java,
         ByteBlobServicePod::class.java,
-        JdbcPod::class.java,
         MapstoresPod::class.java,
         PostgresPod::class.java,
         SharedStreamSerializersPod::class.java,

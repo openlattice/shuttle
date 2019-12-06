@@ -13,9 +13,11 @@ import com.openlattice.postgres.PostgresTable.INTEGRATIONS
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore
 import com.openlattice.shuttle.control.Integration
 import com.zaxxer.hikari.HikariDataSource
+import org.springframework.stereotype.Component
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 
+@Component
 class IntegrationsMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore<String, Integration>(
         HazelcastMap.INTEGRATIONS.name, INTEGRATIONS, hds
 ) {

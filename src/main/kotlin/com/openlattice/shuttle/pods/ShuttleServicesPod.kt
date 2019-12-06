@@ -19,15 +19,11 @@ class ShuttleServicesPod {
     @Inject
     private lateinit var hds: HikariDataSource
 
-
-    @Inject
-    private lateinit var hazelcastInstance: HazelcastInstance
-
     @Inject
     private lateinit var  missionParametersConfiguration: MissionParameters
 
     @Bean
-    fun recurringIntegrationService() = RecurringIntegrationService(hazelcastInstance, missionParametersConfiguration)
+    fun recurringIntegrationService() = RecurringIntegrationService(missionParametersConfiguration)
 
     @Bean
     fun integrationsMapstore() = IntegrationsMapstore(hds)
