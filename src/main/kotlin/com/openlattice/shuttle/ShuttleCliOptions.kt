@@ -270,6 +270,7 @@ class ShuttleCliOptions {
                     .addOption(smtpServerPortOption)
                     .addOption(postgresOption)
                     .addOption(threadsOption)
+                    .addOption(serverOption)
 
             options.addOptionGroup(
                     OptionGroup()
