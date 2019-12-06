@@ -6,11 +6,11 @@
 enable-persistence:  false
 session-clustering-enabled: false
 
-cassandra:
-    keyspace: "sparks"
-    replication-factor: 2
-    seed-nodes:
-        - "cassandra"
+#cassandra:
+#    keyspace: "sparks"
+#    replication-factor: 2
+#    seed-nodes:
+#        - "cassandra"
 
 hazelcast:
     server: true
@@ -33,6 +33,16 @@ hazelcast-clients:
         cp-member-count: 0
         seed-nodes:
             - "localhost"
+
+postgres:
+    citus: false
+    initialize-indices: true
+    hikari:
+        jdbcUrl: jdbc:postgresql://localhost:5432/openlattice
+        username: "oltest"
+        password: "test"
+        maximumPoolSize: 10
+        connectionTimeout: 12000000 #20 minutes
 
 spark:
     appname: "shuttle"
