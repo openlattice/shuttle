@@ -41,42 +41,38 @@ public class JacksonLambdaSerializer extends StdSerializer<SerializableFunction>
 
     private static final Encoder encoder = Base64.getEncoder();
 
-    private static final ThreadLocal<Kryo> kryo = new ThreadLocal<Kryo>() {
+    private static final ThreadLocal<Kryo> kryo = ThreadLocal.withInitial( () -> {
 
-        @Override
-        protected Kryo initialValue() {
+        Kryo kryo = new Kryo();
 
-            Kryo kryo = new Kryo();
+        // https://github.com/EsotericSoftware/kryo/blob/master/test/com/esotericsoftware/kryo/serializers/Java8ClosureSerializerTest.java
+        kryo.setInstantiatorStrategy(
+                new Kryo.DefaultInstantiatorStrategy(
+                        new StdInstantiatorStrategy()
+                )
+        );
 
-            // https://github.com/EsotericSoftware/kryo/blob/master/test/com/esotericsoftware/kryo/serializers/Java8ClosureSerializerTest.java
-            kryo.setInstantiatorStrategy(
-                    new Kryo.DefaultInstantiatorStrategy(
-                            new StdInstantiatorStrategy()
-                    )
-            );
+        kryo.register( Object[].class );
+        kryo.register( Class.class );
 
-            kryo.register( Object[].class );
-            kryo.register( Class.class );
+        // Shared Lambdas
+        kryo.register( SerializableFunction.class );
+        kryo.register( SerializedLambda.class );
 
-            // Shared Lambdas
-            kryo.register( SerializableFunction.class );
-            kryo.register( SerializedLambda.class );
+        // always needed for closure serialization, also if
+        // registrationRequired=false
+        kryo.register(
+                ClosureSerializer.Closure.class,
+                new ClosureSerializer()
+        );
 
-            // always needed for closure serialization, also if
-            // registrationRequired=false
-            kryo.register(
-                    ClosureSerializer.Closure.class,
-                    new ClosureSerializer()
-            );
+        kryo.register(
+                Function.class,
+                new ClosureSerializer()
+        );
 
-            kryo.register(
-                    Function.class,
-                    new ClosureSerializer()
-            );
-
-            return kryo;
-        }
-    };
+        return kryo;
+    } );
 
     public JacksonLambdaSerializer() {
         super( SerializableFunction.class );

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -51,13 +50,14 @@ public class BooleanRegexCondition extends Condition<Map<String, String>> {
     @Override
     public Boolean apply( Map<String, String> row ) {
         String o = row.get( column );
-        if ( StringUtils.isBlank( o ) ) {
-            return false;
+
+        if ( o == null ) {
+            o = "";
         }
 
         Matcher m = Cached.getInsensitiveMatcherForString( o, this.pattern );
 
-        Boolean out = false;
+        boolean out = false;
         if ( m.find() ) {
             out = true;
         }

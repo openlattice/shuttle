@@ -30,8 +30,10 @@ import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
 import com.openlattice.data.integration.EmailConfiguration
+import com.openlattice.data.integration.IntegrationDestination
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.data.integration.destinations.PostgresDestination
+import com.openlattice.data.integration.destinations.PostgresS3Destination
 import com.openlattice.data.integration.destinations.RestDestination
 import com.openlattice.data.integration.destinations.S3Destination
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
@@ -42,14 +44,15 @@ import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.retrofit.RhizomeRetrofitCallException
 import com.openlattice.rhizome.proxy.RetrofitBuilders
 import com.openlattice.shuttle.payload.Payload
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import jodd.mail.Email
 import jodd.mail.EmailAddress
 import jodd.mail.MailServer
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
-import java.util.Optional
-import java.util.UUID
+import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
@@ -65,14 +68,24 @@ private const val AUTH0_SCOPES = "openid email nickname roles user_id organizati
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class MissionControl(environment: RetrofitFactory.Environment, authToken: Supplier<String>, s3BucketUrl: String) {
+class MissionControl(
+        private val environment: RetrofitFactory.Environment,
+        authToken: Supplier<String>,
+        s3BucketUrl: String,
+        private val parameters: MissionParameters
+) {
 
     constructor(
-            environment: RetrofitFactory.Environment, username: String, password: String, s3BucketUrl: String
+            environment: RetrofitFactory.Environment,
+            username: String,
+            password: String,
+            s3BucketUrl: String,
+            parameters: MissionParameters = MissionParameters.empty()
     ) : this(
             environment,
             Suppliers.memoizeWithExpiration({ getIdToken(username, password) }, 1, TimeUnit.HOURS),
-            s3BucketUrl
+            s3BucketUrl,
+            parameters
     )
 
     companion object {
@@ -139,7 +152,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
         }
 
         @JvmStatic
-        fun fail(code: Int, flight: Flight, ex: Throwable, executors: List<ExecutorService> = listOf() ): Nothing {
+        fun fail(code: Int, flight: Flight, ex: Throwable, executors: List<ExecutorService> = listOf()): Nothing {
             logger.error(
                     "\n______ ___  _____ _     _   _______ _____ \n" +
                             "|  ___/ _ \\|_   _| |   | | | | ___ \\  ___|\n" +
@@ -169,14 +182,14 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                         val errorEmail = "An error occurred while running integration ${flight.name}. $errorInfo \n" +
                                 "The cause is ${ex.message} \n The stack trace is $stackTraceText"
                         val emailAddresses = emailConfiguration.notificationEmails
-                                .map { address -> EmailAddress.of (address) }
+                                .map { address -> EmailAddress.of(address) }
                                 .toTypedArray()
                         val email = Email.create()
                                 .from(emailConfiguration.fromEmail)
                                 .subject("Integration error in $flight.name")
                                 .textMessage(errorEmail)
                         emailConfiguration.notificationEmails
-                                .map { address -> EmailAddress.of (address) }
+                                .map { address -> EmailAddress.of(address) }
                                 .forEach { emailAddress -> email.to(emailAddress) }
 
                         val smtpServer = MailServer.create()
@@ -196,7 +209,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
 
                     }, { logger.error("An error occurred during the integration.", ex) })
 
-            executors.forEach( { it.shutdownNow() } )
+            executors.forEach { it.shutdownNow() }
 
             kotlin.system.exitProcess(code)
         }
@@ -208,8 +221,12 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
     //by retrofit clients.
     init {
         FullQualifiedNameJacksonSerializer.registerWithMapper(ObjectMappers.getJsonMapper())
-        if ( environment == RetrofitFactory.Environment.PRODUCTION) {
-            fail(-999, Flight.newFlight().done(), Throwable( "PRODUCTION is not a valid integration environment. The valid environments are PROD_INTEGRATION and LOCAL") )
+        if (environment == RetrofitFactory.Environment.PRODUCTION) {
+            fail(
+                    -999, Flight.newFlight().done(), Throwable(
+                    "PRODUCTION is not a valid integration environment. The valid environments are PROD_INTEGRATION and LOCAL"
+            )
+            )
         }
     }
 
@@ -219,7 +236,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
     private val dataApi = apiClient.dataApi
     private val dataIntegrationApi = apiClient.dataIntegrationApi
 
-    private val s3Api = Retrofit.Builder()
+    private val s3Api = if (s3BucketUrl.isBlank()) null else Retrofit.Builder()
             .baseUrl(s3BucketUrl)
             .addConverterFactory(RhizomeByteConverterFactory())
             .addConverterFactory(RhizomeJacksonConverterFactory(ObjectMappers.getJsonMapper()))
@@ -227,18 +244,46 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
             .client(RetrofitBuilders.okHttpClient().build())
             .build().create(S3Api::class.java)
 
-    private val entitySets = entitySetsApi.getEntitySets().mapNotNull {
-        if (it == null) return@mapNotNull null
-        else it.name to it
-    }.toMap().toMutableMap()
+    private val entitySets = entitySetsApi.getEntitySets().filter { it as EntitySet? != null }.map { it.name to it }.toMap().toMutableMap()
     private val entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
     private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
-    private val propertyTypesById = propertyTypes.values.map { it.id to it }.toMap().toMutableMap()
-    private val integrationDestinations = mapOf(
-            StorageDestination.REST to RestDestination(dataApi),
-            StorageDestination.POSTGRES to PostgresDestination(),
-            StorageDestination.S3 to S3Destination(dataApi, s3Api, dataIntegrationApi)
-    )
+    private val propertyTypesById = propertyTypes.mapKeys { it.value.id }
+
+    private val binaryStorageDestination = if (s3BucketUrl.isBlank()) {
+        StorageDestination.REST
+    } else {
+        StorageDestination.S3
+    }
+
+    private val integrationDestinations: Map<StorageDestination, IntegrationDestination>
+
+    init {
+        val destinations = mutableMapOf<StorageDestination, IntegrationDestination>()
+        destinations[StorageDestination.REST] = RestDestination(dataApi)
+
+        if (parameters.postgres.enabled) {
+            val pgDestination = PostgresDestination(
+                    entitySets.mapKeys { it.value.id },
+                    entityTypes,
+                    propertyTypes.mapKeys { it.value.id },
+                    HikariDataSource(HikariConfig(parameters.postgres.config))
+            )
+
+            destinations[StorageDestination.POSTGRES] = pgDestination
+
+            if (s3BucketUrl.isNotBlank()) {
+                destinations[StorageDestination.S3] = PostgresS3Destination(pgDestination, s3Api!!, dataIntegrationApi)
+            }
+        } else {
+            destinations[StorageDestination.REST] = RestDestination(dataApi)
+
+            if (s3BucketUrl.isNotBlank()) {
+                destinations[StorageDestination.S3] = S3Destination(dataApi, s3Api!!, dataIntegrationApi)
+            }
+        }
+
+        integrationDestinations = destinations.toMap()
+    }
 
 
     fun prepare(
@@ -251,24 +296,25 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
             createMissingEntitySets(flightPlan, contacts)
         }
         ensureValidIntegration(flightPlan)
+
         return Shuttle(
+                environment,
                 flightPlan,
                 entitySets,
                 entityTypes,
                 propertyTypes,
-                propertyTypesById,
                 integrationDestinations,
                 dataIntegrationApi,
-                primaryKeyCols
+                primaryKeyCols,
+                parameters,
+                binaryStorageDestination
         )
     }
 
     private fun createMissingEntitySets(flightPlan: Map<Flight, Payload>, contacts: Set<String>) {
         flightPlan.keys.forEach {
             it.entities.forEach { entityDefinition ->
-                if (entitySets.containsKey(entityDefinition.entitySetName)) {
-
-                } else {
+                if (!entitySets.containsKey(entityDefinition.entitySetName)) {
                     val fqn = entityDefinition.getEntityTypeFqn()
                     val entitySet = EntitySet(
                             entityDefinition.getId().orElse(UUID.randomUUID()),
@@ -284,9 +330,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
                 }
             }
             it.associations.forEach { associationDefinition ->
-                if (entitySets.containsKey(associationDefinition.entitySetName)) {
-
-                } else {
+                if (!entitySets.containsKey(associationDefinition.entitySetName)) {
                     val fqn = associationDefinition.getEntityTypeFqn()
                     val entityTypeId = edmApi.getEntityTypeId(fqn.namespace, fqn.name)
                     val entitySet = EntitySet(
@@ -343,7 +387,7 @@ class MissionControl(environment: RetrofitFactory.Environment, authToken: Suppli
             logger.error(
                     "Entity set {} does not contain any property type with FQN: {}",
                     entitySetName,
-                    propertyTypesById[it]!!.type
+                    propertyTypesById.getValue(it).type
             )
             throw IllegalStateException(
                     "Property types $missingPropertyTypes not defined for entity set $entitySetName"

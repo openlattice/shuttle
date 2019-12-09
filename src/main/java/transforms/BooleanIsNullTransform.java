@@ -2,15 +2,11 @@ package transforms;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.BooleanTransformation;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -45,8 +41,16 @@ public class BooleanIsNullTransform<I extends Object> extends BooleanTransformat
         if ( !( row.containsKey( column ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
-      
-        return row.get( column ) == null ;
+
+        if ( row.get( column ) == null ) {
+            return true;
+        }
+
+        if ( row.get( column ) instanceof String ) {
+            return StringUtils.isEmpty( (String) row.get( column ) );
+        }
+
+        return false;
     }
 }
 

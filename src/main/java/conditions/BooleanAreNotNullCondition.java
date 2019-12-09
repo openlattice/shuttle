@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.conditions.Condition;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
-import transforms.CaseTransform;
-import transforms.ConcatTransform;
 
 import java.util.List;
 import java.util.Map;
@@ -48,7 +46,7 @@ public class BooleanAreNotNullCondition extends Condition<Map<String, String>> {
 
     @Override
     public Boolean apply( Map<String, String> row ) {
-        Integer count = 0;
+        int count = 0;
         for ( String s : columns ) {
             if ( !( row.containsKey( s ) ) ) {
                 throw new IllegalStateException( String.format( "The column %s is not found.", s ) );
@@ -59,7 +57,7 @@ public class BooleanAreNotNullCondition extends Condition<Map<String, String>> {
             }
         }
 
-        Boolean out = false;
+        boolean out = false;
         switch ( type ) {
             case all:
                 out = count == columns.size();

@@ -6,7 +6,6 @@ import com.openlattice.shuttle.transformations.BooleanTransformation;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.Optional;
@@ -54,14 +53,16 @@ public class BooleanRegexTransform<I extends Object> extends BooleanTransformati
         }
 
         Object input = row.get( column );
-        if (input == null) return false;
-        String o = input.toString();
 
-        if ( StringUtils.isBlank( o ) ) {
+        if (! (input instanceof String) ) {
             return false;
         }
 
-        Matcher m = Cached.getInsensitiveMatcherForString( o, this.pattern );
+        if (input == null) {
+            input = "";
+        }
+
+        Matcher m = Cached.getInsensitiveMatcherForString( (String) input, this.pattern );
         return m.find();
 
     }

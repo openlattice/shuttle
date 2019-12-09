@@ -46,8 +46,7 @@ public class TransformValueMapper implements SerializableFunction<Map<String, Ob
     public Object apply( Map<String, Object> input ) {
 
         if (transforms.size() == 0){
-            throw new IllegalStateException( String
-                    .format( "At least 1 transformation should be specified (or left blank for columntransform)." ) );
+            throw new IllegalStateException( "At least 1 transformation should be specified (or left blank for columntransform)." );
         }
 
         Object value = input;
