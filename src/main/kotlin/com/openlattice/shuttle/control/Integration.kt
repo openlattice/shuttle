@@ -1,6 +1,7 @@
 package com.openlattice.shuttle.control
 
 import com.dataloom.mappers.ObjectMappers
+import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.client.serialization.SerializationConstants
@@ -35,12 +36,17 @@ data class Integration(
         @JsonProperty(SerializationConstants.ENVIRONMENT) val environment: RetrofitFactory.Environment,
         @JsonProperty(SerializationConstants.DEFAULT_STORAGE) val defaultStorage: StorageDestination,
         @JsonProperty(SerializationConstants.S3_BUCKET) val s3bucket: String,
-        @JsonProperty(SerializationConstants.FLIGHT) val flight: Flight,
+        @JsonProperty(SerializationConstants.PATH) val flightFilePath: String?,
+        @JsonProperty(SerializationConstants.FLIGHT) val flight: Flight?,
         @JsonProperty(SerializationConstants.CONTACTS) val contacts: Set<String>,
         @JsonProperty(SerializationConstants.RECURRING) val recurring: Boolean,
         @JsonProperty(SerializationConstants.START) val start: Long,
         @JsonProperty(SerializationConstants.PERIOD) val period: Long
 ) {
+    init {
+        if (flightFilePath == null) check(flight != null) {"Either flight or flightFilePath must not be null"}
+        if (flight == null) check(flightFilePath != null) {"Either flight or flightFilePath must not be null"}
+    }
     constructor(sql: String,
                 source: Properties,
                 sourcePrimaryKeyColumns: List<String> = listOf(),
@@ -58,7 +64,33 @@ data class Integration(
             environment,
             defaultStorage,
             s3bucket,
+            null,
             ObjectMappers.getYamlMapper().readValue(File(flightFilePath), Flight::class.java),
+            contacts,
+            recurring,
+            start,
+            period
+    )
+
+    constructor(sql: String,
+                source: Properties,
+                sourcePrimaryKeyColumns: List<String> = listOf(),
+                environment: RetrofitFactory.Environment,
+                defaultStorage: StorageDestination,
+                s3bucket: String,
+                flight: Flight,
+                contacts: Set<String>,
+                recurring: Boolean,
+                start: Long,
+                period: Long) : this(
+            sql,
+            source,
+            sourcePrimaryKeyColumns,
+            environment,
+            defaultStorage,
+            s3bucket,
+            null,
+            flight,
             contacts,
             recurring,
             start,
@@ -81,7 +113,7 @@ data class Integration(
             val start = 1000L
             val period = 5L
             return Integration(sql, source, pkeyCols, environment,
-                    defaultStorage, s3bucket, flight, contacts, recurring, start, period)
+                    defaultStorage, s3bucket, null, flight, contacts, recurring, start, period)
         }
 
     }
