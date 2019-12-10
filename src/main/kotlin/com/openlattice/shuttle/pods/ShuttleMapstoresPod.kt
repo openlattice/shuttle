@@ -1,0 +1,21 @@
+package com.openlattice.shuttle.pods
+
+import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore
+import com.openlattice.postgres.PostgresPod
+import com.openlattice.shuttle.control.Integration
+import com.openlattice.shuttle.mapstore.IntegrationsMapstore
+import com.zaxxer.hikari.HikariDataSource
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Import
+import javax.inject.Inject
+
+@Configuration
+@Import(PostgresPod::class)
+class ShuttleMapstoresPod {
+    @Inject
+    private lateinit var hds: HikariDataSource
+
+    @Bean
+    fun integrationsMapstore() : SelfRegisteringMapStore<String, Integration> = IntegrationsMapstore(hds)
+}

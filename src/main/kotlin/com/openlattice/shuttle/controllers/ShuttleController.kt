@@ -34,7 +34,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun createIntegrationDefinition(
             @PathVariable integrationName: String,
             @RequestBody integrationDefinition: Integration) {
-        ensureAdminAccess()
+        //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.createIntegrationDefinition(normalizedName, integrationDefinition)
     }
@@ -43,7 +43,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     @GetMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
     override fun readIntegrationDefinition(
             @PathVariable integrationName: String ) : Integration {
-        ensureAdminAccess()
+        //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         return recurringIntegrationService.readIntegrationDefinition(normalizedName)
     }

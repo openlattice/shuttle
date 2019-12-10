@@ -33,6 +33,7 @@ private val shuttlePods = arrayOf(
         TaskSchedulerPod::class.java,
         ShuttleServicesPod::class.java,
         ShuttleServletsPod::class.java,
+        ShuttleMapstoresPod::class.java,
         Auth0Pod::class.java,
         ShuttleSecurityPod::class.java,
         MissionParametersPod::class.java

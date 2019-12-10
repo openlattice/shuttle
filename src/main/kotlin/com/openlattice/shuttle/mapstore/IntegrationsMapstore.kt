@@ -28,14 +28,16 @@ class IntegrationsMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore
     }
 
     override fun bind(ps: PreparedStatement, key: String, value: Integration) {
-        val offset = bind(ps, key, 1)
+        var index = bind(ps, key, 1)
         val integrationJson = mapper.writeValueAsString(value)
-        ps.setObject(offset, integrationJson)
+        ps.setObject(index++, integrationJson) //create
+        ps.setObject(index++, integrationJson) //update
     }
 
     override fun bind(ps: PreparedStatement, key: String, offset: Int): Int {
-        ps.setObject(offset, key)
-        return offset + 1
+        var index = offset
+        ps.setObject(index++, key)
+        return index
     }
 
     override fun generateTestKey(): String {
