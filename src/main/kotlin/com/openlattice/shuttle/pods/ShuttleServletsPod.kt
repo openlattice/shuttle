@@ -3,6 +3,7 @@ package com.openlattice.shuttle.pods
 import com.kryptnostic.rhizome.configuration.servlets.DispatcherServletConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.web.servlet.config.annotation.EnableWebMvc
 
 /**
  *
@@ -11,15 +12,12 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class ShuttleServletsPod {
     @Bean
-    fun shuttleServlet(): DispatcherServletConfiguration {
-
-        return DispatcherServletConfiguration(
-                "shuttle",
-                arrayOf("/shuttle/*"),
-                1,
-                listOf(ShuttleMvcPod::class.java)
-        )
-    }
+    fun shuttleServlet() = DispatcherServletConfiguration(
+            "shuttle",
+            arrayOf("/shuttle/*"),
+            1,
+            listOf(ShuttleMvcPod::class.java)
+    )
 
 
 }

@@ -20,17 +20,15 @@ private val uploadBatchSize = 10000
 
 @Service
 class RecurringIntegrationService(
+        private val hazelcastInstance: HazelcastInstance,
         private val missionParameters: MissionParameters
 ) {
-
-    @Inject
-    private lateinit var hazelcastInstance: HazelcastInstance
 
     private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
 
     fun loadCargo(integrationName: String) {
+        ensureIntegrationExists(integrationName)
         val integration = integrations.getValue(integrationName)
-
         val dataSource = getDataSource(integration.source)
         val payload = JdbcPayload(readRateLimit.toDouble(), dataSource, integration.sql, fetchSize, readRateLimit != 0)
         val flightPlan = mapOf(integration.flight to payload)
@@ -74,6 +72,10 @@ class RecurringIntegrationService(
     fun deleteIntegrationDefinition(integrationName: String) {
         checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
         integrations[integrationName] = null
+    }
+
+    private fun ensureIntegrationExists(integrationName: String) {
+        checkState(integrations.containsKey(integrationName), "This integration does not exist")
     }
 
     private fun getDataSource(properties: Properties): HikariDataSource {

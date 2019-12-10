@@ -4,6 +4,7 @@ import com.openlattice.auth0.Auth0SecurityPod
 import com.ryantenney.metrics.spring.config.annotation.EnableMetrics
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod
+import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -23,4 +24,5 @@ class ShuttleSecurityPod : Auth0SecurityPod() {
                 .antMatchers(HttpMethod.OPTIONS).permitAll()
                 .antMatchers("/shuttle/**").authenticated()
     }
+
 }

@@ -36,6 +36,11 @@ interface ShuttleApi {
             @Path(INTEGRATION_NAME) integrationName: String,
             @Body integrationDefinition: Integration )
 
+
+    /**
+     * Gets an existing integration definition
+     * @param integrationName the name of the integration definition to get
+     */
     @GET(BASE + DEFINITION + INTEGRATION_NAME_PATH)
     fun readIntegrationDefinition(
             @Path(INTEGRATION_NAME) integrationName: String

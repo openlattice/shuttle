@@ -12,8 +12,8 @@ import javax.inject.Inject
 @RestController
 @RequestMapping("/integrations")
 class IntegrationsContoller {
-    @Inject
-    private lateinit var integrations: IntegrationsService
+//    @Inject
+//    private lateinit var integrations: IntegrationsService
 //
 //    @GetMapping(value = ["","/"])
 //    fun getIntegrations() : Map<String, Integration> {
