@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.lang.Exception
 import java.util.*
-import javax.inject.Inject
 
 private val logger = LoggerFactory.getLogger(RecurringIntegrationService::class.java)
 private val fetchSize = 10000

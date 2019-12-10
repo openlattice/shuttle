@@ -24,7 +24,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun startIntegration(
             @PathVariable(INTEGRATION_NAME) integrationName: String
     ) {
-        ensureAdminAccess()
+        ensureAdminAccess() //TODO figure out why principals cache is not loading
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.loadCargo(normalizedName)
     }
