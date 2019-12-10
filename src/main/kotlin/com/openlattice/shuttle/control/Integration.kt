@@ -37,7 +37,7 @@ data class Integration(
         @JsonProperty(SerializationConstants.DEFAULT_STORAGE) val defaultStorage: StorageDestination,
         @JsonProperty(SerializationConstants.S3_BUCKET) val s3bucket: String,
         @JsonProperty(SerializationConstants.PATH) val flightFilePath: String?,
-        @JsonProperty(SerializationConstants.FLIGHT) val flight: Flight?,
+        @JsonProperty(SerializationConstants.FLIGHT) var flight: Flight?,
         @JsonProperty(SerializationConstants.CONTACTS) val contacts: Set<String>,
         @JsonProperty(SerializationConstants.RECURRING) val recurring: Boolean,
         @JsonProperty(SerializationConstants.START) val start: Long,
@@ -46,56 +46,8 @@ data class Integration(
     init {
         if (flightFilePath == null) check(flight != null) {"Either flight or flightFilePath must not be null"}
         if (flight == null) check(flightFilePath != null) {"Either flight or flightFilePath must not be null"}
+        if (flightFilePath != null) this.flight = ObjectMappers.getYamlMapper().readValue(File(flightFilePath), Flight::class.java)
     }
-    constructor(sql: String,
-                source: Properties,
-                sourcePrimaryKeyColumns: List<String> = listOf(),
-                environment: RetrofitFactory.Environment,
-                defaultStorage: StorageDestination,
-                s3bucket: String,
-                flightFilePath: String,
-                contacts: Set<String>,
-                recurring: Boolean,
-                start: Long,
-                period: Long) : this(
-            sql,
-            source,
-            sourcePrimaryKeyColumns,
-            environment,
-            defaultStorage,
-            s3bucket,
-            null,
-            ObjectMappers.getYamlMapper().readValue(File(flightFilePath), Flight::class.java),
-            contacts,
-            recurring,
-            start,
-            period
-    )
-
-    constructor(sql: String,
-                source: Properties,
-                sourcePrimaryKeyColumns: List<String> = listOf(),
-                environment: RetrofitFactory.Environment,
-                defaultStorage: StorageDestination,
-                s3bucket: String,
-                flight: Flight,
-                contacts: Set<String>,
-                recurring: Boolean,
-                start: Long,
-                period: Long) : this(
-            sql,
-            source,
-            sourcePrimaryKeyColumns,
-            environment,
-            defaultStorage,
-            s3bucket,
-            null,
-            flight,
-            contacts,
-            recurring,
-            start,
-            period
-    )
 
     companion object {
 
