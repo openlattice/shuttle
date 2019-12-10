@@ -27,7 +27,7 @@ class RecurringIntegrationService(
     private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
 
     fun loadCargo(integrationName: String) {
-        ensureIntegrationExists(integrationName)
+        checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
         val integration = integrations.getValue(integrationName)
         val dataSource = getDataSource(integration.source)
         val payload = JdbcPayload(readRateLimit.toDouble(), dataSource, integration.sql, fetchSize, readRateLimit != 0)
@@ -72,10 +72,6 @@ class RecurringIntegrationService(
     fun deleteIntegrationDefinition(integrationName: String) {
         checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
         integrations[integrationName] = null
-    }
-
-    private fun ensureIntegrationExists(integrationName: String) {
-        checkState(integrations.containsKey(integrationName), "This integration does not exist")
     }
 
     private fun getDataSource(properties: Properties): HikariDataSource {

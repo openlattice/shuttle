@@ -30,7 +30,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     }
 
     @Timed
-    @PostMapping(path = [DEFINITION + INTEGRATION_NAME_PATH])
+    @PostMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
     override fun createIntegrationDefinition(
             @PathVariable integrationName: String,
             @RequestBody integrationDefinition: Integration) {
@@ -40,7 +40,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     }
 
     @Timed
-    @GetMapping(path = [DEFINITION + INTEGRATION_NAME_PATH])
+    @GetMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
     override fun readIntegrationDefinition(
             @PathVariable integrationName: String ) : Integration {
         ensureAdminAccess()
@@ -49,7 +49,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     }
 
     @Timed
-    @PatchMapping(path = [DEFINITION + INTEGRATION_NAME_PATH])
+    @PatchMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
     override fun updateIntegrationDefinition(integrationName: String, integrationDefinition: Integration) {
         ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
@@ -57,7 +57,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     }
 
     @Timed
-    @DeleteMapping(path = [DEFINITION + INTEGRATION_NAME_PATH])
+    @DeleteMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
     override fun deleteIntegrationDefinition(integrationName: String) {
         ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)

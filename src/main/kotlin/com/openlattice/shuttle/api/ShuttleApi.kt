@@ -8,10 +8,10 @@ const val SERVICE = "/shuttle"
 const val CONTROLLER = "/integration"
 const val BASE = SERVICE + CONTROLLER
 
-const val DEFINITION = "/definition"
+const val DEFINITION_PATH = "/definition"
 
-const val INTEGRATION_NAME = "integration-name"
-const val INTEGRATION_NAME_PATH = "{$INTEGRATION_NAME}"
+const val INTEGRATION_NAME = "integrationName"
+const val INTEGRATION_NAME_PATH = "/{$INTEGRATION_NAME}"
 
 interface ShuttleApi {
 
@@ -31,7 +31,7 @@ interface ShuttleApi {
      * a flight yaml can be passed in place of a Flight object and will be converted
      * to an instance of Flight class
      */
-    @POST(BASE + DEFINITION + INTEGRATION_NAME_PATH)
+    @POST(BASE + DEFINITION_PATH + INTEGRATION_NAME_PATH)
     fun createIntegrationDefinition(
             @Path(INTEGRATION_NAME) integrationName: String,
             @Body integrationDefinition: Integration )
@@ -41,7 +41,7 @@ interface ShuttleApi {
      * Gets an existing integration definition
      * @param integrationName the name of the integration definition to get
      */
-    @GET(BASE + DEFINITION + INTEGRATION_NAME_PATH)
+    @GET(BASE + DEFINITION_PATH + INTEGRATION_NAME_PATH)
     fun readIntegrationDefinition(
             @Path(INTEGRATION_NAME) integrationName: String
     ) : Integration
@@ -53,7 +53,7 @@ interface ShuttleApi {
      * existing one. The path to a flight yaml can be passed in place of a
      * Flight object and will be converted to an instance of Flight class
      */
-    @PATCH(BASE + DEFINITION + INTEGRATION_NAME_PATH)
+    @PATCH(BASE + DEFINITION_PATH + INTEGRATION_NAME_PATH)
     fun updateIntegrationDefinition(
             @Path(INTEGRATION_NAME) integrationName: String,
             @Body integrationDefinition: Integration
@@ -63,7 +63,7 @@ interface ShuttleApi {
      * Deleted an integration definition
      * @param integrationName the name of the integration definition to be deleted
      */
-    @DELETE(BASE + DEFINITION + INTEGRATION_NAME_PATH)
+    @DELETE(BASE + DEFINITION_PATH + INTEGRATION_NAME_PATH)
     fun deleteIntegrationDefinition(
             @Path(INTEGRATION_NAME) integrationName: String
     )
