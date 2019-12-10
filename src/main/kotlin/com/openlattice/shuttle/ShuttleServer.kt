@@ -16,6 +16,7 @@ import com.openlattice.hazelcast.pods.SharedStreamSerializersPod
 import com.openlattice.jdbc.JdbcPod
 import com.openlattice.postgres.PostgresPod
 import com.openlattice.shuttle.pods.*
+import com.openlattice.shuttle.serializers.ShuttleSharedStreamSerializers
 import com.openlattice.tasks.pods.TaskSchedulerPod
 
 
@@ -28,6 +29,7 @@ private val shuttlePods = arrayOf(
         MapstoresPod::class.java,
         PostgresPod::class.java,
         SharedStreamSerializersPod::class.java,
+        ShuttleStreamSerializersPod::class.java,
         TaskSchedulerPod::class.java,
         ShuttleServicesPod::class.java,
         ShuttleServletsPod::class.java,
