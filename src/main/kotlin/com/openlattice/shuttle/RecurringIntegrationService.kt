@@ -49,7 +49,7 @@ class RecurringIntegrationService(
             shuttle.launch(uploadBatchSize)
             MissionControl.succeed()
         } catch (ex: Exception) {
-            MissionControl.fail(1, integration.flight, ex)
+            MissionControl.fail(1, integration.flight!!, ex)
         }
     }
 
