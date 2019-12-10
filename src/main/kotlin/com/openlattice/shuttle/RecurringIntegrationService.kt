@@ -30,7 +30,7 @@ class RecurringIntegrationService(
         val integration = integrations.getValue(integrationName)
         val dataSource = getDataSource(integration.source)
         val payload = JdbcPayload(readRateLimit.toDouble(), dataSource, integration.sql, fetchSize, readRateLimit != 0)
-        val flightPlan = mapOf(integration.flight to payload)
+        val flightPlan = mapOf(integration.flight!! to payload)
 
         try {
             val config = missionParameters.postgres.config
