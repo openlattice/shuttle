@@ -14,13 +14,13 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
         private val storageDestinations = StorageDestination.values()
         fun serialize(output: ObjectDataOutput, obj: Integration) {
             output.writeUTF(obj.sql)
-            //something customish for source
-            //write a list for pkey cols
+            //something custom for source
+            output.writeUTFArray(obj.sourcePrimaryKeyColumns.toTypedArray())
             output.writeInt(obj.environment.ordinal)
             output.writeInt(obj.defaultStorage.ordinal)
             output.writeUTF(obj.s3bucket)
             //write the flight as json probs
-            //write a set for contacts
+            output.writeUTFArray(obj.contacts.toTypedArray())
             output.writeBoolean(obj.recurring)
             output.writeLong(obj.start)
             output.writeLong(obj.period)
@@ -29,24 +29,24 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
         fun deserialize(input: ObjectDataInput): Integration {
             val sql = input.readUTF()
             //source
-            //pkey cols
+            val srcPkeyCols = input.readUTFArray().toList()
             val environment = environments[input.readInt()]
             val defaultStorage = storageDestinations[input.readInt()]
             val s3bucket = input.readUTF()
             //flight?! :D
-            //contacts?!?! :D:D
+            val contacts = input.readUTFArray().toSet()
             val recurring = input.readBoolean()
             val start = input.readLong()
             val period = input.readLong()
             return Integration(
                     sql,
                     //src,
-                    //pkeycols,
+                    srcPkeyCols
                     environment,
                     defaultStorage,
                     s3bucket,
                     //flight,
-                    //contacts,
+                    contacts,
                     recurring,
                     start,
                     period
