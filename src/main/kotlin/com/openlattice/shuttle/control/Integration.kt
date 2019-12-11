@@ -46,7 +46,7 @@ data class Integration(
     init {
         if (flightFilePath == null) check(flight != null) {"Either flight or flightFilePath must not be null"}
         if (flight == null) check(flightFilePath != null) {"Either flight or flightFilePath must not be null"}
-        if (flightFilePath != null) this.flight = ObjectMappers.getYamlMapper().readValue(File(flightFilePath), Flight::class.java)
+        if (flightFilePath != null && flight == null) this.flight = ObjectMappers.getYamlMapper().readValue(File(flightFilePath), Flight::class.java)
     }
 
     companion object {
@@ -69,4 +69,5 @@ data class Integration(
         }
 
     }
+
 }
