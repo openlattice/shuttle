@@ -24,7 +24,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun startIntegration(
             @PathVariable(INTEGRATION_NAME) integrationName: String
     ) {
-        ensureAdminAccess() //TODO figure out why principals cache is not loading
+        ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.loadCargo(normalizedName)
     }
@@ -34,7 +34,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun createIntegrationDefinition(
             @PathVariable integrationName: String,
             @RequestBody integrationDefinition: Integration) {
-        //ensureAdminAccess()
+        ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.createIntegrationDefinition(normalizedName, integrationDefinition)
     }
@@ -43,7 +43,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     @GetMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
     override fun readIntegrationDefinition(
             @PathVariable integrationName: String ) : Integration {
-        //ensureAdminAccess()
+        ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         return recurringIntegrationService.readIntegrationDefinition(normalizedName)
     }
@@ -55,6 +55,28 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.updateIntegrationDefinition(normalizedName, integrationDefinition)
     }
+
+    @Timed
+    @PatchMapping(path = [DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH + PATH_TO_FLIGHT_PATH])
+    override fun updateFlightWithinIntegrationDefinition(
+            integrationName: String,
+            pathToFlight: String
+    ) {
+        ensureAdminAccess()
+        val normalizedName = normalizeIntegrationName(integrationName)
+        recurringIntegrationService.updateFlightWithinIntegrationDefinition(normalizedName, pathToFlight)
+    }
+
+    @Timed
+    @PatchMapping(path = [DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH])
+    override fun updateFlightWithinIntegrationDefinition(
+            integrationName: String
+    ) {
+        ensureAdminAccess()
+        val normalizedName = normalizeIntegrationName(integrationName)
+        recurringIntegrationService.updateFlightWithinIntegrationDefinition(normalizedName)
+    }
+
 
     @Timed
     @DeleteMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])

@@ -68,6 +68,16 @@ class RecurringIntegrationService(
         integrations[integrationName] = integration
     }
 
+    fun updateFlightWithinIntegrationDefinition(integrationName: String, pathToFlight: String) {
+        checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
+        //will need to do some fancy indexing on the flight within the integration json
+    }
+
+    fun updateFlightWithinIntegrationDefinition(integrationName: String) {
+        checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
+        //index on flight path and read and update flight
+    }
+
     fun deleteIntegrationDefinition(integrationName: String) {
         checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
         integrations[integrationName] = null

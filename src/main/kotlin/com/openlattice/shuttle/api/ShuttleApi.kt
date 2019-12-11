@@ -9,9 +9,12 @@ const val CONTROLLER = "/integration"
 const val BASE = SERVICE + CONTROLLER
 
 const val DEFINITION_PATH = "/definition"
+const val FLIGHT_PATH = "/flight"
 
 const val INTEGRATION_NAME = "integrationName"
 const val INTEGRATION_NAME_PATH = "/{$INTEGRATION_NAME}"
+const val PATH_TO_FLIGHT = "pathToFlight"
+const val PATH_TO_FLIGHT_PATH = "/{$PATH_TO_FLIGHT}"
 
 interface ShuttleApi {
 
@@ -47,7 +50,7 @@ interface ShuttleApi {
     ) : Integration
 
     /**
-     * Replaces an existing integration definition
+     * Replaces an existing integration definition with a provided integration definition
      * @param integrationName the name of the integration definition to be replaced
      * @param integrationDefinition the integration definition to replace an
      * existing one. The path to a flight yaml can be passed in place of a
@@ -60,7 +63,29 @@ interface ShuttleApi {
     )
 
     /**
-     * Deleted an integration definition
+     * Replaces the flight within an integration definition with a flight
+     * located at the provided path
+     * @param integrationName the name of the integration definition to be changed
+     * @param pathToFlight the path to the new flight yaml
+     */
+    @PATCH(BASE + DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH + PATH_TO_FLIGHT_PATH)
+    fun updateFlightWithinIntegrationDefinition(
+            @Path(INTEGRATION_NAME) integrationName: String,
+            @Path(PATH_TO_FLIGHT) pathToFlight: String
+    )
+
+    /**
+     * Replaces the flight within an integration definition with the flight that
+     * is located at the path that is already stored within the integration definition
+     * @param integrationName the name of the integration definition to be changed
+     */
+    @PATCH(BASE + DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH)
+    fun updateFlightWithinIntegrationDefinition(
+            @Path(INTEGRATION_NAME) integrationName: String
+    )
+
+    /**
+     * Deletes an integration definition
      * @param integrationName the name of the integration definition to be deleted
      */
     @DELETE(BASE + DEFINITION_PATH + INTEGRATION_NAME_PATH)
