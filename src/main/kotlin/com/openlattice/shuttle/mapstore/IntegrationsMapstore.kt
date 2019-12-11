@@ -61,6 +61,6 @@ class IntegrationsMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore
     }
 
     override fun mapToValue(rs: ResultSet): Integration {
-        return mapper.readValue(rs.getString(INTEGRATIONS.name))
+        return mapper.readValue(rs.getString(INTEGRATION.name))
     }
 }
