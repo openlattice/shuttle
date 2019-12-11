@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions.checkState
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.shuttle.control.Integration
+import com.openlattice.shuttle.hazelcast.processors.ReloadFlightEntryProcessor
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -68,14 +69,14 @@ class RecurringIntegrationService(
         integrations[integrationName] = integration
     }
 
-    fun updateFlightWithinIntegrationDefinition(integrationName: String, pathToFlight: String) {
-        checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
-        //will need to do some fancy indexing on the flight within the integration json
-    }
+//    fun updateFlightWithinIntegrationDefinition(integrationName: String, pathToFlight: String) {
+//        checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
+//        //will need to do some fancy indexing on the flight within the integration json
+//    }
 
     fun updateFlightWithinIntegrationDefinition(integrationName: String) {
         checkState( integrations.containsKey(integrationName), "Integration with name $integrationName does not exist." )
-        //index on flight path and read and update flight
+        integrations.executeOnKey(integrationName, ReloadFlightEntryProcessor())
     }
 
     fun deleteIntegrationDefinition(integrationName: String) {

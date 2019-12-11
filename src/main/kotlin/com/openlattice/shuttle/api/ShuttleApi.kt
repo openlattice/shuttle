@@ -62,17 +62,17 @@ interface ShuttleApi {
             @Body integrationDefinition: Integration
     )
 
-    /**
-     * Replaces the flight within an integration definition with a flight
-     * located at the provided path
-     * @param integrationName the name of the integration definition to be changed
-     * @param pathToFlight the path to the new flight yaml
-     */
-    @PATCH(BASE + DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH + PATH_TO_FLIGHT_PATH)
-    fun updateFlightWithinIntegrationDefinition(
-            @Path(INTEGRATION_NAME) integrationName: String,
-            @Path(PATH_TO_FLIGHT) pathToFlight: String
-    )
+//    /**
+//     * Replaces the flight within an integration definition with a flight
+//     * located at the provided path
+//     * @param integrationName the name of the integration definition to be changed
+//     * @param pathToFlight the path to the new flight yaml
+//     */
+//    @PATCH(BASE + DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH + PATH_TO_FLIGHT_PATH)
+//    fun updateFlightWithinIntegrationDefinition(
+//            @Path(INTEGRATION_NAME) integrationName: String,
+//            @Path(PATH_TO_FLIGHT) pathToFlight: String
+//    )
 
     /**
      * Replaces the flight within an integration definition with the flight that
