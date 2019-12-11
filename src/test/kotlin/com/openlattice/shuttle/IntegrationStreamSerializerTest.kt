@@ -2,7 +2,7 @@ package com.openlattice.shuttle
 
 import com.kryptnostic.rhizome.hazelcast.serializers.AbstractStreamSerializerTest
 import com.openlattice.shuttle.control.Integration
-import com.openlattice.shuttle.serializers.IntegrationStreamSerializer
+import com.openlattice.shuttle.hazelcast.serializers.IntegrationStreamSerializer
 
 class IntegrationStreamSerializerTest : AbstractStreamSerializerTest<IntegrationStreamSerializer, Integration>() {
     override fun createSerializer(): IntegrationStreamSerializer {

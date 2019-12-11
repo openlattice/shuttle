@@ -1,6 +1,6 @@
 package com.openlattice.shuttle.pods
 
-import com.openlattice.shuttle.serializers.ShuttleSharedStreamSerializers
+import com.openlattice.shuttle.hazelcast.serializers.ShuttleSharedStreamSerializers
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.FilterType

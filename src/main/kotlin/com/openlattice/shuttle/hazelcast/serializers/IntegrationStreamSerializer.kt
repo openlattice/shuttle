@@ -1,4 +1,4 @@
-package com.openlattice.shuttle.serializers
+package com.openlattice.shuttle.hazelcast.serializers
 
 import com.dataloom.mappers.ObjectMappers
 import com.hazelcast.nio.ObjectDataInput
