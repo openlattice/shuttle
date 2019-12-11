@@ -13,8 +13,6 @@ const val FLIGHT_PATH = "/flight"
 
 const val INTEGRATION_NAME = "integrationName"
 const val INTEGRATION_NAME_PATH = "/{$INTEGRATION_NAME}"
-const val PATH_TO_FLIGHT = "pathToFlight"
-const val PATH_TO_FLIGHT_PATH = "/{$PATH_TO_FLIGHT}"
 
 interface ShuttleApi {
 
