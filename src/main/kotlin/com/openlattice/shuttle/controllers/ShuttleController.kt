@@ -50,7 +50,9 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
 
     @Timed
     @PatchMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
-    override fun updateIntegrationDefinition(integrationName: String, integrationDefinition: Integration) {
+    override fun updateIntegrationDefinition(
+            @PathVariable integrationName: String,
+            @RequestBody integrationDefinition: Integration) {
         ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.updateIntegrationDefinition(normalizedName, integrationDefinition)
@@ -59,8 +61,8 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
 //    @Timed
 //    @PatchMapping(path = [DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH + PATH_TO_FLIGHT_PATH])
 //    override fun updateFlightWithinIntegrationDefinition(
-//            integrationName: String,
-//            pathToFlight: String
+//            @PathVariable integrationName: String,
+//            @PathVariable pathToFlight: String
 //    ) {
 //        ensureAdminAccess()
 //        val normalizedName = normalizeIntegrationName(integrationName)
@@ -70,7 +72,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     @Timed
     @PatchMapping(path = [DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH])
     override fun updateFlightWithinIntegrationDefinition(
-            integrationName: String
+            @PathVariable integrationName: String
     ) {
         ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
@@ -80,7 +82,9 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
 
     @Timed
     @DeleteMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
-    override fun deleteIntegrationDefinition(integrationName: String) {
+    override fun deleteIntegrationDefinition(
+            @PathVariable integrationName: String
+    ) {
         ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.deleteIntegrationDefinition(normalizedName)
