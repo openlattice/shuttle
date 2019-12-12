@@ -59,7 +59,7 @@ data class Integration(
             val environment = RetrofitFactory.Environment.PROD_INTEGRATION
             val defaultStorage = StorageDestination.POSTGRES
             val s3bucket = TestDataFactory.random(10)
-            val flight = Flight(emptyMap(), Optional.empty(), emptyMap())
+            val flight = Flight(emptyMap(), Optional.empty(), Optional.of(emptyMap()))
             val contacts = setOf<String>(TestDataFactory.random(5))
             val recurring = true
             val start = 1000L
