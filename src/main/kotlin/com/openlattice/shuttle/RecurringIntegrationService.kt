@@ -74,9 +74,9 @@ class RecurringIntegrationService(
                     StorageDestination.S3
             )
             shuttle.launch(uploadBatchSize)
-            logger.info("YOU DID IT :D")
+            logger.info("YOU DID IT :D, integration with name $integrationName completed.")
         } catch (ex: Exception) {
-            logger.info("You did not do it :'(, failed with exception $ex")
+            logger.info("You did not do it :'(, integration with name $integrationName failed with exception $ex")
         }
     }
 
