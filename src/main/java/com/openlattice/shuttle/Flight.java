@@ -41,7 +41,7 @@ public class Flight implements Serializable {
 
     private final Map<String, EntityDefinition>                entityDefinitions;
     private final Map<String, AssociationDefinition>           associationDefinitions;
-    private       String                                       name = "Anon";
+    private       String                                       name;
     public final  SerializableFunction<Map<String, Object>, ?> valueMapper;
     public final  Optional<Conditions>                         condition;
 
@@ -51,10 +51,13 @@ public class Flight implements Serializable {
                     Map<String, EntityDefinition> entityDefinitions,
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.ASSOCIATION_DEFINITIONS_FIELD )
-                    Optional<Map<String, AssociationDefinition>> associationDefinitions ) {
+                    Optional<Map<String, AssociationDefinition>> associationDefinitions,
+            @JsonProperty( SerializationConstants.NAME) Optional<String> name
+    ) {
         this.condition = condition;
         this.entityDefinitions = entityDefinitions;
         this.associationDefinitions = associationDefinitions.orElseGet( HashMap::new );
+        this.name = name.orElse("Anon");
 
         if ( condition.isPresent() ) {
             this.valueMapper = new ConditionValueMapper( condition.get() );
