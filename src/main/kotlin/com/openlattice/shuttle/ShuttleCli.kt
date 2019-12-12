@@ -374,7 +374,4 @@ fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
 }
 
 class ShuttleCli {
-    fun startShuttle(args: Array<String>) {
-        main(ShuttleCliOptions.parseCommandLine(args).args)
-    }
 }
