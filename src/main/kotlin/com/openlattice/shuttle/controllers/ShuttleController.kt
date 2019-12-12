@@ -58,17 +58,6 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
         recurringIntegrationService.updateIntegrationDefinition(normalizedName, integrationDefinition)
     }
 
-//    @Timed
-//    @PatchMapping(path = [DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH + PATH_TO_FLIGHT_PATH])
-//    override fun updateFlightWithinIntegrationDefinition(
-//            @PathVariable integrationName: String,
-//            @PathVariable pathToFlight: String
-//    ) {
-//        ensureAdminAccess()
-//        val normalizedName = normalizeIntegrationName(integrationName)
-//        recurringIntegrationService.updateFlightWithinIntegrationDefinition(normalizedName, pathToFlight)
-//    }
-
     @Timed
     @PatchMapping(path = [DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH])
     override fun updateFlightWithinIntegrationDefinition(
