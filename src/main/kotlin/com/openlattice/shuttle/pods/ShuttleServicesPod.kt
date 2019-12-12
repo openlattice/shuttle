@@ -4,6 +4,8 @@ import com.dataloom.mappers.ObjectMappers
 import com.google.common.eventbus.EventBus
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.authorization.*
+import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
+import com.openlattice.authorization.mapstores.SecurablePrincipalsMapLoader
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.shuttle.MissionParameters
@@ -34,6 +36,12 @@ class ShuttleServicesPod {
     @Inject
     private lateinit var  missionParametersConfiguration: MissionParameters
 
+    @Inject
+    private lateinit var spml: SecurablePrincipalsMapLoader
+
+    @Inject
+    private lateinit var rptml: ResolvedPrincipalTreesMapLoader
+
     @Bean
     fun defaultObjectMapper() = ObjectMappers.getJsonMapper()
 
@@ -61,7 +69,11 @@ class ShuttleServicesPod {
 
     @PostConstruct
     internal fun initPrincipals() {
-        Principals.init(principalService())
+        val spm = principalService()
+        spml.initSpm(spm)
+        rptml.initSpm(spm)
+        rptml.initPrincipalsMapstore(hazelcastInstance)
+        Principals.init(spm, hazelcastInstance)
     }
 
 }
