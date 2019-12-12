@@ -31,6 +31,7 @@ import com.openlattice.shuttle.util.Constants;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -50,10 +51,10 @@ public class Flight implements Serializable {
                     Map<String, EntityDefinition> entityDefinitions,
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.ASSOCIATION_DEFINITIONS_FIELD )
-                    Map<String, AssociationDefinition> associationDefinitions ) {
+                    Optional<Map<String, AssociationDefinition>> associationDefinitions ) {
         this.condition = condition;
         this.entityDefinitions = entityDefinitions;
-        this.associationDefinitions = associationDefinitions;
+        this.associationDefinitions = associationDefinitions.orElseGet( HashMap::new );
 
         if ( condition.isPresent() ) {
             this.valueMapper = new ConditionValueMapper( condition.get() );
