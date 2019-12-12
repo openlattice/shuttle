@@ -6,15 +6,9 @@
 enable-persistence:  false
 session-clustering-enabled: false
 
-#cassandra:
-#    keyspace: "sparks"
-#    replication-factor: 2
-#    seed-nodes:
-#        - "cassandra"
-
 hazelcast:
     server: true
-    group: "local"
+    group: "local_shuttle"
     password: "trellis"
     cp-member-count: 0
     seed-nodes:
