@@ -44,15 +44,14 @@ class RecurringIntegrationService(
     private val entitySets = hazelcastInstance.getMap<UUID, EntitySet>(HazelcastMap.ENTITY_SETS.name)
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
-    private val config = missionParameters.postgres.config
+    private val creds = missionParameters.auth.credentials
 
     fun loadCargo(integrationName: String) {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
         val integration = integrations.getValue(integrationName)
 
-        //THIS IS WRONG. Need to somehow get a token or username/password
-        //val authToken = MissionControl.getIdToken(config.getProperty("username"), config.getProperty("password"))
-        val apiClient = ApiClient(integration.environment) { "i'matoken" }
+        val authToken = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"), integration.environment)
+        val apiClient = ApiClient(integration.environment) { authToken }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
         val srcDataSource = getSrcDataSource(integration.source)
