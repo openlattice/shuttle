@@ -269,10 +269,10 @@ class Shuttle(
     private fun buildPropertiesFromPropertyDefinitions(
             row: Map<String, Any?>,
             propertyDefinitions: Collection<PropertyDefinition>
-    )
-            : Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
+    ): Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
+
         val properties =  Maps.newHashMapWithExpectedSize<UUID, MutableSet<Any>>(propertyDefinitions.size)
-        val addressedProperties = Maps.newLinkedHashMapWithExpectedSize<StorageDestination, MutableMap<UUID, MutableSet<Any>>>(propertyDefinitions.size)
+        val addressedProperties = Maps.newLinkedHashMapWithExpectedSize<StorageDestination, MutableMap<UUID, MutableSet<Any>>>(1)
 
         for (propertyDefinition in propertyDefinitions) {
             val propertyValue = propertyDefinition.propertyValue.apply(row)
@@ -307,10 +307,11 @@ class Shuttle(
             val propertyId = propertyType.id
 
             addressedProperties
-                    .getOrPut(storageDestination) { Maps.newLinkedHashMapWithExpectedSize(1) }
-                    .getOrPut(propertyId) { Sets.newHashSetWithExpectedSize(propertyValueAsCollection.size) }
+                    .getOrPut(storageDestination) { Maps.newLinkedHashMapWithExpectedSize(propertyDefinitions.size ) }
+                    .getOrPut(propertyId) { Sets.newLinkedHashSetWithExpectedSize(propertyValueAsCollection.size) }
                     .addAll(propertyValueAsCollection)
-            properties.getOrPut(propertyId) { Sets.newHashSetWithExpectedSize(propertyValueAsCollection.size) }.addAll(propertyValueAsCollection)
+            properties.getOrPut(propertyId) { Sets.newLinkedHashSetWithExpectedSize(propertyValueAsCollection.size) }
+                    .addAll(propertyValueAsCollection)
         }
         return Pair(properties, addressedProperties)
     }
@@ -409,7 +410,6 @@ class Shuttle(
                             addressedDataHolder.associations
                                     .getOrPut(storageDestination) { mutableSetOf() }
                                     .add(Association(key, src, dst, data))
-
                         }
                     } else {
                         logger.error(
