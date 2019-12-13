@@ -27,6 +27,8 @@ import com.geekbeast.util.ExponentialBackoff
 import com.geekbeast.util.attempt
 import com.google.common.base.Stopwatch
 import com.google.common.collect.ImmutableList
+import com.google.common.collect.Maps
+import com.google.common.collect.Sets
 import com.google.common.util.concurrent.ListeningExecutorService
 import com.google.common.util.concurrent.MoreExecutors
 import com.openlattice.ApiUtil
@@ -267,10 +269,10 @@ class Shuttle(
     private fun buildPropertiesFromPropertyDefinitions(
             row: Map<String, Any?>,
             propertyDefinitions: Collection<PropertyDefinition>
-    )
-            : Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
-        val properties = mutableMapOf<UUID, MutableSet<Any>>()
-        val addressedProperties = mutableMapOf<StorageDestination, MutableMap<UUID, MutableSet<Any>>>()
+    ): Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
+
+        val properties =  Maps.newHashMapWithExpectedSize<UUID, MutableSet<Any>>(propertyDefinitions.size)
+        val addressedProperties = Maps.newLinkedHashMapWithExpectedSize<StorageDestination, MutableMap<UUID, MutableSet<Any>>>(1)
 
         for (propertyDefinition in propertyDefinitions) {
             val propertyValue = propertyDefinition.propertyValue.apply(row)
@@ -305,20 +307,24 @@ class Shuttle(
             val propertyId = propertyType.id
 
             addressedProperties
-                    .getOrPut(storageDestination) { mutableMapOf() }
-                    .getOrPut(propertyId) { mutableSetOf() }
+                    .getOrPut(storageDestination) { Maps.newLinkedHashMapWithExpectedSize(propertyDefinitions.size ) }
+                    .getOrPut(propertyId) { Sets.newLinkedHashSetWithExpectedSize(propertyValueAsCollection.size) }
                     .addAll(propertyValueAsCollection)
-            properties.getOrPut(propertyId) { mutableSetOf() }.addAll(propertyValueAsCollection)
+            properties.getOrPut(propertyId) { Sets.newLinkedHashSetWithExpectedSize(propertyValueAsCollection.size) }
+                    .addAll(propertyValueAsCollection)
         }
         return Pair(properties, addressedProperties)
     }
 
     private fun impulse(flight: Flight, batch: List<Map<String, Any?>>, batchNumber: Long): AddressedDataHolder {
-        val addressedDataHolder = AddressedDataHolder(mutableMapOf(), mutableMapOf(), batchNumber)
+        val addressedDataHolder = AddressedDataHolder(
+                Maps.newLinkedHashMapWithExpectedSize( batch.size * flight.entities.size ),
+                Maps.newLinkedHashMapWithExpectedSize( batch.size * flight.associations.size ),
+                batchNumber)
 
         batch.forEach { row ->
-            val aliasesToEntityKey = mutableMapOf<String, EntityKey>()
-            val wasCreated = mutableMapOf<String, Boolean>()
+            val aliasesToEntityKey = Maps.newHashMapWithExpectedSize<String, EntityKey>(flight.entities.size)
+            val wasCreated = Maps.newHashMapWithExpectedSize<String, Boolean>(flight.entities.size)
             if (flight.condition.isPresent && !(flight.valueMapper.apply(row) as Boolean)) {
                 return@forEach
             }
@@ -404,7 +410,6 @@ class Shuttle(
                             addressedDataHolder.associations
                                     .getOrPut(storageDestination) { mutableSetOf() }
                                     .add(Association(key, src, dst, data))
-
                         }
                     } else {
                         logger.error(
