@@ -83,7 +83,7 @@ class MissionControl(
             parameters: MissionParameters = MissionParameters.empty()
     ) : this(
             environment,
-            Suppliers.memoizeWithExpiration({ getIdToken(username, password) }, 1, TimeUnit.HOURS),
+            Suppliers.memoizeWithExpiration({ getIdToken(username, password, environment) }, 1, TimeUnit.HOURS),
             s3BucketUrl,
             parameters
     )
@@ -104,8 +104,8 @@ class MissionControl(
 
         @JvmStatic
         @Throws(Auth0Exception::class)
-        fun getIdToken(username: String, password: String): String {
-            return getIdToken(client, AUTH0_CONNECTION, username, password)
+        fun getIdToken(username: String, password: String, environment: RetrofitFactory.Environment): String {
+            return getIdToken(client, AUTH0_CONNECTION, username, password, environment)
         }
 
         @JvmStatic
@@ -122,11 +122,16 @@ class MissionControl(
         @JvmStatic
         @VisibleForTesting
         @Throws(Auth0Exception::class)
-        fun getIdToken(auth0: AuthAPI, realm: String, username: String, password: String): String {
+        fun getIdToken(auth0: AuthAPI, realm: String, username: String, password: String, environment: RetrofitFactory.Environment): String {
+            val audience = if (environment == RetrofitFactory.Environment.LOCAL) {
+                "http://localhost:8080"
+            } else {
+                "https://api.openlattice.com"
+            }
             return auth0
                     .login(username, password, realm)
                     .setScope(AUTH0_SCOPES)
-                    .setAudience("https://api.openlattice.com")
+                    .setAudience(audience)
                     .execute()
                     .idToken
         }
