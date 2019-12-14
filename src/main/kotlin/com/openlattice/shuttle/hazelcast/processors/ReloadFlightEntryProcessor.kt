@@ -6,11 +6,11 @@ import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcesso
 import com.openlattice.shuttle.Flight
 import com.openlattice.shuttle.control.Integration
 import java.io.File
+import java.net.URL
 
 class ReloadFlightEntryProcessor : AbstractRhizomeEntryProcessor<String, Integration, Integration>() {
 
     companion object {
-        private const val serialVersionUID = -6602384557982348L
         private val mapper = ObjectMappers.getYamlMapper()
     }
 
@@ -18,7 +18,7 @@ class ReloadFlightEntryProcessor : AbstractRhizomeEntryProcessor<String, Integra
         val integration = entry.value
         val flightFilePath = integration.flightFilePath
         checkState(flightFilePath != null, "Integration with name ${entry.key} does not have a flight file path")
-        val updatedFlight = mapper.readValue(File(integration.flightFilePath!!), Flight::class.java)
+        val updatedFlight = mapper.readValue(URL(integration.flightFilePath!!), Flight::class.java)
         integration.flight = updatedFlight
         entry.setValue(integration)
         return integration
