@@ -69,11 +69,7 @@ class ShuttleServicesPod {
 
     @PostConstruct
     internal fun initPrincipals() {
-        val spm = principalService()
-        spml.initSpm(spm)
-        rptml.initSpm(spm)
-        rptml.initPrincipalsMapstore(hazelcastInstance)
-        Principals.init(spm, hazelcastInstance)
+        Principals.init(principalService(), hazelcastInstance)
     }
 
 }
