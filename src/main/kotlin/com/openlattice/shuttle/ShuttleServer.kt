@@ -16,22 +16,29 @@ import com.openlattice.tasks.pods.TaskSchedulerPod
 
 
 private val shuttlePods = arrayOf(
+        //Rhizome pods
         RegistryBasedHazelcastInstanceConfigurationPod::class.java,
-        JdbcPod::class.java,
-        AuditingConfigurationPod::class.java,
+        Auth0Pod::class.java,
+
+        //Web pods
+        ShuttleServletsPod::class.java,
+        ShuttleSecurityPod::class.java,
+
+        //Shuttle pods
         AwsS3Pod::class.java,
+        AuditingConfigurationPod::class.java,
         ByteBlobServicePod::class.java,
+        JdbcPod::class.java,
         MapstoresPod::class.java,
+        MissionParametersPod::class.java,
         PostgresPod::class.java,
         SharedStreamSerializersPod::class.java,
+        ShuttleServicesPod::class.java,
         ShuttleStreamSerializersPod::class.java,
         TaskSchedulerPod::class.java,
-        ShuttleServicesPod::class.java,
-        ShuttleServletsPod::class.java,
-        ShuttleMapstoresPod::class.java,
-        Auth0Pod::class.java,
-        ShuttleSecurityPod::class.java,
-        MissionParametersPod::class.java
+
+        //This pod goes last for things to not break
+        ShuttleMapstoresPod::class.java
 )
 
 /**
