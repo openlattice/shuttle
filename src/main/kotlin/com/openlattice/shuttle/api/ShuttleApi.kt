@@ -1,6 +1,7 @@
 package com.openlattice.shuttle.api
 
 import com.openlattice.shuttle.control.Integration
+import com.openlattice.shuttle.control.IntegrationUpdate
 import retrofit2.http.*
 
 
@@ -50,14 +51,15 @@ interface ShuttleApi {
     /**
      * Replaces an existing integration definition with a provided integration definition
      * @param integrationName the name of the integration definition to be replaced
-     * @param integrationDefinition the integration definition to replace an
-     * existing one. The path to a flight yaml can be passed in place of a
-     * Flight object and will be converted to an instance of Flight class
+     * @param integrationUpdate the integration definition to replace an
+     * existing one. Note, if a new flightFilePath is included in the update and the
+     * contents of the yaml at that path have changed, the flight will be updated to
+     * reflect these changes.
      */
     @PATCH(BASE + DEFINITION_PATH + INTEGRATION_NAME_PATH)
     fun updateIntegrationDefinition(
             @Path(INTEGRATION_NAME) integrationName: String,
-            @Body integrationDefinition: Integration
+            @Body integrationUpdate: IntegrationUpdate
     )
 
     /**
