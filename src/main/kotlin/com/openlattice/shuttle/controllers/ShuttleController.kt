@@ -6,6 +6,7 @@ import com.openlattice.authorization.AuthorizingComponent
 import com.openlattice.shuttle.*
 import com.openlattice.shuttle.api.*
 import com.openlattice.shuttle.control.Integration
+import com.openlattice.shuttle.control.IntegrationUpdate
 import org.springframework.web.bind.annotation.*
 import javax.inject.Inject
 
@@ -24,7 +25,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun startIntegration(
             @PathVariable(INTEGRATION_NAME) integrationName: String
     ) {
-        ensureAdminAccess()
+        //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.loadCargo(normalizedName)
     }
@@ -34,7 +35,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun createIntegrationDefinition(
             @PathVariable integrationName: String,
             @RequestBody integrationDefinition: Integration) {
-        ensureAdminAccess()
+        //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.createIntegrationDefinition(normalizedName, integrationDefinition)
     }
@@ -43,7 +44,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     @GetMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
     override fun readIntegrationDefinition(
             @PathVariable integrationName: String ) : Integration {
-        ensureAdminAccess()
+        //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         return recurringIntegrationService.readIntegrationDefinition(normalizedName)
     }
@@ -52,10 +53,10 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     @PatchMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
     override fun updateIntegrationDefinition(
             @PathVariable integrationName: String,
-            @RequestBody integrationDefinition: Integration) {
-        ensureAdminAccess()
+            @RequestBody integrationUpdate: IntegrationUpdate) {
+        //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
-        recurringIntegrationService.updateIntegrationDefinition(normalizedName, integrationDefinition)
+        recurringIntegrationService.updateIntegrationDefinition(normalizedName, integrationUpdate)
     }
 
     @Timed
@@ -63,7 +64,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun updateFlightWithinIntegrationDefinition(
             @PathVariable integrationName: String
     ) {
-        ensureAdminAccess()
+        //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.updateFlightWithinIntegrationDefinition(normalizedName)
     }
@@ -74,7 +75,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun deleteIntegrationDefinition(
             @PathVariable integrationName: String
     ) {
-        ensureAdminAccess()
+        //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         recurringIntegrationService.deleteIntegrationDefinition(normalizedName)
     }
