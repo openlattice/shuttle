@@ -58,7 +58,6 @@ class IntegrationService(
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val creds = missionParameters.auth.credentials
-    private val shuttleLogsEntitySetId = UUID.fromString("fc8de069-0455-404f-9b0c-a8a06bc3b467") //TODO pipe this in properly
 
     lateinit var logEntityType: EntityType
 
@@ -74,7 +73,7 @@ class IntegrationService(
         val integration = integrations.getValue(integrationName)
 
 //        val authToken = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
-        val apiClient = ApiClient(integration.environment) { "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InBpcGVyQG9wZW5sYXR0aWNlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJ1c2VyX21ldGFkYXRhIjp7fSwiYXBwX21ldGFkYXRhIjp7InJvbGVzIjpbIkF1dGhlbnRpY2F0ZWRVc2VyIiwiYWRtaW4iXSwiYWN0aXZhdGVkIjoiYWN0aXZhdGVkIn0sIm5pY2tuYW1lIjoicGlwZXIiLCJyb2xlcyI6WyJBdXRoZW50aWNhdGVkVXNlciIsImFkbWluIl0sInVzZXJfaWQiOiJnb29nbGUtb2F1dGgyfDExNDczMDU3NjI0MjQ4MTc3NTE4MiIsImlzcyI6Imh0dHBzOi8vb3BlbmxhdHRpY2UuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTE0NzMwNTc2MjQyNDgxNzc1MTgyIiwiYXVkIjoiS1R6Z3l4czZLQmNKSEI4NzJlU01lMmNwVEh6aHhTOTkiLCJpYXQiOjE1NzY1MzgwODksImV4cCI6MTU3NjYyNDQ4OX0.6goFLA_-amOW53j9WCV_CZeJsT1bfIZNoe7G4fRkkpU" }
+        val apiClient = ApiClient(integration.environment) { "i'matoken" }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
         val srcDataSource = getSrcDataSource(integration.source)
@@ -90,7 +89,7 @@ class IntegrationService(
                 it to propertyTypes.getValue(it)
             }.toMap()
             val shuttleLogsDestination = PostgresDestination(
-                    mapOf(shuttleLogsEntitySetId to shuttleLogsEntitySet),
+                    mapOf(shuttleLogsEntitySet.id to shuttleLogsEntitySet),
                     mapOf(shuttleLogsEntitySet.entityTypeId to shuttleLogsEntityType),
                     shuttleLogsProperties,
                     hds
