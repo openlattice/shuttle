@@ -15,7 +15,7 @@ import javax.inject.Inject
 class ShuttleController : ShuttleApi, AuthorizingComponent {
 
     @Inject
-    private lateinit var recurringIntegrationService: RecurringIntegrationService
+    private lateinit var integrationService: IntegrationService
 
     @Inject
     private lateinit var authorizationManager: AuthorizationManager
@@ -27,7 +27,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     ) {
         //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
-        recurringIntegrationService.loadCargo(normalizedName)
+        integrationService.loadCargo(normalizedName)
     }
 
     @Timed
@@ -37,7 +37,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
             @RequestBody integrationDefinition: Integration) {
         //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
-        recurringIntegrationService.createIntegrationDefinition(normalizedName, integrationDefinition)
+        integrationService.createIntegrationDefinition(normalizedName, integrationDefinition)
     }
 
     @Timed
@@ -46,7 +46,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
             @PathVariable integrationName: String ) : Integration {
         //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
-        return recurringIntegrationService.readIntegrationDefinition(normalizedName)
+        return integrationService.readIntegrationDefinition(normalizedName)
     }
 
     @Timed
@@ -56,7 +56,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
             @RequestBody integrationUpdate: IntegrationUpdate) {
         //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
-        recurringIntegrationService.updateIntegrationDefinition(normalizedName, integrationUpdate)
+        integrationService.updateIntegrationDefinition(normalizedName, integrationUpdate)
     }
 
     @Timed
@@ -66,7 +66,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     ) {
         //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
-        recurringIntegrationService.updateFlightWithinIntegrationDefinition(normalizedName)
+        integrationService.updateFlightWithinIntegrationDefinition(normalizedName)
     }
 
 
@@ -77,7 +77,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     ) {
         //ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
-        recurringIntegrationService.deleteIntegrationDefinition(normalizedName)
+        integrationService.deleteIntegrationDefinition(normalizedName)
     }
 
     override fun getAuthorizationManager(): AuthorizationManager {

@@ -3,6 +3,7 @@ package com.openlattice.shuttle
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions.checkState
 import com.hazelcast.core.HazelcastInstance
+import com.openlattice.authorization.Principals
 import com.openlattice.client.ApiClient
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKeyIdService
@@ -11,6 +12,7 @@ import com.openlattice.data.integration.IntegrationDestination
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.data.integration.destinations.PostgresDestination
 import com.openlattice.data.integration.destinations.PostgresS3Destination
+import com.openlattice.datastore.services.EdmManager
 import com.openlattice.datastore.services.EntitySetManager
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
@@ -21,11 +23,10 @@ import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.rhizome.proxy.RetrofitBuilders
 import com.openlattice.shuttle.control.Integration
-import com.openlattice.shuttle.control.IntegrationKey
-import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.control.IntegrationUpdate
 import com.openlattice.shuttle.hazelcast.processors.ReloadFlightEntryProcessor
 import com.openlattice.shuttle.hazelcast.processors.UpdateIntegrationEntryProcessor
+import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -34,21 +35,22 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import retrofit2.Retrofit
 import java.lang.Exception
-import java.time.OffsetDateTime
 import java.util.*
 
-private val logger = LoggerFactory.getLogger(RecurringIntegrationService::class.java)
+private val logger = LoggerFactory.getLogger(IntegrationService::class.java)
 private val fetchSize = 10000
 private val readRateLimit = 1000
 private val uploadBatchSize = 10000
 
 @Service
-class RecurringIntegrationService(
+class IntegrationService(
         private val hazelcastInstance: HazelcastInstance,
         private val missionParameters: MissionParameters,
+        private val blackbox: Blackbox,
         private val hds: HikariDataSource,
         private val idService: EntityKeyIdService,
-        private val entitySetManager: EntitySetManager
+        private val entitySetManager: EntitySetManager,
+        private val dataModelSerivce: EdmManager
 ) {
 
     private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
@@ -57,6 +59,14 @@ class RecurringIntegrationService(
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val creds = missionParameters.auth.credentials
     private val shuttleLogsEntitySetId = UUID.fromString("fc8de069-0455-404f-9b0c-a8a06bc3b467") //TODO pipe this in properly
+
+    lateinit var logEntityType: EntityType
+
+    init {
+        if (blackbox.enabled) {
+            logEntityType = dataModelSerivce.getEntityType(FullQualifiedName(blackbox.entityTypeFqn))
+        }
+    }
 
 
     fun loadCargo(integrationName: String) {
@@ -74,9 +84,9 @@ class RecurringIntegrationService(
 
 
         try {
-            val shuttleLogsEntitySet = entitySets.getValue(shuttleLogsEntitySetId)
-            val shuttleLogsEntityType = entityTypes.getValue(shuttleLogsEntitySet.entityTypeId)
-            val shuttleLogsProperties = shuttleLogsEntityType.properties.map{
+            val shuttleLogsEntitySet = entitySetManager.getEntitySet(integration.logEntitySetName.get())!!
+            val shuttleLogsEntityType = logEntityType
+            val shuttleLogsProperties = shuttleLogsEntityType.properties.map {
                 it to propertyTypes.getValue(it)
             }.toMap()
             val shuttleLogsDestination = PostgresDestination(
@@ -99,7 +109,7 @@ class RecurringIntegrationService(
                     StorageDestination.S3,
                     true,
                     shuttleLogsDestination,
-                    shuttleLogsProperties.values.associateBy{it.type},
+                    shuttleLogsProperties.values.associateBy { it.type },
                     idService
             )
             shuttle.launch(uploadBatchSize)
@@ -111,8 +121,9 @@ class RecurringIntegrationService(
 
     fun createIntegrationDefinition(integrationName: String, integration: Integration) {
         checkState(!integrations.containsKey(integrationName), "An integration with name $integrationName already exists.")
+        val logEntitySetName = createLogEntitySet(integration)
+        integration.logEntitySetName = Optional.of(logEntitySetName)
         integrations[integrationName] = integration
-        entitySetManager.createEntitySet()
 
     }
 
@@ -162,6 +173,21 @@ class RecurringIntegrationService(
             return mapOf(StorageDestination.POSTGRES to pgDestination, StorageDestination.S3 to s3Destination)
         }
         return mapOf(StorageDestination.POSTGRES to pgDestination)
+    }
+
+    private fun createLogEntitySet(integration: Integration): String {
+        val name = "Integration logs for flight ${integration.flight!!.name} with tags ${integration.tags}"
+        val contacts = integration.contacts
+        val description = "This is an automatically generated entity set for storing shuttle logs"
+        val logEntitySet = EntitySet(
+                logEntityType.id,
+                name,
+                name,
+                Optional.of(description),
+                contacts
+        )
+        entitySetManager.createEntitySet(Principals.getAdminRole(), logEntitySet)
+        return name
     }
 
 }

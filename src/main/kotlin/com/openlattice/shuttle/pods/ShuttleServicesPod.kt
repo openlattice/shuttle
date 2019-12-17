@@ -7,24 +7,20 @@ import com.google.common.util.concurrent.ListeningExecutorService
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.auditing.AuditingConfiguration
 import com.openlattice.authorization.*
-import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
-import com.openlattice.authorization.mapstores.SecurablePrincipalsMapLoader
-import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.ids.PostgresEntityKeyIdService
 import com.openlattice.data.storage.partitions.PartitionManager
-import com.openlattice.datastore.services.EdmManager
 import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.edm.PostgresEdmManager
 import com.openlattice.edm.properties.PostgresTypeManager
-import com.openlattice.edm.schemas.SchemaQueryService
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
 import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
 import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.shuttle.MissionParameters
-import com.openlattice.shuttle.RecurringIntegrationService
+import com.openlattice.shuttle.IntegrationService
+import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.mapstore.IntegrationsMapstore
 import com.zaxxer.hikari.HikariDataSource
 import org.springframework.context.annotation.Bean
@@ -59,6 +55,9 @@ class ShuttleServicesPod {
 
     @Inject
     private lateinit var auditingConfiguration: AuditingConfiguration
+
+    @Inject
+    private lateinit var blackbox: Blackbox
 
     @Bean
     fun defaultObjectMapper() = ObjectMappers.getJsonMapper()
@@ -133,12 +132,14 @@ class ShuttleServicesPod {
     )
 
     @Bean
-    fun recurringIntegrationService() = RecurringIntegrationService(
+    fun integrationService() = IntegrationService(
             hazelcastInstance,
             missionParametersConfiguration,
+            blackbox,
             hds,
             idService(),
-            entitySetManager())
+            entitySetManager(),
+            dataModelService())
 
     @PostConstruct
     internal fun initPrincipals() {

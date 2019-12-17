@@ -45,6 +45,7 @@ data class Integration(
         @JsonProperty(SerializationConstants.FLIGHT) var flight: Flight?,
         @JsonProperty(SerializationConstants.TAGS) var tags: Set<String>,
         @JsonProperty(SerializationConstants.CONTACTS) var contacts: Set<String>,
+        @JsonProperty(SerializationConstants.ENTITY_SET_NAME) var logEntitySetName: Optional<String>,
         @JsonProperty(SerializationConstants.RECURRING) var recurring: Boolean,
         @JsonProperty(SerializationConstants.START) var start: Long,
         @JsonProperty(SerializationConstants.PERIOD) var period: Long
@@ -74,7 +75,7 @@ data class Integration(
             val start = 1000L
             val period = 5L
             return Integration(sql, source, pkeyCols, environment,
-                    defaultStorage, s3bucket, null, flight, tags, contacts, recurring, start, period)
+                    defaultStorage, s3bucket, null, flight, tags, contacts, Optional.empty(), recurring, start, period)
         }
 
     }

@@ -27,6 +27,7 @@ private val shuttlePods = arrayOf(
         //Shuttle pods
         AwsS3Pod::class.java,
         AuditingConfigurationPod::class.java,
+        BlackboxPod::class.java,
         ByteBlobServicePod::class.java,
         JdbcPod::class.java,
         MapstoresPod::class.java,
