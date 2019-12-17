@@ -1,0 +1,35 @@
+entityDefinitions:
+  person:
+    fqn: general.person
+    entitySetName: 'shuttle test'
+    propertyDefinitions:
+      nc.SubjectIdentification:
+        type: nc.SubjectIdentification
+        column: id
+      nc.PersonGivenName:
+        type: nc.PersonGivenName
+        column: name
+    name: person
+  symptom:
+    fqn: ol.symptom
+    entitySetName: shuttle_test_symptom
+    propertyDefinitions:
+      ol.id:
+        type: ol.id
+        column: id
+      ol.description:
+        type: ol.description
+        column: description
+    name: symptom
+associationDefinitions:
+  has:
+    fqn: ol.has
+    entitySetName: shuttle_test_has
+    src: person
+    dst: symptom
+    propertyDefinitions:
+      ol.id:
+        type: ol.id
+        column: id
+    name: has
+name: "shuttleServerTestFlight"
