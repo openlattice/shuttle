@@ -15,6 +15,7 @@ class IntegrationUpdate(
     @JsonProperty(SerializationConstants.DEFAULT_STORAGE) val defaultStorage: Optional<StorageDestination>,
     @JsonProperty(SerializationConstants.S3_BUCKET) val s3bucket: Optional<String>,
     @JsonProperty(SerializationConstants.PATH) val flightFilePath: Optional<String>,
+    @JsonProperty(SerializationConstants.TAGS) val tags: Optional<Set<String>>,
     @JsonProperty(SerializationConstants.CONTACTS) val contacts: Optional<Set<String>>,
     @JsonProperty(SerializationConstants.RECURRING) val recurring: Optional<Boolean>,
     @JsonProperty(SerializationConstants.START) val start: Optional<Long>,

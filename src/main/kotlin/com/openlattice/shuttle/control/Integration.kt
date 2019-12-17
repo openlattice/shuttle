@@ -43,6 +43,7 @@ data class Integration(
         @JsonProperty(SerializationConstants.S3_BUCKET) var s3bucket: String,
         @JsonProperty(SerializationConstants.PATH) var flightFilePath: String?,
         @JsonProperty(SerializationConstants.FLIGHT) var flight: Flight?,
+        @JsonProperty(SerializationConstants.TAGS) var tags: Set<String>,
         @JsonProperty(SerializationConstants.CONTACTS) var contacts: Set<String>,
         @JsonProperty(SerializationConstants.RECURRING) var recurring: Boolean,
         @JsonProperty(SerializationConstants.START) var start: Long,
@@ -67,12 +68,13 @@ data class Integration(
             val defaultStorage = StorageDestination.POSTGRES
             val s3bucket = TestDataFactory.random(10)
             val flight = Flight(emptyMap(), Optional.empty(), Optional.of(emptyMap()), Optional.of(TestDataFactory.random(5)))
+            val tags = setOf(TestDataFactory.random(5))
             val contacts = setOf<String>(TestDataFactory.random(5))
             val recurring = true
             val start = 1000L
             val period = 5L
             return Integration(sql, source, pkeyCols, environment,
-                    defaultStorage, s3bucket, null, flight, contacts, recurring, start, period)
+                    defaultStorage, s3bucket, null, flight, tags, contacts, recurring, start, period)
         }
 
     }

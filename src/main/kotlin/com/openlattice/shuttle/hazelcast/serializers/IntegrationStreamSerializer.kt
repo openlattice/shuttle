@@ -40,6 +40,7 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
             val flightJson = mapper.writeValueAsString(obj.flight)
             output.writeUTF(flightJson)
 
+            output.writeUTFArray(obj.tags.toTypedArray())
             output.writeUTFArray(obj.contacts.toTypedArray())
             output.writeBoolean(obj.recurring)
             output.writeLong(obj.start)
@@ -67,6 +68,7 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
             val flightJson = input.readUTF()
             val flight = mapper.readValue(flightJson, Flight::class.java)
 
+            val tags = input.readUTFArray().toSet()
             val contacts = input.readUTFArray().toSet()
             val recurring = input.readBoolean()
             val start = input.readLong()
@@ -80,6 +82,7 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
                     s3bucket,
                     flightFilePath,
                     flight,
+                    tags,
                     contacts,
                     recurring,
                     start,
