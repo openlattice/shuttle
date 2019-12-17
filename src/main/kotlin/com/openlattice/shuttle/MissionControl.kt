@@ -43,6 +43,7 @@ import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.retrofit.RhizomeRetrofitCallException
 import com.openlattice.rhizome.proxy.RetrofitBuilders
+import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -290,8 +291,7 @@ class MissionControl(
             flightPlan: Map<Flight, Payload>,
             createEntitySets: Boolean = false,
             primaryKeyCols: List<String> = listOf(),
-            contacts: Set<String> = setOf(),
-            usingShuttleServer: Boolean
+            contacts: Set<String> = setOf()
     ): Shuttle {
         if (createEntitySets) {
             createMissingEntitySets(flightPlan, contacts)
@@ -309,9 +309,7 @@ class MissionControl(
                 primaryKeyCols,
                 parameters,
                 binaryStorageDestination,
-                usingShuttleServer,
-                null,
-                null,
+                Blackbox.empty(),
                 null
         )
     }
