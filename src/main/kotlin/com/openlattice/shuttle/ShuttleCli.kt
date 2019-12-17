@@ -291,7 +291,7 @@ fun main(args: Array<String>) {
     try {
         MissionControl.setEmailConfiguration(emailConfiguration)
         logger.info("Preparing flight plan.")
-        val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts, usingShuttleServer = false)
+        val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts)
         logger.info("Pre-flight check list complete. ")
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()
