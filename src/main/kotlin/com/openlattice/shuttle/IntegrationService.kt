@@ -83,18 +83,6 @@ class IntegrationService(
 
 
         try {
-            val shuttleLogsEntitySet = entitySetManager.getEntitySet(integration.logEntitySetName.get())!!
-            val shuttleLogsEntityType = logEntityType
-            val shuttleLogsProperties = shuttleLogsEntityType.properties.map {
-                it to propertyTypes.getValue(it)
-            }.toMap()
-            val shuttleLogsDestination = PostgresDestination(
-                    mapOf(shuttleLogsEntitySet.id to shuttleLogsEntitySet),
-                    mapOf(shuttleLogsEntitySet.entityTypeId to shuttleLogsEntityType),
-                    shuttleLogsProperties,
-                    hds
-            )
-
             val shuttle = Shuttle(
                     integration.environment,
                     flightPlan,
@@ -106,9 +94,7 @@ class IntegrationService(
                     integration.sourcePrimaryKeyColumns,
                     missionParameters,
                     StorageDestination.S3,
-                    true,
-                    shuttleLogsDestination,
-                    shuttleLogsProperties.values.associateBy { it.type },
+                    blackbox,
                     idService
             )
             shuttle.launch(uploadBatchSize)

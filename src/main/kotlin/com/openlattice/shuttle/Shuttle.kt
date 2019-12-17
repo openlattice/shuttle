@@ -42,7 +42,11 @@ import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.retrofit.RhizomeRetrofitCallException
 import com.openlattice.shuttle.control.IntegrationStatus
+import com.openlattice.shuttle.logs.Blackbox
+import com.openlattice.shuttle.logs.BlackboxProperty
 import com.openlattice.shuttle.payload.Payload
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -61,10 +65,16 @@ const val DEFAULT_UPLOAD_SIZE = 100_000
 const val MAX_DELAY = 8L * 60L * 1000L
 const val MAX_RETRIES = 128
 
-private val shuttleLogsEntitySetId = UUID.fromString("fc8de069-0455-404f-9b0c-a8a06bc3b467") //TODO pipe this in properly
 private val threads = Runtime.getRuntime().availableProcessors()
 private val encoder = Base64.getEncoder()
+
+//vars to be used only when shuttle is run on shuttle server
 private lateinit var writeLog: (String, String, OffsetDateTime, IntegrationStatus) -> Unit
+private lateinit var dateTimeStarted: OffsetDateTime
+private lateinit var logEntitySetIdsByFlightName: Map<String, UUID>
+private lateinit var logProperties: MutableMap<FullQualifiedName, PropertyType>
+private lateinit var logsDestination: MutableMap<UUID, PostgresDestination>
+private lateinit var ptidsByBlackboxProperty: MutableMap<BlackboxProperty, UUID>
 
 /**
  *
@@ -81,9 +91,7 @@ class Shuttle(
         private val tableColsToPrint: List<String>,
         private val parameters: MissionParameters,
         private val binaryDestination: StorageDestination,
-        private val usingShuttleServer: Boolean = true,
-        private val shuttleLogsDestination: PostgresDestination?,
-        private val shuttleLogsProperties: Map<FullQualifiedName, PropertyType>?,
+        private val blackbox: Blackbox,
         private val idService: EntityKeyIdService?,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
                 Executors.newFixedThreadPool(2 * threads)
@@ -106,13 +114,35 @@ class Shuttle(
     }
 
     init {
-        writeLog = if (usingShuttleServer) {
-            { name, log, time, status ->
+        //maybe also instantiate destination/properties here?
+        if (blackbox.enabled) {
+            writeLog = { name, log, time, status ->
                 logger.info(log)
                 storeLog(name, log, time, status)
             }
+
+            blackbox.fqns.forEach{
+                val fqn = FullQualifiedName(it.value)
+                val propertyType = propertyTypes.getValue(fqn)
+                logProperties[fqn] = propertyType
+                ptidsByBlackboxProperty[it.key] = propertyType.id
+            }
+
+            logEntitySetIdsByFlightName = flightPlan.keys.map{it.name to entitySets.getValue(it.name).id}.toMap()
+
+            logEntitySetIdsByFlightName.forEach{
+                val logEntitySet = entitySets.getValue(it.key)
+                val logEntityTypeId = logEntitySet.entityTypeId
+                logsDestination[it.value] = PostgresDestination(
+                        mapOf(it.value to logEntitySet),
+                        mapOf(logEntityTypeId to entityTypes.getValue(logEntityTypeId)),
+                        logProperties.map{logProp -> logProp.value.id to logProp.value}.toMap(),
+                        HikariDataSource(HikariConfig(parameters.postgres.config))
+                )
+            }
+
         } else {
-            { _, log, _, _ -> logger.info(log) }
+            writeLog = { _, log, _, _ -> logger.info(log) }
         }
     }
 
@@ -453,9 +483,17 @@ class Shuttle(
 
     fun launch(uploadBatchSize: Int): Long {
         val sw = Stopwatch.createStarted()
+
         val total = flightPlan.entries.map { entry ->
+            var shuttleLogEntitySetId = if (blackbox.enabled) {
+                Optional.of(entitySets.getValue(entry.key.name).id)
+            } else {
+                Optional.empty()
+            }
+
             val launchUpdate = "Launching flight: ${entry.key.name}"
-            writeLog(entry.key.name, launchUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
+            dateTimeStarted = OffsetDateTime.now()
+            writeLog(entry.key.name, launchUpdate, dateTimeStarted, IntegrationStatus.IN_PROGRESS)
 
             val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrint)
 
@@ -492,21 +530,23 @@ class Shuttle(
     }
 
     private fun storeLog(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus) {
-        val entityId = shuttleLogsEntitySetId.toString() + flightName + timestamp.toString()
-        val ek = EntityKey(shuttleLogsEntitySetId, entityId)
-        val logProperties = generateLogProperties(flightName, log, timestamp, status)
-        val entity = Entity(ek, logProperties)
+        val logEntitySetId = logEntitySetIdsByFlightName.getValue(flightName)
+        val entityId = logEntitySetId.toString() + flightName + dateTimeStarted + timestamp.toString()
+        val ek = EntityKey(logEntitySetId, entityId)
+        val logPropertyData = generateLogPropertyData(flightName, log, timestamp, status)
+        val entity = Entity(ek, logPropertyData)
         val ekid = idService!!.getEntityKeyId(ek)
-        shuttleLogsDestination!!.integrateEntities(setOf(entity), mapOf(ek to ekid), mapOf(shuttleLogsEntitySetId to UpdateType.Merge))
+        logsDestination.getValue(logEntitySetId).integrateEntities(setOf(entity), mapOf(ek to ekid), mapOf(logEntitySetId to UpdateType.Merge))
     }
 
-    private fun generateLogProperties(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus): Map<UUID, Set<Any>> {
-        val logProperties = mutableMapOf<UUID, Set<Any>>()
-        logProperties[shuttleLogsProperties!!.getValue(FullQualifiedName("flight.name")).id] = setOf(flightName)
-        logProperties[shuttleLogsProperties!!.getValue(FullQualifiedName("flight.log")).id] = setOf(log)
-        logProperties[shuttleLogsProperties!!.getValue(FullQualifiedName("flight.status")).id] = setOf(status)
-        logProperties[shuttleLogsProperties!!.getValue(FullQualifiedName("flight.timestamp")).id] = setOf(timestamp)
-        return logProperties
+    private fun generateLogPropertyData(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus): Map<UUID, Set<Any>> {
+        val logPropertyData = mutableMapOf<UUID, Set<Any>>()
+        logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.NAME)] = setOf(flightName)
+        logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.TIME_STARTED)] = setOf(dateTimeStarted)
+        logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.LOG)] = setOf(log)
+        logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.TIME_LOGGED)] = setOf(timestamp)
+        logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.STATUS)] = setOf(status)
+        return logPropertyData
     }
 
 }
