@@ -1,0 +1,8 @@
+entity-type: "ol.shuttleLogs"
+fqns:
+  NAME: "flight.name"
+  TIME_STARTED: "ol.datetimestart"
+  LOG: "flight.log"
+  TIME_LOGGED: "ol.datetimelogged"
+  STATUS: "flight.status"
+enabled: false

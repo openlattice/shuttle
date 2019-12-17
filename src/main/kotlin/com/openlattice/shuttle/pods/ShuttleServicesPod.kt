@@ -1,11 +1,26 @@
 package com.openlattice.shuttle.pods
 
 import com.dataloom.mappers.ObjectMappers
+import com.geekbeast.hazelcast.HazelcastClientProvider
 import com.google.common.eventbus.EventBus
+import com.google.common.util.concurrent.ListeningExecutorService
 import com.hazelcast.core.HazelcastInstance
+import com.openlattice.auditing.AuditingConfiguration
 import com.openlattice.authorization.*
 import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
 import com.openlattice.authorization.mapstores.SecurablePrincipalsMapLoader
+import com.openlattice.data.EntityKeyIdService
+import com.openlattice.data.ids.PostgresEntityKeyIdService
+import com.openlattice.data.storage.partitions.PartitionManager
+import com.openlattice.datastore.services.EdmManager
+import com.openlattice.datastore.services.EdmService
+import com.openlattice.datastore.services.EntitySetService
+import com.openlattice.edm.PostgresEdmManager
+import com.openlattice.edm.properties.PostgresTypeManager
+import com.openlattice.edm.schemas.SchemaQueryService
+import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
+import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
+import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.shuttle.MissionParameters
@@ -34,13 +49,16 @@ class ShuttleServicesPod {
     private lateinit var eventBus: EventBus
 
     @Inject
-    private lateinit var  missionParametersConfiguration: MissionParameters
+    private lateinit var missionParametersConfiguration: MissionParameters
 
     @Inject
-    private lateinit var spml: SecurablePrincipalsMapLoader
+    private lateinit var hazelcastClientProvider: HazelcastClientProvider
 
     @Inject
-    private lateinit var rptml: ResolvedPrincipalTreesMapLoader
+    private lateinit var executorService: ListeningExecutorService
+
+    @Inject
+    private lateinit var auditingConfiguration: AuditingConfiguration
 
     @Bean
     fun defaultObjectMapper() = ObjectMappers.getJsonMapper()
@@ -51,8 +69,7 @@ class ShuttleServicesPod {
     @Bean
     fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, authorizationQueryService(), eventBus)
 
-    @Bean
-    fun recurringIntegrationService() = RecurringIntegrationService(hazelcastInstance, missionParametersConfiguration)
+
 
     @Bean
     fun integrationsMapstore() = IntegrationsMapstore(hds)
@@ -66,6 +83,62 @@ class ShuttleServicesPod {
             aclKeyReservationService(),
             authorizationManager(),
             eventBus)
+
+    @Bean
+    fun idGenerationService() = HazelcastIdGenerationService(hazelcastClientProvider, executorService)
+
+    @Bean
+    internal fun partitionManager() = PartitionManager(hazelcastInstance, hds)
+
+    @Bean
+    fun idService() = PostgresEntityKeyIdService(hazelcastClientProvider,
+            executorService,
+            hds,
+            idGenerationService(),
+            partitionManager())
+
+    @Bean
+    fun pgEdmManager() = PostgresEdmManager(hds, hazelcastInstance)
+
+    @Bean
+    fun entityTypeManager() = PostgresTypeManager(hds)
+
+    @Bean
+    fun schemaQueryService() = PostgresSchemaQueryService(hds)
+
+    @Bean
+    fun schemaManager() = HazelcastSchemaManager(hazelcastInstance, schemaQueryService())
+
+    @Bean
+    fun dataModelService() = EdmService(
+                hds,
+                hazelcastInstance,
+                aclKeyReservationService(),
+                authorizationManager(),
+                pgEdmManager(),
+                entityTypeManager(),
+                schemaManager()
+        )
+
+    @Bean
+    fun entitySetManager() = EntitySetService(
+            hazelcastInstance,
+            eventBus,
+            pgEdmManager(),
+            aclKeyReservationService(),
+            authorizationManager(),
+            partitionManager(),
+            dataModelService(),
+            auditingConfiguration
+    )
+
+    @Bean
+    fun recurringIntegrationService() = RecurringIntegrationService(
+            hazelcastInstance,
+            missionParametersConfiguration,
+            hds,
+            idService(),
+            entitySetManager())
 
     @PostConstruct
     internal fun initPrincipals() {

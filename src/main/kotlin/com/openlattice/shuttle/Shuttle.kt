@@ -33,15 +33,21 @@ import com.openlattice.ApiUtil
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKey
+import com.openlattice.data.EntityKeyIdService
+import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.*
+import com.openlattice.data.integration.destinations.PostgresDestination
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
+import com.openlattice.retrofit.RhizomeRetrofitCallException
+import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.payload.Payload
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
+import java.time.OffsetDateTime
 import java.util.*
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.concurrent.Executors
@@ -55,8 +61,10 @@ const val DEFAULT_UPLOAD_SIZE = 100_000
 const val MAX_DELAY = 8L * 60L * 1000L
 const val MAX_RETRIES = 128
 
+private val shuttleLogsEntitySetId = UUID.fromString("fc8de069-0455-404f-9b0c-a8a06bc3b467") //TODO pipe this in properly
 private val threads = Runtime.getRuntime().availableProcessors()
 private val encoder = Base64.getEncoder()
+private lateinit var writeLog: (String, String, OffsetDateTime, IntegrationStatus) -> Unit
 
 /**
  *
@@ -73,6 +81,10 @@ class Shuttle(
         private val tableColsToPrint: List<String>,
         private val parameters: MissionParameters,
         private val binaryDestination: StorageDestination,
+        private val usingShuttleServer: Boolean = true,
+        private val shuttleLogsDestination: PostgresDestination?,
+        private val shuttleLogsProperties: Map<FullQualifiedName, PropertyType>?,
+        private val idService: EntityKeyIdService?,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
                 Executors.newFixedThreadPool(2 * threads)
         )
@@ -93,6 +105,17 @@ class Shuttle(
         }
     }
 
+    init {
+        writeLog = if (usingShuttleServer) {
+            { name, log, time, status ->
+                logger.info(log)
+                storeLog(name, log, time, status)
+            }
+        } else {
+            { _, log, _, _ -> logger.info(log) }
+        }
+    }
+
     private val uploadRegulator = Semaphore(threads)
 
     private fun takeoff(
@@ -101,7 +124,8 @@ class Shuttle(
             uploadBatchSize: Int,
             rowColsToPrint: List<String>
     ): Long {
-        logger.info("Takeoff! Starting primary thrusters.")
+        val takeoffLog = "Takeoff! Starting primary thrusters."
+        writeLog(flight.name, takeoffLog, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
         val integratedEntities = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
         val integratedEdges = mutableMapOf<StorageDestination, AtomicLong>().withDefault { AtomicLong(0L) }
 
@@ -135,14 +159,9 @@ class Shuttle(
         uploadRegulator.acquire(threads)
 
         return StorageDestination.values().map {
-            logger.info(
-                    "Integrated {} entities and {} edges in {} ms for flight {} to {}",
-                    integratedEntities.getValue(it),
-                    integratedEdges.getValue(it),
-                    sw.elapsed(TimeUnit.MILLISECONDS),
-                    flight.name,
-                    it.name
-            )
+            val integrationStatusUpdate = "Integrated ${integratedEntities.getValue(it)} entities and ${integratedEdges.getValue(it)} " +
+                    "edges in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms for flight ${flight.name} to ${it.name}"
+            writeLog(flight.name, integrationStatusUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
             integratedEntities.getValue(it).get() + integratedEdges.getValue(it).get()
         }.sum()
     }
@@ -159,7 +178,8 @@ class Shuttle(
             rowColsToPrint: List<String>,
             sw: Stopwatch
     ) {
-        logger.info("There are ${remaining.incrementAndGet()} batches in process for upload.")
+        val batchUpdate = "There are ${remaining.incrementAndGet()} batches in process for upload."
+        writeLog(flight.name, batchUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
         val batchSw = Stopwatch.createStarted()
         val batch = try {
             rows.add(chunk.size.toLong())
@@ -167,16 +187,25 @@ class Shuttle(
             minRows[batchCtr] = chunk[0]
             impulse(flight, chunk, batchCtr)
         } catch (ex: Exception) {
+            val errorInfo = if (ex is RhizomeRetrofitCallException) {
+                "Server returned ${ex.code} with body: ${ex.body}."
+            } else {
+                "Something went wrong during client side processing. "
+            }
+            writeLog(flight.name, errorInfo, OffsetDateTime.now(), IntegrationStatus.FAILED)
             MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
         } catch (err: OutOfMemoryError) {
+            writeLog(flight.name, "out of memory error", OffsetDateTime.now(), IntegrationStatus.FAILED)
             MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
         } finally {
             transformRate.mark()
-            logger.info("Batch took to {} ms to transform.", batchSw.elapsed(TimeUnit.MILLISECONDS))
+            val transformUpdate = "Batch took to ${batchSw.elapsed(TimeUnit.MILLISECONDS)} ms to transform."
+            writeLog(flight.name, transformUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
         }
 
         try {
-            logger.info("Starting entity key id generation in thread {}", Thread.currentThread().id)
+            val ekidGenStartingUpdate = "Starting entity key id generation in thread ${Thread.currentThread().id}"
+            writeLog(flight.name, ekidGenStartingUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
             val ekSw = Stopwatch.createStarted()
             val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
                     + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
@@ -184,11 +213,8 @@ class Shuttle(
                 entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
             }
 
-            logger.info(
-                    "Generated {} entity key ids in {} ms",
-                    entityKeys.size,
-                    ekSw.elapsed(TimeUnit.MILLISECONDS)
-            )
+            val ekidsGeneratedUpdate = "Generated ${entityKeys.size} entity key ids in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms"
+            writeLog(flight.name, ekidsGeneratedUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
 
             integrationDestinations.forEach { (storageDestination, integrationDestination) ->
                 if (batch.entities.containsKey(storageDestination)) {
@@ -218,49 +244,54 @@ class Shuttle(
 
             minRows.remove(batch.batchId)
             uploadRate.mark(entityKeys.size.toLong())
-            logger.info(
-                    "Processed current batch {} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms.",
-                    batch.batchId
-            )
+            val currentBatchDurationUpdate = "Processed current batch ${batch.batchId} in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms."
+            writeLog(flight.name, currentBatchDurationUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
+
             logger.info(
                     "=================================================================================="
             )
-            logger.info(
-                    "Processed {} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms.",
-                    rows.sum()
-            )
-            logger.info("Current entities progress: {}", integratedEntities)
-            logger.info("Current edges progress: {}", integratedEdges)
+
+            val totalProcessedUpdate = "Processed ${rows.sum()} rows so far in ${sw.elapsed(TimeUnit.MILLISECONDS)} ms."
+            writeLog(flight.name, totalProcessedUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
+
+            //write entity with rows processed
+            val currentEntitiesProgressUpdate = "Current entities progress: $integratedEntities"
+            writeLog(flight.name, currentEntitiesProgressUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
+
+            val currentEdgesProgressUpdate = "Current edges progress: $integratedEdges"
+            writeLog(flight.name, currentEdgesProgressUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
+
             logger.info(
                     "==================================================================================="
             )
 
         } catch (ex: Exception) {
             if (rowColsToPrint.isNotEmpty()) {
-                logger.info("Earliest unintegrated row:")
-                printRow(minRows.firstEntry().value, rowColsToPrint)
+                val earliestUnintegratedRowUpdate = "Earliest unintegrated row:\n" + printRow(minRows.firstEntry().value, rowColsToPrint)
+                writeLog(flight.name, earliestUnintegratedRowUpdate, OffsetDateTime.now(), IntegrationStatus.FAILED)
             }
             MissionControl.fail(1, flight, ex, listOf(uploadingExecutor))
         } catch (err: OutOfMemoryError) {
             if (rowColsToPrint.isNotEmpty()) {
-                logger.info("Earliest unintegrated row:")
-                printRow(minRows.firstEntry().value, rowColsToPrint)
+                val earliestUnintegratedRowUpdate = "Earliest unintegrated row:\n" + printRow(minRows.firstEntry().value, rowColsToPrint)
+                writeLog(flight.name, earliestUnintegratedRowUpdate, OffsetDateTime.now(), IntegrationStatus.FAILED)
             }
             MissionControl.fail(1, flight, err, listOf(uploadingExecutor))
         } finally {
-            logger.info("There are ${remaining.decrementAndGet()} batches remaining for upload.")
+            val remainingBatchesUpdate = "There are ${remaining.decrementAndGet()} batches remaining for upload."
+            writeLog(flight.name, remainingBatchesUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
         }
 
     }
 
-    private fun printRow(row: Map<String, Any?>, rowColsToPrint: List<String>) {
+    private fun printRow(row: Map<String, Any?>, rowColsToPrint: List<String>): String {
         var rowHeaders = ""
         var contents = ""
         rowColsToPrint.forEach { colName ->
             rowHeaders += "$colName\t|\t"
             contents += "${row[colName].toString()}\t|\t"
         }
-        logger.info("Row Contents:\n$rowHeaders\n$contents")
+        return "Row Contents:\n$rowHeaders\n$contents"
     }
 
 
@@ -369,17 +400,15 @@ class Shuttle(
                 }
 
                 if (!wasCreated.containsKey(associationDefinition.dstAlias)) {
-                    logger.error(
-                            "Destination " + associationDefinition.dstAlias
-                                    + " cannot be found to construct association " + associationDefinition.alias
-                    )
+                    val destinationError = "Destination ${associationDefinition.dstAlias} " +
+                            "cannot be found to construct association ${associationDefinition.alias}"
+                    writeLog(flight.name, destinationError, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
                 }
 
                 if (!wasCreated.containsKey(associationDefinition.srcAlias)) {
-                    logger.error(
-                            ("Source " + associationDefinition.srcAlias
-                                    + " cannot be found to construct association " + associationDefinition.alias)
-                    )
+                    val sourceError = "Source ${associationDefinition.srcAlias} " +
+                            "cannot be found to construct association ${associationDefinition.alias}"
+                    writeLog(flight.name, sourceError, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
                 }
                 if ((wasCreated[associationDefinition.srcAlias]!! && wasCreated[associationDefinition.dstAlias]!!)) {
 
@@ -407,10 +436,8 @@ class Shuttle(
 
                         }
                     } else {
-                        logger.error(
-                                "Encountered blank entity id for entity set {}",
-                                associationDefinition.entitySetName
-                        )
+                        val blankEntityIdError = "Encountered blank entity id for entity set ${associationDefinition.entitySetName}"
+                        writeLog(flight.name, blankEntityIdError, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
                     }
                 }
             }
@@ -427,12 +454,17 @@ class Shuttle(
     fun launch(uploadBatchSize: Int): Long {
         val sw = Stopwatch.createStarted()
         val total = flightPlan.entries.map { entry ->
-            logger.info("Launching flight: {}", entry.key.name)
+            val launchUpdate = "Launching flight: ${entry.key.name}"
+            writeLog(entry.key.name, launchUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
+
             val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrint)
-            logger.info("Finished flight: {}", entry.key.name)
+
+            val finishUpdate = "Finished flight: ${entry.key.name}"
+            writeLog(entry.key.name, finishUpdate, OffsetDateTime.now(), IntegrationStatus.SUCCEEDED)
             count
         }.sum()
         logger.info("Executed {} entity writes in flight plan in {} ms.", total, sw.elapsed(TimeUnit.MILLISECONDS))
+
         return total
     }
 
@@ -458,4 +490,23 @@ class Shuttle(
 
         return if (keyValuesPresent) ApiUtil.generateDefaultEntityId(key.stream(), properties) else ""
     }
+
+    private fun storeLog(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus) {
+        val entityId = shuttleLogsEntitySetId.toString() + flightName + timestamp.toString()
+        val ek = EntityKey(shuttleLogsEntitySetId, entityId)
+        val logProperties = generateLogProperties(flightName, log, timestamp, status)
+        val entity = Entity(ek, logProperties)
+        val ekid = idService!!.getEntityKeyId(ek)
+        shuttleLogsDestination!!.integrateEntities(setOf(entity), mapOf(ek to ekid), mapOf(shuttleLogsEntitySetId to UpdateType.Merge))
+    }
+
+    private fun generateLogProperties(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus): Map<UUID, Set<Any>> {
+        val logProperties = mutableMapOf<UUID, Set<Any>>()
+        logProperties[shuttleLogsProperties!!.getValue(FullQualifiedName("flight.name")).id] = setOf(flightName)
+        logProperties[shuttleLogsProperties!!.getValue(FullQualifiedName("flight.log")).id] = setOf(log)
+        logProperties[shuttleLogsProperties!!.getValue(FullQualifiedName("flight.status")).id] = setOf(status)
+        logProperties[shuttleLogsProperties!!.getValue(FullQualifiedName("flight.timestamp")).id] = setOf(timestamp)
+        return logProperties
+    }
+
 }
