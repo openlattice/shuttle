@@ -83,7 +83,7 @@ class MissionControl(
             parameters: MissionParameters = MissionParameters.empty()
     ) : this(
             environment,
-            Suppliers.memoizeWithExpiration({ getIdToken(username, password, environment) }, 1, TimeUnit.HOURS),
+            Suppliers.memoizeWithExpiration({ getIdToken(username, password) }, 1, TimeUnit.HOURS),
             s3BucketUrl,
             parameters
     )
@@ -104,8 +104,8 @@ class MissionControl(
 
         @JvmStatic
         @Throws(Auth0Exception::class)
-        fun getIdToken(username: String, password: String, environment: RetrofitFactory.Environment): String {
-            return getIdToken(client, AUTH0_CONNECTION, username, password, environment)
+        fun getIdToken(username: String, password: String): String {
+            return getIdToken(client, AUTH0_CONNECTION, username, password)
         }
 
         @JvmStatic
@@ -122,16 +122,11 @@ class MissionControl(
         @JvmStatic
         @VisibleForTesting
         @Throws(Auth0Exception::class)
-        fun getIdToken(auth0: AuthAPI, realm: String, username: String, password: String, environment: RetrofitFactory.Environment): String {
-            val audience = if (environment == RetrofitFactory.Environment.LOCAL) {
-                "http://localhost:8080"
-            } else {
-                "https://api.openlattice.com"
-            }
+        fun getIdToken(auth0: AuthAPI, realm: String, username: String, password: String): String {
             return auth0
                     .login(username, password, realm)
                     .setScope(AUTH0_SCOPES)
-                    .setAudience(audience)
+                    .setAudience("https://api.openlattice.com")
                     .execute()
                     .idToken
         }
@@ -295,7 +290,8 @@ class MissionControl(
             flightPlan: Map<Flight, Payload>,
             createEntitySets: Boolean = false,
             primaryKeyCols: List<String> = listOf(),
-            contacts: Set<String> = setOf()
+            contacts: Set<String> = setOf(),
+            usingShuttleServer: Boolean
     ): Shuttle {
         if (createEntitySets) {
             createMissingEntitySets(flightPlan, contacts)
@@ -312,7 +308,11 @@ class MissionControl(
                 dataIntegrationApi,
                 primaryKeyCols,
                 parameters,
-                binaryStorageDestination
+                binaryStorageDestination,
+                usingShuttleServer,
+                null,
+                null,
+                null
         )
     }
 
