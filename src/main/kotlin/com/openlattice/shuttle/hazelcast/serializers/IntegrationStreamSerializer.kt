@@ -7,6 +7,7 @@ import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.hazelcast.StreamSerializerTypeIds
+import com.openlattice.hazelcast.serializers.OptionalStreamSerializers
 import com.openlattice.shuttle.Flight
 import com.openlattice.shuttle.control.Integration
 import org.springframework.stereotype.Component
@@ -42,6 +43,7 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
 
             output.writeUTFArray(obj.tags.toTypedArray())
             output.writeUTFArray(obj.contacts.toTypedArray())
+            OptionalStreamSerializers.serialize(output, obj.logEntitySetName, ObjectDataOutput::writeUTF)
             output.writeBoolean(obj.recurring)
             output.writeLong(obj.start)
             output.writeLong(obj.period)
@@ -70,6 +72,7 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
 
             val tags = input.readUTFArray().toSet()
             val contacts = input.readUTFArray().toSet()
+            val logEntitySetName = OptionalStreamSerializers.deserialize(input, ObjectDataInput::readUTF)
             val recurring = input.readBoolean()
             val start = input.readLong()
             val period = input.readLong()
@@ -84,6 +87,7 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
                     flight,
                     tags,
                     contacts,
+                    logEntitySetName,
                     recurring,
                     start,
                     period

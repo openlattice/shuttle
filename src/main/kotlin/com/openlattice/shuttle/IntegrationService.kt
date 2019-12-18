@@ -41,16 +41,16 @@ private val logger = LoggerFactory.getLogger(IntegrationService::class.java)
 private val fetchSize = 10000
 private val readRateLimit = 1000
 private val uploadBatchSize = 10000
+private lateinit var logEntityType: EntityType
 
 @Service
 class IntegrationService(
         private val hazelcastInstance: HazelcastInstance,
         private val missionParameters: MissionParameters,
         private val blackbox: Blackbox,
-        private val hds: HikariDataSource,
         private val idService: EntityKeyIdService,
         private val entitySetManager: EntitySetManager,
-        private val dataModelSerivce: EdmManager
+        private val dataModelService: EdmManager
 ) {
 
     private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
@@ -59,11 +59,16 @@ class IntegrationService(
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val creds = missionParameters.auth.credentials
 
-    lateinit var logEntityType: EntityType
-
     init {
         if (blackbox.enabled) {
-            logEntityType = dataModelSerivce.getEntityType(FullQualifiedName(blackbox.entityTypeFqn))
+            logEntityType = dataModelService.getEntityType(FullQualifiedName(blackbox.entityTypeFqn))
+        }
+    }
+
+    companion object {
+        @JvmStatic
+        fun buildLogEntitySetName(flightName: String): String {
+            return "Integration logs for flight $flightName"
         }
     }
 
@@ -129,7 +134,10 @@ class IntegrationService(
 
     fun deleteIntegrationDefinition(integrationName: String) {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
-        integrations[integrationName] = null
+        val integration = integrations.getValue(integrationName)
+        integrations.remove(integrationName)
+        val logEntitySet = entitySetManager.getEntitySet(integration.logEntitySetName.get())!!
+        entitySetManager.deleteEntitySet(logEntitySet.id)
     }
 
     private fun getSrcDataSource(source: Properties): HikariDataSource {
@@ -161,9 +169,9 @@ class IntegrationService(
     }
 
     private fun createLogEntitySet(integration: Integration): String {
-        val name = "Integration logs for flight ${integration.flight!!.name} with tags ${integration.tags}"
+        val name = buildLogEntitySetName(integration.flight!!.name)
         val contacts = integration.contacts
-        val description = "This is an automatically generated entity set for storing shuttle logs"
+        val description = "Integration logs for flight ${integration.flight!!.name} with tags ${integration.tags}"
         val logEntitySet = EntitySet(
                 logEntityType.id,
                 name,
@@ -171,7 +179,7 @@ class IntegrationService(
                 Optional.of(description),
                 contacts
         )
-        entitySetManager.createEntitySet(Principals.getAdminRole(), logEntitySet)
+        entitySetManager.createEntitySet(Principals.getCurrentUser(), logEntitySet)
         return name
     }
 

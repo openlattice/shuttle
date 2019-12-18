@@ -71,10 +71,10 @@ private val encoder = Base64.getEncoder()
 //vars to be used only when shuttle is run on shuttle server
 private lateinit var writeLog: (String, String, OffsetDateTime, IntegrationStatus) -> Unit
 private lateinit var dateTimeStarted: OffsetDateTime
-private lateinit var logEntitySetIdsByFlightName: Map<String, UUID>
-private lateinit var logProperties: MutableMap<FullQualifiedName, PropertyType>
-private lateinit var logsDestination: MutableMap<UUID, PostgresDestination>
-private lateinit var ptidsByBlackboxProperty: MutableMap<BlackboxProperty, UUID>
+private lateinit var logEntitySetByFlightName: Map<String, EntitySet>
+private val logProperties = mutableMapOf<FullQualifiedName, PropertyType>()
+private val logsDestination = mutableMapOf<UUID, PostgresDestination>()
+private val ptidsByBlackboxProperty = mutableMapOf<BlackboxProperty, UUID>()
 
 /**
  *
@@ -128,13 +128,13 @@ class Shuttle(
                 ptidsByBlackboxProperty[it.key] = propertyType.id
             }
 
-            logEntitySetIdsByFlightName = flightPlan.keys.map{it.name to entitySets.getValue(it.name).id}.toMap()
+            logEntitySetByFlightName = flightPlan.keys.map{it.name to entitySets.getValue(IntegrationService.buildLogEntitySetName(it.name))}.toMap()
 
-            logEntitySetIdsByFlightName.forEach{
-                val logEntitySet = entitySets.getValue(it.key)
+            logEntitySetByFlightName.values.forEach{
+                val logEntitySet = entitySets.getValue(it.name)
                 val logEntityTypeId = logEntitySet.entityTypeId
-                logsDestination[it.value] = PostgresDestination(
-                        mapOf(it.value to logEntitySet),
+                logsDestination[it.id] = PostgresDestination(
+                        mapOf(it.id to logEntitySet),
                         mapOf(logEntityTypeId to entityTypes.getValue(logEntityTypeId)),
                         logProperties.map{logProp -> logProp.value.id to logProp.value}.toMap(),
                         HikariDataSource(HikariConfig(parameters.postgres.config))
@@ -485,12 +485,6 @@ class Shuttle(
         val sw = Stopwatch.createStarted()
 
         val total = flightPlan.entries.map { entry ->
-            var shuttleLogEntitySetId = if (blackbox.enabled) {
-                Optional.of(entitySets.getValue(entry.key.name).id)
-            } else {
-                Optional.empty()
-            }
-
             val launchUpdate = "Launching flight: ${entry.key.name}"
             dateTimeStarted = OffsetDateTime.now()
             writeLog(entry.key.name, launchUpdate, dateTimeStarted, IntegrationStatus.IN_PROGRESS)
@@ -530,7 +524,7 @@ class Shuttle(
     }
 
     private fun storeLog(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus) {
-        val logEntitySetId = logEntitySetIdsByFlightName.getValue(flightName)
+        val logEntitySetId = logEntitySetByFlightName.getValue(flightName).id
         val entityId = logEntitySetId.toString() + flightName + dateTimeStarted + timestamp.toString()
         val ek = EntityKey(logEntitySetId, entityId)
         val logPropertyData = generateLogPropertyData(flightName, log, timestamp, status)

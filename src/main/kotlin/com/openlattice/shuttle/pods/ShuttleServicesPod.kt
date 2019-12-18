@@ -136,7 +136,6 @@ class ShuttleServicesPod {
             hazelcastInstance,
             missionParametersConfiguration,
             blackbox,
-            hds,
             idService(),
             entitySetManager(),
             dataModelService())
