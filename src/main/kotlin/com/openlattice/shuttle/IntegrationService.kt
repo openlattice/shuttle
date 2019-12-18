@@ -67,8 +67,12 @@ class IntegrationService(
 
     companion object {
         @JvmStatic
-        fun buildLogEntitySetName(flightName: String): String {
-            return "Integration logs for flight $flightName"
+        fun buildLogEntitySetName(flightName: String, flightTags: Set<String>): String {
+            var entitySetName = "Integration logs for flight $flightName"
+            if (flightTags.isNotEmpty()) {
+                entitySetName += " with tags ${flightTags.joinToString(", ")}"
+            }
+            return entitySetName
         }
     }
 
@@ -86,7 +90,6 @@ class IntegrationService(
         val flightPlan = mapOf(integration.flight!! to payload)
         val destinationsMap = generateDestinationsMap(integration, missionParameters, dataIntegrationApi)
 
-
         try {
             val shuttle = Shuttle(
                     integration.environment,
@@ -100,6 +103,7 @@ class IntegrationService(
                     missionParameters,
                     StorageDestination.S3,
                     blackbox,
+                    Optional.of(entitySets.getValue(integration.logEntitySetId.get())),
                     idService
             )
             shuttle.launch(uploadBatchSize)
@@ -111,8 +115,8 @@ class IntegrationService(
 
     fun createIntegrationDefinition(integrationName: String, integration: Integration) {
         checkState(!integrations.containsKey(integrationName), "An integration with name $integrationName already exists.")
-        val logEntitySetName = createLogEntitySet(integration)
-        integration.logEntitySetName = Optional.of(logEntitySetName)
+        val logEntitySetId = createLogEntitySet(integration)
+        integration.logEntitySetId = Optional.of(logEntitySetId)
         integrations[integrationName] = integration
 
     }
@@ -136,7 +140,7 @@ class IntegrationService(
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
         val integration = integrations.getValue(integrationName)
         integrations.remove(integrationName)
-        val logEntitySet = entitySetManager.getEntitySet(integration.logEntitySetName.get())!!
+        val logEntitySet = entitySetManager.getEntitySet(integration.logEntitySetId.get())!!
         entitySetManager.deleteEntitySet(logEntitySet.id)
     }
 
@@ -168,10 +172,10 @@ class IntegrationService(
         return mapOf(StorageDestination.POSTGRES to pgDestination)
     }
 
-    private fun createLogEntitySet(integration: Integration): String {
-        val name = buildLogEntitySetName(integration.flight!!.name)
+    private fun createLogEntitySet(integration: Integration): UUID {
+        val name = buildLogEntitySetName(integration.flight!!.name, integration.flight!!.tags)
         val contacts = integration.contacts
-        val description = "Integration logs for flight ${integration.flight!!.name} with tags ${integration.tags}"
+        val description = "Auto-generated integration log entity set"
         val logEntitySet = EntitySet(
                 logEntityType.id,
                 name,
@@ -179,8 +183,7 @@ class IntegrationService(
                 Optional.of(description),
                 contacts
         )
-        entitySetManager.createEntitySet(Principals.getCurrentUser(), logEntitySet)
-        return name
+        return entitySetManager.createEntitySet(Principals.getCurrentUser(), logEntitySet)
     }
 
 }
