@@ -30,10 +30,7 @@ import com.openlattice.shuttle.conditions.Conditions;
 import com.openlattice.shuttle.util.Constants;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class Flight implements Serializable {
 
@@ -42,6 +39,7 @@ public class Flight implements Serializable {
     private final Map<String, EntityDefinition>                entityDefinitions;
     private final Map<String, AssociationDefinition>           associationDefinitions;
     private       String                                       name;
+    private       Set<String>                                  tags;
     public final  SerializableFunction<Map<String, Object>, ?> valueMapper;
     public final  Optional<Conditions>                         condition;
 
@@ -52,12 +50,14 @@ public class Flight implements Serializable {
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.ASSOCIATION_DEFINITIONS_FIELD )
                     Optional<Map<String, AssociationDefinition>> associationDefinitions,
-            @JsonProperty( SerializationConstants.NAME) Optional<String> name
+            @JsonProperty( SerializationConstants.NAME) Optional<String> name,
+            @JsonProperty( SerializationConstants.TAGS) Optional<Set<String>> tags
     ) {
         this.condition = condition;
         this.entityDefinitions = entityDefinitions;
         this.associationDefinitions = associationDefinitions.orElseGet( HashMap::new );
         this.name = name.orElse("Anon");
+        this.tags = tags.orElseGet(HashSet::new);
 
         if ( condition.isPresent() ) {
             this.valueMapper = new ConditionValueMapper( condition.get() );
@@ -85,6 +85,8 @@ public class Flight implements Serializable {
     public String getName() {
         return name;
     }
+
+    public Set<String> getTags() { return tags;}
 
     @JsonIgnore
     public Collection<EntityDefinition> getEntities() {
