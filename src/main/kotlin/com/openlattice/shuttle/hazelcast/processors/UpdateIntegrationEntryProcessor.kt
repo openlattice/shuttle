@@ -1,12 +1,16 @@
 package com.openlattice.shuttle.hazelcast.processors
 import com.dataloom.mappers.ObjectMappers
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor
+import com.openlattice.datastore.services.EntitySetManager
+import com.openlattice.edm.requests.MetadataUpdate
 import com.openlattice.shuttle.Flight
+import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.control.Integration
 import com.openlattice.shuttle.control.IntegrationUpdate
 import java.net.URL
+import java.util.*
 
-class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate) :
+class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate, val entitySetManager: EntitySetManager) :
         AbstractRhizomeEntryProcessor<String, Integration, Integration>() {
 
     companion object {
@@ -31,6 +35,25 @@ class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate) :
         update.flightFilePath.ifPresent {
             integration.flightFilePath = it
             val updatedFlight = mapper.readValue(URL(it), Flight::class.java)
+            if (integration.flight!!.name != updatedFlight.name) {
+                val logEntitySet = entitySetManager.getEntitySet(IntegrationService.buildLogEntitySetName(integration.flight!!.name))!!
+                val newName = IntegrationService.buildLogEntitySetName(updatedFlight.name)
+                val logEntitySetNameUpdate = MetadataUpdate(
+                        Optional.of(newName),
+                        Optional.empty(),
+                        Optional.of(newName),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty(),
+                        Optional.empty()
+                )
+                entitySetManager.updateEntitySetMetadata(logEntitySet.id, logEntitySetNameUpdate)
+            }
             integration.flight = updatedFlight
         }
 
