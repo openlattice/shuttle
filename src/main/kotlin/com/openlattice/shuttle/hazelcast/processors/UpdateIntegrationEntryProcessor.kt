@@ -10,7 +10,7 @@ import com.openlattice.shuttle.control.IntegrationUpdate
 import java.net.URL
 import java.util.*
 
-class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate, val entitySetManager: EntitySetManager) :
+class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate, private val entitySetManager: EntitySetManager) :
         AbstractRhizomeEntryProcessor<String, Integration, Integration>() {
 
     companion object {
@@ -35,9 +35,14 @@ class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate, val entityS
         update.flightFilePath.ifPresent {
             integration.flightFilePath = it
             val updatedFlight = mapper.readValue(URL(it), Flight::class.java)
-            if (integration.flight!!.name != updatedFlight.name) {
-                val logEntitySet = entitySetManager.getEntitySet(IntegrationService.buildLogEntitySetName(integration.flight!!.name))!!
-                val newName = IntegrationService.buildLogEntitySetName(updatedFlight.name)
+
+            // if flight name or tags were changed, the name of the log entity set for that flight
+            // will be changed to conform to the updated flight
+            if (integration.flight!!.name != updatedFlight.name || integration.flight!!.tags != updatedFlight.tags) {
+                val logEntitySet = entitySetManager.getEntitySet(
+                        IntegrationService.buildLogEntitySetName(integration.flight!!.name, integration.flight!!.tags)
+                )!!
+                val newName = IntegrationService.buildLogEntitySetName(updatedFlight.name, updatedFlight.tags)
                 val logEntitySetNameUpdate = MetadataUpdate(
                         Optional.of(newName),
                         Optional.empty(),
