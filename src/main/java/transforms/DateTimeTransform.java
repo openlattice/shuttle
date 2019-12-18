@@ -29,12 +29,12 @@ public class DateTimeTransform extends Transformation<String> {
         if ( timezone.isPresent() ) {
             String timezoneId = timezone.get();
 
-            if ( !TimeZone.getTimeZone( timezoneId ).getID().equals( timezoneId ) ) {
+            this.timezone = TimeZone.getTimeZone( timezoneId );
+
+            if ( !this.timezone.getID().equals( timezoneId ) ) {
                 throw new IllegalArgumentException(
                         "Invalid timezone id " + timezoneId + " requested for pattern " + pattern );
             }
-
-            this.timezone = TimeZone.getTimeZone( timezoneId );
 
         } else {
             logger.info( "No timezone was specified -- using default timezone {} for patterns {}",
