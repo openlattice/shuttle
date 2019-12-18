@@ -39,9 +39,7 @@ class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate, private val
             // if flight name or tags were changed, the name of the log entity set for that flight
             // will be changed to conform to the updated flight
             if (integration.flight!!.name != updatedFlight.name || integration.flight!!.tags != updatedFlight.tags) {
-                val logEntitySet = entitySetManager.getEntitySet(
-                        IntegrationService.buildLogEntitySetName(integration.flight!!.name, integration.flight!!.tags)
-                )!!
+                val logEntitySet = entitySetManager.getEntitySet(integration.logEntitySetId.get())!!
                 val newName = IntegrationService.buildLogEntitySetName(updatedFlight.name, updatedFlight.tags)
                 val logEntitySetNameUpdate = MetadataUpdate(
                         Optional.of(newName),
