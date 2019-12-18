@@ -8,6 +8,7 @@ import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.hazelcast.StreamSerializerTypeIds
 import com.openlattice.hazelcast.serializers.OptionalStreamSerializers
+import com.openlattice.hazelcast.serializers.UUIDStreamSerializer
 import com.openlattice.shuttle.Flight
 import com.openlattice.shuttle.control.Integration
 import org.springframework.stereotype.Component
@@ -41,9 +42,8 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
             val flightJson = mapper.writeValueAsString(obj.flight)
             output.writeUTF(flightJson)
 
-            output.writeUTFArray(obj.tags.toTypedArray())
             output.writeUTFArray(obj.contacts.toTypedArray())
-            OptionalStreamSerializers.serialize(output, obj.logEntitySetName, ObjectDataOutput::writeUTF)
+            OptionalStreamSerializers.serialize(output, obj.logEntitySetId, UUIDStreamSerializer::serialize)
             output.writeBoolean(obj.recurring)
             output.writeLong(obj.start)
             output.writeLong(obj.period)
@@ -70,9 +70,8 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
             val flightJson = input.readUTF()
             val flight = mapper.readValue(flightJson, Flight::class.java)
 
-            val tags = input.readUTFArray().toSet()
             val contacts = input.readUTFArray().toSet()
-            val logEntitySetName = OptionalStreamSerializers.deserialize(input, ObjectDataInput::readUTF)
+            val logEntitySetId = OptionalStreamSerializers.deserialize(input, UUIDStreamSerializer::deserialize)
             val recurring = input.readBoolean()
             val start = input.readLong()
             val period = input.readLong()
@@ -85,9 +84,8 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
                     s3bucket,
                     flightFilePath,
                     flight,
-                    tags,
                     contacts,
-                    logEntitySetName,
+                    logEntitySetId,
                     recurring,
                     start,
                     period
