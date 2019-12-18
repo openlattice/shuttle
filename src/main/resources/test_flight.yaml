@@ -33,4 +33,6 @@ associationDefinitions:
         column: id
     name: has
 name: "shuttleServerTestFlight"
-tags: ["shuttleTests", "myTests"]
+tags:
+  - "shuttleTests"
+  - "myTests"
