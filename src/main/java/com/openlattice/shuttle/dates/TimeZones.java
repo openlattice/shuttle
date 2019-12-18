@@ -34,7 +34,7 @@ public final class TimeZones {
     public static final TimeZone America_Chicago    = TimeZone.getTimeZone( "America/Chicago" );
     public static final TimeZone America_Denver     = TimeZone.getTimeZone( "America/Denver" );
 
-    public static Set<String> supportedZoneIds = ImmutableSet.of(
+    public static final Set<String> supportedZoneIds = ImmutableSet.of(
             America_NewYork.getID(),
             America_LosAngeles.getID(),
             America_Chicago.getID(),
