@@ -68,7 +68,7 @@ class RestDestination(
 
         return integrateEntities(entities, entityKeyIds, updateTypes) +
                 attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRY_COUNT) {
-                    dataApi.createAssociations(edges).toLong()
+                    dataApi.createEdges(edges).toLong()
                 }
     }
 
