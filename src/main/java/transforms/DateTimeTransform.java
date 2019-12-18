@@ -3,7 +3,6 @@ package transforms;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.dates.JavaDateTimeHelper;
-import com.openlattice.shuttle.dates.TimeZones;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 
@@ -30,7 +29,7 @@ public class DateTimeTransform extends Transformation<String> {
         if ( timezone.isPresent() ) {
             String timezoneId = timezone.get();
 
-            if ( !TimeZones.supportedZoneIds.contains( timezoneId ) ) {
+            if ( !TimeZone.getTimeZone( timezoneId ).getID().equals( timezoneId ) ) {
                 throw new IllegalArgumentException(
                         "Invalid timezone id " + timezoneId + " requested for pattern " + pattern );
             }

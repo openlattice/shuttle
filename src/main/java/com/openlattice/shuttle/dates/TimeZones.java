@@ -20,9 +20,6 @@
 
 package com.openlattice.shuttle.dates;
 
-import com.google.common.collect.ImmutableSet;
-
-import java.util.Set;
 import java.util.TimeZone;
 
 /**
@@ -33,13 +30,6 @@ public final class TimeZones {
     public static final TimeZone America_LosAngeles = TimeZone.getTimeZone( "America/Los_Angeles" );
     public static final TimeZone America_Chicago    = TimeZone.getTimeZone( "America/Chicago" );
     public static final TimeZone America_Denver     = TimeZone.getTimeZone( "America/Denver" );
-
-    public static final Set<String> supportedZoneIds = ImmutableSet.of(
-            America_NewYork.getID(),
-            America_LosAngeles.getID(),
-            America_Chicago.getID(),
-            America_Denver.getID()
-    );
 
     private TimeZones() {
     }
