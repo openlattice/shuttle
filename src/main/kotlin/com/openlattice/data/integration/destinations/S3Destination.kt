@@ -37,6 +37,6 @@ class S3Destination(
         dataIntegrationApi: DataIntegrationApi
 ) : BaseS3Destination(s3Api, dataIntegrationApi) {
     override fun createAssociations(entities: Set<DataEdgeKey>): Long {
-        return dataApi.createAssociations(entities).toLong()
+        return dataApi.createEdges(entities).toLong()
     }
 }
