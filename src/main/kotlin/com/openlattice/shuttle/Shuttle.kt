@@ -71,9 +71,9 @@ private val encoder = Base64.getEncoder()
 //vars to be used only when shuttle is run on shuttle server
 private lateinit var writeLog: (String, String, OffsetDateTime, IntegrationStatus) -> Unit
 private lateinit var dateTimeStarted: OffsetDateTime
-private lateinit var logEntitySetByFlightName: Map<String, EntitySet>
+private lateinit var logEntitySet: EntitySet
+private lateinit var logsDestination: PostgresDestination
 private val logProperties = mutableMapOf<FullQualifiedName, PropertyType>()
-private val logsDestination = mutableMapOf<UUID, PostgresDestination>()
 private val ptidsByBlackboxProperty = mutableMapOf<BlackboxProperty, UUID>()
 
 /**
@@ -92,6 +92,7 @@ class Shuttle(
         private val parameters: MissionParameters,
         private val binaryDestination: StorageDestination,
         private val blackbox: Blackbox,
+        private val maybeLogEntitySet: Optional<EntitySet>,
         private val idService: EntityKeyIdService?,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
                 Executors.newFixedThreadPool(2 * threads)
@@ -114,32 +115,27 @@ class Shuttle(
     }
 
     init {
-        //maybe also instantiate destination/properties here?
         if (blackbox.enabled) {
             writeLog = { name, log, time, status ->
                 logger.info(log)
                 storeLog(name, log, time, status)
             }
 
-            blackbox.fqns.forEach{
+            blackbox.fqns.forEach {
                 val fqn = FullQualifiedName(it.value)
                 val propertyType = propertyTypes.getValue(fqn)
                 logProperties[fqn] = propertyType
                 ptidsByBlackboxProperty[it.key] = propertyType.id
             }
 
-            logEntitySetByFlightName = flightPlan.keys.map{it.name to entitySets.getValue(IntegrationService.buildLogEntitySetName(it.name))}.toMap()
-
-            logEntitySetByFlightName.values.forEach{
-                val logEntitySet = entitySets.getValue(it.name)
-                val logEntityTypeId = logEntitySet.entityTypeId
-                logsDestination[it.id] = PostgresDestination(
-                        mapOf(it.id to logEntitySet),
-                        mapOf(logEntityTypeId to entityTypes.getValue(logEntityTypeId)),
-                        logProperties.map{logProp -> logProp.value.id to logProp.value}.toMap(),
-                        HikariDataSource(HikariConfig(parameters.postgres.config))
-                )
-            }
+            logEntitySet = maybeLogEntitySet.get()
+            val logEntityTypeId = logEntitySet.entityTypeId
+            logsDestination = PostgresDestination(
+                    mapOf(logEntitySet.id to logEntitySet),
+                    mapOf(logEntityTypeId to entityTypes.getValue(logEntityTypeId)),
+                    logProperties.map { logProp -> logProp.value.id to logProp.value }.toMap(),
+                    HikariDataSource(HikariConfig(parameters.postgres.config))
+            )
 
         } else {
             writeLog = { _, log, _, _ -> logger.info(log) }
@@ -524,13 +520,13 @@ class Shuttle(
     }
 
     private fun storeLog(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus) {
-        val logEntitySetId = logEntitySetByFlightName.getValue(flightName).id
+        val logEntitySetId = logEntitySet.id
         val entityId = logEntitySetId.toString() + flightName + dateTimeStarted + timestamp.toString()
         val ek = EntityKey(logEntitySetId, entityId)
         val logPropertyData = generateLogPropertyData(flightName, log, timestamp, status)
         val entity = Entity(ek, logPropertyData)
         val ekid = idService!!.getEntityKeyId(ek)
-        logsDestination.getValue(logEntitySetId).integrateEntities(setOf(entity), mapOf(ek to ekid), mapOf(logEntitySetId to UpdateType.Merge))
+        logsDestination.integrateEntities(setOf(entity), mapOf(ek to ekid), mapOf(logEntitySetId to UpdateType.Merge))
     }
 
     private fun generateLogPropertyData(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus): Map<UUID, Set<Any>> {
