@@ -88,7 +88,7 @@ class Shuttle(
         private val propertyTypes: Map<FullQualifiedName, PropertyType>,
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
         private val dataIntegrationApi: DataIntegrationApi,
-        private val tableColsToPrint: List<String>,
+        private val tableColsToPrint: Map<Flight, List<String>>,
         private val parameters: MissionParameters,
         private val binaryDestination: StorageDestination,
         private val blackbox: Blackbox,
@@ -485,7 +485,8 @@ class Shuttle(
             dateTimeStarted = OffsetDateTime.now()
             writeLog(entry.key.name, launchUpdate, dateTimeStarted, IntegrationStatus.IN_PROGRESS)
 
-            val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrint)
+            val tableColsToPrintForFlight = tableColsToPrint[entry.key] ?: listOf()
+            val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrintForFlight)
 
             val finishUpdate = "Finished flight: ${entry.key.name}"
             writeLog(entry.key.name, finishUpdate, OffsetDateTime.now(), IntegrationStatus.SUCCEEDED)

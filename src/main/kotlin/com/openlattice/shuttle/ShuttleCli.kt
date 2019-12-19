@@ -64,7 +64,7 @@ fun main(args: Array<String>) {
     val flight: Flight
     val createEntitySets: Boolean
     val contacts: Set<String>
-    val rowColsToPrint: List<String>
+    val rowColsToPrint: Map<Flight, List<String>>
 
     if (cl.hasOption(HELP)) {
         ShuttleCliOptions.printHelp()
@@ -129,7 +129,7 @@ fun main(args: Array<String>) {
             // get JDBC payload
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
             val sql = cl.getOptionValue(SQL)
-            rowColsToPrint = configuration.primaryKeyColumns
+            rowColsToPrint = mapOf(flight to configuration.primaryKeyColumns)
             val readRateLimit = if (cl.hasOption(READ_RATE_LIMIT)) {
                 cl.getOptionValue(READ_RATE_LIMIT).toInt()
             } else {
@@ -150,11 +150,11 @@ fun main(args: Array<String>) {
                 ShuttleCliOptions.printHelp()
                 return
             }
-            rowColsToPrint = listOf()
+            rowColsToPrint = mapOf()
             payload = CsvPayload(cl.getOptionValue(CSV))
         }
         cl.hasOption(XML) -> {// get xml payload
-            rowColsToPrint = listOf()
+            rowColsToPrint = mapOf()
             if (cl.hasOption(DATA_ORIGIN)) {
                 val arguments = cl.getOptionValues(DATA_ORIGIN)
                 val dataOrigin = when (arguments[0]) {

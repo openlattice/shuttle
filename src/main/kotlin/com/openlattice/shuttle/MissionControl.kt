@@ -290,7 +290,7 @@ class MissionControl(
     fun prepare(
             flightPlan: Map<Flight, Payload>,
             createEntitySets: Boolean = false,
-            primaryKeyCols: List<String> = listOf(),
+            primaryKeyCols: Map<Flight, List<String>> = mapOf(),
             contacts: Set<String> = setOf()
     ): Shuttle {
         if (createEntitySets) {
