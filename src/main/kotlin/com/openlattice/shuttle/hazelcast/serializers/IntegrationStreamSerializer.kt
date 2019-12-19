@@ -8,6 +8,7 @@ import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.hazelcast.StreamSerializerTypeIds
 import com.openlattice.hazelcast.serializers.OptionalStreamSerializers
+import com.openlattice.hazelcast.serializers.TestableSelfRegisteringStreamSerializer
 import com.openlattice.hazelcast.serializers.UUIDStreamSerializer
 import com.openlattice.shuttle.Flight
 import com.openlattice.shuttle.control.Integration
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Component
 import java.util.*
 
 @Component
-class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration> {
+class IntegrationStreamSerializer : TestableSelfRegisteringStreamSerializer<Integration> {
 
     companion object {
         private val mapper = ObjectMappers.getJsonMapper()
@@ -34,7 +35,7 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
 
             if (obj.flightFilePath != null) {
                 output.writeBoolean(true)
-                output.writeUTF(obj.flightFilePath)
+                output.writeUTF(obj.flightFilePath!!)
             } else {
                 output.writeBoolean(false)
             }
@@ -107,6 +108,10 @@ class IntegrationStreamSerializer : SelfRegisteringStreamSerializer<Integration>
 
     override fun getTypeId(): Int {
         return StreamSerializerTypeIds.INTEGRATION.ordinal
+    }
+
+    override fun generateTestValue(): Integration {
+        return Integration.testData()
     }
 
 }
