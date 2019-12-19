@@ -16,10 +16,13 @@ class ReloadFlightEntryProcessor : AbstractRhizomeEntryProcessor<String, Integra
 
     override fun process(entry: MutableMap.MutableEntry<String, Integration>): Integration {
         val integration = entry.value
-        val flightFilePath = integration.flightFilePath
-        checkState(flightFilePath != null, "Integration with name ${entry.key} does not have a flight file path")
-        val updatedFlight = mapper.readValue(URL(integration.flightFilePath!!), Flight::class.java)
-        integration.flight = updatedFlight
+
+        integration.flightPlanParameters.forEach {
+            if (it.value.flightFilePath != null) {
+                val updatedFlight = mapper.readValue(URL(it.value.flightFilePath!!), Flight::class.java)
+                it.value.flight = updatedFlight
+            }
+        }
         entry.setValue(integration)
         return integration
     }

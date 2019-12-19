@@ -61,7 +61,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
 
     @Timed
     @PatchMapping(path = [DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH])
-    override fun updateFlightWithinIntegrationDefinition(
+    override fun updateFlightsWithinIntegrationDefinition(
             @PathVariable integrationName: String
     ) {
         //ensureAdminAccess()

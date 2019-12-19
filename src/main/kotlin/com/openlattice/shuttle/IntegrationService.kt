@@ -23,12 +23,14 @@ import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.rhizome.proxy.RetrofitBuilders
+import com.openlattice.shuttle.control.FlightPlanParameters
 import com.openlattice.shuttle.control.Integration
 import com.openlattice.shuttle.control.IntegrationUpdate
 import com.openlattice.shuttle.hazelcast.processors.ReloadFlightEntryProcessor
 import com.openlattice.shuttle.hazelcast.processors.UpdateIntegrationEntryProcessor
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.JdbcPayload
+import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -75,9 +77,14 @@ class IntegrationService(
         val apiClient = ApiClient(integration.environment) { "i'matoken" }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
-        val srcDataSource = getSrcDataSource(integration.source)
-        val payload = JdbcPayload(readRateLimit.toDouble(), srcDataSource, integration.sql, fetchSize, readRateLimit != 0)
-        val flightPlan = mapOf(integration.flight!! to payload)
+        val flightPlan = mutableMapOf<Flight, Payload>()
+        val tableColsToPrint = mutableMapOf<Flight, List<String>>()
+        integration.flightPlanParameters.values.forEach {
+            val srcDataSource = getSrcDataSource(it.source)
+            val payload = JdbcPayload(readRateLimit.toDouble(), srcDataSource, it.sql, fetchSize, readRateLimit != 0)
+            flightPlan[it.flight!!] = payload
+            tableColsToPrint[it.flight!!] = it.sourcePrimaryKeyColumns
+        }
         val destinationsMap = generateDestinationsMap(integration, missionParameters, dataIntegrationApi)
 
         try {
@@ -89,7 +96,7 @@ class IntegrationService(
                     propertyTypes.values.associateBy { it.type },
                     destinationsMap,
                     dataIntegrationApi,
-                    integration.sourcePrimaryKeyColumns,
+                    tableColsToPrint,
                     missionParameters,
                     StorageDestination.S3,
                     blackbox,
@@ -105,7 +112,7 @@ class IntegrationService(
 
     fun createIntegrationDefinition(integrationName: String, integration: Integration) {
         checkState(!integrations.containsKey(integrationName), "An integration with name $integrationName already exists.")
-        val logEntitySetId = createLogEntitySet(integration)
+        val logEntitySetId = createLogEntitySet(integrationName, integration)
         integration.logEntitySetId = Optional.of(logEntitySetId)
         integrations[integrationName] = integration
 
@@ -162,10 +169,10 @@ class IntegrationService(
         return mapOf(StorageDestination.POSTGRES to pgDestination)
     }
 
-    private fun createLogEntitySet(integration: Integration): UUID {
-        val name = buildLogEntitySetName(integration.flight!!.name, integration.flight!!.tags)
+    private fun createLogEntitySet(integrationName: String, integration: Integration): UUID {
+        val name = buildLogEntitySetName(integrationName)
         val contacts = integration.contacts
-        val description = "Auto-generated integration log entity set"
+        val description = buildLogEntitySetDescription(integration.flightPlanParameters)
         val logEntitySet = EntitySet(
                 logEntityType.id,
                 name,
@@ -176,19 +183,25 @@ class IntegrationService(
         return entitySetManager.createEntitySet(Principals.getCurrentUser(), logEntitySet)
     }
 
-    private fun buildLogEntitySetName(flightName: String, flightTags: Set<String>): String {
-        var entitySetName = "Integration logs for flight $flightName"
-        if (flightTags.isNotEmpty()) {
-            entitySetName += " with tags ${flightTags.joinToString(", ")}"
+    private fun buildLogEntitySetName(integrationName: String): String {
+        return "Integration logs for $integrationName"
+    }
+
+    private fun buildLogEntitySetDescription(flightPlanParameters: Map<String, FlightPlanParameters>): String {
+        var entitySetDescription = "Auto-generated entity set containing logs of the following flights: "
+        flightPlanParameters.values.forEach {
+            val flight = it.flight!!
+            entitySetDescription += flight.name
+            if (flight.tags.isNotEmpty()) entitySetDescription += " with tags ${flight.tags.joinToString(", ")}"
         }
 
         var nameCounter = 1
-        while(reservationService.isReserved(entitySetName)) {
-            entitySetName += "_$nameCounter"
+        while(reservationService.isReserved(entitySetDescription)) {
+            entitySetDescription += "_$nameCounter"
             nameCounter ++
         }
 
-        return entitySetName
+        return entitySetDescription
     }
 
 }

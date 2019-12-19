@@ -68,7 +68,7 @@ interface ShuttleApi {
      * @param integrationName the name of the integration definition to be changed
      */
     @PATCH(BASE + DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH)
-    fun updateFlightWithinIntegrationDefinition(
+    fun updateFlightsWithinIntegrationDefinition(
             @Path(INTEGRATION_NAME) integrationName: String
     )
 
