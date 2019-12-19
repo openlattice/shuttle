@@ -138,7 +138,8 @@ class ShuttleServicesPod {
             blackbox,
             idService(),
             entitySetManager(),
-            dataModelService())
+            dataModelService(),
+            aclKeyReservationService())
 
     @PostConstruct
     internal fun initPrincipals() {

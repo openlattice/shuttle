@@ -3,6 +3,7 @@ package com.openlattice.shuttle
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions.checkState
 import com.hazelcast.core.HazelcastInstance
+import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.Principals
 import com.openlattice.client.ApiClient
 import com.openlattice.data.DataIntegrationApi
@@ -50,7 +51,8 @@ class IntegrationService(
         private val blackbox: Blackbox,
         private val idService: EntityKeyIdService,
         private val entitySetManager: EntitySetManager,
-        private val dataModelService: EdmManager
+        private val dataModelService: EdmManager,
+        private val reservationService: HazelcastAclKeyReservationService
 ) {
 
     private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
@@ -64,18 +66,6 @@ class IntegrationService(
             logEntityType = dataModelService.getEntityType(FullQualifiedName(blackbox.entityTypeFqn))
         }
     }
-
-    companion object {
-        @JvmStatic
-        fun buildLogEntitySetName(flightName: String, flightTags: Set<String>): String {
-            var entitySetName = "Integration logs for flight $flightName"
-            if (flightTags.isNotEmpty()) {
-                entitySetName += " with tags ${flightTags.joinToString(", ")}"
-            }
-            return entitySetName
-        }
-    }
-
 
     fun loadCargo(integrationName: String) {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
@@ -184,6 +174,21 @@ class IntegrationService(
                 contacts
         )
         return entitySetManager.createEntitySet(Principals.getCurrentUser(), logEntitySet)
+    }
+
+    private fun buildLogEntitySetName(flightName: String, flightTags: Set<String>): String {
+        var entitySetName = "Integration logs for flight $flightName"
+        if (flightTags.isNotEmpty()) {
+            entitySetName += " with tags ${flightTags.joinToString(", ")}"
+        }
+
+        var nameCounter = 1
+        while(reservationService.isReserved(entitySetName)) {
+            entitySetName += "_$nameCounter"
+            nameCounter ++
+        }
+
+        return entitySetName
     }
 
 }
