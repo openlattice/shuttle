@@ -19,8 +19,6 @@ import org.springframework.stereotype.Component
 import java.sql.PreparedStatement
 import java.sql.ResultSet
 
-const val FLIGHT_FILE_PATH_INDEX = "flightFilePath"
-
 @Component
 class IntegrationsMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore<String, Integration>(
         HazelcastMap.INTEGRATIONS.name, INTEGRATIONS, hds
@@ -54,7 +52,6 @@ class IntegrationsMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore
 
     override fun getMapConfig(): MapConfig {
         return super.getMapConfig()
-                .addMapIndexConfig(MapIndexConfig(FLIGHT_FILE_PATH_INDEX, false))
                 .setInMemoryFormat(InMemoryFormat.OBJECT)
     }
 
