@@ -11,7 +11,7 @@ import java.lang.Exception
 import java.net.URL
 import java.util.*
 
-class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate, private val entitySetManager: EntitySetManager) :
+class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate) :
         AbstractRhizomeEntryProcessor<String, Integration, Integration>() {
 
     companion object {
@@ -21,23 +21,11 @@ class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate, private val
     override fun process(entry: MutableMap.MutableEntry<String, Integration>): Integration {
         val integration = entry.value
 
-        update.sql.ifPresent { integration.sql = it }
-
-        update.source.ifPresent { integration.source = it }
-
-        update.sourcePrimaryKeyColumns.ifPresent { integration.sourcePrimaryKeyColumns = it }
-
         update.environment.ifPresent { integration.environment = it }
 
         update.defaultStorage.ifPresent { integration.defaultStorage = it }
 
         update.s3bucket.ifPresent { integration.s3bucket = it }
-
-        update.flightFilePath.ifPresent {
-            integration.flightFilePath = it
-            val updatedFlight = mapper.readValue(URL(it), Flight::class.java)
-            integration.flight = updatedFlight
-        }
 
         update.contacts.ifPresent { integration.contacts = it }
 
@@ -46,6 +34,23 @@ class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate, private val
         update.start.ifPresent { integration.start = it }
 
         update.period.ifPresent { integration.period = it }
+
+        update.flightPlanParameters.ifPresent {
+            val flightPlanParameters = integration.flightPlanParameters
+            it.forEach { entry ->
+                val currentFlightPlanParameter = flightPlanParameters.getValue(entry.key)
+                val update = entry.value
+                if (update.sql.isPresent) { currentFlightPlanParameter.sql = update.sql.get() }
+                if (update.source.isPresent) { currentFlightPlanParameter.source = update.source.get() }
+                if (update.sourcePrimaryKeyColumns.isPresent) { currentFlightPlanParameter.sourcePrimaryKeyColumns = update.sourcePrimaryKeyColumns.get() }
+                if (update.flightFilePath.isPresent) {
+                    val updatedFlightFilePath = update.flightFilePath.get()
+                    currentFlightPlanParameter.flightFilePath = updatedFlightFilePath
+                    currentFlightPlanParameter.flight = mapper.readValue(URL(updatedFlightFilePath), Flight::class.java)
+                }
+            }
+
+        }
 
         entry.setValue(integration)
         return integration

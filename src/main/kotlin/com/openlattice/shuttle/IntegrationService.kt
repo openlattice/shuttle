@@ -125,7 +125,7 @@ class IntegrationService(
 
     fun updateIntegrationDefinition(integrationName: String, integrationUpdate: IntegrationUpdate) {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
-        integrations.executeOnKey(integrationName, UpdateIntegrationEntryProcessor(integrationUpdate, entitySetManager))
+        integrations.executeOnKey(integrationName, UpdateIntegrationEntryProcessor(integrationUpdate))
     }
 
     fun updateFlightWithinIntegrationDefinition(integrationName: String) {
