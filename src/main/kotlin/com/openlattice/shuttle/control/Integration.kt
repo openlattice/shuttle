@@ -29,7 +29,7 @@ data class Integration(
         @JsonProperty(SerializationConstants.DEFAULT_STORAGE) var defaultStorage: StorageDestination,
         @JsonProperty(SerializationConstants.S3_BUCKET) var s3bucket: String,
         @JsonProperty(SerializationConstants.CONTACTS) var contacts: Set<String>,
-        @JsonProperty(SerializationConstants.ENTITY_SET_NAME) var logEntitySetId: Optional<UUID>,
+        @JsonProperty(SerializationConstants.ENTITY_SET_ID) var logEntitySetId: Optional<UUID>,
         @JsonProperty(SerializationConstants.RECURRING) var recurring: Boolean,
         @JsonProperty(SerializationConstants.START) var start: Long,
         @JsonProperty(SerializationConstants.PERIOD) var period: Long,
