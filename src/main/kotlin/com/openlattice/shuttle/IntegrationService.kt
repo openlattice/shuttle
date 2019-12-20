@@ -137,8 +137,7 @@ class IntegrationService(
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
         val integration = integrations.getValue(integrationName)
         integrations.remove(integrationName)
-        val logEntitySet = entitySetManager.getEntitySet(integration.logEntitySetId.get())!!
-        entitySetManager.deleteEntitySet(logEntitySet.id)
+        entitySetManager.deleteEntitySet(integration.logEntitySetId.get())
     }
 
     private fun getSrcDataSource(source: Properties): HikariDataSource {
@@ -193,12 +192,6 @@ class IntegrationService(
             val flight = it.flight!!
             entitySetDescription += flight.name
             if (flight.tags.isNotEmpty()) entitySetDescription += " with tags ${flight.tags.joinToString(", ")}"
-        }
-
-        var nameCounter = 1
-        while(reservationService.isReserved(entitySetDescription)) {
-            entitySetDescription += "_$nameCounter"
-            nameCounter ++
         }
 
         return entitySetDescription

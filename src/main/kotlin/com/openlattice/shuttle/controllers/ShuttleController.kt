@@ -25,7 +25,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun startIntegration(
             @PathVariable(INTEGRATION_NAME) integrationName: String
     ) {
-        //ensureAdminAccess()
+        ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         integrationService.loadCargo(normalizedName)
     }
@@ -35,7 +35,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun createIntegrationDefinition(
             @PathVariable integrationName: String,
             @RequestBody integrationDefinition: Integration) {
-        //ensureAdminAccess()
+        ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         integrationService.createIntegrationDefinition(normalizedName, integrationDefinition)
     }
@@ -44,7 +44,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     @GetMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
     override fun readIntegrationDefinition(
             @PathVariable integrationName: String ) : Integration {
-        //ensureAdminAccess()
+        ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         return integrationService.readIntegrationDefinition(normalizedName)
     }
@@ -54,7 +54,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun updateIntegrationDefinition(
             @PathVariable integrationName: String,
             @RequestBody integrationUpdate: IntegrationUpdate) {
-        //ensureAdminAccess()
+        ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         integrationService.updateIntegrationDefinition(normalizedName, integrationUpdate)
     }
@@ -64,7 +64,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun updateFlightsWithinIntegrationDefinition(
             @PathVariable integrationName: String
     ) {
-        //ensureAdminAccess()
+        ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         integrationService.updateFlightWithinIntegrationDefinition(normalizedName)
     }
@@ -75,7 +75,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun deleteIntegrationDefinition(
             @PathVariable integrationName: String
     ) {
-        //ensureAdminAccess()
+        ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
         integrationService.deleteIntegrationDefinition(normalizedName)
     }
