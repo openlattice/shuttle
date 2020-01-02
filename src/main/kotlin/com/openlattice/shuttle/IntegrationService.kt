@@ -39,6 +39,7 @@ import org.springframework.stereotype.Service
 import retrofit2.Retrofit
 import java.lang.Exception
 import java.util.*
+import javax.inject.Inject
 
 private val logger = LoggerFactory.getLogger(IntegrationService::class.java)
 private val fetchSize = 10000
@@ -50,11 +51,10 @@ private lateinit var logEntityType: EntityType
 class IntegrationService(
         private val hazelcastInstance: HazelcastInstance,
         private val missionParameters: MissionParameters,
-        private val blackbox: Blackbox,
         private val idService: EntityKeyIdService,
         private val entitySetManager: EntitySetManager,
-        private val dataModelService: EdmManager,
-        private val reservationService: HazelcastAclKeyReservationService
+        private val reservationService: HazelcastAclKeyReservationService,
+        private val blackbox: Blackbox
 ) {
 
     private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
@@ -62,10 +62,14 @@ class IntegrationService(
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val creds = missionParameters.auth.credentials
+    
+    companion object {
+        @JvmStatic
+        fun init(blackbox: Blackbox, dataModelService: EdmManager) {
 
-    init {
-        if (blackbox.enabled) {
-            logEntityType = dataModelService.getEntityType(FullQualifiedName(blackbox.entityTypeFqn))
+            if (blackbox.enabled) {
+                logEntityType = dataModelService.getEntityType(FullQualifiedName(blackbox.entityTypeFqn))
+            }
         }
     }
 
