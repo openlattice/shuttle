@@ -9,4 +9,4 @@ postgres:
 auth:
   credentials:
     email: "wouldntyou"
-    password: "liketoknown"
+    password: "liketoknow"
