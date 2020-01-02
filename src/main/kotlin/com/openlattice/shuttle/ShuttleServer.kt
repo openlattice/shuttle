@@ -8,6 +8,7 @@ import com.openlattice.auth0.Auth0Pod
 import com.openlattice.aws.AwsS3Pod
 import com.openlattice.datastore.pods.ByteBlobServicePod
 import com.openlattice.hazelcast.pods.MapstoresPod
+import com.openlattice.hazelcast.pods.NearCachesPod
 import com.openlattice.hazelcast.pods.SharedStreamSerializersPod
 import com.openlattice.jdbc.JdbcPod
 import com.openlattice.postgres.PostgresPod
@@ -37,6 +38,7 @@ private val shuttlePods = arrayOf(
         ShuttleServicesPod::class.java,
         ShuttleStreamSerializersPod::class.java,
         TaskSchedulerPod::class.java,
+        NearCachesPod::class.java,
 
         //This pod goes last for things to not break
         ShuttleMapstoresPod::class.java
