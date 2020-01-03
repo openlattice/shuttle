@@ -49,7 +49,7 @@ interface ShuttleApi {
     ) : Integration
 
     /**
-     * Replaces an existing integration definition with a provided integration definition
+     * Replaces any number of fields within an existing integration definition
      * @param integrationName the name of the integration definition to be replaced
      * @param integrationUpdate the integration definition to replace an
      * existing one. Note, if a new flightFilePath is included in the update and the
@@ -63,12 +63,12 @@ interface ShuttleApi {
     )
 
     /**
-     * Replaces the flight within an integration definition with the flight that
-     * is located at the path that is already stored within the integration definition
-     * @param integrationName the name of the integration definition to be changed
+     * Reloads the flights within an integration definition from the paths that
+     * are currently stored within the integration definition
+     * @param integrationName the name of the integration definition to be reloaded
      */
     @PATCH(BASE + DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH)
-    fun updateFlightsWithinIntegrationDefinition(
+    fun reloadFlightsWithinIntegrationDefinition(
             @Path(INTEGRATION_NAME) integrationName: String
     )
 
