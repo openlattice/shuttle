@@ -494,7 +494,7 @@ class Shuttle(
         }.sum()
         logger.info("Executed {} entity writes in flight plan in {} ms.", total, sw.elapsed(TimeUnit.MILLISECONDS))
         reporter.close()
-
+        uploadingExecutor.shutdownNow()
         return total
     }
 

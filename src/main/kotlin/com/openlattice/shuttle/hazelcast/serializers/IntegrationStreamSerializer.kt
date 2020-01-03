@@ -1,20 +1,15 @@
 package com.openlattice.shuttle.hazelcast.serializers
 
-import com.dataloom.mappers.ObjectMappers
 import com.hazelcast.nio.ObjectDataInput
 import com.hazelcast.nio.ObjectDataOutput
-import com.kryptnostic.rhizome.pods.hazelcast.SelfRegisteringStreamSerializer
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.integration.StorageDestination
 import com.openlattice.hazelcast.StreamSerializerTypeIds
 import com.openlattice.hazelcast.serializers.OptionalStreamSerializers
 import com.openlattice.hazelcast.serializers.TestableSelfRegisteringStreamSerializer
 import com.openlattice.hazelcast.serializers.UUIDStreamSerializer
-import com.openlattice.shuttle.Flight
-import com.openlattice.shuttle.control.FlightPlanParameters
 import com.openlattice.shuttle.control.Integration
 import org.springframework.stereotype.Component
-import java.util.*
 
 @Component
 class IntegrationStreamSerializer : TestableSelfRegisteringStreamSerializer<Integration> {
@@ -32,6 +27,7 @@ class IntegrationStreamSerializer : TestableSelfRegisteringStreamSerializer<Inte
             output.writeBoolean(obj.recurring)
             output.writeLong(obj.start)
             output.writeLong(obj.period)
+            OptionalStreamSerializers.serialize(output, obj.maxConnections, ObjectDataOutput::writeInt)
             output.writeUTFArray(obj.flightPlanParameters.keys.toTypedArray())
             obj.flightPlanParameters.values.forEach { FlightPlanParametersStreamSerializer.serialize(output, it) }
         }
@@ -45,6 +41,7 @@ class IntegrationStreamSerializer : TestableSelfRegisteringStreamSerializer<Inte
             val recurring = input.readBoolean()
             val start = input.readLong()
             val period = input.readLong()
+            val maxConnections = OptionalStreamSerializers.deserialize(input, ObjectDataInput::readInt)
             val flightPlanParamsKeys = input.readUTFArray()
             val flightPlanParamsValues = flightPlanParamsKeys.map{
                 FlightPlanParametersStreamSerializer.deserialize(input)
@@ -59,6 +56,7 @@ class IntegrationStreamSerializer : TestableSelfRegisteringStreamSerializer<Inte
                     recurring,
                     start,
                     period,
+                    maxConnections,
                     flightPlanParams
             )
         }

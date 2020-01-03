@@ -39,12 +39,12 @@ import org.springframework.stereotype.Service
 import retrofit2.Retrofit
 import java.lang.Exception
 import java.util.*
-import javax.inject.Inject
 
 private val logger = LoggerFactory.getLogger(IntegrationService::class.java)
 private val fetchSize = 10000
 private val readRateLimit = 1000
 private val uploadBatchSize = 10000
+
 private lateinit var logEntityType: EntityType
 
 @Service
@@ -62,7 +62,7 @@ class IntegrationService(
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val creds = missionParameters.auth.credentials
-    
+
     companion object {
         @JvmStatic
         fun init(blackbox: Blackbox, dataModelService: EdmManager) {
@@ -132,7 +132,7 @@ class IntegrationService(
         integrations.executeOnKey(integrationName, UpdateIntegrationEntryProcessor(integrationUpdate))
     }
 
-    fun updateFlightWithinIntegrationDefinition(integrationName: String) {
+    fun reloadFlightsWithinIntegrationDefinition(integrationName: String) {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
         integrations.executeOnKey(integrationName, ReloadFlightEntryProcessor())
     }
@@ -150,12 +150,14 @@ class IntegrationService(
 
     private fun generateDestinationsMap(integration: Integration, missionParameters: MissionParameters, dataIntegrationApi: DataIntegrationApi): Map<StorageDestination, IntegrationDestination> {
         val s3BucketUrl = integration.s3bucket
+        val dstDataSource = HikariDataSource(HikariConfig(missionParameters.postgres.config))
+        integration.maxConnections.ifPresent { dstDataSource.maximumPoolSize = it }
 
         val pgDestination = PostgresDestination(
                 entitySets.mapKeys { it.value.id },
                 entityTypes,
                 propertyTypes.mapKeys { it.value.id },
-                HikariDataSource(HikariConfig(missionParameters.postgres.config))
+                dstDataSource
         )
 
         if (s3BucketUrl.isNotBlank()) {
@@ -187,7 +189,16 @@ class IntegrationService(
     }
 
     private fun buildLogEntitySetName(integrationName: String): String {
-        return "Integration logs for $integrationName"
+        var name = "Integration logs for $integrationName"
+        var nameAttempt = name
+        var count = 1
+
+        while (reservationService.isReserved(nameAttempt)) {
+            nameAttempt = name + "_" + count
+            count++
+        }
+
+        return nameAttempt
     }
 
     private fun buildLogEntitySetDescription(flightPlanParameters: Map<String, FlightPlanParameters>): String {

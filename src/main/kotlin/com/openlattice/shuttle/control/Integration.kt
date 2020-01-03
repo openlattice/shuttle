@@ -14,7 +14,6 @@ import java.util.*
  *
  * Represents a data integration, including all fields required to run the integration
  *
-
  * @param environment the retrofit environment (e.g. production, local)
  * @param defaultStorage ?????
  * @param s3bucket the url of the s3bucket to be used
@@ -22,6 +21,7 @@ import java.util.*
  * @param recurring boolean denoting if the integration is recurring
  * @param start ??? datetime in ms of first integration?
  * @param period ??? how often it gets run?
+ * @param maxConnections maximum number of connections to postgres allowed for this integration
  * @param flightPlanParameters a map from [Flight] name to [FlightPlanParameters]
  */
 data class Integration(
@@ -33,6 +33,7 @@ data class Integration(
         @JsonProperty(SerializationConstants.RECURRING) var recurring: Boolean,
         @JsonProperty(SerializationConstants.START) var start: Long,
         @JsonProperty(SerializationConstants.PERIOD) var period: Long,
+        @JsonProperty(SerializationConstants.CONNECTIONS) var maxConnections: Optional<Int>,
         @JsonProperty(SerializationConstants.FLIGHT_PLAN_PARAMETERS) var flightPlanParameters: MutableMap<String, FlightPlanParameters>
 ) {
 
@@ -56,6 +57,7 @@ data class Integration(
                     recurring,
                     start,
                     period,
+                    Optional.of(5),
                     mutableMapOf(TestDataFactory.randomAlphanumeric(5) to FlightPlanParameters.testData())
             )
         }
