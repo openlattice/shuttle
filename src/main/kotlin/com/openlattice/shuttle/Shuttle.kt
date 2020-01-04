@@ -130,11 +130,13 @@ class Shuttle(
 
             logEntitySet = maybeLogEntitySet.get()
             val logEntityTypeId = logEntitySet.entityTypeId
+            val logDataSource = HikariDataSource(HikariConfig(parameters.postgres.config))
+            logDataSource.maximumPoolSize = 5
             logsDestination = PostgresDestination(
                     mapOf(logEntitySet.id to logEntitySet),
                     mapOf(logEntityTypeId to entityTypes.getValue(logEntityTypeId)),
                     logProperties.map { logProp -> logProp.value.id to logProp.value }.toMap(),
-                    HikariDataSource(HikariConfig(parameters.postgres.config))
+                    logDataSource
             )
 
         } else {
