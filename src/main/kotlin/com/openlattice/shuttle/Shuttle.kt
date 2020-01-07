@@ -73,7 +73,7 @@ private val encoder = Base64.getEncoder()
 
 //vars to be used only when shuttle is run on shuttle server
 private lateinit var writeLog: (String, String, OffsetDateTime, IntegrationStatus) -> Unit
-private lateinit var dateTimeStarted: OffsetDateTime
+private lateinit var jobId: UUID
 private lateinit var logEntitySet: EntitySet
 private lateinit var logsDestination: PostgresDestination
 private lateinit var integrationJobs: IMap<UUID, IntegrationStatus>
@@ -122,7 +122,7 @@ class Shuttle (
 
     init {
         if (blackbox.enabled) {
-            val jobId = maybeJobId.get()
+            jobId = maybeJobId.get()
             integrationJobs = hazelcastInstance!!.getMap(HazelcastMap.INTEGRATION_JOBS.name)
 
             writeLog = { name, log, time, status ->
@@ -495,8 +495,7 @@ class Shuttle (
         try {
             total = flightPlan.entries.map { entry ->
                 val launchUpdate = "Launching flight: ${entry.key.name}"
-                dateTimeStarted = OffsetDateTime.now()
-                writeLog(entry.key.name, launchUpdate, dateTimeStarted, IntegrationStatus.IN_PROGRESS)
+                writeLog(entry.key.name, launchUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
 
                 val tableColsToPrintForFlight = tableColsToPrint[entry.key] ?: listOf()
                 val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrintForFlight)
@@ -508,7 +507,7 @@ class Shuttle (
             logger.info("Executed {} entity writes in flight plan in {} ms.", total, sw.elapsed(TimeUnit.MILLISECONDS))
         } catch (ex: java.lang.Exception) {
             val flightNames = flightPlan.keys.joinToString(", ") { it.name }
-            val exceptionLog = "Encountered exception $ex while integrating flight plain containing flight(s) $flightNames"
+            val exceptionLog = "Encountered exception $ex while integrating flight plan containing flight(s) $flightNames"
             writeLog(flightNames, exceptionLog, OffsetDateTime.now(), IntegrationStatus.FAILED)
         } finally {
             reporter.close()
@@ -542,7 +541,7 @@ class Shuttle (
 
     private fun storeLog(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus) {
         val logEntitySetId = logEntitySet.id
-        val entityId = logEntitySetId.toString() + flightName + dateTimeStarted + timestamp.toString()
+        val entityId = logEntitySetId.toString() + flightName + jobId + timestamp.toString()
         val ek = EntityKey(logEntitySetId, entityId)
         val logPropertyData = generateLogPropertyData(flightName, log, timestamp, status)
         val entity = Entity(ek, logPropertyData)
@@ -552,8 +551,8 @@ class Shuttle (
 
     private fun generateLogPropertyData(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus): Map<UUID, Set<Any>> {
         val logPropertyData = mutableMapOf<UUID, Set<Any>>()
+        logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.JOB_ID)] = setOf(jobId)
         logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.NAME)] = setOf(flightName)
-        logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.TIME_STARTED)] = setOf(dateTimeStarted)
         logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.LOG)] = setOf(log)
         logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.TIME_LOGGED)] = setOf(timestamp)
         logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.STATUS)] = setOf(status)
