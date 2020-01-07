@@ -98,7 +98,8 @@ class IntegrationService(
         }
         val destinationsMap = generateDestinationsMap(integration, missionParameters, dataIntegrationApi)
 
-        val jobId = UUID.randomUUID()
+        var jobId = UUID.randomUUID()
+        while (integrationJobs.containsKey(jobId)) { jobId = UUID.randomUUID() }
         val shuttle = Shuttle(
                 integration.environment,
                 flightPlan,

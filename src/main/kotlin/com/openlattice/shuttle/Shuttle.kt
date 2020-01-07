@@ -55,7 +55,6 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
-import java.io.Serializable
 import java.util.*
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.concurrent.Executors
