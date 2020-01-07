@@ -295,7 +295,7 @@ fun main(args: Array<String>) {
         logger.info("Pre-flight check list complete. ")
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()
-    } catch (ex: Exception) {
+    } catch (ex: Throwable) {
         MissionControl.fail(1, flight, ex)
     }
 }
