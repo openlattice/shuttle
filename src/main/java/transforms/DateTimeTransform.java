@@ -25,9 +25,21 @@ public class DateTimeTransform extends Transformation<String> {
             @JsonProperty( Constants.TIMEZONE ) Optional<String> timezone
     ) {
         this.pattern = pattern;
-        if (timezone.isPresent()){
-            this.timezone = TimeZone.getTimeZone( timezone.get() );
+
+        if ( timezone.isPresent() ) {
+            String timezoneId = timezone.get();
+
+            this.timezone = TimeZone.getTimeZone( timezoneId );
+
+            if ( !this.timezone.getID().equals( timezoneId ) ) {
+                throw new IllegalArgumentException(
+                        "Invalid timezone id " + timezoneId + " requested for pattern " + pattern );
+            }
+
         } else {
+            logger.info( "No timezone was specified -- using default timezone {} for patterns {}",
+                    Constants.DEFAULT_TIMEZONE,
+                    pattern );
             this.timezone = Constants.DEFAULT_TIMEZONE;
         }
     }
