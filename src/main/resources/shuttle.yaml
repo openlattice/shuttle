@@ -6,7 +6,3 @@ postgres:
     password: "test"
     maximumPoolSize: 5
     connectionTimeout: 60000
-auth:
-  credentials:
-    email: "wouldntyou"
-    password: "liketoknow"

@@ -13,19 +13,15 @@ data class PostgresConfiguration(
         @JsonProperty("config") val config: Properties
 )
 
-data class AuthConfiguration(
-        @JsonProperty("credentials") val credentials: Properties
-)
-
 @ReloadableConfiguration(uri = "shuttle.yaml")
 data class MissionParameters(
-        @JsonProperty("postgres") val postgres: PostgresConfiguration,
-        @JsonProperty("auth") val auth: AuthConfiguration
+        @JsonProperty("postgres") val postgres: PostgresConfiguration
+
 ) {
     companion object {
         @JvmStatic
         fun empty(): MissionParameters {
-            return MissionParameters(PostgresConfiguration(false, Properties()), AuthConfiguration(Properties()))
+            return MissionParameters(PostgresConfiguration(false, Properties()))
         }
     }
 }
