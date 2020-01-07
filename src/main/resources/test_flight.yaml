@@ -1,7 +1,7 @@
 entityDefinitions:
   person:
     fqn: general.person
-    entitySetName: 'shuttle test'
+    entitySetName: shuttle_test_person
     propertyDefinitions:
       nc.SubjectIdentification:
         type: nc.SubjectIdentification
