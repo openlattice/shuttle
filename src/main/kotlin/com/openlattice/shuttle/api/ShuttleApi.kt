@@ -29,11 +29,11 @@ interface ShuttleApi {
      * Starts an integration on Shuttle Server for a given integration
      * @param integrationName the name of the integration to be run
      */
-    @PATCH(BASE + INTEGRATION_NAME_PATH + TOKEN_PATH)
+    @GET(BASE + INTEGRATION_NAME_PATH + TOKEN_PATH)
     fun startIntegration(
             @Path(INTEGRATION_NAME) integrationName: String,
             @Path(TOKEN) token: String
-    )
+    ): UUID
 
     /**
      * Polls the status of an integration
@@ -84,16 +84,6 @@ interface ShuttleApi {
     fun updateIntegrationDefinition(
             @Path(INTEGRATION_NAME) integrationName: String,
             @Body integrationUpdate: IntegrationUpdate
-    )
-
-    /**
-     * Reloads the flights within an integration definition from the paths that
-     * are currently stored within the integration definition
-     * @param integrationName the name of the integration definition to be reloaded
-     */
-    @PATCH(BASE + DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH)
-    fun reloadFlightsWithinIntegrationDefinition(
-            @Path(INTEGRATION_NAME) integrationName: String
     )
 
     /**

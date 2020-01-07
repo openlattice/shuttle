@@ -25,19 +25,21 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     private lateinit var authorizationManager: AuthorizationManager
 
     @Timed
-    @PatchMapping(path = [INTEGRATION_NAME_PATH + TOKEN_PATH])
+    @GetMapping(path = [INTEGRATION_NAME_PATH + TOKEN_PATH])
     override fun startIntegration(
             @PathVariable(INTEGRATION_NAME) integrationName: String,
             @PathVariable(TOKEN) token: String
-    ) {
+    ): UUID {
         ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
-        integrationService.loadCargo(normalizedName, token)
+        return integrationService.loadCargo(normalizedName, token)
     }
 
     @Timed
     @GetMapping(path = [STATUS_PATH + JOB_ID_PATH])
-    override fun pollIntegration(jobId: UUID): IntegrationStatus {
+    override fun pollIntegration(
+            @PathVariable(JOB_ID) jobId: UUID
+    ): IntegrationStatus {
         ensureAdminAccess()
         return integrationService.pollIntegrationStatus(jobId)
     }
@@ -77,17 +79,6 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
         val normalizedName = normalizeIntegrationName(integrationName)
         integrationService.updateIntegrationDefinition(normalizedName, integrationUpdate)
     }
-
-    @Timed
-    @PatchMapping(path = [DEFINITION_PATH + FLIGHT_PATH + INTEGRATION_NAME_PATH])
-    override fun reloadFlightsWithinIntegrationDefinition(
-            @PathVariable integrationName: String
-    ) {
-        ensureAdminAccess()
-        val normalizedName = normalizeIntegrationName(integrationName)
-        integrationService.reloadFlightsWithinIntegrationDefinition(normalizedName)
-    }
-
 
     @Timed
     @DeleteMapping(path = [DEFINITION_PATH + INTEGRATION_NAME_PATH])
