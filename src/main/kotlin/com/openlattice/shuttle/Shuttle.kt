@@ -29,6 +29,8 @@ import com.google.common.base.Stopwatch
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.ListeningExecutorService
 import com.google.common.util.concurrent.MoreExecutors
+import com.hazelcast.core.HazelcastInstance
+import com.hazelcast.core.IMap
 import com.openlattice.ApiUtil
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataIntegrationApi
@@ -40,6 +42,7 @@ import com.openlattice.data.integration.destinations.PostgresDestination
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
+import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.retrofit.RhizomeRetrofitCallException
 import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.logs.Blackbox
@@ -52,6 +55,7 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import java.time.OffsetDateTime
+import java.io.Serializable
 import java.util.*
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.concurrent.Executors
@@ -73,6 +77,7 @@ private lateinit var writeLog: (String, String, OffsetDateTime, IntegrationStatu
 private lateinit var dateTimeStarted: OffsetDateTime
 private lateinit var logEntitySet: EntitySet
 private lateinit var logsDestination: PostgresDestination
+private lateinit var integrationJobs: IMap<UUID, IntegrationStatus>
 private val logProperties = mutableMapOf<FullQualifiedName, PropertyType>()
 private val ptidsByBlackboxProperty = mutableMapOf<BlackboxProperty, UUID>()
 
@@ -80,7 +85,7 @@ private val ptidsByBlackboxProperty = mutableMapOf<BlackboxProperty, UUID>()
  *
  * Integration driving logic.
  */
-class Shuttle(
+class Shuttle (
         private val environment: RetrofitFactory.Environment,
         private val flightPlan: Map<Flight, Payload>,
         private val entitySets: Map<String, EntitySet>,
@@ -93,7 +98,9 @@ class Shuttle(
         private val binaryDestination: StorageDestination,
         private val blackbox: Blackbox,
         private val maybeLogEntitySet: Optional<EntitySet>,
+        private val maybeJobId: Optional<UUID>,
         private val idService: EntityKeyIdService?,
+        private val hazelcastInstance: HazelcastInstance?,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
                 Executors.newFixedThreadPool(2 * threads)
         )
@@ -116,9 +123,13 @@ class Shuttle(
 
     init {
         if (blackbox.enabled) {
+            val jobId = maybeJobId.get()
+            integrationJobs = hazelcastInstance!!.getMap(HazelcastMap.INTEGRATION_JOBS.name)
+
             writeLog = { name, log, time, status ->
                 logger.info(log)
                 storeLog(name, log, time, status)
+                integrationJobs[jobId] = status
             }
 
             blackbox.fqns.forEach {
@@ -481,22 +492,29 @@ class Shuttle(
 
     fun launch(uploadBatchSize: Int): Long {
         val sw = Stopwatch.createStarted()
+        var total = 0L
+        try {
+            total = flightPlan.entries.map { entry ->
+                val launchUpdate = "Launching flight: ${entry.key.name}"
+                dateTimeStarted = OffsetDateTime.now()
+                writeLog(entry.key.name, launchUpdate, dateTimeStarted, IntegrationStatus.IN_PROGRESS)
 
-        val total = flightPlan.entries.map { entry ->
-            val launchUpdate = "Launching flight: ${entry.key.name}"
-            dateTimeStarted = OffsetDateTime.now()
-            writeLog(entry.key.name, launchUpdate, dateTimeStarted, IntegrationStatus.IN_PROGRESS)
+                val tableColsToPrintForFlight = tableColsToPrint[entry.key] ?: listOf()
+                val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrintForFlight)
 
-            val tableColsToPrintForFlight = tableColsToPrint[entry.key] ?: listOf()
-            val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrintForFlight)
-
-            val finishUpdate = "Finished flight: ${entry.key.name}"
-            writeLog(entry.key.name, finishUpdate, OffsetDateTime.now(), IntegrationStatus.SUCCEEDED)
-            count
-        }.sum()
-        logger.info("Executed {} entity writes in flight plan in {} ms.", total, sw.elapsed(TimeUnit.MILLISECONDS))
-        reporter.close()
-        uploadingExecutor.shutdownNow()
+                val finishUpdate = "Finished flight: ${entry.key.name}"
+                writeLog(entry.key.name, finishUpdate, OffsetDateTime.now(), IntegrationStatus.SUCCEEDED)
+                count
+            }.sum()
+            logger.info("Executed {} entity writes in flight plan in {} ms.", total, sw.elapsed(TimeUnit.MILLISECONDS))
+        } catch (ex: java.lang.Exception) {
+            val flightNames = flightPlan.keys.joinToString(", ") { it.name }
+            val exceptionLog = "Encountered exception $ex while integrating flight plain containing flight(s) $flightNames"
+            writeLog(flightNames, exceptionLog, OffsetDateTime.now(), IntegrationStatus.FAILED)
+        } finally {
+            reporter.close()
+            uploadingExecutor.shutdownNow()
+        }
         return total
     }
 

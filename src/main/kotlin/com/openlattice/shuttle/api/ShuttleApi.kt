@@ -1,8 +1,11 @@
 package com.openlattice.shuttle.api
 
 import com.openlattice.shuttle.control.Integration
+import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.control.IntegrationUpdate
 import retrofit2.http.*
+import java.util.*
+import java.util.function.Supplier
 
 
 const val SERVICE = "/shuttle"
@@ -11,20 +14,41 @@ const val BASE = SERVICE + CONTROLLER
 
 const val DEFINITION_PATH = "/definition"
 const val FLIGHT_PATH = "/flight"
+const val STATUS_PATH = "/status"
 
 const val INTEGRATION_NAME = "integrationName"
 const val INTEGRATION_NAME_PATH = "/{$INTEGRATION_NAME}"
+const val JOB_ID = "jobId"
+const val JOB_ID_PATH = "/{$JOB_ID}"
+const val TOKEN = "token"
+const val TOKEN_PATH = "/{$TOKEN}/"
 
 interface ShuttleApi {
 
     /**
-     * Starts an integration on Shuttle Server for a given flight
+     * Starts an integration on Shuttle Server for a given integration
      * @param integrationName the name of the integration to be run
      */
-    @PATCH(BASE + INTEGRATION_NAME_PATH)
+    @PATCH(BASE + INTEGRATION_NAME_PATH + TOKEN_PATH)
     fun startIntegration(
-            @Path(INTEGRATION_NAME) integrationName: String
+            @Path(INTEGRATION_NAME) integrationName: String,
+            @Path(TOKEN) token: String
     )
+
+    /**
+     * Polls the status of an integration
+     * @param jobId the unique id of the integration job
+     */
+    @GET(BASE + STATUS_PATH + JOB_ID_PATH)
+    fun pollIntegration(
+            @Path(JOB_ID) jobId: UUID
+    ): IntegrationStatus
+
+    /**
+     * Polls the statuses of all running integrations
+     */
+    @GET(BASE + STATUS_PATH)
+    fun pollAllIntegrations(): Map<UUID, IntegrationStatus>
 
     /**
      * Creates a new integration definition for running recurring integrations

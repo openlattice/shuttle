@@ -2,10 +2,12 @@ package com.openlattice.shuttle
 
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions.checkState
+import com.google.common.util.concurrent.MoreExecutors
 import com.hazelcast.core.HazelcastInstance
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.Principals
 import com.openlattice.client.ApiClient
+import com.openlattice.client.serialization.SerializableSupplier
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.S3Api
@@ -25,6 +27,7 @@ import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.rhizome.proxy.RetrofitBuilders
 import com.openlattice.shuttle.control.FlightPlanParameters
 import com.openlattice.shuttle.control.Integration
+import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.control.IntegrationUpdate
 import com.openlattice.shuttle.hazelcast.processors.ReloadFlightEntryProcessor
 import com.openlattice.shuttle.hazelcast.processors.UpdateIntegrationEntryProcessor
@@ -39,6 +42,8 @@ import org.springframework.stereotype.Service
 import retrofit2.Retrofit
 import java.lang.Exception
 import java.util.*
+import java.util.concurrent.Executors
+import java.util.concurrent.Semaphore
 
 private val logger = LoggerFactory.getLogger(IntegrationService::class.java)
 private val fetchSize = 10000
@@ -61,7 +66,10 @@ class IntegrationService(
     private val entitySets = hazelcastInstance.getMap<UUID, EntitySet>(HazelcastMap.ENTITY_SETS.name)
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
-    private val creds = missionParameters.auth.credentials
+    private val integrationJobs = hazelcastInstance.getMap<UUID, IntegrationStatus>(HazelcastMap.INTEGRATION_JOBS.name)
+    private val nThreads = 2
+    private val semaphore = Semaphore(nThreads)
+    private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(nThreads))
 
     companion object {
         @JvmStatic
@@ -73,12 +81,11 @@ class IntegrationService(
         }
     }
 
-    fun loadCargo(integrationName: String) {
+    fun loadCargo(integrationName: String, token: String): UUID {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
         val integration = integrations.getValue(integrationName)
 
-//        val authToken = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
-        val apiClient = ApiClient(integration.environment) { "i'matoken" }
+        val apiClient = ApiClient(integration.environment) { token }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
         val flightPlan = mutableMapOf<Flight, Payload>()
@@ -91,27 +98,46 @@ class IntegrationService(
         }
         val destinationsMap = generateDestinationsMap(integration, missionParameters, dataIntegrationApi)
 
+        val jobId = UUID.randomUUID()
+        val shuttle = Shuttle(
+                integration.environment,
+                flightPlan,
+                entitySets.values.associateBy { it.name },
+                entityTypes.values.associateBy { it.id },
+                propertyTypes.values.associateBy { it.type },
+                destinationsMap,
+                dataIntegrationApi,
+                tableColsToPrint,
+                missionParameters,
+                StorageDestination.S3,
+                blackbox,
+                Optional.of(entitySets.getValue(integration.logEntitySetId.get())),
+                Optional.of(jobId),
+                idService,
+                hazelcastInstance
+        )
+//        semaphore.acquire()
+//        executor.submit { shuttle.launch(uploadBatchSize) }
         try {
-            val shuttle = Shuttle(
-                    integration.environment,
-                    flightPlan,
-                    entitySets.values.associateBy { it.name },
-                    entityTypes.values.associateBy { it.id },
-                    propertyTypes.values.associateBy { it.type },
-                    destinationsMap,
-                    dataIntegrationApi,
-                    tableColsToPrint,
-                    missionParameters,
-                    StorageDestination.S3,
-                    blackbox,
-                    Optional.of(entitySets.getValue(integration.logEntitySetId.get())),
-                    idService
-            )
             shuttle.launch(uploadBatchSize)
             logger.info("YOU DID IT :D, integration with name $integrationName completed.")
         } catch (ex: Exception) {
             logger.info("You did not do it :'(, integration with name $integrationName failed with exception $ex")
         }
+//        executor.shutdown()
+        return jobId
+    }
+
+    fun pollIntegrationStatus(jobId: UUID): IntegrationStatus {
+        val status = integrationJobs[jobId] ?: return IntegrationStatus.NOT_IN_PROGRESS
+        if (status == IntegrationStatus.SUCCEEDED || status == IntegrationStatus.FAILED) {
+            integrationJobs.remove(jobId)
+        }
+        return status
+    }
+
+    fun pollAllIntegrationStatuses(): Map<UUID, IntegrationStatus> {
+        return integrationJobs
     }
 
     fun createIntegrationDefinition(integrationName: String, integration: Integration) {

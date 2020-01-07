@@ -311,6 +311,8 @@ class MissionControl(
                 binaryStorageDestination,
                 Blackbox.empty(),
                 Optional.empty(),
+                Optional.empty(),
+                null,
                 null
         )
     }
