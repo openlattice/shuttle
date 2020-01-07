@@ -7,7 +7,6 @@ import com.hazelcast.core.HazelcastInstance
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.Principals
 import com.openlattice.client.ApiClient
-import com.openlattice.client.serialization.SerializableSupplier
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.S3Api
@@ -29,7 +28,6 @@ import com.openlattice.shuttle.control.FlightPlanParameters
 import com.openlattice.shuttle.control.Integration
 import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.control.IntegrationUpdate
-import com.openlattice.shuttle.hazelcast.processors.ReloadFlightEntryProcessor
 import com.openlattice.shuttle.hazelcast.processors.UpdateIntegrationEntryProcessor
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.JdbcPayload
@@ -40,7 +38,6 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import retrofit2.Retrofit
-import java.lang.Exception
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
@@ -99,7 +96,9 @@ class IntegrationService(
         val destinationsMap = generateDestinationsMap(integration, missionParameters, dataIntegrationApi)
 
         var jobId = UUID.randomUUID()
-        while (integrationJobs.containsKey(jobId)) { jobId = UUID.randomUUID() }
+        while (integrationJobs.containsKey(jobId)) {
+            jobId = UUID.randomUUID()
+        }
         val shuttle = Shuttle(
                 integration.environment,
                 flightPlan,
@@ -117,20 +116,16 @@ class IntegrationService(
                 idService,
                 hazelcastInstance
         )
-//        semaphore.acquire()
-//        executor.submit { shuttle.launch(uploadBatchSize) }
-        try {
+
+        executor.submit {
+            semaphore.acquire()
             shuttle.launch(uploadBatchSize)
-            logger.info("YOU DID IT :D, integration with name $integrationName completed.")
-        } catch (ex: Exception) {
-            logger.info("You did not do it :'(, integration with name $integrationName failed with exception $ex")
-        }
-//        executor.shutdown()
+        }.addListener(Runnable { semaphore.release() }, executor)
         return jobId
     }
 
     fun pollIntegrationStatus(jobId: UUID): IntegrationStatus {
-        val status = integrationJobs[jobId] ?: return IntegrationStatus.NOT_IN_PROGRESS
+        val status = integrationJobs[jobId] ?: return IntegrationStatus.NONEXISTENT
         if (status == IntegrationStatus.SUCCEEDED || status == IntegrationStatus.FAILED) {
             integrationJobs.remove(jobId)
         }
@@ -157,11 +152,6 @@ class IntegrationService(
     fun updateIntegrationDefinition(integrationName: String, integrationUpdate: IntegrationUpdate) {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
         integrations.executeOnKey(integrationName, UpdateIntegrationEntryProcessor(integrationUpdate))
-    }
-
-    fun reloadFlightsWithinIntegrationDefinition(integrationName: String) {
-        checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
-        integrations.executeOnKey(integrationName, ReloadFlightEntryProcessor())
     }
 
     fun deleteIntegrationDefinition(integrationName: String) {
