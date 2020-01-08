@@ -19,10 +19,9 @@ class IntegrationsService(hazelcastInstance: HazelcastInstance) {
         private val logger = LoggerFactory.getLogger(IntegrationsService::class.java)
     }
 
-    private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
-    private val entitySets = hazelcastInstance.getMap<UUID, EntitySet>(HazelcastMap.ENTITY_SETS.name)
-    private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
-    private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
+    private val entitySets = HazelcastMap.ENTITY_SETS.getMap( hazelcastInstance )
+    private val entityTypes = HazelcastMap.ENTITY_TYPES.getMap( hazelcastInstance )
+    private val propertyTypes = HazelcastMap.PROPERTY_TYPES.getMap( hazelcastInstance )
     fun runIntegration(integration: Integration) {
 //        val payload = JdbcPayload(getDatasource(integration.source), integration.sql)
         val ptValues = propertyTypes.values
