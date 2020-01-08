@@ -5,7 +5,6 @@ import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.control.IntegrationUpdate
 import retrofit2.http.*
 import java.util.*
-import java.util.function.Supplier
 
 
 const val SERVICE = "/shuttle"
@@ -13,31 +12,31 @@ const val CONTROLLER = "/integration"
 const val BASE = SERVICE + CONTROLLER
 
 const val DEFINITION_PATH = "/definition"
-const val FLIGHT_PATH = "/flight"
 const val STATUS_PATH = "/status"
 
 const val INTEGRATION_NAME = "integrationName"
 const val INTEGRATION_NAME_PATH = "/{$INTEGRATION_NAME}"
 const val JOB_ID = "jobId"
 const val JOB_ID_PATH = "/{$JOB_ID}"
-const val TOKEN = "token"
-const val TOKEN_PATH = "/{$TOKEN}/"
 
 interface ShuttleApi {
 
     /**
      * Starts an integration on Shuttle Server for a given integration
      * @param integrationName the name of the integration to be run
+     * @return the unique id of the integration job
      */
-    @GET(BASE + INTEGRATION_NAME_PATH + TOKEN_PATH)
+    @GET(BASE + INTEGRATION_NAME_PATH)
     fun startIntegration(
-            @Path(INTEGRATION_NAME) integrationName: String,
-            @Path(TOKEN) token: String
+            @Path(INTEGRATION_NAME) integrationName: String
     ): UUID
 
     /**
      * Polls the status of an integration
      * @param jobId the unique id of the integration job
+     * @return the status of the integration
+     * Note, upon retrieving a final status (i.e. succeeded or failed),
+     * the id/status will be removed from memory
      */
     @GET(BASE + STATUS_PATH + JOB_ID_PATH)
     fun pollIntegration(
@@ -66,6 +65,7 @@ interface ShuttleApi {
     /**
      * Gets an existing integration definition
      * @param integrationName the name of the integration definition to get
+     * @return the integration definition
      */
     @GET(BASE + DEFINITION_PATH + INTEGRATION_NAME_PATH)
     fun readIntegrationDefinition(
@@ -76,9 +76,7 @@ interface ShuttleApi {
      * Replaces any number of fields within an existing integration definition
      * @param integrationName the name of the integration definition to be replaced
      * @param integrationUpdate the integration definition to replace an
-     * existing one. Note, if a new flightFilePath is included in the update and the
-     * contents of the yaml at that path have changed, the flight will be updated to
-     * reflect these changes.
+     * existing one.
      */
     @PATCH(BASE + DEFINITION_PATH + INTEGRATION_NAME_PATH)
     fun updateIntegrationDefinition(

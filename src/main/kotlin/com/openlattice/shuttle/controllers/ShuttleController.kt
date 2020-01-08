@@ -3,7 +3,6 @@ package com.openlattice.shuttle.controllers
 import com.codahale.metrics.annotation.Timed
 import com.openlattice.authorization.AuthorizationManager
 import com.openlattice.authorization.AuthorizingComponent
-import com.openlattice.client.serialization.SerializableSupplier
 import com.openlattice.shuttle.*
 import com.openlattice.shuttle.api.*
 import com.openlattice.shuttle.control.Integration
@@ -11,7 +10,6 @@ import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.control.IntegrationUpdate
 import org.springframework.web.bind.annotation.*
 import java.util.*
-import java.util.function.Supplier
 import javax.inject.Inject
 
 @RestController
@@ -25,15 +23,14 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     private lateinit var authorizationManager: AuthorizationManager
 
     @Timed
-    @GetMapping(path = [INTEGRATION_NAME_PATH + TOKEN_PATH])
+    @GetMapping(path = [INTEGRATION_NAME_PATH])
     override fun startIntegration(
-            @PathVariable(INTEGRATION_NAME) integrationName: String,
-            @PathVariable(TOKEN) token: String
+            @PathVariable(INTEGRATION_NAME) integrationName: String
     ): UUID {
         ensureAdminAccess()
-        val tokenTest = jwtToken
+        val token = jwtToken
         val normalizedName = normalizeIntegrationName(integrationName)
-        return integrationService.loadCargo(normalizedName, tokenTest)
+        return integrationService.loadCargo(normalizedName, token)
     }
 
     @Timed
