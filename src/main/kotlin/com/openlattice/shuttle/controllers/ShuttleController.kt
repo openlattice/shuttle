@@ -28,9 +28,8 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
             @PathVariable(INTEGRATION_NAME) integrationName: String
     ): UUID {
         ensureAdminAccess()
-        val token = jwtToken
         val normalizedName = normalizeIntegrationName(integrationName)
-        return integrationService.loadCargo(normalizedName, token)
+        return integrationService.loadCargo(normalizedName)
     }
 
     @Timed

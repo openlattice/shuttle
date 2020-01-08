@@ -64,6 +64,7 @@ class IntegrationService(
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val integrationJobs = hazelcastInstance.getMap<UUID, IntegrationStatus>(HazelcastMap.INTEGRATION_JOBS.name)
+    private val creds = missionParameters.auth.credentials
     private val nThreads = 2
     private val semaphore = Semaphore(nThreads)
     private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(nThreads))
@@ -78,10 +79,11 @@ class IntegrationService(
         }
     }
 
-    fun loadCargo(integrationName: String, token: String): UUID {
+    fun loadCargo(integrationName: String): UUID {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
         val integration = integrations.getValue(integrationName)
 
+        val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
         val apiClient = ApiClient(integration.environment) { token }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
