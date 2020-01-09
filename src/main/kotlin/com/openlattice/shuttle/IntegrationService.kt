@@ -84,7 +84,7 @@ class IntegrationService(
         val integration = integrations.getValue(integrationName)
 
         //val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
-        val apiClient = ApiClient(integration.environment) { "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InBpcGVyQG9wZW5sYXR0aWNlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJ1c2VyX21ldGFkYXRhIjp7fSwiYXBwX21ldGFkYXRhIjp7InJvbGVzIjpbIkF1dGhlbnRpY2F0ZWRVc2VyIiwiYWRtaW4iXSwiYWN0aXZhdGVkIjoiYWN0aXZhdGVkIn0sIm5pY2tuYW1lIjoicGlwZXIiLCJyb2xlcyI6WyJBdXRoZW50aWNhdGVkVXNlciIsImFkbWluIl0sInVzZXJfaWQiOiJnb29nbGUtb2F1dGgyfDExNDczMDU3NjI0MjQ4MTc3NTE4MiIsImlzcyI6Imh0dHBzOi8vb3BlbmxhdHRpY2UuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTE0NzMwNTc2MjQyNDgxNzc1MTgyIiwiYXVkIjoiS1R6Z3l4czZLQmNKSEI4NzJlU01lMmNwVEh6aHhTOTkiLCJpYXQiOjE1Nzg1MjA3NDEsImV4cCI6MTU3ODYwNzE0MX0.TRMkfsAxAN1sMyH-giQ-cwmn63OAu6vfz3wbrBoK43g" }
+        val apiClient = ApiClient(integration.environment) { "testingtoken" }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
         val flightPlan = mutableMapOf<Flight, Payload>()
