@@ -22,12 +22,12 @@ const val JOB_ID_PATH = "/{$JOB_ID}"
 interface ShuttleApi {
 
     /**
-     * Starts an integration on Shuttle Server for a given integration
+     * Enqueues an integration on Shuttle Server for a given integration
      * @param integrationName the name of the integration to be run
      * @return the unique id of the integration job
      */
     @GET(BASE + INTEGRATION_NAME_PATH)
-    fun startIntegration(
+    fun enqueueIntegration(
             @Path(INTEGRATION_NAME) integrationName: String
     ): UUID
 

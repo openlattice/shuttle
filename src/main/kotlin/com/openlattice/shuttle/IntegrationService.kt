@@ -44,10 +44,10 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 
 private val logger = LoggerFactory.getLogger(IntegrationService::class.java)
-private val fetchSize = 10000
-private val readRateLimit = 1000
-private val uploadBatchSize = 10000
-private val nThreads = Runtime.getRuntime().availableProcessors()
+private const val fetchSize = 10000
+private const val readRateLimit = 1000
+private const val uploadBatchSize = 10000
+private val nThreads = 2 * Runtime.getRuntime().availableProcessors()
 
 private lateinit var logEntityType: EntityType
 
@@ -96,6 +96,7 @@ class IntegrationService(
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
         val jobId = generateIntegrationJobId()
         integrationQueue.add(Pair(jobId, integrationName))
+        integrationJobs[jobId] = IntegrationStatus.QUEUED
         return jobId
     }
 

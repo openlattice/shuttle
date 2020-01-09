@@ -24,7 +24,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
 
     @Timed
     @GetMapping(path = [INTEGRATION_NAME_PATH])
-    override fun startIntegration(
+    override fun enqueueIntegration(
             @PathVariable(INTEGRATION_NAME) integrationName: String
     ): UUID {
         ensureAdminAccess()
