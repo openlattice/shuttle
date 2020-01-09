@@ -66,7 +66,7 @@ class IntegrationService(
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val integrationJobs = hazelcastInstance.getMap<UUID, IntegrationStatus>(HazelcastMap.INTEGRATION_JOBS.name)
-    private val integrationQueue = hazelcastInstance.getQueue<Pair<UUID, String>>(HazelcastQueue.INTEGRATION.name)
+    private val integrationQueue = hazelcastInstance.getQueue<Pair<UUID, String>>(HazelcastQueue.INTEGRATION_JOBS.name)
     private val creds = missionParameters.auth.credentials
     private val semaphore = Semaphore(nThreads)
     private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(nThreads))
