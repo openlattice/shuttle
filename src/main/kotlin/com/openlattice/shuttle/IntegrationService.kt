@@ -20,6 +20,7 @@ import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
+import com.openlattice.hazelcast.HazelcastQueue
 import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
@@ -65,6 +66,7 @@ class IntegrationService(
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val integrationJobs = hazelcastInstance.getMap<UUID, IntegrationStatus>(HazelcastMap.INTEGRATION_JOBS.name)
+    private val integrationQueue = hazelcastInstance.getQueue<Pair<UUID, String>>(HazelcastQueue.INTEGRATION.name)
     private val creds = missionParameters.auth.credentials
     private val semaphore = Semaphore(nThreads)
     private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(nThreads))
@@ -79,10 +81,28 @@ class IntegrationService(
         }
     }
 
-    fun loadCargo(integrationName: String): UUID {
-        checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
-        val integration = integrations.getValue(integrationName)
+    init {
+        executor.submit {
+            semaphore.acquire()
+            while (true) {
+                if (semaphore.availablePermits() > 0 && integrationQueue.peek() != null) {
+                    loadCargo()
+                }
+            }
+        }
+    }
 
+    fun enqueueIntegrationJob(integrationName: String): UUID {
+        checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
+        val jobId = generateIntegrationJobId()
+        integrationQueue.add(Pair(jobId, integrationName))
+        return jobId
+    }
+
+    private final fun loadCargo() {
+        val integrationJob = integrationQueue.take()
+        val jobId = integrationJob.first
+        val integration = integrations.getValue(integrationJob.second)
         //val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
         val apiClient = ApiClient(integration.environment) { "testingtoken" }
         val dataIntegrationApi = apiClient.dataIntegrationApi
@@ -96,7 +116,6 @@ class IntegrationService(
             tableColsToPrint[it.flight!!] = it.sourcePrimaryKeyColumns
         }
         val destinationsMap = generateDestinationsMap(integration, missionParameters, dataIntegrationApi)
-        val jobId = generateIntegrationJobId()
 
         val shuttle = Shuttle(
                 integration.environment,
@@ -120,7 +139,6 @@ class IntegrationService(
             semaphore.acquire()
             shuttle.launch(uploadBatchSize)
         }.addListener(Runnable { semaphore.release() }, executor)
-        return jobId
     }
 
     fun pollIntegrationStatus(jobId: UUID): IntegrationStatus {

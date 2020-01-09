@@ -29,7 +29,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     ): UUID {
         ensureAdminAccess()
         val normalizedName = normalizeIntegrationName(integrationName)
-        return integrationService.loadCargo(normalizedName)
+        return integrationService.enqueueIntegrationJob(normalizedName)
     }
 
     @Timed
