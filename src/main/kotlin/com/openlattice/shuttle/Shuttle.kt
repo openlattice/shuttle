@@ -73,15 +73,6 @@ const val MAX_RETRIES = 128
 private val threads = Runtime.getRuntime().availableProcessors()
 private val encoder = Base64.getEncoder()
 
-//vars to be used only when shuttle is run on shuttle server
-private lateinit var writeLog: (String, String, OffsetDateTime, IntegrationStatus) -> Unit
-private lateinit var jobId: UUID
-private lateinit var logEntitySet: EntitySet
-private lateinit var logsDestination: PostgresDestination
-private lateinit var integrationJobs: IMap<UUID, IntegrationStatus>
-private val logProperties = mutableMapOf<FullQualifiedName, PropertyType>()
-private val ptidsByBlackboxProperty = mutableMapOf<BlackboxProperty, UUID>()
-
 /**
  *
  * Integration driving logic.
@@ -122,14 +113,22 @@ class Shuttle (
         }
     }
 
+    //vars to be used only when shuttle is run on shuttle server
+    private var writeLog: (String, String, OffsetDateTime, IntegrationStatus) -> Unit
+    private lateinit var logEntitySet: EntitySet
+    private lateinit var logsDestination: PostgresDestination
+    private lateinit var integrationJobs: IMap<UUID, IntegrationStatus>
+    private val logProperties = mutableMapOf<FullQualifiedName, PropertyType>()
+    private val ptidsByBlackboxProperty = mutableMapOf<BlackboxProperty, UUID>()
+
     init {
         if (blackbox.enabled) {
-            jobId = maybeJobId.get()
+            val jobId = maybeJobId.get()
             integrationJobs = hazelcastInstance!!.getMap(HazelcastMap.INTEGRATION_JOBS.name)
 
-            writeLog = { name, log, time, status ->
+            this.writeLog = { name, log, time, status ->
                 logger.info(log)
-                storeLog(name, log, time, status)
+                storeLog(name, log, time, status, jobId)
                 integrationJobs[jobId] = status
             }
 
@@ -152,7 +151,7 @@ class Shuttle (
             )
 
         } else {
-            writeLog = { _, log, _, _ -> logger.info(log) }
+            this.writeLog = { _, log, _, _ -> logger.info(log) }
         }
     }
 
@@ -501,7 +500,7 @@ class Shuttle (
             total = flightPlan.entries.map { entry ->
                 val launchUpdate = "Launching flight: ${entry.key.name}"
                 writeLog(entry.key.name, launchUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
-
+                Thread.sleep(30000)
                 val tableColsToPrintForFlight = tableColsToPrint[entry.key] ?: listOf()
                 val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrintForFlight)
 
@@ -544,17 +543,17 @@ class Shuttle (
         return if (keyValuesPresent) ApiUtil.generateDefaultEntityId(key.stream(), properties) else ""
     }
 
-    private fun storeLog(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus) {
+    private fun storeLog(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus, jobId: UUID) {
         val logEntitySetId = logEntitySet.id
         val entityId = logEntitySetId.toString() + flightName + jobId + timestamp.toString()
         val ek = EntityKey(logEntitySetId, entityId)
-        val logPropertyData = generateLogPropertyData(flightName, log, timestamp, status)
+        val logPropertyData = generateLogPropertyData(flightName, log, timestamp, status, jobId)
         val entity = Entity(ek, logPropertyData)
         val ekid = idService!!.getEntityKeyId(ek)
         logsDestination.integrateEntities(setOf(entity), mapOf(ek to ekid), mapOf(logEntitySetId to UpdateType.Merge))
     }
 
-    private fun generateLogPropertyData(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus): Map<UUID, Set<Any>> {
+    private fun generateLogPropertyData(flightName: String, log: String, timestamp: OffsetDateTime, status: IntegrationStatus, jobId: UUID): Map<UUID, Set<Any>> {
         val logPropertyData = mutableMapOf<UUID, Set<Any>>()
         logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.JOB_ID)] = setOf(jobId)
         logPropertyData[ptidsByBlackboxProperty.getValue(BlackboxProperty.NAME)] = setOf(flightName)

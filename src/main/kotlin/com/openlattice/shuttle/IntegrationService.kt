@@ -83,8 +83,8 @@ class IntegrationService(
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
         val integration = integrations.getValue(integrationName)
 
-        val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
-        val apiClient = ApiClient(integration.environment) { token }
+        //val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
+        val apiClient = ApiClient(integration.environment) { "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InBpcGVyQG9wZW5sYXR0aWNlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJ1c2VyX21ldGFkYXRhIjp7fSwiYXBwX21ldGFkYXRhIjp7InJvbGVzIjpbIkF1dGhlbnRpY2F0ZWRVc2VyIiwiYWRtaW4iXSwiYWN0aXZhdGVkIjoiYWN0aXZhdGVkIn0sIm5pY2tuYW1lIjoicGlwZXIiLCJyb2xlcyI6WyJBdXRoZW50aWNhdGVkVXNlciIsImFkbWluIl0sInVzZXJfaWQiOiJnb29nbGUtb2F1dGgyfDExNDczMDU3NjI0MjQ4MTc3NTE4MiIsImlzcyI6Imh0dHBzOi8vb3BlbmxhdHRpY2UuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTE0NzMwNTc2MjQyNDgxNzc1MTgyIiwiYXVkIjoiS1R6Z3l4czZLQmNKSEI4NzJlU01lMmNwVEh6aHhTOTkiLCJpYXQiOjE1Nzg1MjA3NDEsImV4cCI6MTU3ODYwNzE0MX0.TRMkfsAxAN1sMyH-giQ-cwmn63OAu6vfz3wbrBoK43g" }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
         val flightPlan = mutableMapOf<Flight, Payload>()
@@ -96,11 +96,8 @@ class IntegrationService(
             tableColsToPrint[it.flight!!] = it.sourcePrimaryKeyColumns
         }
         val destinationsMap = generateDestinationsMap(integration, missionParameters, dataIntegrationApi)
+        val jobId = generateIntegrationJobId()
 
-        var jobId = UUID.randomUUID()
-        while (integrationJobs.containsKey(jobId)) {
-            jobId = UUID.randomUUID()
-        }
         val shuttle = Shuttle(
                 integration.environment,
                 flightPlan,
@@ -127,7 +124,8 @@ class IntegrationService(
     }
 
     fun pollIntegrationStatus(jobId: UUID): IntegrationStatus {
-        val status = integrationJobs[jobId] ?: return IntegrationStatus.NONEXISTENT
+        checkState(integrationJobs.containsKey(jobId), "Job Id $jobId is not assigned to an existing integration job")
+        val status = integrationJobs.getValue(jobId)
         if (status == IntegrationStatus.SUCCEEDED || status == IntegrationStatus.FAILED) {
             integrationJobs.remove(jobId)
         }
@@ -229,6 +227,14 @@ class IntegrationService(
         }
 
         return entitySetDescription
+    }
+
+    private fun generateIntegrationJobId(): UUID {
+        var jobId = UUID.randomUUID()
+        while (integrationJobs.containsKey(jobId)) {
+            jobId = UUID.randomUUID()
+        }
+        return jobId
     }
 
 }
