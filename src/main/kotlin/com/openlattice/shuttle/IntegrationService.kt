@@ -46,6 +46,7 @@ private val logger = LoggerFactory.getLogger(IntegrationService::class.java)
 private val fetchSize = 10000
 private val readRateLimit = 1000
 private val uploadBatchSize = 10000
+private val nThreads = Runtime.getRuntime().availableProcessors()
 
 private lateinit var logEntityType: EntityType
 
@@ -65,7 +66,6 @@ class IntegrationService(
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val integrationJobs = hazelcastInstance.getMap<UUID, IntegrationStatus>(HazelcastMap.INTEGRATION_JOBS.name)
     private val creds = missionParameters.auth.credentials
-    private val nThreads = 2
     private val semaphore = Semaphore(nThreads)
     private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(nThreads))
 

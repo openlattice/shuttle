@@ -36,7 +36,7 @@ class BlackboxPod {
     @Profile(ConfigurationConstants.Profiles.LOCAL_CONFIGURATION_PROFILE)
     fun getLocalBlackboxConfiguration(): Blackbox {
         val config = ResourceConfigurationLoader.loadConfiguration(Blackbox::class.java)
-        logger.info("Using local aws blackbox configuration: {}", config)
+        logger.info("Using local blackbox configuration: {}", config)
         return config
     }
 
