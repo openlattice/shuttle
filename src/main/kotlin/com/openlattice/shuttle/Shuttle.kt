@@ -500,7 +500,7 @@ class Shuttle (
             total = flightPlan.entries.map { entry ->
                 val launchUpdate = "Launching flight: ${entry.key.name}"
                 writeLog(entry.key.name, launchUpdate, OffsetDateTime.now(), IntegrationStatus.IN_PROGRESS)
-                Thread.sleep(30000)
+
                 val tableColsToPrintForFlight = tableColsToPrint[entry.key] ?: listOf()
                 val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrintForFlight)
 
