@@ -93,7 +93,6 @@ class Shuttle (
         private val blackbox: Blackbox,
         private val maybeLogEntitySet: Optional<EntitySet>,
         private val maybeJobId: Optional<UUID>,
-        private val maybeIntegrationName: Optional<String>,
         private val idService: EntityKeyIdService?,
         private val hazelcastInstance: HazelcastInstance?,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
@@ -127,7 +126,6 @@ class Shuttle (
     init {
         if (blackbox.enabled) {
             val jobId = maybeJobId.get()
-            val integrationName = maybeIntegrationName.get()
             integrationJobs = hazelcastInstance!!.getMap(HazelcastMap.INTEGRATION_JOBS.name)
 
             this.writeLog = { name, log, time, status ->

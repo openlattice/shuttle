@@ -147,7 +147,6 @@ class IntegrationService(
                 blackbox,
                 Optional.of(entitySets.getValue(integration.logEntitySetId.get())),
                 Optional.of(jobId),
-                Optional.of(integrationJob.integrationName),
                 idService,
                 hazelcastInstance
         )
