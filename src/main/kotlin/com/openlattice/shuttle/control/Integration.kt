@@ -14,6 +14,7 @@ import java.util.*
  *
  * Represents a data integration, including all fields required to run the integration
  *
+ * @param key a unique ID used for authenticating a call to run an integration
  * @param environment the retrofit environment (e.g. production, local)
  * @param defaultStorage ?????
  * @param s3bucket the url of the s3bucket to be used
@@ -25,6 +26,7 @@ import java.util.*
  * @param flightPlanParameters a map from [Flight] name to [FlightPlanParameters]
  */
 data class Integration(
+        @JsonProperty(SerializationConstants.KEY_FIELD) var key: UUID?,
         @JsonProperty(SerializationConstants.ENVIRONMENT) var environment: RetrofitFactory.Environment,
         @JsonProperty(SerializationConstants.DEFAULT_STORAGE) var defaultStorage: StorageDestination,
         @JsonProperty(SerializationConstants.S3_BUCKET) var s3bucket: String,
@@ -36,11 +38,15 @@ data class Integration(
         @JsonProperty(SerializationConstants.CONNECTIONS) var maxConnections: Optional<Int>,
         @JsonProperty(SerializationConstants.FLIGHT_PLAN_PARAMETERS) var flightPlanParameters: MutableMap<String, FlightPlanParameters>
 ) {
+    init {
+        if (key == null) key = UUID.randomUUID()
+    }
 
     companion object {
 
         @JvmStatic
         fun testData(): Integration {
+            val key = UUID.randomUUID()
             val environment = RetrofitFactory.Environment.LOCAL
             val defaultStorage = StorageDestination.POSTGRES
             val s3bucket = TestDataFactory.random(10)
@@ -49,6 +55,7 @@ data class Integration(
             val start = 1000L
             val period = 5L
             return Integration(
+                    key,
                     environment,
                     defaultStorage,
                     s3bucket,

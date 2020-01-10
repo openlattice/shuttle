@@ -38,6 +38,7 @@ import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import retrofit2.Retrofit
+import java.net.URL
 import java.util.*
 import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
@@ -65,7 +66,7 @@ class IntegrationService(
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val integrationJobs = hazelcastInstance.getMap<UUID, IntegrationJob>(HazelcastMap.INTEGRATION_JOBS.name)
-    private val integrationQueue = hazelcastInstance.getQueue<Pair<UUID, String>>(HazelcastQueue.INTEGRATION_JOBS.name)
+    private val integrationQueue = hazelcastInstance.getQueue<UUID>(HazelcastQueue.INTEGRATION_JOBS.name)
     private val creds = missionParameters.auth.credentials
     private val semaphore = Semaphore(nThreads)
     private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(nThreads))
@@ -88,8 +89,8 @@ class IntegrationService(
             semaphore.acquire()
 
             //load any jobs that were in progress or queued
-            integrationJobs.entrySet(statusPredicate).forEach{
-                integrationQueue.put(it.key to it.value.integrationName)
+            integrationJobs.keySet(statusPredicate).forEach{
+                integrationQueue.put(it)
             }
 
             while (true) {
@@ -100,18 +101,24 @@ class IntegrationService(
         }
     }
 
-    fun enqueueIntegrationJob(integrationName: String): UUID {
+    fun enqueueIntegrationJob(integrationName: String, integrationKey: UUID, callbackUrlAsString: Optional<String>): UUID {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
+        val integration = integrations.getValue(integrationName)
+        checkState(integrationKey == integration.key, "Integration key $integrationKey is incorrect")
+        var maybeCallbackUrl = Optional.empty<URL>()
+        callbackUrlAsString.ifPresent {
+            maybeCallbackUrl = Optional.of(URL(it))
+        }
         val jobId = generateIntegrationJobId()
-        integrationQueue.put(Pair(jobId, integrationName))
-        integrationJobs[jobId] = IntegrationJob(integrationName, IntegrationStatus.QUEUED)
+        integrationQueue.put(jobId)
+        integrationJobs[jobId] = IntegrationJob(integrationName, IntegrationStatus.QUEUED, maybeCallbackUrl)
         return jobId
     }
 
     private final fun loadCargo() {
-        val integrationJob = integrationQueue.take()
-        val jobId = integrationJob.first
-        val integration = integrations.getValue(integrationJob.second)
+        val jobId = integrationQueue.take()
+        val integrationJob = integrationJobs.getValue(jobId)
+        val integration = integrations.getValue(integrationJob.integrationName)
         //val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
         val apiClient = ApiClient(integration.environment) { "testingtoken" }
         val dataIntegrationApi = apiClient.dataIntegrationApi
@@ -140,7 +147,7 @@ class IntegrationService(
                 blackbox,
                 Optional.of(entitySets.getValue(integration.logEntitySetId.get())),
                 Optional.of(jobId),
-                Optional.of(integrationJob.second),
+                Optional.of(integrationJob.integrationName),
                 idService,
                 hazelcastInstance
         )
@@ -148,27 +155,29 @@ class IntegrationService(
         executor.submit {
             semaphore.acquire()
             shuttle.launch(uploadBatchSize)
-        }.addListener(Runnable { semaphore.release() }, executor)
+        }.addListener(Runnable {
+            semaphore.release()
+            integrationJob.callbackUrl.ifPresent {
+                submitCallback(it)
+            }
+        }, executor)
     }
 
     fun pollIntegrationStatus(jobId: UUID): IntegrationStatus {
         checkState(integrationJobs.containsKey(jobId), "Job Id $jobId is not assigned to an existing integration job")
-        val status = integrationJobs.getValue(jobId).integrationStatus
-        if (status == IntegrationStatus.SUCCEEDED || status == IntegrationStatus.FAILED) {
-            integrationJobs.remove(jobId)
-        }
-        return status
+        return integrationJobs.getValue(jobId).integrationStatus
     }
 
     fun pollAllIntegrationStatuses(): Map<UUID, IntegrationJob> {
         return integrationJobs
     }
 
-    fun createIntegrationDefinition(integrationName: String, integration: Integration) {
+    fun createIntegrationDefinition(integrationName: String, integration: Integration): UUID {
         checkState(!integrations.containsKey(integrationName), "An integration with name $integrationName already exists.")
         val logEntitySetId = createLogEntitySet(integrationName, integration)
         integration.logEntitySetId = Optional.of(logEntitySetId)
         integrations[integrationName] = integration
+        return integration.key!!
     }
 
     fun readIntegrationDefinition(integrationName: String): Integration {
@@ -262,6 +271,10 @@ class IntegrationService(
             jobId = UUID.randomUUID()
         }
         return jobId
+    }
+
+    private fun submitCallback(url: URL) {
+
     }
 
 }

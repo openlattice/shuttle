@@ -19,6 +19,7 @@ class IntegrationStreamSerializer : TestableSelfRegisteringStreamSerializer<Inte
         private val storageDestinations = StorageDestination.values()
 
         fun serialize(output: ObjectDataOutput, obj: Integration) {
+            UUIDStreamSerializer.serialize(output, obj.key)
             output.writeInt(obj.environment.ordinal)
             output.writeInt(obj.defaultStorage.ordinal)
             output.writeUTF(obj.s3bucket)
@@ -33,6 +34,7 @@ class IntegrationStreamSerializer : TestableSelfRegisteringStreamSerializer<Inte
         }
 
         fun deserialize(input: ObjectDataInput): Integration {
+            val key = UUIDStreamSerializer.deserialize(input)
             val environment = environments[input.readInt()]
             val defaultStorage = storageDestinations[input.readInt()]
             val s3bucket = input.readUTF()
@@ -48,6 +50,7 @@ class IntegrationStreamSerializer : TestableSelfRegisteringStreamSerializer<Inte
             }.toList()
             val flightPlanParams = flightPlanParamsKeys.zip(flightPlanParamsValues).toMap().toMutableMap()
             return Integration(
+                    key,
                     environment,
                     defaultStorage,
                     s3bucket,

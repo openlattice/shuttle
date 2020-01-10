@@ -48,6 +48,7 @@ import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.retrofit.RhizomeRetrofitCallException
 import com.openlattice.shuttle.control.IntegrationJob
 import com.openlattice.shuttle.control.IntegrationStatus
+import com.openlattice.shuttle.hazelcast.processors.UpdateIntegrationStatusEntryProcessor
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.logs.BlackboxProperty
 import com.openlattice.shuttle.payload.Payload
@@ -132,7 +133,7 @@ class Shuttle (
             this.writeLog = { name, log, time, status ->
                 logger.info(log)
                 storeLog(name, log, time, status, jobId)
-                integrationJobs[jobId] = IntegrationJob(integrationName, status)
+                integrationJobs.executeOnKey(jobId, UpdateIntegrationStatusEntryProcessor(status))
             }
 
             blackbox.fqns.forEach {
