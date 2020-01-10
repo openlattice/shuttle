@@ -1,6 +1,7 @@
 package com.openlattice.shuttle.api
 
 import com.openlattice.shuttle.control.Integration
+import com.openlattice.shuttle.control.IntegrationJob
 import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.control.IntegrationUpdate
 import retrofit2.http.*
@@ -47,7 +48,7 @@ interface ShuttleApi {
      * Polls the statuses of all running integrations
      */
     @GET(BASE + STATUS_PATH)
-    fun pollAllIntegrations(): Map<UUID, IntegrationStatus>
+    fun pollAllIntegrations(): Map<UUID, IntegrationJob>
 
     /**
      * Creates a new integration definition for running recurring integrations

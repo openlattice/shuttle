@@ -35,7 +35,6 @@ import com.openlattice.edm.PostgresEdmManager
 import com.openlattice.edm.properties.PostgresTypeManager
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
 import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
-import com.openlattice.hazelcast.pods.MapstoresPod
 import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
@@ -65,6 +64,7 @@ import javax.annotation.PostConstruct
 import javax.inject.Inject
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
+import com.openlattice.shuttle.mapstore.IntegrationJobsMapstore
 
 /**
  *
@@ -313,6 +313,9 @@ class ShuttleServicesPod {
 
     @Bean
     fun integrationsMapstore() = IntegrationsMapstore(hds)
+
+    @Bean
+    fun integrationJobsMapstore() = IntegrationJobsMapstore(hds)
 
     @Bean
     fun aclKeyReservationService() = HazelcastAclKeyReservationService(hazelcastInstance)

@@ -6,6 +6,7 @@ import com.openlattice.authorization.AuthorizingComponent
 import com.openlattice.shuttle.*
 import com.openlattice.shuttle.api.*
 import com.openlattice.shuttle.control.Integration
+import com.openlattice.shuttle.control.IntegrationJob
 import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.control.IntegrationUpdate
 import org.springframework.web.bind.annotation.*
@@ -43,7 +44,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
 
     @Timed
     @GetMapping(path = [STATUS_PATH])
-    override fun pollAllIntegrations(): Map<UUID, IntegrationStatus> {
+    override fun pollAllIntegrations(): Map<UUID, IntegrationJob> {
         ensureAdminAccess()
         return integrationService.pollAllIntegrationStatuses()
     }

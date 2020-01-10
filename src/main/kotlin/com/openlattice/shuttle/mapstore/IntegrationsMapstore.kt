@@ -4,8 +4,6 @@ import com.dataloom.mappers.ObjectMappers
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.hazelcast.config.InMemoryFormat
 import com.hazelcast.config.MapConfig
-import com.hazelcast.config.MapIndexConfig
-import com.hazelcast.config.MapStoreConfig
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.mapstores.TestDataFactory
 import com.openlattice.postgres.PostgresColumn.INTEGRATION
@@ -53,10 +51,6 @@ class IntegrationsMapstore(hds: HikariDataSource) : AbstractBasePostgresMapstore
     override fun getMapConfig(): MapConfig {
         return super.getMapConfig()
                 .setInMemoryFormat(InMemoryFormat.OBJECT)
-    }
-
-    override fun getMapStoreConfig(): MapStoreConfig {
-        return super.getMapStoreConfig()
     }
 
     override fun mapToKey(rs: ResultSet): String {

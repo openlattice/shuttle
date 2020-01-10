@@ -46,6 +46,7 @@ import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.retrofit.RhizomeRetrofitCallException
+import com.openlattice.shuttle.control.IntegrationJob
 import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.logs.BlackboxProperty
@@ -91,6 +92,7 @@ class Shuttle (
         private val blackbox: Blackbox,
         private val maybeLogEntitySet: Optional<EntitySet>,
         private val maybeJobId: Optional<UUID>,
+        private val maybeIntegrationName: Optional<String>,
         private val idService: EntityKeyIdService?,
         private val hazelcastInstance: HazelcastInstance?,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
@@ -117,19 +119,20 @@ class Shuttle (
     private var writeLog: (String, String, OffsetDateTime, IntegrationStatus) -> Unit
     private lateinit var logEntitySet: EntitySet
     private lateinit var logsDestination: PostgresDestination
-    private lateinit var integrationJobs: IMap<UUID, IntegrationStatus>
+    private lateinit var integrationJobs: IMap<UUID, IntegrationJob>
     private val logProperties = mutableMapOf<FullQualifiedName, PropertyType>()
     private val ptidsByBlackboxProperty = mutableMapOf<BlackboxProperty, UUID>()
 
     init {
         if (blackbox.enabled) {
             val jobId = maybeJobId.get()
+            val integrationName = maybeIntegrationName.get()
             integrationJobs = hazelcastInstance!!.getMap(HazelcastMap.INTEGRATION_JOBS.name)
 
             this.writeLog = { name, log, time, status ->
                 logger.info(log)
                 storeLog(name, log, time, status, jobId)
-                integrationJobs[jobId] = status
+                integrationJobs[jobId] = IntegrationJob(integrationName, status)
             }
 
             blackbox.fqns.forEach {

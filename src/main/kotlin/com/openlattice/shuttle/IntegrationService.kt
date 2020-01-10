@@ -4,6 +4,7 @@ import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions.checkState
 import com.google.common.util.concurrent.MoreExecutors
 import com.hazelcast.core.HazelcastInstance
+import com.hazelcast.query.Predicates
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.Principals
 import com.openlattice.client.ApiClient
@@ -25,12 +26,10 @@ import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.rhizome.proxy.RetrofitBuilders
-import com.openlattice.shuttle.control.FlightPlanParameters
-import com.openlattice.shuttle.control.Integration
-import com.openlattice.shuttle.control.IntegrationStatus
-import com.openlattice.shuttle.control.IntegrationUpdate
+import com.openlattice.shuttle.control.*
 import com.openlattice.shuttle.hazelcast.processors.UpdateIntegrationEntryProcessor
 import com.openlattice.shuttle.logs.Blackbox
+import com.openlattice.shuttle.mapstore.INTEGRATION_STATUS
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
@@ -65,16 +64,19 @@ class IntegrationService(
     private val entitySets = hazelcastInstance.getMap<UUID, EntitySet>(HazelcastMap.ENTITY_SETS.name)
     private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
-    private val integrationJobs = hazelcastInstance.getMap<UUID, IntegrationStatus>(HazelcastMap.INTEGRATION_JOBS.name)
+    private val integrationJobs = hazelcastInstance.getMap<UUID, IntegrationJob>(HazelcastMap.INTEGRATION_JOBS.name)
     private val integrationQueue = hazelcastInstance.getQueue<Pair<UUID, String>>(HazelcastQueue.INTEGRATION_JOBS.name)
     private val creds = missionParameters.auth.credentials
     private val semaphore = Semaphore(nThreads)
     private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(nThreads))
+    private val statusPredicate = Predicates.or(
+            Predicates.equal(INTEGRATION_STATUS, IntegrationStatus.IN_PROGRESS),
+            Predicates.equal(INTEGRATION_STATUS, IntegrationStatus.QUEUED)
+    )
 
     companion object {
         @JvmStatic
         fun init(blackbox: Blackbox, dataModelService: EdmManager) {
-
             if (blackbox.enabled) {
                 logEntityType = dataModelService.getEntityType(FullQualifiedName(blackbox.entityTypeFqn))
             }
@@ -82,10 +84,16 @@ class IntegrationService(
     }
 
     init {
-        executor.submit {
+        executor.execute {
             semaphore.acquire()
+
+            //load any jobs that were in progress or queued
+            integrationJobs.entrySet(statusPredicate).forEach{
+                integrationQueue.put(it.key to it.value.integrationName)
+            }
+
             while (true) {
-                if (semaphore.availablePermits() > 0 && integrationQueue.peek() != null) {
+                if (semaphore.availablePermits() > 0) {
                     loadCargo()
                 }
             }
@@ -95,8 +103,8 @@ class IntegrationService(
     fun enqueueIntegrationJob(integrationName: String): UUID {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
         val jobId = generateIntegrationJobId()
-        integrationQueue.add(Pair(jobId, integrationName))
-        integrationJobs[jobId] = IntegrationStatus.QUEUED
+        integrationQueue.put(Pair(jobId, integrationName))
+        integrationJobs[jobId] = IntegrationJob(integrationName, IntegrationStatus.QUEUED)
         return jobId
     }
 
@@ -105,7 +113,7 @@ class IntegrationService(
         val jobId = integrationJob.first
         val integration = integrations.getValue(integrationJob.second)
         //val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
-        val apiClient = ApiClient(integration.environment) { "testingtoken" }
+        val apiClient = ApiClient(integration.environment) { "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBpcGVyQG9wZW5sYXR0aWNlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJ1c2VyX21ldGFkYXRhIjp7fSwiYXBwX21ldGFkYXRhIjp7InJvbGVzIjpbIkF1dGhlbnRpY2F0ZWRVc2VyIiwiYWRtaW4iXSwiYWN0aXZhdGVkIjoiYWN0aXZhdGVkIn0sIm5pY2tuYW1lIjoicGlwZXIiLCJyb2xlcyI6WyJBdXRoZW50aWNhdGVkVXNlciIsImFkbWluIl0sInVzZXJfaWQiOiJnb29nbGUtb2F1dGgyfDExNDczMDU3NjI0MjQ4MTc3NTE4MiIsImlzcyI6Imh0dHBzOi8vb3BlbmxhdHRpY2UuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTE0NzMwNTc2MjQyNDgxNzc1MTgyIiwiYXVkIjoiS1R6Z3l4czZLQmNKSEI4NzJlU01lMmNwVEh6aHhTOTkiLCJpYXQiOjE1Nzg2MTI4MjksImV4cCI6MTU3ODY5OTIyOX0.-TbgsunB0-HVzft-vX5r_0KgPlUBNZ4ezUAsKbB35UE" }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
         val flightPlan = mutableMapOf<Flight, Payload>()
@@ -132,6 +140,7 @@ class IntegrationService(
                 blackbox,
                 Optional.of(entitySets.getValue(integration.logEntitySetId.get())),
                 Optional.of(jobId),
+                Optional.of(integrationJob.second),
                 idService,
                 hazelcastInstance
         )
@@ -144,14 +153,14 @@ class IntegrationService(
 
     fun pollIntegrationStatus(jobId: UUID): IntegrationStatus {
         checkState(integrationJobs.containsKey(jobId), "Job Id $jobId is not assigned to an existing integration job")
-        val status = integrationJobs.getValue(jobId)
+        val status = integrationJobs.getValue(jobId).integrationStatus
         if (status == IntegrationStatus.SUCCEEDED || status == IntegrationStatus.FAILED) {
             integrationJobs.remove(jobId)
         }
         return status
     }
 
-    fun pollAllIntegrationStatuses(): Map<UUID, IntegrationStatus> {
+    fun pollAllIntegrationStatuses(): Map<UUID, IntegrationJob> {
         return integrationJobs
     }
 
@@ -160,7 +169,6 @@ class IntegrationService(
         val logEntitySetId = createLogEntitySet(integrationName, integration)
         integration.logEntitySetId = Optional.of(logEntitySetId)
         integrations[integrationName] = integration
-
     }
 
     fun readIntegrationDefinition(integrationName: String): Integration {
