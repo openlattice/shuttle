@@ -7,7 +7,7 @@ import com.openlattice.data.integration.StorageDestination
 import com.openlattice.shuttle.Flight
 import java.util.*
 
-class IntegrationUpdate(
+data class IntegrationUpdate(
     @JsonProperty(SerializationConstants.ENVIRONMENT) val environment: Optional<RetrofitFactory.Environment>,
     @JsonProperty(SerializationConstants.DEFAULT_STORAGE) val defaultStorage: Optional<StorageDestination>,
     @JsonProperty(SerializationConstants.S3_BUCKET) val s3bucket: Optional<String>,
