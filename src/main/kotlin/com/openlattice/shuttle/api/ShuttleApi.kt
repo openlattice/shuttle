@@ -43,8 +43,6 @@ interface ShuttleApi {
      * Polls the status of an integration
      * @param jobId the unique id of the integration job
      * @return the status of the integration
-     * Note, upon retrieving a final status (i.e. succeeded or failed),
-     * the id/status will be removed from memory
      */
     @GET(BASE + STATUS_PATH + JOB_ID_PATH)
     fun pollIntegration(
