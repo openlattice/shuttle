@@ -44,9 +44,9 @@ import java.util.concurrent.Executors
 import java.util.concurrent.Semaphore
 
 private val logger = LoggerFactory.getLogger(IntegrationService::class.java)
-private const val fetchSize = 10000
-private const val readRateLimit = 1000
-private const val uploadBatchSize = 10000
+private const val fetchSize = 10_000
+private const val readRateLimit = 1_000
+private const val uploadBatchSize = 10_000
 private val nThreads = 2 * Runtime.getRuntime().availableProcessors()
 
 private lateinit var logEntityType: EntityType
@@ -101,17 +101,13 @@ class IntegrationService(
         }
     }
 
-    fun enqueueIntegrationJob(integrationName: String, integrationKey: UUID, callbackUrlAsString: Optional<String>): UUID {
+    fun enqueueIntegrationJob(integrationName: String, integrationKey: UUID): UUID {
         checkIntegrationExists(integrationName)
         val integration = integrations.getValue(integrationName)
         checkState(integrationKey == integration.key, "Integration key $integrationKey is incorrect")
-        var maybeCallbackUrl = Optional.empty<URL>()
-        callbackUrlAsString.ifPresent {
-            maybeCallbackUrl = Optional.of(URL(it))
-        }
         val jobId = generateIntegrationJobId()
         integrationQueue.put(jobId)
-        integrationJobs[jobId] = IntegrationJob(integrationName, IntegrationStatus.QUEUED, maybeCallbackUrl)
+        integrationJobs[jobId] = IntegrationJob(integrationName, IntegrationStatus.QUEUED)
         return jobId
     }
 
@@ -158,14 +154,14 @@ class IntegrationService(
             shuttle.launch(uploadBatchSize)
         }.addListener(Runnable {
             semaphore.release()
-            integrationJob.callbackUrl.ifPresent {
+            integration.callbackUrls.ifPresent {
                 submitCallback(it)
             }
         }, executor)
     }
 
     fun pollIntegrationStatus(jobId: UUID): IntegrationStatus {
-        checkState(integrationJobs.containsKey(jobId), "Job Id $jobId is not assigned to an existing integration job")
+        checkIntegrationJobExists(jobId)
         return integrationJobs.getValue(jobId).integrationStatus
     }
 
@@ -173,8 +169,22 @@ class IntegrationService(
         return integrationJobs
     }
 
+    fun deleteIntegrationJobStatus(jobId: UUID) {
+        checkIntegrationJobExists(jobId)
+        integrationJobs.remove(jobId)
+    }
+
     fun createIntegrationDefinition(integrationName: String, integration: Integration): UUID {
         checkState(!integrations.containsKey(integrationName), "An integration with name $integrationName already exists.")
+        integration.callbackUrls.ifPresent {
+            try {
+                it.forEach { url ->
+                    URL(url).toURI()
+                }
+            } catch (ex: Exception) {
+                logger.error("Callback URL was not properly formatted")
+            }
+        }
         val logEntitySetId = createLogEntitySet(integrationName, integration)
         integration.logEntitySetId = Optional.of(logEntitySetId)
         integrations[integrationName] = integration
@@ -196,6 +206,10 @@ class IntegrationService(
         val integration = integrations.getValue(integrationName)
         integrations.remove(integrationName)
         entitySetManager.deleteEntitySet(integration.logEntitySetId.get())
+    }
+
+    private fun checkIntegrationJobExists(jobId: UUID) {
+        checkState(integrationJobs.containsKey(jobId), "Job Id $jobId is not assigned to an existing integration job")
     }
 
     private fun checkIntegrationExists(integrationName: String) {
@@ -281,8 +295,11 @@ class IntegrationService(
         return jobId
     }
 
-    private fun submitCallback(url: URL) {
-
+    private fun submitCallback(urls: List<String>) {
+        urls.forEach {
+            val url = URL(it)
+            //TODO actually submit callback
+        }
     }
 
 }
