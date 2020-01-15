@@ -89,7 +89,7 @@ class IntegrationService(
             semaphore.acquire()
 
             //load any jobs that were in progress or queued
-            integrationJobs.keySet(statusPredicate).forEach{
+            integrationJobs.keySet(statusPredicate).forEach {
                 integrationQueue.put(it)
             }
 
@@ -218,18 +218,18 @@ class IntegrationService(
                 dstDataSource
         )
 
-        if (s3BucketUrl.isNotBlank()) {
-            val s3Api = Retrofit.Builder()
-                    .baseUrl(s3BucketUrl)
-                    .addConverterFactory(RhizomeByteConverterFactory())
-                    .addConverterFactory(RhizomeJacksonConverterFactory(ObjectMappers.getJsonMapper()))
-                    .addCallAdapterFactory(RhizomeCallAdapterFactory())
-                    .client(RetrofitBuilders.okHttpClient().build())
-                    .build().create(S3Api::class.java)
-            val s3Destination = PostgresS3Destination(pgDestination, s3Api, dataIntegrationApi)
-            return mapOf(StorageDestination.POSTGRES to pgDestination, StorageDestination.S3 to s3Destination)
+        if (s3BucketUrl.isBlank()) {
+            return mapOf(StorageDestination.POSTGRES to pgDestination)
         }
-        return mapOf(StorageDestination.POSTGRES to pgDestination)
+        val s3Api = Retrofit.Builder()
+                .baseUrl(s3BucketUrl)
+                .addConverterFactory(RhizomeByteConverterFactory())
+                .addConverterFactory(RhizomeJacksonConverterFactory(ObjectMappers.getJsonMapper()))
+                .addCallAdapterFactory(RhizomeCallAdapterFactory())
+                .client(RetrofitBuilders.okHttpClient().build())
+                .build().create(S3Api::class.java)
+        val s3Destination = PostgresS3Destination(pgDestination, s3Api, dataIntegrationApi)
+        return mapOf(StorageDestination.POSTGRES to pgDestination, StorageDestination.S3 to s3Destination)
     }
 
     private fun createLogEntitySet(integrationName: String, integration: Integration): UUID {
