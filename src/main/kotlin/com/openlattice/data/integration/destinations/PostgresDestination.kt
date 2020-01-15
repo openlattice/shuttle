@@ -123,8 +123,9 @@ class PostgresDestination(
                                             connection, entityMap.keys.map { getPartition(it, partitions) }
                                     )
 
-                                    when (updateTypes.getValue(entitySetId)) {
-                                        UpdateType.Replace, UpdateType.PartialReplace -> tombstone(
+                                    if (updateTypes.getValue(entitySetId) == UpdateType.Replace
+                                            || updateTypes.getValue(entitySetId) == UpdateType.PartialReplace) {
+                                        tombstone(
                                                 updatePropertyValueVersion,
                                                 tombstoneLinks,
                                                 entitySet,
@@ -194,9 +195,9 @@ class PostgresDestination(
     ): Long {
         val sw = Stopwatch.createStarted()
         val dataEdgeKeys = data.map {
-            val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])
-            val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds[it.dst])
-            val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds[it.key])
+            val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds.getValue(it.src))
+            val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds.getValue(it.dst))
+            val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds.getValue(it.key))
             DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
         }.toSet()
         val numCreatedEdges = createEdges(dataEdgeKeys)
@@ -287,13 +288,7 @@ class PostgresDestination(
                 values.map { value ->
                     val dataType = propertyTypes.getValue(propertyTypeId).datatype
 
-                    val (propertyHash, insertValue) = getPropertyHash(
-                            entitySetId,
-                            entityKeyId,
-                            propertyTypeId,
-                            value,
-                            dataType
-                    )
+                    val (propertyHash, insertValue) = getPropertyHash(value, dataType)
 
                     upsertPropertyValue.setObject(1, entitySetId)
                     upsertPropertyValue.setObject(2, entityKeyId)
@@ -370,13 +365,7 @@ class PostgresDestination(
         return updatedLinkedEntities
     }
 
-    private fun getPropertyHash(
-            entitySetId: UUID,
-            entityKeyId: UUID,
-            propertyTypeId: UUID,
-            value: Any,
-            dataType: EdmPrimitiveTypeKind
-    ): Pair<ByteArray, Any> {
+    private fun getPropertyHash(value: Any, dataType: EdmPrimitiveTypeKind): Pair<ByteArray, Any> {
         return PostgresDataHasher.hashObject(value, dataType) to value
     }
 }

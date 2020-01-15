@@ -88,9 +88,9 @@ abstract class BaseS3Destination(
             val entities = data.map { Entity(it.key, it.details) }
 
             val edges = data.map {
-                val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])
-                val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds[it.dst])
-                val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds[it.key])
+                val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds.getValue(it.src))
+                val dstDataKey = EntityDataKey(it.dst.entitySetId, entityKeyIds.getValue(it.dst))
+                val edgeDataKey = EntityDataKey(it.key.entitySetId, entityKeyIds.getValue(it.key))
                 DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
             }.toSet()
             integrateEntities(entities, entityKeyIds, updateTypes) + createAssociations(edges)
@@ -98,7 +98,7 @@ abstract class BaseS3Destination(
     }
 
     private fun uploadToS3WithRetry(s3entitiesAndValues: List<Pair<S3EntityData, ByteArray>>) {
-        var currentRetryCount = 0
+        val currentRetryCount = 0
         val retryStrategy = ExponentialBackoff(MAX_DELAY_MILLIS)
 
         val (s3entities, values) = s3entitiesAndValues.unzip()
