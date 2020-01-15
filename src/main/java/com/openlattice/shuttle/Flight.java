@@ -50,14 +50,14 @@ public class Flight implements Serializable {
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.ASSOCIATION_DEFINITIONS_FIELD )
                     Optional<Map<String, AssociationDefinition>> associationDefinitions,
-            @JsonProperty( SerializationConstants.NAME) Optional<String> name,
-            @JsonProperty( SerializationConstants.TAGS) Optional<Set<String>> tags
+            @JsonProperty( SerializationConstants.NAME ) Optional<String> name,
+            @JsonProperty( SerializationConstants.TAGS ) Optional<Set<String>> tags
     ) {
         this.condition = condition;
         this.entityDefinitions = entityDefinitions;
         this.associationDefinitions = associationDefinitions.orElseGet( HashMap::new );
-        this.name = name.orElse("Anon");
-        this.tags = tags.orElseGet(HashSet::new);
+        this.name = name.orElse( "Anon" );
+        this.tags = tags.orElseGet( HashSet::new );
 
         if ( condition.isPresent() ) {
             this.valueMapper = new ConditionValueMapper( condition.get() );
@@ -86,7 +86,9 @@ public class Flight implements Serializable {
         return name;
     }
 
-    public Set<String> getTags() { return tags;}
+    public Set<String> getTags() {
+        return tags;
+    }
 
     @JsonIgnore
     public Collection<EntityDefinition> getEntities() {
