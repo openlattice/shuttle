@@ -36,6 +36,7 @@ data class Integration(
         @JsonProperty(SerializationConstants.START) var start: Long,
         @JsonProperty(SerializationConstants.PERIOD) var period: Long,
         @JsonProperty(SerializationConstants.CONNECTIONS) var maxConnections: Optional<Int>,
+        @JsonProperty(SerializationConstants.CALLBACK) var callbackUrls: Optional<List<String>>,
         @JsonProperty(SerializationConstants.FLIGHT_PLAN_PARAMETERS) var flightPlanParameters: MutableMap<String, FlightPlanParameters>
 ) {
     init {
@@ -65,6 +66,7 @@ data class Integration(
                     start,
                     period,
                     Optional.of(5),
+                    Optional.empty(),
                     mutableMapOf(TestDataFactory.randomAlphanumeric(5) to FlightPlanParameters.testData())
             )
         }
