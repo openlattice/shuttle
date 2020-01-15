@@ -22,6 +22,8 @@ package com.openlattice.shuttle;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.client.serialization.SerializationConstants;
@@ -39,8 +41,8 @@ public class Flight implements Serializable {
 
     private final Map<String, EntityDefinition>                entityDefinitions;
     private final Map<String, AssociationDefinition>           associationDefinitions;
-    private       String                                       name;
-    private       Set<String>                                  tags;
+    private final String                                       name;
+    private final Set<String>                                  tags;
     public final  SerializableFunction<Map<String, Object>, ?> valueMapper;
     public final  Optional<Conditions>                         condition;
 
@@ -56,9 +58,9 @@ public class Flight implements Serializable {
     ) {
         this.condition = condition;
         this.entityDefinitions = entityDefinitions;
-        this.associationDefinitions = associationDefinitions.orElseGet( HashMap::new );
+        this.associationDefinitions = associationDefinitions.orElseGet( ImmutableMap::of );
         this.name = name.orElse( anon );
-        this.tags = tags.orElseGet( HashSet::new );
+        this.tags = tags.orElseGet( ImmutableSet::of );
 
         if ( condition.isPresent() ) {
             this.valueMapper = new ConditionValueMapper( condition.get() );
@@ -73,6 +75,7 @@ public class Flight implements Serializable {
         this.valueMapper = null;
         this.associationDefinitions = builder.associationDefinitionMap;
         this.name = builder.name;
+        this.tags = ImmutableSet.of();
     }
 
     public static Flight.Builder newFlight() {
