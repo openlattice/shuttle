@@ -97,7 +97,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     }
 
     private fun normalizeIntegrationName(integrationName: String): String {
-        return integrationName.toLowerCase().trim()
+        return integrationName.trim().toLowerCase()
     }
 
 }
