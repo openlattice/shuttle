@@ -72,7 +72,7 @@ const val DEFAULT_UPLOAD_SIZE = 100_000
 const val MAX_DELAY = 8L * 60L * 1000L
 const val MAX_RETRIES = 128
 
-private val nThreads = 2 * Runtime.getRuntime().availableProcessors()
+private val threadCount = 2 * Runtime.getRuntime().availableProcessors()
 private val encoder = Base64.getEncoder()
 
 /**
@@ -96,7 +96,7 @@ class Shuttle (
         private val idService: EntityKeyIdService?,
         private val hazelcastInstance: HazelcastInstance?,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
-                Executors.newFixedThreadPool(nThreads)
+                Executors.newFixedThreadPool(threadCount)
         )
 ) {
     companion object {
@@ -157,7 +157,7 @@ class Shuttle (
         }
     }
 
-    private val uploadRegulator = Semaphore(nThreads)
+    private val uploadRegulator = Semaphore(threadCount)
 
     private fun takeoff(
             flight: Flight,
@@ -197,7 +197,7 @@ class Shuttle (
 
                     }.addListener(Runnable { uploadRegulator.release() }, uploadingExecutor)
                 }
-        uploadRegulator.acquire(nThreads)
+        uploadRegulator.acquire(threadCount)
 
         return StorageDestination.values().map {
             val integrationStatusUpdate = "Integrated ${integratedEntities.getValue(it)} entities and ${integratedEdges.getValue(it)} " +
