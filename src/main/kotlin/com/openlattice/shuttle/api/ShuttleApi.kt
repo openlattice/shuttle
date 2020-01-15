@@ -56,6 +56,15 @@ interface ShuttleApi {
     fun pollAllIntegrations(): Map<UUID, IntegrationJob>
 
     /**
+     * Deletes an integration job status from the integrationJobs map
+     * @param jobId the unique id of the integration job
+     */
+    @DELETE(BASE + STATUS_PATH + JOB_ID_PATH)
+    fun deleteIntegrationJobStatus(
+            @Path(JOB_ID) jobId: UUID
+    )
+
+    /**
      * Creates a new integration definition for running recurring integrations
      * @param integrationName the name of the integration definition to be created
      * @param integrationDefinition the definition of the integration. The path to

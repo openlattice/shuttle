@@ -34,7 +34,7 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
             @PathVariable(CALLBACK) callbackUrl: Optional<String>
     ): UUID {
         val normalizedName = normalizeIntegrationName(integrationName)
-        return integrationService.enqueueIntegrationJob(normalizedName, integrationKey, callbackUrl)
+        return integrationService.enqueueIntegrationJob(normalizedName, integrationKey)
     }
 
     @Timed
@@ -51,6 +51,15 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     override fun pollAllIntegrations(): Map<UUID, IntegrationJob> {
         ensureAdminAccess()
         return integrationService.pollAllIntegrationStatuses()
+    }
+
+    @Timed
+    @DeleteMapping(path = [STATUS_PATH + JOB_ID_PATH])
+    override fun deleteIntegrationJobStatus(
+            @PathVariable jobId: UUID
+    ) {
+       ensureAdminAccess()
+        return integrationService.deleteIntegrationJobStatus(jobId)
     }
 
     @Timed
