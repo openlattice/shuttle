@@ -30,9 +30,7 @@ import com.openlattice.shuttle.conditions.Conditions;
 import com.openlattice.shuttle.util.Constants;
 
 import java.io.Serializable;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class Flight implements Serializable {
 
@@ -43,6 +41,7 @@ public class Flight implements Serializable {
     private       String                                       name = "Anon";
     public final  SerializableFunction<Map<String, Object>, ?> valueMapper;
     public final  Optional<Conditions>                         condition;
+    private final Optional<UUID>                               organizationId;
 
     @JsonCreator
     public Flight(
@@ -50,10 +49,12 @@ public class Flight implements Serializable {
                     Map<String, EntityDefinition> entityDefinitions,
             @JsonProperty( Constants.CONDITIONS ) Optional<Conditions> condition,
             @JsonProperty( SerializationConstants.ASSOCIATION_DEFINITIONS_FIELD )
-                    Map<String, AssociationDefinition> associationDefinitions ) {
+                    Map<String, AssociationDefinition> associationDefinitions,
+            @JsonProperty( SerializationConstants.ORGANIZATION_ID ) Optional<UUID> organizationId ) {
         this.condition = condition;
         this.entityDefinitions = entityDefinitions;
         this.associationDefinitions = associationDefinitions;
+        this.organizationId = organizationId;
 
         if ( condition.isPresent() ) {
             this.valueMapper = new ConditionValueMapper( condition.get() );
@@ -68,6 +69,7 @@ public class Flight implements Serializable {
         this.valueMapper = null;
         this.associationDefinitions = builder.associationDefinitionMap;
         this.name = builder.name;
+        this.organizationId = builder.organizationId;
     }
 
     public static Flight.Builder newFlight() {
@@ -107,11 +109,17 @@ public class Flight implements Serializable {
         return associationDefinitions;
     }
 
+    @JsonProperty( SerializationConstants.ORGANIZATION_ID )
+    public Optional<UUID> getOrganizationId() {
+        return organizationId;
+    }
+
     public static class Builder {
 
         private Map<String, EntityDefinition>      entityDefinitionMap;
         private Map<String, AssociationDefinition> associationDefinitionMap;
-        private String                             name = "Anon";
+        private String                             name           = "Anon";
+        private Optional<UUID>                     organizationId = Optional.empty();
 
         public Builder() {
             this.entityDefinitionMap = Maps.newHashMap();
@@ -122,6 +130,11 @@ public class Flight implements Serializable {
             this.entityDefinitionMap = Maps.newHashMap();
             this.associationDefinitionMap = Maps.newHashMap();
             this.name = name;
+        }
+
+        public Flight.Builder organizationId( UUID id ) {
+            this.organizationId = Optional.of( id );
+            return this;
         }
 
         public EntityGroup.Builder createEntities() {
@@ -151,23 +164,21 @@ public class Flight implements Serializable {
     }
 
     @Override public boolean equals( Object o ) {
-        if ( this == o ) { return true; }
-        if ( !( o instanceof Flight ) ) { return false; }
-
+        if ( this == o )
+            return true;
+        if ( o == null || getClass() != o.getClass() )
+            return false;
         Flight flight = (Flight) o;
-
-        if ( !entityDefinitions.equals( flight.entityDefinitions ) ) { return false; }
-        if ( !associationDefinitions.equals( flight.associationDefinitions ) ) { return false; }
-        return name.equals( flight.name );
+        return Objects.equals( entityDefinitions, flight.entityDefinitions ) &&
+                Objects.equals( associationDefinitions, flight.associationDefinitions ) &&
+                Objects.equals( name, flight.name ) &&
+                Objects.equals( valueMapper, flight.valueMapper ) &&
+                Objects.equals( condition, flight.condition ) &&
+                Objects.equals( organizationId, flight.organizationId );
     }
 
     @Override public int hashCode() {
-        int result = entityDefinitions.hashCode();
-        if ( associationDefinitions != null ) {
-            result = 31 * result + associationDefinitions.hashCode();
-        }
-        result = 31 * result + name.hashCode();
-        return result;
+        return Objects.hash( entityDefinitions, associationDefinitions, name, valueMapper, condition, organizationId );
     }
 
     @Override public String toString() {
@@ -175,6 +186,9 @@ public class Flight implements Serializable {
                 "entityDefinitions=" + entityDefinitions +
                 ", associationDefinitions=" + associationDefinitions +
                 ", name='" + name + '\'' +
+                ", valueMapper=" + valueMapper +
+                ", condition=" + condition +
+                ", organizationId=" + organizationId +
                 '}';
     }
 }

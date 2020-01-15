@@ -313,6 +313,8 @@ class MissionControl(
 
     private fun createMissingEntitySets(flightPlan: Map<Flight, Payload>, contacts: Set<String>) {
         flightPlan.keys.forEach {
+            check(it.organizationId.isPresent) { "Flight ${it.name} cannot create missing entity sets because organizationId is not present" }
+            val organizationId = it.organizationId.get()
             it.entities.forEach { entityDefinition ->
                 if (!entitySets.containsKey(entityDefinition.entitySetName)) {
                     val fqn = entityDefinition.getEntityTypeFqn()
@@ -322,7 +324,8 @@ class MissionControl(
                             entityDefinition.getEntitySetName(),
                             entityDefinition.getEntitySetName(),
                             Optional.of(entityDefinition.getEntitySetName()),
-                            contacts
+                            contacts,
+                            organizationId
                     )
                     val entitySetId = entitySetsApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
@@ -339,7 +342,8 @@ class MissionControl(
                             associationDefinition.getEntitySetName(),
                             associationDefinition.getEntitySetName(),
                             Optional.of(associationDefinition.getEntitySetName()),
-                            contacts
+                            contacts,
+                            organizationId
                     )
                     val entitySetId = entitySetsApi.createEntitySets(
                             setOf(entitySet)
