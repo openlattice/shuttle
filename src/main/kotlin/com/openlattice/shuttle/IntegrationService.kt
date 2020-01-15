@@ -252,7 +252,7 @@ class IntegrationService(
         var count = 1
 
         while (reservationService.isReserved(nameAttempt)) {
-            nameAttempt = name + "_" + count
+            nameAttempt = "${name}_$count"
             count++
         }
 
