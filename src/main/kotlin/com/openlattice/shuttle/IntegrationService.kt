@@ -102,7 +102,7 @@ class IntegrationService(
     }
 
     fun enqueueIntegrationJob(integrationName: String, integrationKey: UUID, callbackUrlAsString: Optional<String>): UUID {
-        checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist")
+        checkIntegrationExists(integrationName)
         val integration = integrations.getValue(integrationName)
         checkState(integrationKey == integration.key, "Integration key $integrationKey is incorrect")
         var maybeCallbackUrl = Optional.empty<URL>()
@@ -123,6 +123,8 @@ class IntegrationService(
         val apiClient = ApiClient(integration.environment) { "testingtoken" }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
+        //an integration object is expected to have a non-empty logEntitySetId,
+        //a non-null flight, and non-null key in order for the integration to run successfully
         val flightPlan = mutableMapOf<Flight, Payload>()
         val tableColsToPrint = mutableMapOf<Flight, List<String>>()
         integration.flightPlanParameters.values.forEach {
@@ -180,20 +182,24 @@ class IntegrationService(
     }
 
     fun readIntegrationDefinition(integrationName: String): Integration {
-        checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
+        checkIntegrationExists(integrationName)
         return integrations.getValue(integrationName)
     }
 
     fun updateIntegrationDefinition(integrationName: String, integrationUpdate: IntegrationUpdate) {
-        checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
+        checkIntegrationExists(integrationName)
         integrations.executeOnKey(integrationName, UpdateIntegrationEntryProcessor(integrationUpdate))
     }
 
     fun deleteIntegrationDefinition(integrationName: String) {
-        checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
+        checkIntegrationExists(integrationName)
         val integration = integrations.getValue(integrationName)
         integrations.remove(integrationName)
         entitySetManager.deleteEntitySet(integration.logEntitySetId.get())
+    }
+
+    private fun checkIntegrationExists(integrationName: String) {
+        checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
     }
 
     private fun getSrcDataSource(source: Properties): HikariDataSource {
