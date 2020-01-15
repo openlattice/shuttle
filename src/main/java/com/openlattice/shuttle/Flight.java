@@ -35,6 +35,7 @@ import java.util.*;
 public class Flight implements Serializable {
 
     private static final long serialVersionUID = 2207339044078175121L;
+    private static final String anon = "Anon";
 
     private final Map<String, EntityDefinition>                entityDefinitions;
     private final Map<String, AssociationDefinition>           associationDefinitions;
@@ -56,7 +57,7 @@ public class Flight implements Serializable {
         this.condition = condition;
         this.entityDefinitions = entityDefinitions;
         this.associationDefinitions = associationDefinitions.orElseGet( HashMap::new );
-        this.name = name.orElse( "Anon" );
+        this.name = name.orElse( anon );
         this.tags = tags.orElseGet( HashSet::new );
 
         if ( condition.isPresent() ) {
