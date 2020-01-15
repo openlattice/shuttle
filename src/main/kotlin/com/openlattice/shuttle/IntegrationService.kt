@@ -260,14 +260,17 @@ class IntegrationService(
     }
 
     private fun buildLogEntitySetDescription(flightPlanParameters: Map<String, FlightPlanParameters>): String {
-        var entitySetDescription = "Auto-generated entity set containing logs of the following flights: "
-        flightPlanParameters.values.forEach {
+        val flightDescriptionsClause = flightPlanParameters.values.joinToString(", ") {
             val flight = it.flight!!
-            entitySetDescription += flight.name
-            if (flight.tags.isNotEmpty()) entitySetDescription += " with tags ${flight.tags.joinToString(", ")}"
+            val tags = if (flight.tags.isEmpty()) {
+                ""
+            } else {
+                " with tags [${flight.tags.joinToString(", ")}]"
+            }
+            return@joinToString "${flight.name}$tags"
         }
 
-        return entitySetDescription
+        return "Auto-generated entity set containing logs of the following flights: $flightDescriptionsClause"
     }
 
     private fun generateIntegrationJobId(): UUID {
