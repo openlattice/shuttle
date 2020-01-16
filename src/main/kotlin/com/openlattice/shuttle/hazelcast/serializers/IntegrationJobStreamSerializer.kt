@@ -12,16 +12,14 @@ import org.springframework.stereotype.Component
 class IntegrationJobStreamSerializer : TestableSelfRegisteringStreamSerializer<IntegrationJob> {
 
     companion object {
-        private val statuses = IntegrationStatus.values()
-
         fun serialize(output: ObjectDataOutput, obj: IntegrationJob) {
             output.writeUTF(obj.integrationName)
-            output.writeInt(obj.integrationStatus.ordinal)
+            IntegrationStatusStreamSerializer.serialize(output, obj.integrationStatus)
         }
 
         fun deserialize(input: ObjectDataInput): IntegrationJob {
             val name = input.readUTF()
-            val status = statuses[input.readInt()]
+            val status = IntegrationStatusStreamSerializer.deserialize(input)
             return IntegrationJob(name, status)
         }
     }

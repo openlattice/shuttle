@@ -16,11 +16,9 @@ import org.springframework.stereotype.Component
 class IntegrationStreamSerializer : TestableSelfRegisteringStreamSerializer<Integration> {
 
     companion object {
-        private val environments = RetrofitFactory.Environment.values()
-
         fun serialize(output: ObjectDataOutput, obj: Integration) {
             UUIDStreamSerializer.serialize(output, obj.key)
-            output.writeInt(obj.environment.ordinal)
+            EnvironmentStreamSerializer.serialize(output, obj.environment)
             output.writeUTF(obj.s3bucket)
             output.writeUTFArray(obj.contacts.toTypedArray())
             OptionalStreamSerializers.serialize(output, obj.logEntitySetId, UUIDStreamSerializer::serialize)
@@ -32,7 +30,7 @@ class IntegrationStreamSerializer : TestableSelfRegisteringStreamSerializer<Inte
 
         fun deserialize(input: ObjectDataInput): Integration {
             val key = UUIDStreamSerializer.deserialize(input)
-            val environment = environments[input.readInt()]
+            val environment = EnvironmentStreamSerializer.deserialize(input)
             val s3bucket = input.readUTF()
             val contacts = input.readUTFArray().toSet()
             val logEntitySetId = OptionalStreamSerializers.deserialize(input, UUIDStreamSerializer::deserialize)
