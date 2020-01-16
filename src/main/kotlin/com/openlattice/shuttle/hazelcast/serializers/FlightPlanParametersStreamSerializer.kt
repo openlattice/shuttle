@@ -18,8 +18,8 @@ class FlightPlanParametersStreamSerializer : TestableSelfRegisteringStreamSerial
 
         fun serialize(output: ObjectDataOutput, obj: FlightPlanParameters) {
             output.writeUTF(obj.sql)
-            output.writeUTFArray(obj.source.keys.map { it as String }.toTypedArray())
-            output.writeUTFArray(obj.source.values.map { it as String }.toTypedArray())
+            output.writeUTFArray(obj.source.keys.map { it }.toTypedArray())
+            output.writeUTFArray(obj.source.values.map { it }.toTypedArray())
             output.writeUTFArray(obj.sourcePrimaryKeyColumns.toTypedArray())
             if (obj.flightFilePath != null) {
                 output.writeBoolean(true)
@@ -36,9 +36,7 @@ class FlightPlanParametersStreamSerializer : TestableSelfRegisteringStreamSerial
             val sql = input.readUTF()
             val sourceKeys = input.readUTFArray().toList()
             val sourceValues = input.readUTFArray().toList()
-            val sourceMap = sourceKeys.zip(sourceValues) { key, value -> key to value }.toMap()
-            val source = Properties()
-            source.putAll(sourceMap)
+            val source = sourceKeys.zip(sourceValues) { key, value -> key to value }.toMap()
             val srcPkeyCols = input.readUTFArray().toList()
             var flightFilePath: String? = null
             val hasFlightFilePath = input.readBoolean()
