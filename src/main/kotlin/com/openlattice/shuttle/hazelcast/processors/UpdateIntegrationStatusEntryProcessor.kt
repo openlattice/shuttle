@@ -3,8 +3,10 @@ package com.openlattice.shuttle.hazelcast.processors
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor
 import com.openlattice.shuttle.control.IntegrationJob
 import com.openlattice.shuttle.control.IntegrationStatus
+import org.springframework.stereotype.Component
 import java.util.*
 
+@Component
 class UpdateIntegrationStatusEntryProcessor(val status: IntegrationStatus) :
         AbstractRhizomeEntryProcessor<UUID, IntegrationJob, IntegrationJob>() {
 
