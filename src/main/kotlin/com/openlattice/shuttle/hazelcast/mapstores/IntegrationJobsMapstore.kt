@@ -1,4 +1,4 @@
-package com.openlattice.shuttle.mapstore
+package com.openlattice.shuttle.hazelcast.mapstores
 
 import com.hazelcast.config.InMemoryFormat
 import com.hazelcast.config.MapConfig
@@ -9,8 +9,8 @@ import com.openlattice.postgres.PostgresColumn.STATUS
 import com.openlattice.postgres.PostgresTable.INTEGRATION_JOBS
 import com.openlattice.postgres.ResultSetAdapters.id
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore
-import com.openlattice.shuttle.control.IntegrationJob
-import com.openlattice.shuttle.control.IntegrationStatus
+import com.openlattice.shuttle.IntegrationJob
+import com.openlattice.shuttle.IntegrationStatus
 import com.zaxxer.hikari.HikariDataSource
 import org.springframework.stereotype.Component
 import java.sql.PreparedStatement

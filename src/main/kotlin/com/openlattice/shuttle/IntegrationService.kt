@@ -27,10 +27,9 @@ import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.rhizome.proxy.RetrofitBuilders
-import com.openlattice.shuttle.control.*
 import com.openlattice.shuttle.hazelcast.processors.UpdateIntegrationEntryProcessor
 import com.openlattice.shuttle.logs.Blackbox
-import com.openlattice.shuttle.mapstore.INTEGRATION_STATUS
+import com.openlattice.shuttle.hazelcast.mapstores.INTEGRATION_STATUS
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig

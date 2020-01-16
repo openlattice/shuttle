@@ -1,18 +1,15 @@
 package com.openlattice.shuttle.controllers
 
 import com.codahale.metrics.annotation.Timed
-import com.google.common.base.Preconditions.checkState
 import com.openlattice.authorization.AuthorizationManager
 import com.openlattice.authorization.AuthorizingComponent
 import com.openlattice.shuttle.*
 import com.openlattice.shuttle.api.*
-import com.openlattice.shuttle.control.Integration
-import com.openlattice.shuttle.control.IntegrationJob
-import com.openlattice.shuttle.control.IntegrationStatus
-import com.openlattice.shuttle.control.IntegrationUpdate
+import com.openlattice.shuttle.Integration
+import com.openlattice.shuttle.IntegrationJob
+import com.openlattice.shuttle.IntegrationStatus
+import com.openlattice.shuttle.IntegrationUpdate
 import org.springframework.web.bind.annotation.*
-import retrofit2.http.Path
-import java.net.URL
 import java.util.*
 import javax.inject.Inject
 

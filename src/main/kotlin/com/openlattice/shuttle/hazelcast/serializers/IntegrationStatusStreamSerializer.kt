@@ -4,7 +4,7 @@ import com.hazelcast.nio.ObjectDataInput
 import com.hazelcast.nio.ObjectDataOutput
 import com.openlattice.hazelcast.StreamSerializerTypeIds
 import com.openlattice.hazelcast.serializers.AbstractEnumSerializer
-import com.openlattice.shuttle.control.IntegrationStatus
+import com.openlattice.shuttle.IntegrationStatus
 
 class IntegrationStatusStreamSerializer : AbstractEnumSerializer<IntegrationStatus>() {
     companion object {

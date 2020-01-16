@@ -1,8 +1,8 @@
 package com.openlattice.shuttle.hazelcast.processors
 
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor
-import com.openlattice.shuttle.control.IntegrationJob
-import com.openlattice.shuttle.control.IntegrationStatus
+import com.openlattice.shuttle.IntegrationJob
+import com.openlattice.shuttle.IntegrationStatus
 import org.springframework.stereotype.Component
 import java.util.*
 

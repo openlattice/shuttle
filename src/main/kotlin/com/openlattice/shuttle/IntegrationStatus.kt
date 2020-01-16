@@ -1,4 +1,4 @@
-package com.openlattice.shuttle.control
+package com.openlattice.shuttle
 
 enum class IntegrationStatus {
     IN_PROGRESS,

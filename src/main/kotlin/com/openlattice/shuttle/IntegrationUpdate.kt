@@ -1,10 +1,9 @@
-package com.openlattice.shuttle.control
+package com.openlattice.shuttle
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.client.serialization.SerializationConstants
-import com.openlattice.data.integration.StorageDestination
-import com.openlattice.shuttle.Flight
+import com.openlattice.shuttle.FlightPlanParametersUpdate
 import java.util.*
 
 data class IntegrationUpdate(

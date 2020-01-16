@@ -6,9 +6,8 @@ import com.hazelcast.nio.ObjectDataOutput
 import com.openlattice.hazelcast.StreamSerializerTypeIds
 import com.openlattice.hazelcast.serializers.TestableSelfRegisteringStreamSerializer
 import com.openlattice.shuttle.Flight
-import com.openlattice.shuttle.control.FlightPlanParameters
+import com.openlattice.shuttle.FlightPlanParameters
 import org.springframework.stereotype.Component
-import java.util.*
 
 @Component
 class FlightPlanParametersStreamSerializer : TestableSelfRegisteringStreamSerializer<FlightPlanParameters> {

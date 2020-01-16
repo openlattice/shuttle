@@ -2,14 +2,11 @@ package com.openlattice.shuttle.hazelcast.serializers
 
 import com.hazelcast.nio.ObjectDataInput
 import com.hazelcast.nio.ObjectDataOutput
-import com.openlattice.client.RetrofitFactory
-import com.openlattice.data.integration.StorageDestination
 import com.openlattice.hazelcast.StreamSerializerTypeIds
-import com.openlattice.hazelcast.serializers.ListStreamSerializer
 import com.openlattice.hazelcast.serializers.OptionalStreamSerializers
 import com.openlattice.hazelcast.serializers.TestableSelfRegisteringStreamSerializer
 import com.openlattice.hazelcast.serializers.UUIDStreamSerializer
-import com.openlattice.shuttle.control.Integration
+import com.openlattice.shuttle.Integration
 import org.springframework.stereotype.Component
 
 @Component

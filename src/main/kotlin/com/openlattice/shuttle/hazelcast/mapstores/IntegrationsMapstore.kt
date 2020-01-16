@@ -1,4 +1,4 @@
-package com.openlattice.shuttle.mapstore
+package com.openlattice.shuttle.hazelcast.mapstores
 
 import com.dataloom.mappers.ObjectMappers
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -11,7 +11,7 @@ import com.openlattice.postgres.PostgresColumn.NAME
 import com.openlattice.postgres.PostgresColumnDefinition
 import com.openlattice.postgres.PostgresTable.INTEGRATIONS
 import com.openlattice.postgres.mapstores.AbstractBasePostgresMapstore
-import com.openlattice.shuttle.control.Integration
+import com.openlattice.shuttle.Integration
 import com.zaxxer.hikari.HikariDataSource
 import org.springframework.stereotype.Component
 import java.sql.PreparedStatement

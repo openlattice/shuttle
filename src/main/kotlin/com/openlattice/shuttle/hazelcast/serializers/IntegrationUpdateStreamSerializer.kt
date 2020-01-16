@@ -6,8 +6,8 @@ import com.openlattice.hazelcast.StreamSerializerTypeIds
 import com.openlattice.hazelcast.serializers.KotlinOptionalStreamSerializers
 import com.openlattice.hazelcast.serializers.OptionalStreamSerializers
 import com.openlattice.hazelcast.serializers.TestableSelfRegisteringStreamSerializer
-import com.openlattice.shuttle.control.FlightPlanParametersUpdate
-import com.openlattice.shuttle.control.IntegrationUpdate
+import com.openlattice.shuttle.FlightPlanParametersUpdate
+import com.openlattice.shuttle.IntegrationUpdate
 import org.springframework.stereotype.Component
 import java.util.*
 

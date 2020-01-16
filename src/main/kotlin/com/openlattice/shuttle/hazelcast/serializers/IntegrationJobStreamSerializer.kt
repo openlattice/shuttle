@@ -4,8 +4,7 @@ import com.hazelcast.nio.ObjectDataInput
 import com.hazelcast.nio.ObjectDataOutput
 import com.openlattice.hazelcast.StreamSerializerTypeIds
 import com.openlattice.hazelcast.serializers.TestableSelfRegisteringStreamSerializer
-import com.openlattice.shuttle.control.IntegrationJob
-import com.openlattice.shuttle.control.IntegrationStatus
+import com.openlattice.shuttle.IntegrationJob
 import org.springframework.stereotype.Component
 
 @Component

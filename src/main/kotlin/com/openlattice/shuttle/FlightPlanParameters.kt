@@ -1,10 +1,9 @@
-package com.openlattice.shuttle.control
+package com.openlattice.shuttle
 
 import com.dataloom.mappers.ObjectMappers
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.openlattice.client.serialization.SerializationConstants
 import com.openlattice.mapstores.TestDataFactory
-import com.openlattice.shuttle.Flight
 import java.net.URL
 import java.util.*
 

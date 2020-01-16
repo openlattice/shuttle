@@ -1,15 +1,10 @@
 package com.openlattice.shuttle.hazelcast.processors
 import com.dataloom.mappers.ObjectMappers
 import com.kryptnostic.rhizome.hazelcast.processors.AbstractRhizomeEntryProcessor
-import com.openlattice.datastore.services.EntitySetManager
-import com.openlattice.edm.requests.MetadataUpdate
 import com.openlattice.shuttle.Flight
-import com.openlattice.shuttle.IntegrationService
-import com.openlattice.shuttle.control.Integration
-import com.openlattice.shuttle.control.IntegrationUpdate
-import java.lang.Exception
+import com.openlattice.shuttle.Integration
+import com.openlattice.shuttle.IntegrationUpdate
 import java.net.URL
-import java.util.*
 
 class UpdateIntegrationEntryProcessor(val update: IntegrationUpdate) :
         AbstractRhizomeEntryProcessor<String, Integration, Integration>() {

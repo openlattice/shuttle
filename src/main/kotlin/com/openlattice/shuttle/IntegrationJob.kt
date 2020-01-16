@@ -1,4 +1,4 @@
-package com.openlattice.shuttle.control
+package com.openlattice.shuttle
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.openlattice.client.serialization.SerializationConstants

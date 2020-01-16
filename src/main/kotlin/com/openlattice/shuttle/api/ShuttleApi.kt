@@ -1,9 +1,9 @@
 package com.openlattice.shuttle.api
 
-import com.openlattice.shuttle.control.Integration
-import com.openlattice.shuttle.control.IntegrationJob
-import com.openlattice.shuttle.control.IntegrationStatus
-import com.openlattice.shuttle.control.IntegrationUpdate
+import com.openlattice.shuttle.Integration
+import com.openlattice.shuttle.IntegrationJob
+import com.openlattice.shuttle.IntegrationStatus
+import com.openlattice.shuttle.IntegrationUpdate
 import retrofit2.http.*
 import java.util.*
 
@@ -74,7 +74,7 @@ interface ShuttleApi {
     @POST(BASE + DEFINITION_PATH + INTEGRATION_NAME_PATH)
     fun createIntegrationDefinition(
             @Path(INTEGRATION_NAME) integrationName: String,
-            @Body integrationDefinition: Integration ) : UUID
+            @Body integrationDefinition: Integration) : UUID
 
 
     /**

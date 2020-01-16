@@ -46,8 +46,6 @@ import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.retrofit.RhizomeRetrofitCallException
-import com.openlattice.shuttle.control.IntegrationJob
-import com.openlattice.shuttle.control.IntegrationStatus
 import com.openlattice.shuttle.hazelcast.processors.UpdateIntegrationStatusEntryProcessor
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.logs.BlackboxProperty
