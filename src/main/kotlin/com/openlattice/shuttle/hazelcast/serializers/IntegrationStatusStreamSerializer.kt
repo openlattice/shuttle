@@ -23,7 +23,7 @@ class IntegrationStatusStreamSerializer : AbstractEnumSerializer<IntegrationStat
     }
 
     override fun getTypeId(): Int {
-        StreamSerializerTypeIds.INTEGRATION_STATUS.ordinal
+        return StreamSerializerTypeIds.INTEGRATION_STATUS.ordinal
     }
 
 }
