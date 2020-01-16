@@ -5,6 +5,7 @@ import com.google.common.base.Preconditions.checkState
 import com.google.common.util.concurrent.MoreExecutors
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicates
+import com.openlattice.IdConstants
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.Principals
 import com.openlattice.client.ApiClient
@@ -124,7 +125,7 @@ class IntegrationService(
         val flightPlan = mutableMapOf<Flight, Payload>()
         val tableColsToPrint = mutableMapOf<Flight, List<String>>()
         integration.flightPlanParameters.values.forEach {
-            val srcDataSource = getSrcDataSource(it.source)
+            val srcDataSource = getSrcDataSource(it.source as Properties)
             val payload = JdbcPayload(readRateLimit.toDouble(), srcDataSource, it.sql, fetchSize, readRateLimit != 0)
             flightPlan[it.flight!!] = payload
             tableColsToPrint[it.flight!!] = it.sourcePrimaryKeyColumns
@@ -255,7 +256,11 @@ class IntegrationService(
                 name,
                 name,
                 Optional.of(description),
-                contacts
+                contacts,
+                Optional.empty(),
+                IdConstants.GLOBAL_ORGANIZATION_ID.id,
+                Optional.empty(),
+                Optional.empty()
         )
         return entitySetManager.createEntitySet(Principals.getCurrentUser(), logEntitySet)
     }
