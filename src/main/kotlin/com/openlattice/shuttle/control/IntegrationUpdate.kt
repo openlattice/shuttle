@@ -9,11 +9,9 @@ import java.util.*
 
 data class IntegrationUpdate(
     @JsonProperty(SerializationConstants.ENVIRONMENT) val environment: Optional<RetrofitFactory.Environment>,
-    @JsonProperty(SerializationConstants.DEFAULT_STORAGE) val defaultStorage: Optional<StorageDestination>,
     @JsonProperty(SerializationConstants.S3_BUCKET) val s3bucket: Optional<String>,
     @JsonProperty(SerializationConstants.CONTACTS) val contacts: Optional<Set<String>>,
-    @JsonProperty(SerializationConstants.RECURRING) val recurring: Optional<Boolean>,
-    @JsonProperty(SerializationConstants.START) val start: Optional<Long>,
-    @JsonProperty(SerializationConstants.PERIOD) val period: Optional<Long>,
+    @JsonProperty(SerializationConstants.CONNECTIONS) val maxConnections: Optional<Int>,
+    @JsonProperty(SerializationConstants.CALLBACK) val callbackUrls: Optional<List<String>>,
     @JsonProperty(SerializationConstants.FLIGHT_PLAN_PARAMETERS) val flightPlanParameters: Optional<Map<String, FlightPlanParametersUpdate>>
 )

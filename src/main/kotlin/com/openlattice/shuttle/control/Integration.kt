@@ -16,25 +16,18 @@ import java.util.*
  *
  * @param key a unique ID used for authenticating a call to run an integration
  * @param environment the retrofit environment (e.g. production, local)
- * @param defaultStorage ?????
  * @param s3bucket the url of the s3bucket to be used
  * @param contacts the set of email addresses of those responsible for the integration
- * @param recurring boolean denoting if the integration is recurring
- * @param start ??? datetime in ms of first integration?
- * @param period ??? how often it gets run?
  * @param maxConnections maximum number of connections to postgres allowed for this integration
+ * @param callbackUrls urls to receive a POST when integration has completed
  * @param flightPlanParameters a map from [Flight] name to [FlightPlanParameters]
  */
 data class Integration(
         @JsonProperty(SerializationConstants.KEY_FIELD) var key: UUID?,
         @JsonProperty(SerializationConstants.ENVIRONMENT) var environment: RetrofitFactory.Environment,
-        @JsonProperty(SerializationConstants.DEFAULT_STORAGE) var defaultStorage: StorageDestination,
         @JsonProperty(SerializationConstants.S3_BUCKET) var s3bucket: String,
         @JsonProperty(SerializationConstants.CONTACTS) var contacts: Set<String>,
         @JsonProperty(SerializationConstants.ENTITY_SET_ID) var logEntitySetId: Optional<UUID>,
-        @JsonProperty(SerializationConstants.RECURRING) var recurring: Boolean,
-        @JsonProperty(SerializationConstants.START) var start: Long,
-        @JsonProperty(SerializationConstants.PERIOD) var period: Long,
         @JsonProperty(SerializationConstants.CONNECTIONS) var maxConnections: Optional<Int>,
         @JsonProperty(SerializationConstants.CALLBACK) var callbackUrls: Optional<List<String>>,
         @JsonProperty(SerializationConstants.FLIGHT_PLAN_PARAMETERS) var flightPlanParameters: MutableMap<String, FlightPlanParameters>
@@ -49,22 +42,14 @@ data class Integration(
         fun testData(): Integration {
             val key = UUID.randomUUID()
             val environment = RetrofitFactory.Environment.LOCAL
-            val defaultStorage = StorageDestination.POSTGRES
             val s3bucket = TestDataFactory.random(10)
             val contacts = setOf<String>(TestDataFactory.random(5))
-            val recurring = true
-            val start = 1000L
-            val period = 5L
             return Integration(
                     key,
                     environment,
-                    defaultStorage,
                     s3bucket,
                     contacts,
                     Optional.empty(),
-                    recurring,
-                    start,
-                    period,
                     Optional.of(5),
                     Optional.empty(),
                     mutableMapOf(TestDataFactory.randomAlphanumeric(5) to FlightPlanParameters.testData())
