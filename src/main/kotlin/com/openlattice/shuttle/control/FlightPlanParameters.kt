@@ -22,7 +22,7 @@ import java.util.*
 
 data class FlightPlanParameters(
         @JsonProperty(SerializationConstants.SQL) var sql: String,
-        @JsonProperty(SerializationConstants.SRC) var source: Properties,
+        @JsonProperty(SerializationConstants.SRC) var source: Map<String, String>,
         @JsonProperty(SerializationConstants.SRC_PKEY_COLUMNS) var sourcePrimaryKeyColumns: List<String> = listOf(),
         @JsonProperty(SerializationConstants.PATH) var flightFilePath: String?,
         @JsonProperty(SerializationConstants.FLIGHT) var flight: Flight?
@@ -40,7 +40,7 @@ data class FlightPlanParameters(
         @JvmStatic
         fun testData(): FlightPlanParameters {
             val sql = TestDataFactory.randomAlphanumeric(5)
-            val source = Properties()
+            val source = mapOf<String, String>()
             val sourcePrimaryKeyColumns = listOf(TestDataFactory.randomAlphanumeric(5))
             val flight = Flight(emptyMap(), Optional.empty(), Optional.of(emptyMap()), Optional.of(TestDataFactory.random(5)), Optional.empty())
             return FlightPlanParameters(
