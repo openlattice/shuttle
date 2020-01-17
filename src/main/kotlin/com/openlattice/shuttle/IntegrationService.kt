@@ -12,10 +12,10 @@ import com.openlattice.client.ApiClient
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.S3Api
-import com.openlattice.data.integration.IntegrationDestination
-import com.openlattice.data.integration.StorageDestination
-import com.openlattice.data.integration.destinations.PostgresDestination
-import com.openlattice.data.integration.destinations.PostgresS3Destination
+import com.openlattice.shuttle.destinations.IntegrationDestination
+import com.openlattice.shuttle.destinations.StorageDestination
+import com.openlattice.shuttle.destinations.PostgresDestination
+import com.openlattice.shuttle.destinations.PostgresS3Destination
 import com.openlattice.datastore.services.EdmManager
 import com.openlattice.datastore.services.EntitySetManager
 import com.openlattice.edm.EntitySet
@@ -27,9 +27,9 @@ import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.rhizome.proxy.RetrofitBuilders
-import com.openlattice.shuttle.hazelcast.processors.UpdateIntegrationEntryProcessor
+import com.openlattice.hazelcast.processors.shuttle.UpdateIntegrationEntryProcessor
 import com.openlattice.shuttle.logs.Blackbox
-import com.openlattice.shuttle.hazelcast.mapstores.INTEGRATION_STATUS
+import com.openlattice.hazelcast.mapstores.shuttle.INTEGRATION_STATUS
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig

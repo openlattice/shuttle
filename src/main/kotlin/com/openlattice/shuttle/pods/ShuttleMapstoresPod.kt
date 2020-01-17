@@ -4,7 +4,7 @@ import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore
 import com.openlattice.postgres.PostgresPod
 import com.openlattice.shuttle.Integration
 import com.openlattice.shuttle.IntegrationJob
-import com.openlattice.shuttle.hazelcast.mapstores.IntegrationJobsMapstore
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.shuttle.mapstore.IntegrationsMapstore
 import com.zaxxer.hikari.HikariDataSource
 import org.springframework.context.annotation.Bean

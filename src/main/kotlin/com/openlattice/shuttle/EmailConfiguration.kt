@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018. OpenLattice, Inc.
+ * Copyright (C) 2019. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,23 +19,16 @@
  *
  */
 
-package com.openlattice.data.integration.destinations
-
-import com.openlattice.data.*
-import org.slf4j.LoggerFactory
-
-private val logger = LoggerFactory.getLogger(PostgresS3Destination::class.java)
+package com.openlattice.shuttle
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class PostgresS3Destination(
-        private val postgresDestination: PostgresDestination,
-        s3Api: S3Api,
-        dataIntegrationApi: DataIntegrationApi
-) : BaseS3Destination(s3Api, dataIntegrationApi) {
-    override fun createAssociations(entities: Set<DataEdgeKey>): Long {
-        return postgresDestination.createEdges(entities)
-    }
-}
+data class EmailConfiguration(
+        val fromEmail: String,
+        val fromEmailPassword: String,
+        val notificationEmails: Set<String>,
+        val smtpServer: String,
+        val smtpServerPort: Int
+)

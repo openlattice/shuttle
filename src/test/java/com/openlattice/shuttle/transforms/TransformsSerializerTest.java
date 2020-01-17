@@ -29,7 +29,6 @@ import com.openlattice.shuttle.transforms.TransformsSerializerTest.OptionalListO
 import java.util.Objects;
 import java.util.Optional;
 
-import transforms.HashTransform;
 import transforms.PrefixTransform;
 
 /**

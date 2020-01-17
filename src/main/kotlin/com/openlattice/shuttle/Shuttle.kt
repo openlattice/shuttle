@@ -40,13 +40,16 @@ import com.openlattice.data.EntityKey
 import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.*
-import com.openlattice.data.integration.destinations.PostgresDestination
+import com.openlattice.shuttle.destinations.PostgresDestination
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.retrofit.RhizomeRetrofitCallException
-import com.openlattice.shuttle.hazelcast.processors.UpdateIntegrationStatusEntryProcessor
+import com.openlattice.shuttle.destinations.AddressedDataHolder
+import com.openlattice.shuttle.destinations.IntegrationDestination
+import com.openlattice.shuttle.destinations.StorageDestination
+import com.openlattice.hazelcast.processors.shuttle.UpdateIntegrationStatusEntryProcessor
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.logs.BlackboxProperty
 import com.openlattice.shuttle.payload.Payload
@@ -386,8 +389,8 @@ class Shuttle (
 
     private fun impulse(flight: Flight, batch: List<Map<String, Any?>>, batchNumber: Long): AddressedDataHolder {
         val addressedDataHolder = AddressedDataHolder(
-                Maps.newLinkedHashMapWithExpectedSize( batch.size * flight.entities.size ),
-                Maps.newLinkedHashMapWithExpectedSize( batch.size * flight.associations.size ),
+                Maps.newLinkedHashMapWithExpectedSize(batch.size * flight.entities.size),
+                Maps.newLinkedHashMapWithExpectedSize(batch.size * flight.associations.size),
                 batchNumber)
 
         batch.forEach { row ->

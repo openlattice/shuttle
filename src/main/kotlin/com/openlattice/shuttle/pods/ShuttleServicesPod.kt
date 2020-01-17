@@ -64,7 +64,7 @@ import javax.annotation.PostConstruct
 import javax.inject.Inject
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
-import com.openlattice.shuttle.hazelcast.mapstores.IntegrationJobsMapstore
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 
 /**
  *

@@ -8,7 +8,6 @@ import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions
 import com.openlattice.ResourceConfigurationLoader
 import com.openlattice.client.RetrofitFactory
-import com.openlattice.data.integration.EmailConfiguration
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CONFIGURATION
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CSV

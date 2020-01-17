@@ -39,12 +39,13 @@ import com.openlattice.entitysets.EntitySetsApi;
 import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.shuttle.Flight;
 import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.util.CsvUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import transforms.HashTransform;
+import com.openlattice.shuttle.transforms.HashTransform;
 import transforms.PrefixTransform;
 
 import java.io.IOException;
@@ -56,8 +57,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.openlattice.shuttle.util.CsvUtil.newDefaultMapper;
-import static com.openlattice.shuttle.util.CsvUtil.newDefaultSchemaFromHeader;
 import static org.mockito.Mockito.*;
 
 public class ShuttleTest extends ShuttleTestBootstrap {
@@ -287,9 +286,9 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         URL url = Resources.getResource( "cyphers.csv" );
         payload = StreamUtil.stream( () -> {
             try {
-                return newDefaultMapper()
+                return CsvUtil.newDefaultMapper()
                         .readerFor( Map.class )
-                        .with( newDefaultSchemaFromHeader() )
+                        .with( CsvUtil.newDefaultSchemaFromHeader() )
                         .readValues( url );
             } catch ( IOException e ) {
                 logger.error( "Unable to read csv file", e );

@@ -36,7 +36,6 @@ private val shuttlePods = arrayOf(
         PostgresPod::class.java,
         SharedStreamSerializersPod::class.java,
         ShuttleServicesPod::class.java,
-        ShuttleStreamSerializersPod::class.java,
         TaskSchedulerPod::class.java,
         NearCachesPod::class.java,
 
