@@ -37,7 +37,6 @@ import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
 import com.openlattice.entitysets.EntitySetsApi;
 import com.openlattice.mapstores.TestDataFactory;
-import com.openlattice.shuttle.Flight;
 import com.openlattice.shuttle.transformations.Transformations;
 import com.openlattice.shuttle.util.CsvUtil;
 import org.junit.BeforeClass;
