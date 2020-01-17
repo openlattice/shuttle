@@ -31,7 +31,10 @@ import com.openlattice.shuttle.conditions.ConditionValueMapper;
 import com.openlattice.shuttle.conditions.Conditions;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 public class Flight implements Serializable {
 
@@ -68,7 +71,7 @@ public class Flight implements Serializable {
         }
     }
 
-    private Flight( Flight.Builder builder ) {
+    private Flight( Builder builder ) {
         this.entityDefinitions = builder.entityDefinitionMap;
         this.condition = Optional.empty();
         this.valueMapper = null;
@@ -77,12 +80,12 @@ public class Flight implements Serializable {
         this.tags = ImmutableSet.of();
     }
 
-    public static Flight.Builder newFlight() {
-        return new Flight.Builder();
+    public static Builder newFlight() {
+        return new Builder();
     }
 
-    public static Flight.Builder newFlight( String name ) {
-        return new Flight.Builder( name );
+    public static Builder newFlight( String name ) {
+        return new Builder( name );
     }
 
     public String getName() {

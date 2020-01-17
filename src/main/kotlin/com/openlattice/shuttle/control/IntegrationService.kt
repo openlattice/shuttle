@@ -1,4 +1,4 @@
-package com.openlattice.shuttle
+package com.openlattice.shuttle.control
 
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions.checkState
