@@ -21,8 +21,6 @@ const val INTEGRATION_KEY = "integrationKey"
 const val INTEGRATION_KEY_PATH = "/{$INTEGRATION_KEY}"
 const val JOB_ID = "jobId"
 const val JOB_ID_PATH = "/{$JOB_ID}"
-const val CALLBACK = "callbackUrl"
-const val CALLBACK_PATH = "/{$CALLBACK}"
 
 interface ShuttleApi {
 
@@ -32,11 +30,10 @@ interface ShuttleApi {
      * @param integrationKey the unique id used to authenticate an integration run
      * @return the unique id of the integration job
      */
-    @GET(BASE + INTEGRATION_NAME_PATH + INTEGRATION_KEY_PATH + CALLBACK_PATH)
+    @GET(BASE + INTEGRATION_NAME_PATH + INTEGRATION_KEY_PATH)
     fun enqueueIntegration(
             @Path(INTEGRATION_NAME) integrationName: String,
-            @Path(INTEGRATION_KEY) integrationKey: UUID,
-            @Path(CALLBACK) callbackUrl: Optional<String>
+            @Path(INTEGRATION_KEY) integrationKey: UUID
     ): UUID
 
     /**

@@ -24,11 +24,10 @@ class ShuttleController : ShuttleApi, AuthorizingComponent {
     private lateinit var authorizationManager: AuthorizationManager
 
     @Timed
-    @GetMapping(path = [INTEGRATION_NAME_PATH + INTEGRATION_KEY_PATH + CALLBACK_PATH])
+    @GetMapping(path = [INTEGRATION_NAME_PATH + INTEGRATION_KEY_PATH])
     override fun enqueueIntegration(
             @PathVariable(INTEGRATION_NAME) integrationName: String,
-            @PathVariable(INTEGRATION_KEY) integrationKey: UUID,
-            @PathVariable(CALLBACK) callbackUrl: Optional<String>
+            @PathVariable(INTEGRATION_KEY) integrationKey: UUID
     ): UUID {
         val normalizedName = normalizeIntegrationName(integrationName)
         return integrationService.enqueueIntegrationJob(normalizedName, integrationKey)
