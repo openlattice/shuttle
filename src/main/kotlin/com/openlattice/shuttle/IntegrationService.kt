@@ -317,7 +317,7 @@ class IntegrationService(
             val url = URL(it)
             val body = MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
-                    .addFormDataPart("message", "integration successful")
+                    .addFormDataPart("message", "integration succeeded")
                     .build()
             val request = Request.Builder()
                     .url(url)
