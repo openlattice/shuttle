@@ -45,7 +45,6 @@ import com.openlattice.postgres.mapstores.EntityTypeMapstore
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.logs.Blackbox
-import com.openlattice.shuttle.mapstore.IntegrationsMapstore
 import com.openlattice.tasks.PostConstructInitializerTaskDependencies
 import com.openlattice.users.Auth0SyncInitializationTask
 import com.openlattice.users.Auth0SyncService
@@ -65,6 +64,7 @@ import javax.inject.Inject
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 
 /**
  *
@@ -217,19 +217,12 @@ class ShuttleServicesPod {
 
     @Bean
     fun managementAPI(): ManagementAPI {
-        return ManagementAPI(auth0Configuration.getDomain(), auth0TokenProvider().getToken())
+        return ManagementAPI(auth0Configuration.domain, auth0TokenProvider().token)
     }
 
     @Bean
     fun auth0SyncTaskDependencies(): Auth0SyncTaskDependencies {
-        return Auth0SyncTaskDependencies(hazelcastInstance,
-                principalService(),
-                auth0SyncService(),
-                managementAPI(),
-                organizationsManager(),
-                dbcs(),
-                auth0TokenProvider(),
-                auth0Configuration)
+        return Auth0SyncTaskDependencies(auth0SyncService(), managementAPI())
     }
 
     @Bean

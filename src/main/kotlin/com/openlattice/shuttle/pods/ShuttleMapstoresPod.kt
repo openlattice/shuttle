@@ -1,11 +1,11 @@
 package com.openlattice.shuttle.pods
 
 import com.kryptnostic.rhizome.mapstores.SelfRegisteringMapStore
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.postgres.PostgresPod
 import com.openlattice.shuttle.Integration
 import com.openlattice.shuttle.IntegrationJob
-import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
-import com.openlattice.shuttle.mapstore.IntegrationsMapstore
 import com.zaxxer.hikari.HikariDataSource
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
