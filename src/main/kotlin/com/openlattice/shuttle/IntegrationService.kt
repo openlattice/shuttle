@@ -34,7 +34,6 @@ import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
-import okhttp3.FormBody
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -102,10 +101,13 @@ class IntegrationService(
 
             while (true) {
                 if (semaphore.availablePermits() > 0) {
+                    val jobId = integrationQueue.take()
                     try {
-                        loadCargo()
+                        loadCargo(jobId)
                     } catch (ex: Exception) {
-                        logger.info("Encountered exception $ex when trying to start integration")
+                        logger.info("Encountered exception $ex when trying to start integration job with id $jobId")
+                        integrationQueue.add(jobId)
+                        logger.info("Integration job with id $jobId has been requeued")
                     }
                 }
             }
@@ -122,8 +124,7 @@ class IntegrationService(
         return jobId
     }
 
-    private final fun loadCargo() {
-        val jobId = integrationQueue.take()
+    private final fun loadCargo(jobId: UUID) {
         val integrationJob = integrationJobs.getValue(jobId)
         val integration = integrations.getValue(integrationJob.integrationName)
         //val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
@@ -167,7 +168,7 @@ class IntegrationService(
             shuttle.launch(uploadBatchSize)
         }.addListener(Runnable {
             integration.callbackUrls.ifPresent {
-                submitCallback(it)
+                submitCallback(jobId, it)
             }
             semaphore.release()
         }, executor)
@@ -312,12 +313,12 @@ class IntegrationService(
         return jobId
     }
 
-    private fun submitCallback(urls: List<String>) {
+    private fun submitCallback(jobId: UUID, urls: List<String>) {
         urls.forEach {
             val url = URL(it)
             val body = MultipartBody.Builder()
                     .setType(MultipartBody.FORM)
-                    .addFormDataPart("message", "integration succeeded")
+                    .addFormDataPart("message", "integration job with id $jobId succeeded")
                     .build()
             val request = Request.Builder()
                     .url(url)
@@ -326,7 +327,7 @@ class IntegrationService(
             try {
                 httpClient.newCall(request).execute()
             } catch (ex: IOException) {
-                logger.info("Encountered error $ex when submitting callback to url $url")
+                logger.info("Encountered error $ex when submitting callback to url $url for integration job with id $jobId")
             }
         }
     }
