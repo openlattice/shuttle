@@ -23,9 +23,11 @@ package com.openlattice.shuttle.transforms;
 
 import com.google.common.collect.ImmutableList;
 import com.openlattice.serializer.AbstractJacksonSerializationTest;
-import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transforms.TransformsSerializerTest.OptionalListOfTransforms;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -37,7 +39,7 @@ import transforms.PrefixTransform;
 public class TransformsSerializerTest extends AbstractJacksonSerializationTest<OptionalListOfTransforms> {
     @Override protected OptionalListOfTransforms getSampleData() {
         OptionalListOfTransforms olt = new OptionalListOfTransforms();
-        Transformations transforms = new Transformations(
+        List<Transformation> transforms = new ArrayList<>(
                 ImmutableList.of( new PrefixTransform( "COWBELL_" ),
                         new HashTransform( ImmutableList.of( "algo", "mode", "keySize" ), HashTransform.HashType.murmur128 ) ) );
         olt.field = Optional.of( transforms );
@@ -50,7 +52,7 @@ public class TransformsSerializerTest extends AbstractJacksonSerializationTest<O
     }
 
     public static class OptionalListOfTransforms {
-        public Optional<Transformations> field;
+        public Optional<List<Transformation>> field;
 
         @Override public String toString() {
             return "OptionalListOfTransforms{" +

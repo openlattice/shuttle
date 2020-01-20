@@ -37,7 +37,8 @@ import com.openlattice.edm.type.EntityType;
 import com.openlattice.edm.type.PropertyType;
 import com.openlattice.entitysets.EntitySetsApi;
 import com.openlattice.mapstores.TestDataFactory;
-import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.Flight;
+import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.CsvUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,10 +50,7 @@ import transforms.PrefixTransform;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -263,7 +261,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .addProperty(
                                 ALGO_PT.getType().getFullQualifiedNameAsString(),
                                 "algo",
-                                new Transformations( Collections.singletonList( new PrefixTransform( "COWBELL_" ) ) )  )
+                                new ArrayList<Transformation>( Collections.singletonList( new PrefixTransform( "COWBELL_" ) ) )  )
                         .endEntity()
                     .endEntities()
                 .createAssociations()

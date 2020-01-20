@@ -27,6 +27,7 @@ import com.openlattice.serializer.AbstractJacksonSerializationTest;
 
 import java.io.IOException;
 
+import com.openlattice.shuttle.Flight;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

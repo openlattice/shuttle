@@ -3,10 +3,11 @@ package transforms;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.BooleanTransformation;
-import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -29,8 +30,8 @@ public class BooleanRegexTransform<I extends Object> extends BooleanTransformati
     public BooleanRegexTransform(
             @JsonProperty( Constants.COLUMN ) String column,
             @JsonProperty( Constants.PATTERN ) String pattern,
-            @JsonProperty( Constants.TRANSFORMS_IF_TRUE ) Optional<Transformations> transformsIfTrue,
-            @JsonProperty( Constants.TRANSFORMS_IF_FALSE ) Optional<Transformations> transformsIfFalse ) {
+            @JsonProperty( Constants.TRANSFORMS_IF_TRUE ) Optional<List<Transformation>> transformsIfTrue,
+            @JsonProperty( Constants.TRANSFORMS_IF_FALSE ) Optional<List<Transformation>> transformsIfFalse ) {
         super( transformsIfTrue, transformsIfFalse );
         this.column = column;
         this.pattern = pattern;

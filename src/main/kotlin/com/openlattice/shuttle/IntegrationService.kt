@@ -127,8 +127,8 @@ class IntegrationService(
     private final fun loadCargo(jobId: UUID) {
         val integrationJob = integrationJobs.getValue(jobId)
         val integration = integrations.getValue(integrationJob.integrationName)
-        //val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
-        val apiClient = ApiClient(integration.environment) { "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InBpcGVyQG9wZW5sYXR0aWNlLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJ1c2VyX21ldGFkYXRhIjp7fSwiYXBwX21ldGFkYXRhIjp7InJvbGVzIjpbIkF1dGhlbnRpY2F0ZWRVc2VyIiwiYWRtaW4iXSwiYWN0aXZhdGVkIjoiYWN0aXZhdGVkIn0sIm5pY2tuYW1lIjoicGlwZXIiLCJyb2xlcyI6WyJBdXRoZW50aWNhdGVkVXNlciIsImFkbWluIl0sInVzZXJfaWQiOiJnb29nbGUtb2F1dGgyfDExNDczMDU3NjI0MjQ4MTc3NTE4MiIsImlzcyI6Imh0dHBzOi8vb3BlbmxhdHRpY2UuYXV0aDAuY29tLyIsInN1YiI6Imdvb2dsZS1vYXV0aDJ8MTE0NzMwNTc2MjQyNDgxNzc1MTgyIiwiYXVkIjoiS1R6Z3l4czZLQmNKSEI4NzJlU01lMmNwVEh6aHhTOTkiLCJpYXQiOjE1NzkyOTMwNDUsImV4cCI6MTU3OTM3OTQ0NX0.vl1ty_Ph1oosaOn4h8bJ03-s2vYs7oPSvLlKtlgVlyQ" }
+        val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
+        val apiClient = ApiClient(integration.environment) { token }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
         //an integration object is expected to have a non-empty logEntitySetId,

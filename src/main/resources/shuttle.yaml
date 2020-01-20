@@ -8,5 +8,5 @@ postgres:
     connectionTimeout: 60000
 auth:
   credentials:
-    email: "wouldntyou"
-    password: "liketoknow"
+    email: "tests@openlattice.com"
+    password: "openlattice"
