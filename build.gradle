@@ -134,7 +134,10 @@ sourceSets {
 jar {
     doFirst {
         manifest {
-            attributes "Class-Path": configurations.runtime.files.collect { it.getName() }.join(" ")
+            attributes (
+                    "Class-Path": configurations.runtime.files.collect { it.getName() }.join(" "),
+                    "Main-Class": mainClassName
+            )
         }
     }
 }
