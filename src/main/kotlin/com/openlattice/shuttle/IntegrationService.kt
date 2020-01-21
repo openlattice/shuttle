@@ -35,6 +35,7 @@ import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import okhttp3.FormBody
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -330,9 +331,8 @@ class IntegrationService(
     private fun submitCallback(jobId: UUID, urls: List<String>) {
         urls.forEach {
             val url = URL(it)
-            val body = MultipartBody.Builder()
-                    .setType(MultipartBody.FORM)
-                    .addFormDataPart("message", "integration job with id $jobId succeeded")
+            val body = FormBody.Builder()
+                    .add("message", "Integration job with id $jobId succeeded! :D")
                     .build()
             val request = Request.Builder()
                     .url(url)
