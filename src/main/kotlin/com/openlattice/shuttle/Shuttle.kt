@@ -127,7 +127,7 @@ class Shuttle (
     init {
         if (blackbox.enabled) {
             val jobId = maybeJobId.get()
-            integrationJobs = hazelcastInstance!!.getMap(HazelcastMap.INTEGRATION_JOBS.name)
+            integrationJobs = HazelcastMap.INTEGRATION_JOBS.getMap( hazelcastInstance!! )
 
             this.writeLog = { name, log, time, status ->
                 logger.info(log)
