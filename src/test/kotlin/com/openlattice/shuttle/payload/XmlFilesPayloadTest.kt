@@ -51,7 +51,7 @@ internal class XmlFilesPayloadTest {
 
     @Test
     fun testGetPayloadNestedDirectories() {
-        val xmlPayloadUnderTest = XmlFilesPayload(TEST_PATH_3.path)
+        val xmlPayloadUnderTest = XmlFilesPayload( TEST_PATH_3.path )
         val count = basicTestFile( xmlPayloadUnderTest, EXPECTED_READ_KEYS, setOf( OVERVIEW_IMG_TAG ))
         assertTrue( count == 1 )
     }
