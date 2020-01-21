@@ -37,14 +37,14 @@ internal class XmlFilesPayloadTest {
 
     @Test
     fun testGetHappyPathPayload() {
-        val xmlPayloadUnderTest = XmlFilesPayload(TEST_PATH_1.path)
+        val xmlPayloadUnderTest = XmlFilesPayload( TEST_PATH_1.path )
         val count = basicTestFile( xmlPayloadUnderTest, EXPECTED_READ_KEYS, setOf( OVERVIEW_IMG_TAG ))
         assertTrue( count == 1 )
     }
 
     @Test
     fun testFilePathInsteadOfDirPath() {
-        val xmlPayloadUnderTest = XmlFilesPayload(TEST_PATH_4.path)
+        val xmlPayloadUnderTest = XmlFilesPayload( TEST_PATH_4.path )
         val count = basicTestFile( xmlPayloadUnderTest, EXPECTED_READ_KEYS, setOf( OVERVIEW_IMG_TAG ))
         assertTrue( count == 1 )
     }
@@ -58,26 +58,26 @@ internal class XmlFilesPayloadTest {
 
     @Test
     fun testGetPayloadMultipleFiles() {
-        val xmlPayloadUnderTest = XmlFilesPayload(TEST_PATH_2.path)
+        val xmlPayloadUnderTest = XmlFilesPayload( TEST_PATH_2.path )
         val count = basicTestFile( xmlPayloadUnderTest, EXPECTED_READ_KEYS, setOf( OVERVIEW_IMG_TAG ))
         assertTrue( count == 2 )
     }
 
     @Test
     fun testDeepXml() {
-        val xmlPayloadUnderTest = XmlFilesPayload(TEST_XML_LPRD_TREE.path)
+        val xmlPayloadUnderTest = XmlFilesPayload( TEST_XML_LPRD_TREE.path )
         val count = basicTestFile(xmlPayloadUnderTest, EXPECTED_LPRD_KEYS, setOf() )
         assertTrue( count == 1 )
     }
 
     @Test
     fun testShallowXml() {
-        val xmlPayloadUnderTest = XmlFilesPayload(TEST_XML_READ.path)
+        val xmlPayloadUnderTest = XmlFilesPayload( TEST_XML_READ.path )
         val count = basicTestFile( xmlPayloadUnderTest, EXPECTED_READ_KEYS, setOf( OVERVIEW_IMG_TAG ))
         assertTrue( count == 1 )
     }
 
-    fun basicTestFile(xmlPayloadUnderTest: XmlFilesPayload, expectedKeys: Set<String>, absentKeys: Set<String> ): Int {
+    fun basicTestFile( xmlPayloadUnderTest: XmlFilesPayload, expectedKeys: Set<String>, absentKeys: Set<String> ): Int {
         var count = 0
         xmlPayloadUnderTest.getPayload().forEach {row ->
             count++
