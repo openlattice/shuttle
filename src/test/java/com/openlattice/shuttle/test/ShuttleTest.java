@@ -45,7 +45,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.openlattice.shuttle.transforms.HashTransform;
+import transforms.HashTransform;
 import transforms.PrefixTransform;
 
 import java.io.IOException;
