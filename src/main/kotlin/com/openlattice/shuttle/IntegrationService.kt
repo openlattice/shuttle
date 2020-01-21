@@ -21,7 +21,6 @@ import com.openlattice.datastore.services.EdmManager
 import com.openlattice.datastore.services.EntitySetManager
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
-import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.hazelcast.HazelcastQueue
 import com.openlattice.retrofit.RhizomeByteConverterFactory
@@ -36,7 +35,6 @@ import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import okhttp3.FormBody
-import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -68,12 +66,12 @@ class IntegrationService(
         private val blackbox: Blackbox
 ) {
 
-    private val integrations = hazelcastInstance.getMap<String, Integration>(HazelcastMap.INTEGRATIONS.name)
-    private val entitySets = hazelcastInstance.getMap<UUID, EntitySet>(HazelcastMap.ENTITY_SETS.name)
-    private val entityTypes = hazelcastInstance.getMap<UUID, EntityType>(HazelcastMap.ENTITY_TYPES.name)
-    private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
-    private val integrationJobs = hazelcastInstance.getMap<UUID, IntegrationJob>(HazelcastMap.INTEGRATION_JOBS.name)
-    private val integrationQueue = hazelcastInstance.getQueue<UUID>(HazelcastQueue.INTEGRATION_JOBS.name)
+    private val integrations = HazelcastMap.INTEGRATIONS.getMap( hazelcastInstance )
+    private val entitySets = HazelcastMap.ENTITY_SETS.getMap( hazelcastInstance )
+    private val entityTypes = HazelcastMap.ENTITY_TYPES.getMap( hazelcastInstance )
+    private val propertyTypes = HazelcastMap.PROPERTY_TYPES.getMap( hazelcastInstance )
+    private val integrationJobs = HazelcastMap.INTEGRATION_JOBS.getMap( hazelcastInstance )
+    private val jobQueue = HazelcastQueue.INTEGRATION_JOBS.getQueue( hazelcastInstance )
     private val semaphore = Semaphore(threadCount)
     private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(threadCount))
     private val statusPredicate = Predicates.or(
@@ -102,17 +100,17 @@ class IntegrationService(
 
             //load any jobs that were in progress or queued
             integrationJobs.keySet(statusPredicate).forEach {
-                integrationQueue.put(it)
+                jobQueue.put(it)
             }
 
             while (true) {
                 if (semaphore.availablePermits() > 0) {
-                    val jobId = integrationQueue.take()
+                    val jobId = jobQueue.take()
                     try {
                         loadCargo(jobId)
                     } catch (ex: Exception) {
                         logger.info("Encountered exception $ex when trying to start integration job with id $jobId")
-                        integrationQueue.add(jobId)
+                        jobQueue.add(jobId)
                         logger.info("Integration job with id $jobId has been requeued")
                     }
                 }
@@ -125,7 +123,7 @@ class IntegrationService(
         val integration = integrations.getValue(integrationName)
         checkState(integrationKey == integration.key, "Integration key $integrationKey is incorrect")
         val jobId = generateIntegrationJobId()
-        integrationQueue.put(jobId)
+        jobQueue.put(jobId)
         integrationJobs[jobId] = IntegrationJob(integrationName, IntegrationStatus.QUEUED)
         return jobId
     }
@@ -333,6 +331,7 @@ class IntegrationService(
             val url = URL(it)
             val body = FormBody.Builder()
                     .add("message", "Integration job with id $jobId succeeded! :D")
+                    .add("jobId", "$jobId")
                     .build()
             val request = Request.Builder()
                     .url(url)
