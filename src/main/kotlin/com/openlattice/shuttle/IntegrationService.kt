@@ -1,5 +1,6 @@
 package com.openlattice.shuttle
 
+import com.auth0.client.auth.AuthAPI
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions.checkState
 import com.google.common.util.concurrent.MoreExecutors
@@ -51,7 +52,7 @@ private val logger = LoggerFactory.getLogger(IntegrationService::class.java)
 private const val fetchSize = 10_000
 private const val readRateLimit = 1_000
 private const val uploadBatchSize = 10_000
-private val nThreads = 2 * Runtime.getRuntime().availableProcessors()
+private val threadCount = 2 * Runtime.getRuntime().availableProcessors()
 
 private lateinit var logEntityType: EntityType
 private lateinit var httpClient: OkHttpClient
@@ -72,12 +73,16 @@ class IntegrationService(
     private val propertyTypes = hazelcastInstance.getMap<UUID, PropertyType>(HazelcastMap.PROPERTY_TYPES.name)
     private val integrationJobs = hazelcastInstance.getMap<UUID, IntegrationJob>(HazelcastMap.INTEGRATION_JOBS.name)
     private val integrationQueue = hazelcastInstance.getQueue<UUID>(HazelcastQueue.INTEGRATION_JOBS.name)
-    private val creds = missionParameters.auth.credentials
-    private val semaphore = Semaphore(nThreads)
-    private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(nThreads))
+    private val semaphore = Semaphore(threadCount)
+    private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(threadCount))
     private val statusPredicate = Predicates.or(
             Predicates.equal(INTEGRATION_STATUS, IntegrationStatus.IN_PROGRESS),
             Predicates.equal(INTEGRATION_STATUS, IntegrationStatus.QUEUED)
+    )
+    private val authAPI = AuthAPI(
+            missionParameters.auth.credentials.getProperty("apiDomain"),
+            missionParameters.auth.credentials.getProperty("apiAudience"),
+            missionParameters.auth.credentials.getProperty("apiSecret")
     )
 
     companion object {
@@ -127,7 +132,7 @@ class IntegrationService(
     private final fun loadCargo(jobId: UUID) {
         val integrationJob = integrationJobs.getValue(jobId)
         val integration = integrations.getValue(integrationJob.integrationName)
-        val token = MissionControl.getIdToken(creds.getProperty("email"), creds.getProperty("password"))
+        val token = getIdToken(missionParameters.auth.credentials)
         val apiClient = ApiClient(integration.environment) { token }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
@@ -228,6 +233,15 @@ class IntegrationService(
 
     private fun checkIntegrationExists(integrationName: String) {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
+    }
+
+    private fun getIdToken(creds: Properties): String {
+        return authAPI
+                .login(creds.getProperty("email"), creds.getProperty("password"), creds.getProperty("realm"))
+                .setScope(creds.getProperty("scope"))
+                .setAudience(creds.getProperty("audience"))
+                .execute()
+                .idToken
     }
 
     private fun getSrcDataSource(source: Properties): HikariDataSource {
