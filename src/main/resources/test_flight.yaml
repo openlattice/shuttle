@@ -16,6 +16,7 @@ entityDefinitions:
     propertyDefinitions:
       ol.id:
         type: ol.id
+        transforms:
         - !<transforms.ConcatTransform>
           columns: ["id", "description"]
       ol.description:
