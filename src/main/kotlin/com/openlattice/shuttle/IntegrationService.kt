@@ -79,9 +79,9 @@ class IntegrationService(
             Predicates.equal(INTEGRATION_STATUS, IntegrationStatus.QUEUED)
     )
     private val authAPI = AuthAPI(
-            missionParameters.auth.credentials.getProperty("apiDomain"),
-            missionParameters.auth.credentials.getProperty("apiAudience"),
-            missionParameters.auth.credentials.getProperty("apiSecret")
+            missionParameters.auth.getProperty("apiDomain"),
+            missionParameters.auth.getProperty("apiAudience"),
+            missionParameters.auth.getProperty("apiSecret")
     )
 
     companion object {
@@ -131,7 +131,7 @@ class IntegrationService(
     private final fun loadCargo(jobId: UUID) {
         val integrationJob = integrationJobs.getValue(jobId)
         val integration = integrations.getValue(integrationJob.integrationName)
-        val token = getIdToken(missionParameters.auth.credentials)
+        val token = getIdToken(missionParameters.auth)
         val apiClient = ApiClient(integration.environment) { token }
         val dataIntegrationApi = apiClient.dataIntegrationApi
 
