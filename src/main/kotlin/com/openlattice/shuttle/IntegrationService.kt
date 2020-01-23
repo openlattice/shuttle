@@ -123,9 +123,10 @@ class IntegrationService(
         checkIntegrationExists(integrationName)
         val integration = integrations.getValue(integrationName)
         checkState(integrationKey == integration.key, "Integration key $integrationKey is incorrect")
-        val jobId = generateIntegrationJobId()
+        val integrationJob = IntegrationJob(integrationName, IntegrationStatus.QUEUED)
+        val jobId = generateIntegrationJobId(integrationJob)
         jobQueue.put(jobId)
-        integrationJobs[jobId] = IntegrationJob(integrationName, IntegrationStatus.QUEUED)
+        integrationJobs[jobId] = integrationJob
         return jobId
     }
 
@@ -323,9 +324,9 @@ class IntegrationService(
         return "Auto-generated entity set containing logs of the following flights: $flightDescriptionsClause"
     }
 
-    private fun generateIntegrationJobId(): UUID {
+    private fun generateIntegrationJobId(integrationJob: IntegrationJob): UUID {
         var jobId = UUID.randomUUID()
-        while (integrationJobs.containsKey(jobId)) {
+        while (integrationJobs.putIfAbsent(jobId, integrationJob) != null) {
             jobId = UUID.randomUUID()
         }
         return jobId
