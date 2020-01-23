@@ -194,7 +194,7 @@ class IntegrationService(
     }
 
     fun createIntegrationDefinition(integrationName: String, integration: Integration): UUID {
-        checkState(!integrations.containsKey(integrationName), "An integration with name $integrationName already exists.")
+        checkIntegrationDoesNotExist(integrationName)
         integration.callbackUrls.ifPresent {
             try {
                 it.forEach { url ->
@@ -211,8 +211,7 @@ class IntegrationService(
     }
 
     fun readIntegrationDefinition(integrationName: String): Integration {
-        checkIntegrationExists(integrationName)
-        return integrations.getValue(integrationName)
+        return integrations[integrationName] ?: throw IllegalStateException("Integration with name $integrationName does not exist.")
     }
 
     fun updateIntegrationDefinition(integrationName: String, integrationUpdate: IntegrationUpdate) {
@@ -233,6 +232,11 @@ class IntegrationService(
 
     private fun checkIntegrationExists(integrationName: String) {
         checkState(integrations.containsKey(integrationName), "Integration with name $integrationName does not exist.")
+    }
+
+    private fun checkIntegrationDoesNotExist(integrationName: String) {
+        checkState(!integrations.containsKey(integrationName), "An integration with name $integrationName already exists.")
+
     }
 
     private fun getIdToken(creds: Properties): String {
