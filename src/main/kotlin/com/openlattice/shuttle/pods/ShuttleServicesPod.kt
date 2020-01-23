@@ -46,10 +46,6 @@ import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.tasks.PostConstructInitializerTaskDependencies
-import com.openlattice.users.Auth0SyncInitializationTask
-import com.openlattice.users.Auth0SyncService
-import com.openlattice.users.Auth0SyncTask
-import com.openlattice.users.Auth0SyncTaskDependencies
 import com.zaxxer.hikari.HikariDataSource
 import org.jdbi.v3.core.Jdbi
 import org.slf4j.LoggerFactory
@@ -62,9 +58,11 @@ import java.io.IOException
 import javax.annotation.PostConstruct
 import javax.inject.Inject
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
+import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
+import com.openlattice.users.*
 
 /**
  *
@@ -212,7 +210,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun auth0TokenProvider(): Auth0TokenProvider {
-        return Auth0TokenProvider(auth0Configuration)
+        return AwsAuth0TokenProvider(auth0Configuration)
     }
 
     @Bean
@@ -221,8 +219,17 @@ class ShuttleServicesPod {
     }
 
     @Bean
+    fun userListingService(): UserListingService {
+        return if (auth0Configuration.managementApiUrl.contains(Auth0Configuration.NO_SYNC_URL)) {
+            LocalUserListingService(auth0Configuration)
+        } else Auth0UserListingService(ManagementAPI(auth0Configuration.domain,
+                auth0TokenProvider().token))
+
+    }
+
+    @Bean
     fun auth0SyncTaskDependencies(): Auth0SyncTaskDependencies {
-        return Auth0SyncTaskDependencies(auth0SyncService(), managementAPI())
+        return Auth0SyncTaskDependencies(auth0SyncService(), userListingService())
     }
 
     @Bean

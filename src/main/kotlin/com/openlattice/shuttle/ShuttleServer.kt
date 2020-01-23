@@ -7,6 +7,7 @@ import com.openlattice.auditing.pods.AuditingConfigurationPod
 import com.openlattice.auth0.Auth0Pod
 import com.openlattice.aws.AwsS3Pod
 import com.openlattice.datastore.pods.ByteBlobServicePod
+import com.openlattice.hazelcast.pods.HazelcastQueuePod
 import com.openlattice.hazelcast.pods.MapstoresPod
 import com.openlattice.hazelcast.pods.NearCachesPod
 import com.openlattice.hazelcast.pods.SharedStreamSerializersPod
@@ -31,6 +32,7 @@ private val shuttlePods = arrayOf(
         BlackboxPod::class.java,
         ByteBlobServicePod::class.java,
         JdbcPod::class.java,
+        HazelcastQueuePod::class.java,
         MapstoresPod::class.java,
         MissionParametersPod::class.java,
         PostgresPod::class.java,
