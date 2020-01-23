@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import retrofit2.Retrofit
 import java.io.IOException
+import java.lang.IllegalStateException
 import java.net.URL
 import java.util.*
 import java.util.concurrent.Executors
@@ -143,7 +144,8 @@ class IntegrationService(
             val srcDataSourceProperties = Properties()
             srcDataSourceProperties.putAll(it.source)
             val srcDataSource = getSrcDataSource(srcDataSourceProperties)
-            val payload = JdbcPayload(readRateLimit.toDouble(), srcDataSource, it.sql, fetchSize, readRateLimit != 0)
+            val rateLimited = readRateLimit != 0
+            val payload = JdbcPayload(readRateLimit.toDouble(), srcDataSource, it.sql, fetchSize, rateLimited)
             flightPlan[it.flight!!] = payload
             tableColsToPrint[it.flight!!] = it.sourcePrimaryKeyColumns
         }
@@ -179,8 +181,7 @@ class IntegrationService(
     }
 
     fun pollIntegrationStatus(jobId: UUID): IntegrationStatus {
-        checkIntegrationJobExists(jobId)
-        return integrationJobs.getValue(jobId).integrationStatus
+        return integrationJobs[jobId]?.integrationStatus ?: throw IllegalStateException("Job Id $jobId is not assigned to an existing integration job")
     }
 
     fun pollAllIntegrationStatuses(): Map<UUID, IntegrationJob> {
@@ -189,7 +190,7 @@ class IntegrationService(
 
     fun deleteIntegrationJobStatus(jobId: UUID) {
         checkIntegrationJobExists(jobId)
-        integrationJobs.remove(jobId)
+        integrationJobs.delete(jobId)
     }
 
     fun createIntegrationDefinition(integrationName: String, integration: Integration): UUID {
