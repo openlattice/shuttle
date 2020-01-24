@@ -6,7 +6,6 @@ import com.google.common.base.Preconditions.checkState
 import com.google.common.util.concurrent.MoreExecutors
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicates
-import com.openlattice.IdConstants
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.Principals
 import com.openlattice.client.ApiClient
@@ -72,7 +71,7 @@ class IntegrationService(
     private val entityTypes = HazelcastMap.ENTITY_TYPES.getMap( hazelcastInstance )
     private val propertyTypes = HazelcastMap.PROPERTY_TYPES.getMap( hazelcastInstance )
     private val integrationJobs = HazelcastMap.INTEGRATION_JOBS.getMap( hazelcastInstance )
-    private val jobQueue = HazelcastQueue.INTEGRATION_JOBS.getQueue( hazelcastInstance )
+    private val jobQueue = HazelcastQueue.QUEUED_INTEGRATION_JOBS.getQueue( hazelcastInstance )
     private val semaphore = Semaphore(threadCount)
     private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(threadCount))
     private val statusPredicate = Predicates.or(
