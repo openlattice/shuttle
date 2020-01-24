@@ -142,9 +142,9 @@ public class ShuttleTest extends ShuttleTestBootstrap {
             // .forEach( e -> when( edmApi.getPropertyTypeId( e.getAclKey().getNamespace(), e.getAclKey().getName() ) )
             // .thenReturn( e.getValue() ) );
 
-            doAnswer( Answers.incrementCreateDataInvocationCount() )
+            /*doAnswer( Answers.incrementCreateDataInvocationCount() )
                     .when( mockDataIntegrationApi )
-                    .integrateEntityAndAssociationData( Mockito.any(), Mockito.anyBoolean() );
+                    .integrateEntityAndAssociationData( Mockito.any(), Mockito.anyBoolean() );*/
 
             return mockApiFactory;
         };
