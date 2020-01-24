@@ -282,6 +282,7 @@ class IntegrationService(
     private fun createLogEntitySet(integrationName: String, integration: Integration): UUID {
         val name = buildLogEntitySetName(integrationName)
         val contacts = integration.contacts
+        val orgId = integration.organizationId
         val description = buildLogEntitySetDescription(integration.flightPlanParameters)
         val logEntitySet = EntitySet(
                 logEntityType.id,
@@ -290,7 +291,7 @@ class IntegrationService(
                 Optional.of(description),
                 contacts,
                 Optional.empty(),
-                IdConstants.GLOBAL_ORGANIZATION_ID.id,
+                orgId,
                 Optional.empty(),
                 Optional.empty()
         )
