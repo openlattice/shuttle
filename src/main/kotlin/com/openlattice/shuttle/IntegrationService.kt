@@ -347,7 +347,7 @@ class IntegrationService(
                 val response = httpClient.newCall(request).execute()
                 response.body()?.close()
             } catch (ex: IOException) {
-                logger.info("Encountered error $ex when submitting callback to url $url for integration job with id $jobId")
+                logger.info("Encountered exception $ex when submitting callback to url $url for integration job with id $jobId")
             }
         }
     }
