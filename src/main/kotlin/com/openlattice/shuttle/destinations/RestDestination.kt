@@ -32,7 +32,7 @@ import java.util.*
  * Writes data using the REST API
  */
 
-const val MAX_DELAY = 8L * 60L * 1000L
+const val MAX_DELAY = 8L * 60L * 1000L //8 min
 
 class RestDestination(
         private val dataApi: DataApi
