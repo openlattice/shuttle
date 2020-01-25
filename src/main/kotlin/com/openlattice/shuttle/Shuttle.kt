@@ -116,9 +116,11 @@ class Shuttle (
         }
     }
 
-    //vars to be used only when shuttle is run on shuttle server
+    //functions whose bodies differ when shuttle is run on or off shuttle server
     private var writeLog: (String, String, IntegrationStatus) -> Unit
     private var getEntityKeyIds: (Set<EntityKey>) -> Iterable<UUID>
+
+    //vars to be used only when shuttle is run on shuttle server
     private lateinit var logEntitySet: EntitySet
     private lateinit var logsDestination: PostgresDestination
     private lateinit var integrationJobs: IMap<UUID, IntegrationJob>
