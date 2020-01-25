@@ -29,6 +29,7 @@ import com.google.common.base.Suppliers
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
+import com.openlattice.data.integration.S3EntityData
 import com.openlattice.shuttle.destinations.IntegrationDestination
 import com.openlattice.shuttle.destinations.StorageDestination
 import com.openlattice.shuttle.destinations.PostgresDestination
@@ -260,6 +261,8 @@ class MissionControl(
     init {
         val destinations = mutableMapOf<StorageDestination, IntegrationDestination>()
         destinations[StorageDestination.REST] = RestDestination(dataApi)
+        val generatePresignedUrlsFun = dataIntegrationApi::generatePresignedUrls
+
 
         if (parameters.postgres.enabled) {
             val pgDestination = PostgresDestination(
@@ -272,13 +275,13 @@ class MissionControl(
             destinations[StorageDestination.POSTGRES] = pgDestination
 
             if (s3BucketUrl.isNotBlank()) {
-                destinations[StorageDestination.S3] = PostgresS3Destination(pgDestination, s3Api!!, dataIntegrationApi)
+                destinations[StorageDestination.S3] = PostgresS3Destination(pgDestination, s3Api!!, generatePresignedUrlsFun)
             }
         } else {
             destinations[StorageDestination.REST] = RestDestination(dataApi)
 
             if (s3BucketUrl.isNotBlank()) {
-                destinations[StorageDestination.S3] = S3Destination(dataApi, s3Api!!, dataIntegrationApi)
+                destinations[StorageDestination.S3] = S3Destination(dataApi, s3Api!!, generatePresignedUrlsFun)
             }
         }
 

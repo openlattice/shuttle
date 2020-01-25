@@ -12,6 +12,8 @@ import com.openlattice.client.ApiClient
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.S3Api
+import com.openlattice.data.integration.S3EntityData
+import com.openlattice.data.storage.aws.AwsDataSinkService
 import com.openlattice.shuttle.destinations.IntegrationDestination
 import com.openlattice.shuttle.destinations.StorageDestination
 import com.openlattice.shuttle.destinations.PostgresDestination
@@ -63,6 +65,7 @@ class IntegrationService(
         private val idService: EntityKeyIdService,
         private val entitySetManager: EntitySetManager,
         private val reservationService: HazelcastAclKeyReservationService,
+        private val awsDataSinkService: AwsDataSinkService,
         private val blackbox: Blackbox
 ) {
 
@@ -110,8 +113,6 @@ class IntegrationService(
                         loadCargo(jobId)
                     } catch (ex: Exception) {
                         logger.info("Encountered exception $ex when trying to start integration job with id $jobId")
-                        jobQueue.add(jobId)
-                        logger.info("Integration job with id $jobId has been requeued")
                     }
                 }
             }
@@ -119,8 +120,7 @@ class IntegrationService(
     }
 
     fun enqueueIntegrationJob(integrationName: String, integrationKey: UUID): UUID {
-        checkIntegrationExists(integrationName)
-        val integration = integrations.getValue(integrationName)
+        val integration = integrations[integrationName] ?: throw IllegalStateException("Integration with name $integrationName does not exist")
         checkState(integrationKey == integration.key, "Integration key $integrationKey is incorrect")
         val integrationJob = IntegrationJob(integrationName, IntegrationStatus.QUEUED)
         val jobId = generateIntegrationJobId(integrationJob)
@@ -132,9 +132,6 @@ class IntegrationService(
     private final fun loadCargo(jobId: UUID) {
         val integrationJob = integrationJobs.getValue(jobId)
         val integration = integrations.getValue(integrationJob.integrationName)
-        val token = getIdToken(missionParameters.auth)
-        val apiClient = ApiClient(integration.environment) { token }
-        val dataIntegrationApi = apiClient.dataIntegrationApi
 
         //an integration object is expected to have a non-empty logEntitySetId,
         //a non-null flight, and non-null key in order for the integration to run successfully
@@ -149,7 +146,15 @@ class IntegrationService(
             flightPlan[it.flight!!] = payload
             tableColsToPrint[it.flight!!] = it.sourcePrimaryKeyColumns
         }
-        val destinationsMap = generateDestinationsMap(integration, missionParameters, dataIntegrationApi)
+
+        val generatePresignedUrlsFun: (List<S3EntityData>) -> List<String> = {
+            val propertyTypesByEntitySetId = it.map{ elem ->
+                elem.entitySetId to entitySetManager.getPropertyTypesForEntitySet(elem.entitySetId)
+            }.toMap()
+            awsDataSinkService.generatePresignedUrls(it, propertyTypesByEntitySetId)
+        }
+
+        val destinationsMap = generateDestinationsMap(integration, missionParameters, generatePresignedUrlsFun)
 
         val shuttle = Shuttle(
                 integration.environment,
@@ -158,7 +163,7 @@ class IntegrationService(
                 entityTypes.values.associateBy { it.id },
                 propertyTypes.values.associateBy { it.type },
                 destinationsMap,
-                dataIntegrationApi,
+                null,
                 tableColsToPrint,
                 missionParameters,
                 StorageDestination.S3,
@@ -251,7 +256,11 @@ class IntegrationService(
         return HikariDataSource(HikariConfig(source))
     }
 
-    private fun generateDestinationsMap(integration: Integration, missionParameters: MissionParameters, dataIntegrationApi: DataIntegrationApi): Map<StorageDestination, IntegrationDestination> {
+    private fun generateDestinationsMap(
+            integration: Integration,
+            missionParameters: MissionParameters,
+            generatePresignedUrlsFun: (List<S3EntityData>) -> List<String>
+    ): Map<StorageDestination, IntegrationDestination> {
         val s3BucketUrl = integration.s3bucket
         val dstDataSource = HikariDataSource(HikariConfig(missionParameters.postgres.config))
         integration.maxConnections.ifPresent { dstDataSource.maximumPoolSize = it }
@@ -266,6 +275,7 @@ class IntegrationService(
         if (s3BucketUrl.isBlank()) {
             return mapOf(StorageDestination.POSTGRES to pgDestination)
         }
+
         val s3Api = Retrofit.Builder()
                 .baseUrl(s3BucketUrl)
                 .addConverterFactory(RhizomeByteConverterFactory())
@@ -273,7 +283,7 @@ class IntegrationService(
                 .addCallAdapterFactory(RhizomeCallAdapterFactory())
                 .client(RetrofitBuilders.okHttpClient().build())
                 .build().create(S3Api::class.java)
-        val s3Destination = PostgresS3Destination(pgDestination, s3Api, dataIntegrationApi)
+        val s3Destination = PostgresS3Destination(pgDestination, s3Api, generatePresignedUrlsFun)
         return mapOf(StorageDestination.POSTGRES to pgDestination, StorageDestination.S3 to s3Destination)
     }
 

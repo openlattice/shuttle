@@ -87,7 +87,7 @@ class Shuttle (
         private val entityTypes: Map<UUID, EntityType>,
         private val propertyTypes: Map<FullQualifiedName, PropertyType>,
         private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
-        private val dataIntegrationApi: DataIntegrationApi,
+        private val dataIntegrationApi: DataIntegrationApi?,
         private val tableColsToPrint: Map<Flight, List<String>>,
         private val parameters: MissionParameters,
         private val binaryDestination: StorageDestination,
@@ -118,6 +118,7 @@ class Shuttle (
 
     //vars to be used only when shuttle is run on shuttle server
     private var writeLog: (String, String, IntegrationStatus) -> Unit
+    private var getEntityKeyIds: (Set<EntityKey>) -> Iterable<UUID>
     private lateinit var logEntitySet: EntitySet
     private lateinit var logsDestination: PostgresDestination
     private lateinit var integrationJobs: IMap<UUID, IntegrationJob>
@@ -135,6 +136,10 @@ class Shuttle (
                 integrationJobs.executeOnKey(jobId, UpdateIntegrationStatusEntryProcessor(status))
             }
 
+            this.getEntityKeyIds = { entityKeys ->
+                idService!!.reserveEntityKeyIds(entityKeys)
+            }
+
             blackbox.fqns.forEach {
                 val fqn = FullQualifiedName(it.value)
                 val propertyType = propertyTypes.getValue(fqn)
@@ -145,7 +150,6 @@ class Shuttle (
             logEntitySet = maybeLogEntitySet.get()
             val logEntityTypeId = logEntitySet.entityTypeId
             val logDataSource = HikariDataSource(HikariConfig(parameters.postgres.config))
-            logDataSource.maximumPoolSize = 5
             logsDestination = PostgresDestination(
                     mapOf(logEntitySet.id to logEntitySet),
                     mapOf(logEntityTypeId to entityTypes.getValue(logEntityTypeId)),
@@ -155,6 +159,10 @@ class Shuttle (
 
         } else {
             this.writeLog = { _, log, _ -> logger.info(log) }
+
+            this.getEntityKeyIds = { entityKeys ->
+                dataIntegrationApi!!.getEntityKeyIds(entityKeys)
+            }
         }
     }
 
@@ -252,7 +260,7 @@ class Shuttle (
             val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
                     + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
             val entityKeyIds = attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
-                entityKeys.zip(dataIntegrationApi.getEntityKeyIds(entityKeys)).toMap()
+                entityKeys.zip(getEntityKeyIds(entityKeys)).toMap()
             }
 
             val ekidsGeneratedUpdate = "Generated ${entityKeys.size} entity key ids in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms"

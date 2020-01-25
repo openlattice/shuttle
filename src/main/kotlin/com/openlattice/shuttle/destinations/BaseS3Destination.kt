@@ -43,7 +43,7 @@ const val MAX_RETRY_COUNT = 22
  */
 abstract class BaseS3Destination(
         private val s3Api: S3Api,
-        private val dataIntegrationApi: DataIntegrationApi
+        private val generatePresignedUrlsFun: (List<S3EntityData>) -> List<String>
 ) : IntegrationDestination {
     override fun integrateEntities(
             data: Collection<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
@@ -103,7 +103,7 @@ abstract class BaseS3Destination(
 
         val (s3entities, values) = s3entitiesAndValues.unzip()
         val presignedUrls = attempt(retryStrategy, MAX_RETRY_COUNT) {
-            dataIntegrationApi.generatePresignedUrls(s3entities)
+            generatePresignedUrlsFun(s3entities)
         }
 
         var s3eds = s3entities

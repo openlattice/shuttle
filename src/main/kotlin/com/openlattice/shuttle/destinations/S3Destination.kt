@@ -22,6 +22,7 @@
 package com.openlattice.shuttle.destinations
 
 import com.openlattice.data.*
+import com.openlattice.data.integration.S3EntityData
 import org.slf4j.LoggerFactory
 
 private val logger = LoggerFactory.getLogger(S3Destination::class.java)
@@ -34,8 +35,8 @@ private val logger = LoggerFactory.getLogger(S3Destination::class.java)
 class S3Destination(
         private val dataApi: DataApi,
         s3Api: S3Api,
-        dataIntegrationApi: DataIntegrationApi
-) : BaseS3Destination(s3Api, dataIntegrationApi) {
+        generatePresignedUrlsFun: (List<S3EntityData>) -> List<String>
+) : BaseS3Destination(s3Api, generatePresignedUrlsFun) {
     override fun createAssociations(entities: Set<DataEdgeKey>): Long {
         return dataApi.createEdges(entities).toLong()
     }

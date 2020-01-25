@@ -59,6 +59,10 @@ import javax.annotation.PostConstruct
 import javax.inject.Inject
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.auth0.AwsAuth0TokenProvider
+import com.openlattice.data.DataGraphManager
+import com.openlattice.data.EntityKeyIdService
+import com.openlattice.data.storage.ByteBlobDataManager
+import com.openlattice.data.storage.aws.AwsDataSinkService
 import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
@@ -123,6 +127,9 @@ class ShuttleServicesPod {
 
     @Inject
     private lateinit var assemblerConfiguration: AssemblerConfiguration
+
+    @Inject
+    private lateinit var byteBlobDataManager: ByteBlobDataManager
 
     @Autowired(required = false)
     private var s3: AmazonS3? = null
@@ -229,7 +236,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun auth0SyncTaskDependencies(): Auth0SyncTaskDependencies {
-        return Auth0SyncTaskDependencies(auth0SyncService(), userListingService())
+        return Auth0SyncTaskDependencies(auth0SyncService(), userListingService(), executorService)
     }
 
     @Bean
@@ -376,6 +383,15 @@ class ShuttleServicesPod {
     )
 
     @Bean
+    internal fun awsDataSinkService(): AwsDataSinkService {
+        return AwsDataSinkService(
+                partitionManager(),
+                byteBlobDataManager,
+                hds
+        )
+    }
+
+    @Bean
     fun integrationService(): IntegrationService {
         entityTypeMapstore.loadAllKeys()
         return IntegrationService(
@@ -384,6 +400,7 @@ class ShuttleServicesPod {
                 idService(),
                 entitySetManager(),
                 aclKeyReservationService(),
+                awsDataSinkService(),
                 blackbox)
     }
 
