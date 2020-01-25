@@ -6,12 +6,3 @@ postgres:
     password: "test"
     maximumPoolSize: 5
     connectionTimeout: 60000
-auth:
-  email: "tests1@openlattice.com"
-  password: "abracadabra"
-  realm: "Tests"
-  scope: "openid profile email"
-  audience: "https://openlattice.auth0.com/userinfo"
-  apiDomain: "https://openlattice.auth0.com/"
-  apiAudience: "KTzgyxs6KBcJHB872eSMe2cpTHzhxS99"
-  apiSecret: ""

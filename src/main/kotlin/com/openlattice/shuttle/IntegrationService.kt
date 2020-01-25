@@ -243,15 +243,6 @@ class IntegrationService(
 
     }
 
-    private fun getIdToken(creds: Properties): String {
-        return authAPI
-                .login(creds.getProperty("email"), creds.getProperty("password"), creds.getProperty("realm"))
-                .setScope(creds.getProperty("scope"))
-                .setAudience(creds.getProperty("audience"))
-                .execute()
-                .idToken
-    }
-
     private fun getSrcDataSource(source: Properties): HikariDataSource {
         return HikariDataSource(HikariConfig(source))
     }
