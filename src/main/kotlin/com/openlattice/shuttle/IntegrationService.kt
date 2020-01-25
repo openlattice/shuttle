@@ -87,27 +87,39 @@ class IntegrationService(
         fun init(blackbox: Blackbox, dataModelService: EdmManager) {
             if (blackbox.enabled) {
                 logEntityType = dataModelService.getEntityType(FullQualifiedName(blackbox.entityTypeFqn))
-                httpClient = OkHttpClient()
             }
         }
     }
 
     init {
+        httpClient = OkHttpClient()
+
         executor.execute {
             semaphore.acquire()
 
             //load any jobs that were in progress or queued
-            integrationJobs.keySet(statusPredicate).forEach {
-                jobQueue.put(it)
+            integrationJobs.entrySet(statusPredicate).forEach {
+                jobQueue.put(Pair(it.key, it.value))
             }
 
             while (true) {
                 if (semaphore.availablePermits() > 0) {
-                    val jobId = jobQueue.take()
+                    val job = jobQueue.take()
                     try {
-                        loadCargo(jobId)
+                        loadCargo(job.first)
                     } catch (ex: Exception) {
-                        logger.info("Encountered exception $ex when trying to start integration job with id $jobId")
+                        logger.info("Encountered exception $ex when trying to start integration job with id ${job.first}")
+
+                        job.second.integrationStatus = IntegrationStatus.NEVER_STARTED
+                        integrationJobs[job.first] = job.second
+                        
+                        integrations.getValue(job.second.integrationName).callbackUrls.ifPresent {
+                            submitCallback(
+                                    job.first,
+                                    it,
+                                    "Integration job with id ${job.first} failed with an exception $ex before starting"
+                            )
+                        }
                     }
                 }
             }
@@ -119,7 +131,7 @@ class IntegrationService(
         checkState(integrationKey == integration.key, "Integration key $integrationKey is incorrect")
         val integrationJob = IntegrationJob(integrationName, IntegrationStatus.QUEUED)
         val jobId = generateIntegrationJobId(integrationJob)
-        jobQueue.put(jobId)
+        jobQueue.put(Pair(jobId, integrationJob))
         integrationJobs[jobId] = integrationJob
         return jobId
     }
@@ -174,7 +186,7 @@ class IntegrationService(
             shuttle.launch(uploadBatchSize)
         }.addListener(Runnable {
             integration.callbackUrls.ifPresent {
-                submitCallback(jobId, it)
+                submitCallback(jobId, it, "Integration job with id $jobId succeeded! :D")
             }
             semaphore.release()
         }, executor)
@@ -327,11 +339,11 @@ class IntegrationService(
         return jobId
     }
 
-    private fun submitCallback(jobId: UUID, urls: List<String>) {
+    private fun submitCallback(jobId: UUID, urls: List<String>, message: String) {
         urls.forEach {
             val url = URL(it)
             val body = FormBody.Builder()
-                    .add("message", "Integration job with id $jobId succeeded! :D")
+                    .add("message", message)
                     .add("jobId", "$jobId")
                     .build()
             val request = Request.Builder()
