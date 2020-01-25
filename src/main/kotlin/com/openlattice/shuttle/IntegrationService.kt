@@ -1,6 +1,5 @@
 package com.openlattice.shuttle
 
-import com.auth0.client.auth.AuthAPI
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions.checkState
 import com.google.common.util.concurrent.MoreExecutors
@@ -8,8 +7,6 @@ import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicates
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.Principals
-import com.openlattice.client.ApiClient
-import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.S3Api
 import com.openlattice.data.integration.S3EntityData
@@ -110,9 +107,9 @@ class IntegrationService(
                     } catch (ex: Exception) {
                         logger.info("Encountered exception $ex when trying to start integration job with id ${job.first}")
 
-                        job.second.integrationStatus = IntegrationStatus.NEVER_STARTED
+                        job.second.integrationStatus = IntegrationStatus.FAILED_TO_START
                         integrationJobs[job.first] = job.second
-                        
+
                         integrations.getValue(job.second.integrationName).callbackUrls.ifPresent {
                             submitCallback(
                                     job.first,
