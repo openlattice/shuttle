@@ -27,11 +27,11 @@ entityDefinitions:
     fqn: ol.image
     entitySetName: shuttle_test_image
     propertyDefinitions:
-      ol.signaturedata:
-        type: ol.signaturedata
+      ol.id:
+        type: ol.id
         column: id
-      ol.description:
-        type: ol.description
+      ol.imagedata:
+        type: ol.imagedata
         column: description
     name: image
 associationDefinitions:

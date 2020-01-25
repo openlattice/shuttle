@@ -81,11 +81,6 @@ class IntegrationService(
             Predicates.equal(INTEGRATION_STATUS, IntegrationStatus.IN_PROGRESS),
             Predicates.equal(INTEGRATION_STATUS, IntegrationStatus.QUEUED)
     )
-    private val authAPI = AuthAPI(
-            missionParameters.auth.getProperty("apiDomain"),
-            missionParameters.auth.getProperty("apiAudience"),
-            missionParameters.auth.getProperty("apiSecret")
-    )
 
     companion object {
         @JvmStatic
