@@ -23,6 +23,17 @@ entityDefinitions:
         type: ol.description
         column: description
     name: symptom
+  image:
+    fqn: ol.image
+    entitySetName: shuttle_test_image
+    propertyDefinitions:
+      ol.signaturedata:
+        type: ol.signaturedata
+        column: id
+      ol.description:
+        type: ol.description
+        column: description
+    name: image
 associationDefinitions:
   has:
     fqn: ol.has
