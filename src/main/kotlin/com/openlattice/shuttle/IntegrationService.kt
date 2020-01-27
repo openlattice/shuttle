@@ -96,25 +96,25 @@ class IntegrationService(
 
             //load any jobs that were in progress or queued
             integrationJobs.entrySet(statusPredicate).forEach {
-                jobQueue.put(Pair(it.key, it.value))
+                jobQueue.put(QueuedIntegrationJob(it.key, it.value))
             }
 
             while (true) {
                 if (semaphore.availablePermits() > 0) {
                     val job = jobQueue.take()
                     try {
-                        loadCargo(job.first)
+                        loadCargo(job.jobId)
                     } catch (ex: Exception) {
-                        logger.info("Encountered exception $ex when trying to start integration job with id ${job.first}")
+                        logger.info("Encountered exception $ex when trying to start integration job with id ${job.jobId}")
 
-                        job.second.integrationStatus = IntegrationStatus.FAILED_TO_START
-                        integrationJobs[job.first] = job.second
+                        job.integrationJob.integrationStatus = IntegrationStatus.FAILED_TO_START
+                        integrationJobs[job.jobId] = job.integrationJob
 
-                        integrations.getValue(job.second.integrationName).callbackUrls.ifPresent {
+                        integrations.getValue(job.integrationJob.integrationName).callbackUrls.ifPresent {
                             submitCallback(
-                                    job.first,
+                                    job.jobId,
                                     it,
-                                    "Integration job with id ${job.first} failed with an exception $ex before starting"
+                                    "Integration job with id ${job.jobId} failed with an exception $ex before starting"
                             )
                         }
                     }
@@ -128,7 +128,7 @@ class IntegrationService(
         checkState(integrationKey == integration.key, "Integration key $integrationKey is incorrect")
         val integrationJob = IntegrationJob(integrationName, IntegrationStatus.QUEUED)
         val jobId = generateIntegrationJobId(integrationJob)
-        jobQueue.put(Pair(jobId, integrationJob))
+        jobQueue.put(QueuedIntegrationJob(jobId, integrationJob))
         integrationJobs[jobId] = integrationJob
         return jobId
     }
