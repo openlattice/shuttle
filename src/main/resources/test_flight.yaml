@@ -32,7 +32,7 @@ entityDefinitions:
         column: id
       ol.imagedata:
         type: ol.imagedata
-        column: description
+        column: data
     name: image
 associationDefinitions:
   has:
