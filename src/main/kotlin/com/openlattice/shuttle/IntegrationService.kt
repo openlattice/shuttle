@@ -229,9 +229,8 @@ class IntegrationService(
     }
 
     fun deleteIntegrationDefinition(integrationName: String) {
-        val integration = integrations[integrationName] ?: throw IllegalStateException("Integration with name $integrationName does not exist")
+        checkIntegrationExists(integrationName)
         integrations.remove(integrationName)
-        entitySetManager.deleteEntitySet(integration.logEntitySetId.get())
     }
 
     private fun checkIntegrationJobExists(jobId: UUID) {
