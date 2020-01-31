@@ -7,6 +7,9 @@ import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
 import java.sql.ResultSet
 import java.sql.SQLException
+import java.sql.Timestamp
+import java.time.OffsetDateTime
+import java.time.ZoneId
 
 private val logger = LoggerFactory.getLogger(JdbcPayload::class.java)
 const val DEFAULT_PERMITS_PER_SECOND = 10_000.0
@@ -16,6 +19,8 @@ internal const val DEFAULT_FETCH_SIZE = 50000
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
+
+private val UTC = ZoneId.of("UTC")
 
 class JdbcPayload @JvmOverloads constructor(
         permitsPerSecond: Double = DEFAULT_PERMITS_PER_SECOND,
@@ -56,6 +61,7 @@ private fun read(columns: List<String>, rs: ResultSet): Map<String, Any?> {
         try {
             when (val obj: Any? = rs.getObject(col)) {
                 is ByteArray -> obj
+                is Timestamp -> OffsetDateTime.ofInstant(obj.toInstant(), UTC).toString()
                 else -> obj?.toString()
             }
 
