@@ -251,7 +251,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .addProperty( ALGO_PT.getType() ).extractor( row -> row.get( "algo" ) ).ok()
                         .addProperty( MODE_PT.getType() ).value( "mode" ).ok()
                         .addProperty( CYPHER_HASH_PT.getType() )
-                            .value( ImmutableList.of("algo", "mode", "keySize"), HashTransform.HashType.murmur128 )
+                            .value( Collections.singletonList( new HashTransform( ImmutableList.of("algo", "mode", "keySize"), HashTransform.HashType.murmur128)) )
                             .ok()
                         .endEntity()
                     .addEntity( MORE_CYPHERS_ALIAS )
