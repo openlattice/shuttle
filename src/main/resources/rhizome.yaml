@@ -7,8 +7,8 @@ enable-persistence:  false
 session-clustering-enabled: false
 
 hazelcast:
-    server: true
-    group: "local_shuttle"
+    server: false
+    group: "local"
     password: "trellis"
     cp-member-count: 0
     seed-nodes:
@@ -22,7 +22,7 @@ hazelcast:
 hazelcast-clients:
     IDS:
         server: false
-        group: "local_shuttle"
+        group: "local"
         password: "trellis"
         cp-member-count: 0
         seed-nodes:

@@ -16,7 +16,6 @@ import com.openlattice.assembler.Assembler
 import com.openlattice.assembler.AssemblerConfiguration
 import com.openlattice.assembler.AssemblerConnectionManager
 import com.openlattice.assembler.AssemblerDependencies
-import com.openlattice.assembler.tasks.ProductionViewSchemaInitializationTask
 import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
 import com.openlattice.auditing.AuditingConfiguration
 import com.openlattice.auth0.Auth0TokenProvider
@@ -191,7 +190,6 @@ class ShuttleServicesPod {
                 authorizationManager(),
                 authorizingComponent(),
                 principalService(),
-                partitionManager(),
                 metricRegistry,
                 hazelcastInstance,
                 eventBus
@@ -311,11 +309,6 @@ class ShuttleServicesPod {
     @Bean
     fun authorizationBootstrap(): AuthorizationInitializationTask {
         return AuthorizationInitializationTask()
-    }
-
-    @Bean
-    fun productionViewSchemaInitializationTask(): ProductionViewSchemaInitializationTask {
-        return ProductionViewSchemaInitializationTask()
     }
 
     @Bean

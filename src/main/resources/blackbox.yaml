@@ -1,8 +1,8 @@
 entity-type: "ol.shuttlelog"
 fqns:
-  JOB_ID: "ol.id"
-  NAME: "flight.name"
-  LOG: "flight.log"
-  TIME_LOGGED: "flight.datetimelogged"
-  STATUS: "flight.status"
+  JOB_ID: "ol.flightjobid"
+  NAME: "ol.flightname"
+  LOG: "ol.flightlog"
+  TIME_LOGGED: "ol.flightdatetimelogged"
+  STATUS: "ol.flightstatus"
 enabled: true
