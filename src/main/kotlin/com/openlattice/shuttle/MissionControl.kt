@@ -29,13 +29,13 @@ import com.google.common.base.Suppliers
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
-import com.openlattice.data.integration.EmailConfiguration
-import com.openlattice.data.integration.IntegrationDestination
-import com.openlattice.data.integration.StorageDestination
-import com.openlattice.data.integration.destinations.PostgresDestination
-import com.openlattice.data.integration.destinations.PostgresS3Destination
-import com.openlattice.data.integration.destinations.RestDestination
-import com.openlattice.data.integration.destinations.S3Destination
+import com.openlattice.data.integration.S3EntityData
+import com.openlattice.shuttle.destinations.IntegrationDestination
+import com.openlattice.shuttle.destinations.StorageDestination
+import com.openlattice.shuttle.destinations.PostgresDestination
+import com.openlattice.shuttle.destinations.PostgresS3Destination
+import com.openlattice.shuttle.destinations.RestDestination
+import com.openlattice.shuttle.destinations.S3Destination
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
 import com.openlattice.edm.EntitySet
 import com.openlattice.retrofit.RhizomeByteConverterFactory
@@ -43,6 +43,7 @@ import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.retrofit.RhizomeRetrofitCallException
 import com.openlattice.rhizome.proxy.RetrofitBuilders
+import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -260,6 +261,8 @@ class MissionControl(
     init {
         val destinations = mutableMapOf<StorageDestination, IntegrationDestination>()
         destinations[StorageDestination.REST] = RestDestination(dataApi)
+        val generatePresignedUrlsFun = dataIntegrationApi::generatePresignedUrls
+
 
         if (parameters.postgres.enabled) {
             val pgDestination = PostgresDestination(
@@ -272,13 +275,13 @@ class MissionControl(
             destinations[StorageDestination.POSTGRES] = pgDestination
 
             if (s3BucketUrl.isNotBlank()) {
-                destinations[StorageDestination.S3] = PostgresS3Destination(pgDestination, s3Api!!, dataIntegrationApi)
+                destinations[StorageDestination.S3] = PostgresS3Destination(pgDestination, s3Api!!, generatePresignedUrlsFun)
             }
         } else {
             destinations[StorageDestination.REST] = RestDestination(dataApi)
 
             if (s3BucketUrl.isNotBlank()) {
-                destinations[StorageDestination.S3] = S3Destination(dataApi, s3Api!!, dataIntegrationApi)
+                destinations[StorageDestination.S3] = S3Destination(dataApi, s3Api!!, generatePresignedUrlsFun)
             }
         }
 
@@ -289,7 +292,7 @@ class MissionControl(
     fun prepare(
             flightPlan: Map<Flight, Payload>,
             createEntitySets: Boolean = false,
-            primaryKeyCols: List<String> = listOf(),
+            primaryKeyCols: Map<Flight, List<String>> = mapOf(),
             contacts: Set<String> = setOf()
     ): Shuttle {
         if (createEntitySets) {
@@ -307,7 +310,12 @@ class MissionControl(
                 dataIntegrationApi,
                 primaryKeyCols,
                 parameters,
-                binaryStorageDestination
+                binaryStorageDestination,
+                Blackbox.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                null,
+                null
         )
     }
 

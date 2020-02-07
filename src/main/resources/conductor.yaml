@@ -1,4 +1,10 @@
 reportEmailAddress: support@openlattice.com
-sparkJars:
-  - ../kindling/build/libs/kindling-0.0.0-SNAPSHOT-all.jar
-  - ./kindling/build/libs/kindling-0.0.0-SNAPSHOT-all.jar
+
+searchConfiguration:
+  elasticsearchUrl: localhost
+  elasticsearchCluster: openlattice
+  elasticsearchPort: 9300
+
+bootstrap-connection:
+  - "Username-Password-Authentication"
+  - "google-oauth2"

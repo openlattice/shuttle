@@ -28,8 +28,8 @@ import com.google.common.base.Charsets;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hasher;
 import com.google.common.hash.Hashing;
+import com.openlattice.client.serialization.SerializationConstants;
 import com.openlattice.shuttle.transformations.Transformation;
-import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
@@ -48,14 +48,12 @@ public class HashTransform extends Transformation<Map<String, String>> {
 
     public enum HashType {murmur128, sha256}
 
-    ;
-
     private final HashFunction hf;
 
     @JsonCreator
     public HashTransform(
-            @JsonProperty( Constants.COLUMNS ) List<String> columns,
-            @JsonProperty( Constants.HASH_FUNCTION ) HashType hashFunction ) {
+            @JsonProperty( SerializationConstants.COLUMNS ) List<String> columns,
+            @JsonProperty( SerializationConstants.HASH_FUNCTION ) HashType hashFunction ) {
         this.columns = columns;
         this.hashFunction = hashFunction == null ? HashType.sha256 : hashFunction ;
         switch ( this.hashFunction ) {
@@ -70,12 +68,12 @@ public class HashTransform extends Transformation<Map<String, String>> {
         }
     }
 
-    @JsonProperty( Constants.HASH_FUNCTION )
+    @JsonProperty( SerializationConstants.HASH_FUNCTION )
     public HashType getHashFunction() {
         return hashFunction;
     }
 
-    @JsonProperty( Constants.COLUMNS )
+    @JsonProperty( SerializationConstants.COLUMNS )
     public List<String> getColumns() {
         return columns;
     }
