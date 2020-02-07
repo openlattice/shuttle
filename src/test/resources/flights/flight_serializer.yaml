@@ -5,7 +5,7 @@ entityDefinitions:
       transforms:
         - !<transforms.ValueTransform>
           value: "ladadiiii-ladada"
-        - !<com.openlattice.shuttle.transforms>
+        - !<com.openlattice.shuttle.transforms.ColumnTransform>
           column: "algo"
     propertyDefinitions:
       CoSoB.9BK4n:
