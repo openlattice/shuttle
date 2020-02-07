@@ -24,10 +24,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.Resources;
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer;
 import com.openlattice.serializer.AbstractJacksonSerializationTest;
-import com.openlattice.shuttle.Flight;
 
 import java.io.IOException;
 
+import com.openlattice.shuttle.Flight;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

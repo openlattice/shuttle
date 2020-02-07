@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017. OpenLattice, Inc
+ * Copyright (C) 2020. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,28 +16,20 @@
  *
  * You can contact the owner of the copyright at support@openlattice.com
  *
+ *
  */
 
-package com.openlattice.shuttle;
+package com.openlattice.shuttle.destinations
 
-import com.google.common.collect.ImmutableMap;
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.mapstores.TestDataFactory;
-import org.junit.Assert;
-import org.junit.Test;
-
-import java.util.Map;
+import com.openlattice.data.integration.Association
+import com.openlattice.data.integration.Entity
 
 /**
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class RowAdapterTest {
-    @Test
-    public void testRowAdapter() {
-        final Map<String, Object> row = ImmutableMap.of( "test", TestDataFactory.random( 5 ) );
-        final SerializableFunction<Row, Object> sf = r -> r.getAs( "test" );
-
-        RowAdapter adapter = new RowAdapter( sf );
-        Assert.assertEquals( row.get( "test" ), adapter.apply( row ) );
-    }
-}
+data class AddressedDataHolder(
+        val entities: MutableMap<StorageDestination, MutableSet<Entity>>,
+        val associations: MutableMap<StorageDestination, MutableSet<Association>>,
+        val batchId: Long
+)
