@@ -1,6 +1,7 @@
 package com.openlattice.shuttle.dates;
 
 import com.openlattice.shuttle.util.Cached;
+import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Optional;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
@@ -19,10 +21,10 @@ import java.util.function.BiFunction;
 public class JavaDateTimeHelper {
     private static final Logger logger = LoggerFactory.getLogger( JavaDateTimeHelper.class );
 
-    private final TimeZone tz;
-    private final String[] datePatterns;
+    private final Optional<TimeZone> tz;
+    private final String[]           datePatterns;
 
-    public JavaDateTimeHelper( TimeZone tz, String... datePatterns ) {
+    public JavaDateTimeHelper( Optional<TimeZone> tz, String... datePatterns ) {
         this.tz = tz;
         this.datePatterns = datePatterns;
     }
@@ -71,15 +73,19 @@ public class JavaDateTimeHelper {
     public OffsetDateTime parseDateTime( String date ) {
         try {
             // DateTime: first try parsing as iso-string into OffsetDateTime
-            // TimeZone: do not use tz argument
+            // TimeZone: if Timezone is not consistent with reported TimeZone: warning
             OffsetDateTime odt = OffsetDateTime.parse( date );
+            if ( tz.isPresent() ) {
+                if ( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() == odt.getOffset() );
+                logger.error( "The reported and requested timezones are inconsistent." );
+            }
             return odt;
         } catch ( IllegalArgumentException eAutoParseODT ) {
             try {
                 // DateTime: try parsing iso-string into TimeStamp
                 // TimeZone: set tz to provided tz
                 Timestamp ts = Timestamp.valueOf( date );
-                OffsetDateTime odt = OffsetDateTime.ofInstant( ts.toInstant(), tz.toZoneId() );
+                OffsetDateTime odt = OffsetDateTime.ofInstant( ts.toInstant(), tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() );
                 return odt;
             } catch ( IllegalArgumentException eAutoParseTs ) {
                 return parseWithTwoDigitYearHandling(
@@ -89,12 +95,16 @@ public class JavaDateTimeHelper {
                                 // DateTime: try parsing into ODT with provided patterns
                                 // TimeZone: do not use tz argument
                                 OffsetDateTime odt = OffsetDateTime.parse( toParse, formatter );
+                                if ( tz.isPresent() ) {
+                                    if ( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() == odt.getOffset() );
+                                    logger.error( "The reported and requested timezones are inconsistent." );
+                                }
                                 return odt;
                             } catch ( IllegalArgumentException eFormatParseODT ) {
                                 // DateTime: try parsing into LocalDateTime
                                 // TimeZone: set tz to provided tz
                                 LocalDateTime parsed = LocalDateTime.parse( toParse, formatter );
-                                return parsed.atZone( tz.toZoneId() ).toOffsetDateTime();
+                                return parsed.atZone( tz.orElse(Constants.DEFAULT_TIMEZONE).toZoneId() ).toOffsetDateTime();
                             }
                         },
                         ( odt, datePattern ) -> {
@@ -126,7 +136,7 @@ public class JavaDateTimeHelper {
         if ( ldt == null ) {
             return null;
         }
-        return ldt.atZone( tz.toZoneId() ).toLocalDate();
+        return ldt.atZone( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() ).toLocalDate();
     }
 
     public LocalTime parseDateTimeAsTime( String datetime ) {
@@ -136,7 +146,7 @@ public class JavaDateTimeHelper {
         if ( ldt == null ) {
             return null;
         }
-        return ldt.atZone( tz.toZoneId() ).toLocalTime();
+        return ldt.atZone( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() ).toLocalTime();
     }
 
     public OffsetDateTime parseDateAsDateTime( String date ) {
@@ -145,7 +155,7 @@ public class JavaDateTimeHelper {
             return null;
         }
         LocalDateTime ldt = ld.atTime( 0, 0 );
-        return ldt.atZone( tz.toZoneId() ).toOffsetDateTime();
+        return ldt.atZone( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() ).toOffsetDateTime();
     }
 
     public <R> R parseWithResultType( String parseableString, BiFunction<String, DateTimeFormatter, R> parseFunction ) {
