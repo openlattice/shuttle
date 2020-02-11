@@ -11,7 +11,7 @@ import java.util.TimeZone;
 
 public class DateAsDateTimeTransform extends Transformation<String> {
     private final String[] pattern;
-    private final TimeZone timezone;
+    private final Optional<TimeZone> timezone;
 
     /**
      * Represents a transformation from string to datetime.
@@ -25,10 +25,18 @@ public class DateAsDateTimeTransform extends Transformation<String> {
             @JsonProperty( Constants.TIMEZONE ) Optional<String> timezone
     ) {
         this.pattern = pattern;
-        if (timezone.isPresent()){
-            this.timezone = TimeZone.getTimeZone( timezone.get() );
+        if ( timezone.isPresent() ) {
+            String timezoneId = timezone.get();
+
+            this.timezone = Optional.of(TimeZone.getTimeZone( timezoneId ));
+
+            if ( !this.timezone.orElse( Constants.DEFAULT_TIMEZONE ).getID().equals( timezoneId ) ) {
+                throw new IllegalArgumentException(
+                        "Invalid timezone id " + timezoneId + " requested for pattern " + pattern );
+            }
+
         } else {
-            this.timezone = Constants.DEFAULT_TIMEZONE;
+            this.timezone = Optional.empty();
         }
     }
 
@@ -47,7 +55,7 @@ public class DateAsDateTimeTransform extends Transformation<String> {
     }
 
     @JsonProperty( value = Constants.TIMEZONE, required = false )
-    public TimeZone getTimezone() {
+    public Optional<TimeZone> getTimezone() {
         return timezone;
     }
 

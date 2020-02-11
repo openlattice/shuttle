@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
     private final List<String> columns;
@@ -56,7 +57,7 @@ public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
             return null;
         }
 
-        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
+        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( Optional.of(TimeZones.America_NewYork),
                 pattern );
         LocalDateTime date0 = dtHelper.parseLocalDateTime( row.get( columns.get( 0 ) ) );
         LocalDateTime date1 = dtHelper.parseLocalDateTime( row.get( columns.get( 1 ) ) );
