@@ -21,7 +21,7 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
     private final String[] datePattern;
     private final String   timeColumn;
     private final String[] timePattern;
-    private final TimeZone timezone;
+    private final Optional<TimeZone> timezone;
 
     /**
      * Represents a transformation from string to datetime.
@@ -44,10 +44,18 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
         this.datePattern = datePattern;
         this.timeColumn = timeColumn;
         this.timePattern = timePattern;
-        if (timezone.isPresent()){
-            this.timezone = TimeZone.getTimeZone( timezone.get() );
+        if ( timezone.isPresent() ) {
+            String timezoneId = timezone.get();
+
+            this.timezone = Optional.of(TimeZone.getTimeZone( timezoneId ));
+
+            if ( !this.timezone.orElse( Constants.DEFAULT_TIMEZONE ).getID().equals( timezoneId ) ) {
+                throw new IllegalArgumentException(
+                        "Invalid timezone id " + timezoneId + " requested for the CombineDateTimeTransform " );
+            }
+
         } else {
-            this.timezone = Constants.DEFAULT_TIMEZONE;
+            this.timezone = Optional.empty();
         }
     }
 
@@ -95,8 +103,8 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
             return null;
         }
         LocalDateTime dateTime = LocalDateTime.of( date, time );
-        TimeZone tz = this.timezone;
-        OffsetDateTime out = dateTime.atZone( tz.toZoneId() ).toOffsetDateTime();
+        Optional<TimeZone> tz = this.timezone;
+        OffsetDateTime out = dateTime.atZone( tz.orElse(Constants.DEFAULT_TIMEZONE).toZoneId() ).toOffsetDateTime();
         return out;
     }
 
