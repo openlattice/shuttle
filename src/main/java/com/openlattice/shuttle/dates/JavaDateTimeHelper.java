@@ -80,14 +80,14 @@ public class JavaDateTimeHelper {
                 logger.error( "The reported and requested timezones are inconsistent." );
             }
             return odt;
-        } catch ( IllegalArgumentException eAutoParseODT ) {
+        } catch ( DateTimeParseException | IllegalArgumentException eAutoParseODT ) {
             try {
                 // DateTime: try parsing iso-string into TimeStamp
                 // TimeZone: set tz to provided tz
                 Timestamp ts = Timestamp.valueOf( date );
                 OffsetDateTime odt = OffsetDateTime.ofInstant( ts.toInstant(), tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() );
                 return odt;
-            } catch ( IllegalArgumentException eAutoParseTs ) {
+            } catch ( DateTimeParseException | IllegalArgumentException eAutoParseTs ) {
                 return parseWithTwoDigitYearHandling(
                         date,
                         ( toParse, formatter ) -> {
@@ -100,7 +100,7 @@ public class JavaDateTimeHelper {
                                     logger.error( "The reported and requested timezones are inconsistent." );
                                 }
                                 return odt;
-                            } catch ( IllegalArgumentException eFormatParseODT ) {
+                            } catch ( DateTimeParseException | IllegalArgumentException  eFormatParseODT ) {
                                 // DateTime: try parsing into LocalDateTime
                                 // TimeZone: set tz to provided tz
                                 LocalDateTime parsed = LocalDateTime.parse( toParse, formatter );
