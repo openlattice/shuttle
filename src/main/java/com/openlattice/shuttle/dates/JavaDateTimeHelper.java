@@ -76,10 +76,7 @@ public class JavaDateTimeHelper {
             // DateTime: first try parsing as iso-string into OffsetDateTime
             // TimeZone: if Timezone is not consistent with reported TimeZone: warning
             OffsetDateTime odt = OffsetDateTime.parse( date );
-            if ( tz.isPresent() ) {
-                if ( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() == odt.getOffset() );
-                logger.error( "The reported and requested timezones are inconsistent." );
-            }
+            checkTimezonesMatch(odt);
             return odt;
         } catch ( DateTimeParseException | IllegalArgumentException eAutoParseODT ) {
             try {
@@ -96,11 +93,7 @@ public class JavaDateTimeHelper {
                                 // DateTime: try parsing into ODT with provided patterns
                                 // TimeZone: do not use tz argument
                                 OffsetDateTime odt = OffsetDateTime.parse( toParse, formatter );
-                                if ( tz.isPresent() ) {
-                                    if ( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() == odt.getOffset() ) {
-                                        logger.error( "The reported and requested timezones are inconsistent." );
-                                    }
-                                }
+                                checkTimezonesMatch(odt);
                                 return odt;
                             } catch ( DateTimeParseException eFormatParseODT ) {
                                 // DateTime: try parsing into LocalDateTime
@@ -170,6 +163,14 @@ public class JavaDateTimeHelper {
 
     public LocalDateTime parseLocalDateTime( String date ) {
         return parseWithResultType( date, LocalDateTime::parse );
+    }
+
+    private void checkTimezonesMatch( OffsetDateTime odt ) {
+        tz.ifPresent( timezone -> {
+            if ( timezone.toZoneId() != odt.getOffset() ) {
+                logger.error( "The reported and requested timezones are inconsistent." );
+            }
+        } );
     }
 
 }
