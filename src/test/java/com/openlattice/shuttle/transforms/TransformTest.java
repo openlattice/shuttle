@@ -230,10 +230,10 @@ public class TransformTest {
     public void testDateTimeTransform() {
         String[] patterns = { "MM/dd/yyyy HH:mm", "MM/dd/yy HH:mm" };
         OffsetDateTime expected1 = OffsetDateTime
-                .of( LocalDateTime.of( 1998, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
+                .of( LocalDateTime.of( 1998, 03, 05, 10, 0 ), ZoneOffset.ofHours( 0 ) );
         Object dateTimeTest1 = new DateTimeTransform( patterns ).apply( getTestRow().get( "DOB" ) );
         OffsetDateTime expected2 = OffsetDateTime
-                .of( LocalDateTime.of( 2000, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
+                .of( LocalDateTime.of( 2000, 03, 05, 10, 0 ), ZoneOffset.ofHours( 0 ) );
         Object dateTimeTest2 = new DateTimeTransform( patterns ).apply( getTestRow().get( "CommittedDateTime" ) );
         OffsetDateTime expected3 = OffsetDateTime
                 .of( LocalDateTime.of( 2000, 03, 05, 8, 0 ), ZoneOffset.ofHours( -8 ) );

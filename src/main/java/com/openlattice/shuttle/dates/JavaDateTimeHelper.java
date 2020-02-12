@@ -1,16 +1,13 @@
 package com.openlattice.shuttle.dates;
 
-import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
+import com.openlattice.shuttle.util.Cached;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
@@ -21,36 +18,83 @@ import java.util.function.BiFunction;
 public class JavaDateTimeHelper {
     private static final Logger logger = LoggerFactory.getLogger( JavaDateTimeHelper.class );
 
-    private final Optional<TimeZone> tz;
-    private final String[]           datePatterns;
+    private       ZoneId   zoneId;
+    private       boolean  shouldAddTimezone;
+    private final String[] datePatterns;
 
     public JavaDateTimeHelper( Optional<TimeZone> tz, String... datePatterns ) {
-        this.tz = tz;
         this.datePatterns = datePatterns;
+        this.zoneId = tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId();
+        this.shouldAddTimezone = tz.isPresent();
     }
 
-    private boolean shouldIgnoreValue( String date ) {
-        return StringUtils.isBlank( date ) || date.equals( "NULL" );
-    }
+    /**
+     * Parse datetime into OffsetDateTime:
+     * - parse into OffsetDateTime as ISO + check whether timezones match
+     * - parse into OffsetDateTime with provided patterns + perform 2-digit-year-fix + check whether timezones match
+     * - parse into LocalDateTime as ISO + add timezone
+     * - parse into LocalDateTime with provided patterns + perform 2-digit-year-fix + add timezone
+     *
+     * @param date - String to parse
+     */
+    public OffsetDateTime parseDateTime( String date ) {
 
-    public <R> R parseWithTwoDigitYearHandling(
-            String date, BiFunction<String, DateTimeFormatter, R> parseFunction,
-            BiFunction<R, String, R> postParseFunction ) {
-        if ( shouldIgnoreValue( date ) ) {
+        if ( StringUtils.isBlank( date ) || date.equals( "NULL" ) )
             return null;
-        }
-        for ( int i = 0; i < datePatterns.length; i++ ) {
 
+        // Try parsing into a OffsetDateTime
+        OffsetDateTime odt = parseFromOffsetDateTime( date );
+        if ( shouldAddTimezone )
+            TimeZones.checkTimezonesMatch( odt, zoneId );
+        if ( odt != null )
+            return odt;
+
+        // Try parsing into OffsetDateTime with patterns
+        OffsetDateTime odt_p = parseFromPatterns(
+                date,
+                ( toParse, formatter ) -> OffsetDateTime.parse( toParse, formatter ),
+                ( local_odt, datePattern ) -> DecadeChangeHelper
+                        .fixTwoYearPatternOffsetDateTime( local_odt, datePattern ) );
+        if ( shouldAddTimezone )
+            TimeZones.checkTimezonesMatch( odt, zoneId );
+        if ( odt_p != null )
+            return odt_p;
+
+        // Try parsing into a LocalDateTime
+        LocalDateTime ldt = parseFromLocalDateTime( date );
+        if ( ldt != null )
+            return ldt.atZone( zoneId ).toOffsetDateTime();
+
+        // Try parsing into a LocalDateTime with patterns
+        LocalDateTime ldt_p = parseFromPatterns(
+                date,
+                ( toParse, formatter ) -> LocalDateTime.parse( toParse, formatter ),
+                ( local_odt, datePattern ) -> DecadeChangeHelper.fixTwoYearPatternLocalDate( local_odt, datePattern ) );
+        if ( ldt_p != null )
+            return ldt_p.atZone( zoneId ).toOffsetDateTime();
+
+        logger.error( "Could not parse Date Time " + date );
+        return null;
+    }
+
+    /**
+     * Loops through datePatterns and tries to parse input
+     *
+     * @param date              - String to parse
+     * @param parseFunction     - function to use for parsing (different depending on output requirement)
+     * @param postParseFunction - function to apply after parsing, depending on successful pattern
+     */
+    public <R> R parseFromPatterns(
+            String date,
+            BiFunction<String, DateTimeFormatter, R> parseFunction,
+            BiFunction<R, String, R> postParseFunction ) {
+        for ( int i = 0; i < datePatterns.length; i++ ) {
             try {
                 DateTimeFormatter formatter = Cached.getDateFormatForString( datePatterns[ i ] );
                 R result = parseFunction.apply( date, formatter );
                 return postParseFunction.apply( result, datePatterns[ i ] );
             } catch ( DateTimeParseException e ) {
-                if (i == datePatterns.length - 1) {
-                    logger.error( "Unable to parse date {}, please see debug log for additional information: {}.",
-                            date,
-                            e );
-                }
+                // do nothing
             } catch ( ExecutionException ex ) {
                 logger.error( "ExecutionException loading pattern from cache", ex );
             }
@@ -59,70 +103,36 @@ public class JavaDateTimeHelper {
         return null;
     }
 
-    public LocalDate parseDate( String date ) {
-        return parseWithTwoDigitYearHandling( date, LocalDate::parse, ( ld, datePattern ) -> {
-            if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
-                // TODO: break this out into its own transform that specifies the date boundaries for two-digit years
-                if ( ( ld.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTOFF ) {
-                    ld = ld.withYear( ld.getYear() - 100 );
-                }
-            }
-            return ld;
-        } );
-    }
-
-    public OffsetDateTime parseDateTime( String date ) {
+    /**
+     * Parses a String into an OffsetDateTime
+     *
+     * @param date - String to parse
+     */
+    public OffsetDateTime parseFromOffsetDateTime( String date ) {
         try {
-            // DateTime: first try parsing as iso-string into OffsetDateTime
-            // TimeZone: if Timezone is not consistent with reported TimeZone: warning
             OffsetDateTime odt = OffsetDateTime.parse( date );
-            checkTimezonesMatch(odt);
             return odt;
-        } catch ( DateTimeParseException | IllegalArgumentException eAutoParseODT ) {
-            try {
-                // DateTime: try parsing iso-string into TimeStamp
-                // TimeZone: set tz to provided tz
-                Timestamp ts = Timestamp.valueOf( date );
-                OffsetDateTime odt = OffsetDateTime.ofInstant( ts.toInstant(), tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() );
-                return odt;
-            } catch ( DateTimeParseException | IllegalArgumentException eAutoParseTs ) {
-                return parseWithTwoDigitYearHandling(
-                        date,
-                        ( toParse, formatter ) -> {
-                            try {
-                                // DateTime: try parsing into ODT with provided patterns
-                                // TimeZone: do not use tz argument
-                                OffsetDateTime odt = OffsetDateTime.parse( toParse, formatter );
-                                checkTimezonesMatch(odt);
-                                return odt;
-                            } catch ( DateTimeParseException eFormatParseODT ) {
-                                // DateTime: try parsing into LocalDateTime
-                                // TimeZone: set tz to provided tz
-                                LocalDateTime parsed = LocalDateTime.parse( toParse, formatter );
-                                return parsed.atZone( tz.orElse(Constants.DEFAULT_TIMEZONE).toZoneId() ).toOffsetDateTime();
-                            }
-                        },
-                        ( odt, datePattern ) -> {
-                            if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
-                                // TODO: break this out into its own transform that specifies the date boundaries for two-digit years
-                                if ( ( odt.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTOFF ) {
-                                    odt = odt.withYear( odt.getYear() - 100 );
-                                }
-                            }
-                            return odt;
-                        } );
-            }
+        } catch ( DateTimeParseException eAutoParseODT ) {
+            return null;
         }
     }
 
-    private boolean checkDatePatternIsTwoDigitYear( String datePattern ) {
-        boolean yyMatch = Cached.getMatcherForString( datePattern, ".*yy.*" ).matches();
-        boolean yyyyMatch = Cached.getMatcherForString( datePattern, ".*yyyy.*" ).matches();
-        return yyMatch && !yyyyMatch;
+    /**
+     * Parses a String into a LocalDateTime
+     *
+     * @param date - String to parse
+     */
+    public LocalDateTime parseFromLocalDateTime( String date ) {
+        try {
+            LocalDateTime ldt = Timestamp.valueOf( date ).toLocalDateTime();
+            return ldt;
+        } catch ( IllegalArgumentException | DateTimeParseException eAutoParseLDT ) {
+            return null;
+        }
     }
 
     public LocalDate parseDateTimeAsDate( String date ) {
-        if ( shouldIgnoreValue( date ) )
+        if ( StringUtils.isBlank( date ) || date.equals( "NULL" ) )
             return null;
         OffsetDateTime odt = parseDateTime( date );
         if ( odt == null )
@@ -131,17 +141,17 @@ public class JavaDateTimeHelper {
         if ( ldt == null ) {
             return null;
         }
-        return ldt.atZone( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() ).toLocalDate();
+        return ldt.atZone( zoneId ).toLocalDate();
     }
 
     public LocalTime parseDateTimeAsTime( String datetime ) {
-        if ( shouldIgnoreValue( datetime ) )
+        if ( StringUtils.isBlank( datetime ) || datetime.equals( "NULL" ) )
             return null;
         LocalDateTime ldt = parseDateTime( datetime ).toLocalDateTime();
         if ( ldt == null ) {
             return null;
         }
-        return ldt.atZone( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() ).toLocalTime();
+        return ldt.atZone( zoneId ).toLocalTime();
     }
 
     public OffsetDateTime parseDateAsDateTime( String date ) {
@@ -150,27 +160,24 @@ public class JavaDateTimeHelper {
             return null;
         }
         LocalDateTime ldt = ld.atTime( 0, 0 );
-        return ldt.atZone( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() ).toOffsetDateTime();
-    }
-
-    public <R> R parseWithResultType( String parseableString, BiFunction<String, DateTimeFormatter, R> parseFunction ) {
-        return parseWithTwoDigitYearHandling( parseableString, parseFunction, (r, str) -> r );
+        return ldt.atZone( zoneId ).toOffsetDateTime();
     }
 
     public LocalTime parseTime( String time ) {
-        return parseWithResultType( time, LocalTime::parse );
+        return parseFromPatterns( time, LocalTime::parse, ( r, str ) -> r );
     }
 
     public LocalDateTime parseLocalDateTime( String date ) {
-        return parseWithResultType( date, LocalDateTime::parse );
+        return parseFromPatterns( date, LocalDateTime::parse, ( r, str ) -> r );
     }
 
-    private void checkTimezonesMatch( OffsetDateTime odt ) {
-        tz.ifPresent( timezone -> {
-            if ( timezone.toZoneId() != odt.getOffset() ) {
-                logger.error( "The reported and requested timezones are inconsistent." );
-            }
-        } );
+    public LocalDate parseDate( String date ) {
+        if ( StringUtils.isBlank( date ) || date.equals( "NULL" ) )
+            return null;
+        return parseFromPatterns(
+                date,
+                LocalDate::parse,
+                ( ld, datePattern ) -> DecadeChangeHelper.fixTwoYearPatternLocalDate( ld, datePattern ) );
     }
-
 }
+

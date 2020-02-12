@@ -26,6 +26,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.TimeZone;
 
@@ -37,11 +39,12 @@ public final class TimeZones {
     public static final TimeZone America_LosAngeles = TimeZone.getTimeZone( "America/Los_Angeles" );
     public static final TimeZone America_Chicago    = TimeZone.getTimeZone( "America/Chicago" );
     public static final TimeZone America_Denver     = TimeZone.getTimeZone( "America/Denver" );
+    public static final TimeZone UTC                = TimeZone.getTimeZone( "UTC" );
 
     private TimeZones() {
     }
 
-    private static final Logger logger = LoggerFactory.getLogger( Parsers.class );
+    private static final Logger logger = LoggerFactory.getLogger( TimeZones.class );
 
     public static Optional<TimeZone> checkTimezone( Optional<String> timezoneString ) {
         if ( timezoneString.isPresent() ) {
@@ -53,11 +56,16 @@ public final class TimeZones {
                 throw new IllegalArgumentException(
                         "Invalid timezone id " + timezoneId + " requested" );
             }
-
             return timezone;
 
-        } else {
-            return Optional.empty();
+        }
+
+        return Optional.empty();
+    }
+
+    public static void checkTimezonesMatch( OffsetDateTime odt, ZoneId tzId ) {
+        if ( tzId != odt.getOffset() ) {
+            logger.error( "The reported (" + tzId + ") and requested (" + odt.getOffset() + ") timezones are inconsistent." );
         }
     }
 

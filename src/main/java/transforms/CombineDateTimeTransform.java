@@ -49,7 +49,7 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
 
             this.timezone = Optional.of(TimeZone.getTimeZone( timezoneId ));
 
-            if ( !this.timezone.orElse( Constants.DEFAULT_TIMEZONE ).getID().equals( timezoneId ) ) {
+            if ( !this.timezone.get().getID().equals( timezoneId ) ) {
                 throw new IllegalArgumentException(
                         "Invalid timezone id " + timezoneId + " requested for the CombineDateTimeTransform " );
             }
