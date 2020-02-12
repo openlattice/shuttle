@@ -63,7 +63,7 @@ public class JavaDateTimeHelper {
         return parseWithTwoDigitYearHandling( date, LocalDate::parse, ( ld, datePattern ) -> {
             if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
                 // TODO: break this out into its own transform that specifies the date boundaries for two-digit years
-                if ( ( ld.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTTOFF ) {
+                if ( ( ld.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTOFF ) {
                     ld = ld.withYear( ld.getYear() - 100 );
                 }
             }
