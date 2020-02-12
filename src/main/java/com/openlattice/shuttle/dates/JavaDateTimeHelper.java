@@ -73,7 +73,7 @@ public class JavaDateTimeHelper {
         if ( ldt_p != null )
             return ldt_p.atZone( zoneId ).toOffsetDateTime();
 
-        logger.error( "Could not parse Date Time " + date );
+        logger.error( "Could not parse Date Time {}", date );
         return null;
     }
 
@@ -165,10 +165,6 @@ public class JavaDateTimeHelper {
 
     public LocalTime parseTime( String time ) {
         return parseFromPatterns( time, LocalTime::parse, ( r, str ) -> r );
-    }
-
-    public LocalDateTime parseLocalDateTime( String date ) {
-        return parseFromPatterns( date, LocalDateTime::parse, ( r, str ) -> r );
     }
 
     public LocalDate parseDate( String date ) {

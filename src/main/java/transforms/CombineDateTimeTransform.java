@@ -3,6 +3,7 @@ package transforms;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.dates.JavaDateTimeHelper;
+import com.openlattice.shuttle.dates.TimeZones;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
@@ -44,19 +45,7 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
         this.datePattern = datePattern;
         this.timeColumn = timeColumn;
         this.timePattern = timePattern;
-        if ( timezone.isPresent() ) {
-            String timezoneId = timezone.get();
-
-            this.timezone = Optional.of(TimeZone.getTimeZone( timezoneId ));
-
-            if ( !this.timezone.get().getID().equals( timezoneId ) ) {
-                throw new IllegalArgumentException(
-                        "Invalid timezone id " + timezoneId + " requested for the CombineDateTimeTransform " );
-            }
-
-        } else {
-            this.timezone = Optional.empty();
-        }
+        this.timezone = TimeZones.checkTimezone(timezone);
     }
 
     @Override

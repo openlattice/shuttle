@@ -52,7 +52,7 @@ public final class TimeZones {
 
             Optional<TimeZone> timezone = Optional.of(TimeZone.getTimeZone( timezoneId ));
 
-            if ( timezone.orElse( Constants.DEFAULT_TIMEZONE ).getID().equals( timezoneId ) ) {
+            if ( timezone.get().getID().equals( timezoneId ) ) {
                 throw new IllegalArgumentException(
                         "Invalid timezone id " + timezoneId + " requested" );
             }
@@ -65,7 +65,9 @@ public final class TimeZones {
 
     public static void checkTimezonesMatch( OffsetDateTime odt, ZoneId tzId ) {
         if ( tzId != odt.getOffset() ) {
-            logger.error( "The reported (" + tzId + ") and requested (" + odt.getOffset() + ") timezones are inconsistent." );
+            logger.error( "The reported ({}) and requested ({}) timezones are inconsistent.",
+                    tzId, odt.getOffset()
+                    );
         }
     }
 
