@@ -105,7 +105,7 @@ public class JavaDateTimeHelper {
                         ( odt, datePattern ) -> {
                             if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
                                 // TODO: break this out into its own transform that specifies the date boundaries for two-digit years
-                                if ( ( odt.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTTOFF ) {
+                                if ( ( odt.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTOFF ) {
                                     odt = odt.withYear( odt.getYear() - 100 );
                                 }
                             }
