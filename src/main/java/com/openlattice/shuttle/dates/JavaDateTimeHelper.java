@@ -30,7 +30,7 @@ public class JavaDateTimeHelper {
     }
 
     private boolean shouldIgnoreValue( String date ) {
-        return date == null || StringUtils.isBlank( date ) || date.equals( "NULL" );
+        return StringUtils.isBlank( date ) || date.equals( "NULL" );
     }
 
     public <R> R parseWithTwoDigitYearHandling(
@@ -39,13 +39,14 @@ public class JavaDateTimeHelper {
         if ( shouldIgnoreValue( date ) ) {
             return null;
         }
-        for ( String datePattern : datePatterns ) {
+        for ( int i = 0; i < datePatterns.length; i++ ) {
+
             try {
-                DateTimeFormatter formatter = Cached.getDateFormatForString( datePattern );
+                DateTimeFormatter formatter = Cached.getDateFormatForString( datePatterns[ i ] );
                 R result = parseFunction.apply( date, formatter );
-                return postParseFunction.apply( result, datePattern );
+                return postParseFunction.apply( result, datePatterns[ i ] );
             } catch ( DateTimeParseException e ) {
-                if ( datePattern.equals( datePatterns[ datePatterns.length - 1 ] ) ) {
+                if (i == datePatterns.length - 1) {
                     logger.error( "Unable to parse date {}, please see debug log for additional information: {}.",
                             date,
                             e );
@@ -62,7 +63,7 @@ public class JavaDateTimeHelper {
         return parseWithTwoDigitYearHandling( date, LocalDate::parse, ( ld, datePattern ) -> {
             if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
                 // TODO: break this out into its own transform that specifies the date boundaries for two-digit years
-                if ( ( ld.getYear() - LocalDate.now().getYear() ) > 20 ) {
+                if ( ( ld.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTTOFF ) {
                     ld = ld.withYear( ld.getYear() - 100 );
                 }
             }
@@ -96,11 +97,12 @@ public class JavaDateTimeHelper {
                                 // TimeZone: do not use tz argument
                                 OffsetDateTime odt = OffsetDateTime.parse( toParse, formatter );
                                 if ( tz.isPresent() ) {
-                                    if ( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() == odt.getOffset() );
-                                    logger.error( "The reported and requested timezones are inconsistent." );
+                                    if ( tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId() == odt.getOffset() ) {
+                                        logger.error( "The reported and requested timezones are inconsistent." );
+                                    }
                                 }
                                 return odt;
-                            } catch ( DateTimeParseException | IllegalArgumentException  eFormatParseODT ) {
+                            } catch ( DateTimeParseException eFormatParseODT ) {
                                 // DateTime: try parsing into LocalDateTime
                                 // TimeZone: set tz to provided tz
                                 LocalDateTime parsed = LocalDateTime.parse( toParse, formatter );
@@ -110,7 +112,7 @@ public class JavaDateTimeHelper {
                         ( odt, datePattern ) -> {
                             if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
                                 // TODO: break this out into its own transform that specifies the date boundaries for two-digit years
-                                if ( ( odt.getYear() - LocalDate.now().getYear() ) > 20 ) {
+                                if ( ( odt.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTTOFF ) {
                                     odt = odt.withYear( odt.getYear() - 100 );
                                 }
                             }
@@ -159,24 +161,7 @@ public class JavaDateTimeHelper {
     }
 
     public <R> R parseWithResultType( String parseableString, BiFunction<String, DateTimeFormatter, R> parseFunction ) {
-        if ( shouldIgnoreValue( parseableString ) ) {
-            return null;
-        }
-        for ( String datePattern : datePatterns ) {
-            try {
-                DateTimeFormatter formatter = Cached.getDateFormatForString( datePattern );
-                return parseFunction.apply( parseableString, formatter );
-            } catch ( DateTimeParseException e ) {
-                if ( datePattern.equals( datePatterns[ datePatterns.length - 1 ] ) ) {
-                    logger.error( "Unable to parse string {}, please see debug log for additional information: {}.",
-                            parseableString,
-                            e );
-                }
-            } catch ( ExecutionException ex ) {
-                logger.error( "ExecutionException loading pattern from cache", ex );
-            }
-        }
-        return null;
+        return parseWithTwoDigitYearHandling( parseableString, parseFunction, (r, str) -> r );
     }
 
     public LocalTime parseTime( String time ) {

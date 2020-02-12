@@ -57,7 +57,7 @@ public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
             return null;
         }
 
-        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( Optional.of(TimeZones.America_NewYork),
+        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( Optional.empty(),
                 pattern );
         LocalDateTime date0 = dtHelper.parseLocalDateTime( row.get( columns.get( 0 ) ) );
         LocalDateTime date1 = dtHelper.parseLocalDateTime( row.get( columns.get( 1 ) ) );

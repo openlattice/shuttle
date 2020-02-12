@@ -52,4 +52,5 @@ public final class Constants {
     public static final String LENGTH              = "length";
     public static final String PRE                 = "pre";
     public static final String CUTOFF              = "cutoff";
+    public static final Integer DECADE_CUTTOFF     = 20;
 }

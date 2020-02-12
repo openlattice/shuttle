@@ -20,6 +20,13 @@
 
 package com.openlattice.shuttle.dates;
 
+import com.openlattice.shuttle.util.Constants;
+import com.openlattice.shuttle.util.Parsers;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 import java.util.TimeZone;
 
 /**
@@ -32,6 +39,26 @@ public final class TimeZones {
     public static final TimeZone America_Denver     = TimeZone.getTimeZone( "America/Denver" );
 
     private TimeZones() {
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger( Parsers.class );
+
+    public static Optional<TimeZone> checkTimezone( Optional<String> timezoneString ) {
+        if ( timezoneString.isPresent() ) {
+            String timezoneId = timezoneString.get();
+
+            Optional<TimeZone> timezone = Optional.of(TimeZone.getTimeZone( timezoneId ));
+
+            if ( timezone.orElse( Constants.DEFAULT_TIMEZONE ).getID().equals( timezoneId ) ) {
+                throw new IllegalArgumentException(
+                        "Invalid timezone id " + timezoneId + " requested" );
+            }
+
+            return timezone;
+
+        } else {
+            return Optional.empty();
+        }
     }
 
 }

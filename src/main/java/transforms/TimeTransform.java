@@ -29,7 +29,7 @@ public class TimeTransform extends Transformation<String> {
 
     @Override
     public Object applyValue( String o ) {
-        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( Optional.of(TimeZones.America_NewYork),
+        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( Optional.empty(),
                 pattern );
         return dtHelper.parseTime( o );
     }

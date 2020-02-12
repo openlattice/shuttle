@@ -13,19 +13,20 @@ import java.util.*;
 
 public class TransformTest {
 
-    String lat               = "36.23452";
-    String lon               = "30.34573";
-    String sex               = "f";
-    String first             = "John";
-    String last              = "Doe";
-    String family            = "Joanna Doe (mother)";
-    String DOB               = "03/05/1998 10:00";
-    String address           = "560 Scott Street, San Francisco, CA 94117";
-    String dateArrest        = "10/01/92";
-    String dateRelease       = "10-01-25";
-    String datetimeCommitted = "03/05/00 10:00";
-    String fullname          = "John_Paul_Doe";
-    String partialname       = "John_Doe";
+    String lat                          = "36.23452";
+    String lon                          = "30.34573";
+    String sex                          = "f";
+    String first                        = "John";
+    String last                         = "Doe";
+    String family                       = "Joanna Doe (mother)";
+    String DOB                          = "03/05/1998 10:00";
+    String address                      = "560 Scott Street, San Francisco, CA 94117";
+    String dateArrest                   = "10/01/92";
+    String dateRelease                  = "10-01-25";
+    String datetimeCommitted            = "03/05/00 10:00";
+    String datetimeArrested             = "2000-03-05T08:00:00.000-08:00";
+    String fullname                     = "John_Paul_Doe";
+    String partialname                  = "John_Doe";
 
     public Map<String, String> getTestRow() {
         Map<String, String> testrow = new HashMap<String, String>();
@@ -41,6 +42,7 @@ public class TransformTest {
         testrow.put( "Sex", sex );
         testrow.put( "Address", address );
         testrow.put( "CommittedDateTime", datetimeCommitted );
+        testrow.put( "ArrestedDateTime", datetimeArrested );
         testrow.put( "Lat", lat );
         testrow.put( "Long", lon );
         return testrow;
@@ -230,12 +232,15 @@ public class TransformTest {
         OffsetDateTime expected1 = OffsetDateTime
                 .of( LocalDateTime.of( 1998, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
         Object dateTimeTest1 = new DateTimeTransform( patterns ).apply( getTestRow().get( "DOB" ) );
-        Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         OffsetDateTime expected2 = OffsetDateTime
                 .of( LocalDateTime.of( 2000, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
         Object dateTimeTest2 = new DateTimeTransform( patterns ).apply( getTestRow().get( "CommittedDateTime" ) );
+        OffsetDateTime expected3 = OffsetDateTime
+                .of( LocalDateTime.of( 2000, 03, 05, 8, 0 ), ZoneOffset.ofHours( -8 ) );
+        Object dateTimeTest3 = new DateTimeTransform( patterns ).apply( getTestRow().get( "ArrestedDateTime" ) );
         Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         Assert.assertEquals( expected2.toString(), dateTimeTest2 );
+        Assert.assertEquals( expected3.toString(), dateTimeTest3 );
     }
 
     @Test
