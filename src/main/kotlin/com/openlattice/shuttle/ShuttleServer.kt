@@ -39,10 +39,7 @@ private val shuttlePods = arrayOf(
         SharedStreamSerializersPod::class.java,
         ShuttleServicesPod::class.java,
         TaskSchedulerPod::class.java,
-        NearCachesPod::class.java,
-
-        //This pod goes last for things to not break
-        ShuttleMapstoresPod::class.java
+        NearCachesPod::class.java
 )
 
 /**
