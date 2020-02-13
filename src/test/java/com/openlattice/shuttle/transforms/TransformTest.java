@@ -25,6 +25,7 @@ public class TransformTest {
     String dateRelease                  = "10-01-25";
     String datetimeCommitted            = "03/05/00 10:00";
     String datetimeArrested             = "2000-03-05T08:00:00.000-08:00";
+    String datetimeTransported          = "2000-03-05 00:02:37.486 +00:00";
     String fullname                     = "John_Paul_Doe";
     String partialname                  = "John_Doe";
 
@@ -43,6 +44,7 @@ public class TransformTest {
         testrow.put( "Address", address );
         testrow.put( "CommittedDateTime", datetimeCommitted );
         testrow.put( "ArrestedDateTime", datetimeArrested );
+        testrow.put( "TransportedDateTime", datetimeTransported );
         testrow.put( "Lat", lat );
         testrow.put( "Long", lon );
         return testrow;
@@ -228,7 +230,7 @@ public class TransformTest {
 
     @Test
     public void testDateTimeTransform() {
-        String[] patterns = { "MM/dd/yyyy HH:mm", "MM/dd/yy HH:mm" };
+        String[] patterns = { "MM/dd/yyyy HH:mm", "MM/dd/yy HH:mm", "yyyy-MM-dd HH:mm:ss.SSS XXX" };
         OffsetDateTime expected1 = OffsetDateTime
                 .of( LocalDateTime.of( 1998, 03, 05, 10, 0 ), ZoneOffset.ofHours( 0 ) );
         Object dateTimeTest1 = new DateTimeTransform( patterns ).apply( getTestRow().get( "DOB" ) );
@@ -238,9 +240,13 @@ public class TransformTest {
         OffsetDateTime expected3 = OffsetDateTime
                 .of( LocalDateTime.of( 2000, 03, 05, 8, 0 ), ZoneOffset.ofHours( -8 ) );
         Object dateTimeTest3 = new DateTimeTransform( patterns ).apply( getTestRow().get( "ArrestedDateTime" ) );
+        OffsetDateTime expected4 = OffsetDateTime
+                .of( LocalDateTime.of( 2000, 03, 05, 0, 02, 37, 486000000 ), ZoneOffset.ofHours( 0 ) );
+        Object dateTimeTest4 = new DateTimeTransform( patterns, Optional.of("UTC") ).apply( getTestRow().get( "TransportedDateTime" ) );
         Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         Assert.assertEquals( expected2.toString(), dateTimeTest2 );
         Assert.assertEquals( expected3.toString(), dateTimeTest3 );
+        Assert.assertEquals( expected4.toString(), dateTimeTest4 );
     }
 
     @Test
