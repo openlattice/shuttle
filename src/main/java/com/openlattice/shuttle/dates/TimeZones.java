@@ -52,7 +52,7 @@ public final class TimeZones {
 
             Optional<TimeZone> timezone = Optional.of(TimeZone.getTimeZone( timezoneId ));
 
-            if ( timezone.get().getID().equals( timezoneId ) ) {
+            if ( ! timezone.get().getID().equals( timezoneId ) ) {
                 throw new IllegalArgumentException(
                         "Invalid timezone id " + timezoneId + " requested" );
             }
