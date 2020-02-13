@@ -44,10 +44,12 @@ public class JavaDateTimeHelper {
 
         // Try parsing into a OffsetDateTime
         OffsetDateTime odt = parseFromOffsetDateTime( date );
-        if ( shouldAddTimezone )
-            TimeZones.checkTimezonesMatch( odt, zoneId );
-        if ( odt != null )
-            return odt;
+         if ( odt != null ) {
+             if ( shouldAddTimezone ) {
+                 TimeZones.checkTimezonesMatch( odt, zoneId );
+             }
+             return odt;
+         }
 
         // Try parsing into OffsetDateTime with patterns
         OffsetDateTime odt_p = parseFromPatterns(
@@ -55,10 +57,11 @@ public class JavaDateTimeHelper {
                 ( toParse, formatter ) -> OffsetDateTime.parse( toParse, formatter ),
                 ( local_odt, datePattern ) -> DecadeChangeHelper
                         .fixTwoYearPatternOffsetDateTime( local_odt, datePattern ) );
-        if ( shouldAddTimezone )
-            TimeZones.checkTimezonesMatch( odt, zoneId );
-        if ( odt_p != null )
+        if ( odt_p != null ) {
+            if ( shouldAddTimezone )
+                TimeZones.checkTimezonesMatch( odt_p, zoneId );
             return odt_p;
+        }
 
         // Try parsing into a LocalDateTime
         LocalDateTime ldt = parseFromLocalDateTime( date );
