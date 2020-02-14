@@ -37,6 +37,7 @@ import com.openlattice.shuttle.destinations.PostgresS3Destination
 import com.openlattice.shuttle.destinations.RestDestination
 import com.openlattice.shuttle.destinations.S3Destination
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
+import com.openlattice.directory.PrincipalApi
 import com.openlattice.edm.EntitySet
 import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
@@ -236,6 +237,7 @@ class MissionControl(
     private val entitySetsApi = apiClient.entitySetsApi
     private val dataApi = apiClient.dataApi
     private val dataIntegrationApi = apiClient.dataIntegrationApi
+    private val principalApi = apiClient.principalApi
 
     private val s3Api = if (s3BucketUrl.isBlank()) null else Retrofit.Builder()
             .baseUrl(s3BucketUrl)
@@ -298,6 +300,8 @@ class MissionControl(
         if (createEntitySets) {
             createMissingEntitySets(flightPlan, contacts)
         }
+
+        principalApi.syncCallingUser()
         ensureValidIntegration(flightPlan)
 
         return Shuttle(
