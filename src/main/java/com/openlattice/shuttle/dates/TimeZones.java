@@ -20,9 +20,6 @@
 
 package com.openlattice.shuttle.dates;
 
-import com.openlattice.shuttle.util.Constants;
-import com.openlattice.shuttle.util.Parsers;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +43,12 @@ public final class TimeZones {
 
     private static final Logger logger = LoggerFactory.getLogger( TimeZones.class );
 
+    /**
+     * Check whether provided timezone string is effectively a known timezone string.
+     * Rather than defaulting to a Timezone, if the timezone is invalid, we throw an error.
+     *
+     * @param timezoneString - String with Timezone
+     */
     public static Optional<TimeZone> checkTimezone( Optional<String> timezoneString ) {
         if ( timezoneString.isPresent() ) {
             String timezoneId = timezoneString.get();
