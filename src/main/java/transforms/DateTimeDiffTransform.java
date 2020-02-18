@@ -13,7 +13,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
     private final List<String> columns;
@@ -56,7 +55,7 @@ public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
             return null;
         }
 
-        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( Optional.empty(),
+        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
                 pattern );
         OffsetDateTime date0 = dtHelper.parseDateTime( row.get( columns.get( 0 ) ) );
         OffsetDateTime date1 = dtHelper.parseDateTime( row.get( columns.get( 1 ) ) );

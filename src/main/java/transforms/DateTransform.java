@@ -33,7 +33,7 @@ import java.util.TimeZone;
 
 public class DateTransform extends Transformation<String> {
     private final String[] pattern;
-    private final Optional<TimeZone> timezone;
+    private final TimeZone timezone;
 
     /**
      * Represents a transformation from string to date.
@@ -65,7 +65,7 @@ public class DateTransform extends Transformation<String> {
     }
 
     @JsonProperty( value = Constants.TIMEZONE, required = false )
-    public Optional<TimeZone> getTimezone() {
+    public TimeZone getTimezone() {
         return timezone;
     }
 
