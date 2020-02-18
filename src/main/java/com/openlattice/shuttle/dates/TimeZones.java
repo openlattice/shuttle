@@ -20,6 +20,7 @@
 
 package com.openlattice.shuttle.dates;
 
+import com.openlattice.shuttle.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,21 +50,19 @@ public final class TimeZones {
      *
      * @param timezoneString - String with Timezone
      */
-    public static Optional<TimeZone> checkTimezone( Optional<String> timezoneString ) {
-        if ( timezoneString.isPresent() ) {
-            String timezoneId = timezoneString.get();
+    public static TimeZone checkTimezone( String timezoneString ) {
+        if ( timezoneString != null ) {
+            TimeZone timezone = TimeZone.getTimeZone( timezoneString );
 
-            Optional<TimeZone> timezone = Optional.of(TimeZone.getTimeZone( timezoneId ));
-
-            if ( ! timezone.get().getID().equals( timezoneId ) ) {
+            if ( ! timezone.getID().equals( timezoneString ) ) {
                 throw new IllegalArgumentException(
-                        "Invalid timezone id " + timezoneId + " requested" );
+                        "Invalid timezone id " + timezoneString + " requested" );
             }
             return timezone;
 
         }
 
-        return Optional.empty();
+        return Constants.DEFAULT_TIMEZONE;
     }
 
     public static void checkTimezonesMatch( OffsetDateTime odt, ZoneId tzId ) {

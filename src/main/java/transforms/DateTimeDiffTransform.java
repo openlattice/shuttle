@@ -8,7 +8,6 @@ import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
-
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -44,7 +43,7 @@ public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
 
     @Override
     public Object apply( Map<String, String> row ) {
-        if ( !( row.containsKey( columns.get(0) ) || row.containsKey( columns.get(1) ) ) ) {
+        if ( !( row.containsKey( columns.get( 0 ) ) || row.containsKey( columns.get( 1 ) ) ) ) {
             throw new IllegalStateException( String
                     .format( "One of the columns in %s is not found.", columns ) );
         }
@@ -55,8 +54,8 @@ public class DateTimeDiffTransform extends Transformation<Map<String, String>> {
             return null;
         }
 
-        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
-                pattern );
+        final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( Constants.DEFAULT_TIMEZONE,
+                pattern, false );
         OffsetDateTime date0 = dtHelper.parseDateTime( row.get( columns.get( 0 ) ) );
         OffsetDateTime date1 = dtHelper.parseDateTime( row.get( columns.get( 1 ) ) );
         long days = ChronoUnit.DAYS.between( date1, date0 );

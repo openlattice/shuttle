@@ -22,10 +22,10 @@ public class JavaDateTimeHelper {
     private       boolean  shouldAddTimezone;
     private final String[] datePatterns;
 
-    public JavaDateTimeHelper( Optional<TimeZone> tz, String... datePatterns ) {
+    public JavaDateTimeHelper( TimeZone tz, String[] datePatterns, Boolean shouldAddTimezone ) {
         this.datePatterns = datePatterns;
-        this.zoneId = tz.orElse( Constants.DEFAULT_TIMEZONE ).toZoneId();
-        this.shouldAddTimezone = tz.isPresent();
+        this.zoneId = tz.toZoneId();
+        this.shouldAddTimezone = shouldAddTimezone;
     }
 
     /**

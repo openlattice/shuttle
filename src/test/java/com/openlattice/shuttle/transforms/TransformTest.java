@@ -242,7 +242,7 @@ public class TransformTest {
         Object dateTimeTest3 = new DateTimeTransform( patterns ).apply( getTestRow().get( "ArrestedDateTime" ) );
         OffsetDateTime expected4 = OffsetDateTime
                 .of( LocalDateTime.of( 2000, 03, 05, 0, 02, 37, 486000000 ), ZoneOffset.ofHours( 0 ) );
-        Object dateTimeTest4 = new DateTimeTransform( patterns, Optional.of("UTC") ).apply( getTestRow().get( "TransportedDateTime" ) );
+        Object dateTimeTest4 = new DateTimeTransform( patterns, "UTC" ).apply( getTestRow().get( "TransportedDateTime" ) );
         Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         Assert.assertEquals( expected2.toString(), dateTimeTest2 );
         Assert.assertEquals( expected3.toString(), dateTimeTest3 );
