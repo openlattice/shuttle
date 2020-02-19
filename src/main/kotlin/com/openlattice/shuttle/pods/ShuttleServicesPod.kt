@@ -65,6 +65,7 @@ import com.openlattice.data.storage.aws.AwsDataSinkService
 import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
+import com.openlattice.ids.IdCipherManager
 import com.openlattice.users.*
 
 /**
@@ -364,6 +365,9 @@ class ShuttleServicesPod {
         )
 
     @Bean
+    fun idCipherManager() = IdCipherManager(hazelcastInstance)
+
+    @Bean
     fun entitySetManager() = EntitySetService(
             hazelcastInstance,
             eventBus,
@@ -372,6 +376,7 @@ class ShuttleServicesPod {
             authorizationManager(),
             partitionManager(),
             dataModelService(),
+            idCipherManager(),
             auditingConfiguration
     )
 
