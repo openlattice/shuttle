@@ -526,7 +526,7 @@ class Shuttle (
             val flightNames = flightPlan.keys.joinToString(", ") { it.name }
             val exceptionLog = "Encountered exception $ex while integrating flight plan containing flight(s) $flightNames"
             writeLog(flightNames, setOf(exceptionLog, ex.stackTrace.toString()), IntegrationStatus.FAILED)
-            throw java.lang.Exception(exceptionLog)
+            MissionControl.fail(1, flightPlan.keys.first(), ex, listOf(uploadingExecutor))
         } finally {
             reporter.close()
             uploadingExecutor.shutdownNow()
