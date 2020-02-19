@@ -530,7 +530,7 @@ class Shuttle (
             if (!isShuttleServer) {
                 MissionControl.fail(1, flightPlan.keys.first(), ex, listOf(uploadingExecutor))
             }
-        } finally {
+       } finally {
             reporter.close()
             uploadingExecutor.shutdownNow()
         }
