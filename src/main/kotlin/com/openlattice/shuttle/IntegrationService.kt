@@ -163,6 +163,7 @@ class IntegrationService(
 
         val shuttle = Shuttle(
                 integration.environment,
+                true,
                 flightPlan,
                 entitySets.values.associateBy { it.name },
                 entityTypes.values.associateBy { it.id },

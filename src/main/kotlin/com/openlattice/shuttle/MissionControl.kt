@@ -302,6 +302,7 @@ class MissionControl(
 
         return Shuttle(
                 environment,
+                false,
                 flightPlan,
                 entitySets,
                 entityTypes,
