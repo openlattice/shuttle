@@ -82,6 +82,7 @@ private val encoder = Base64.getEncoder()
  */
 class Shuttle (
         private val environment: RetrofitFactory.Environment,
+        private val isShuttleServer: Boolean,
         private val flightPlan: Map<Flight, Payload>,
         private val entitySets: Map<String, EntitySet>,
         private val entityTypes: Map<UUID, EntityType>,
@@ -128,7 +129,7 @@ class Shuttle (
     private val ptidsByBlackboxProperty = mutableMapOf<BlackboxProperty, UUID>()
 
     init {
-        if (blackbox.enabled) {
+        if (blackbox.enabled && isShuttleServer) {
             val jobId = maybeJobId.get()
             integrationJobs = HazelcastMap.INTEGRATION_JOBS.getMap( hazelcastInstance!! )
 
@@ -526,6 +527,9 @@ class Shuttle (
             val flightNames = flightPlan.keys.joinToString(", ") { it.name }
             val exceptionLog = "Encountered exception $ex while integrating flight plan containing flight(s) $flightNames"
             writeLog(flightNames, setOf(exceptionLog, ex.stackTrace.toString()), IntegrationStatus.FAILED)
+            if (!isShuttleServer) {
+                MissionControl.fail(1, flightPlan.keys.first(), ex, listOf(uploadingExecutor))
+            }
         } finally {
             reporter.close()
             uploadingExecutor.shutdownNow()
