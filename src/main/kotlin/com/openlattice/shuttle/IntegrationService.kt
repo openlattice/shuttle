@@ -7,7 +7,7 @@ import com.hazelcast.query.Predicates
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.Principals
 import com.openlattice.client.RetrofitFactory
-import com.openlattice.client.RetrofitFactory.decorateWithLoomFactories
+import com.openlattice.client.RetrofitFactory.decorateWithOpenLatticeFactories
 import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.S3Api
 import com.openlattice.data.integration.S3EntityData
@@ -267,7 +267,7 @@ class IntegrationService(
             return mapOf(StorageDestination.POSTGRES to pgDestination)
         }
 
-        val s3Api = decorateWithLoomFactories( Retrofit.Builder() )
+        val s3Api = decorateWithOpenLatticeFactories( Retrofit.Builder() )
                 .baseUrl(s3BucketUrl)
                 .client(RetrofitFactory.okHttpClient().build())
                 .build().create(S3Api::class.java)
