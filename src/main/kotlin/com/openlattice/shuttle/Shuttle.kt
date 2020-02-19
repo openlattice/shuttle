@@ -528,6 +528,8 @@ class Shuttle (
             val exceptionLog = "Encountered exception $ex while integrating flight plan containing flight(s) $flightNames"
             writeLog(flightNames, setOf(exceptionLog, ex.stackTrace.toString()), IntegrationStatus.FAILED)
             if (!isShuttleServer) {
+                // This is here for backwards compatibility.
+                // Should be removed when non-shuttle-server is deprecated
                 MissionControl.fail(1, flightPlan.keys.first(), ex, listOf(uploadingExecutor))
             }
        } finally {
