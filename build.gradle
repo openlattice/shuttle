@@ -98,12 +98,11 @@ sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
 
 run {
-    if (S_ARGS != null) {
-        args S_ARGS.split()
-    } else if (System.getProperty("exec.args") != null) {
+    if (System.getProperty("exec.args") != null) {
         args System.getProperty("exec.args").split()
-    }
-    if (project.hasProperty('appArgs')) {
+    } else if (S_ARGS != null) {
+        args S_ARGS.split()
+    } else if (project.hasProperty('appArgs')) {
         args Eval.me(appArgs)
     }
 
