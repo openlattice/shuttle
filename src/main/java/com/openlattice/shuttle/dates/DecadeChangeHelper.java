@@ -25,7 +25,7 @@ public class DecadeChangeHelper {
     ) {
         if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
             if ( ( parsedDateTime.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTOFF ) {
-                parsedDateTime = parsedDateTime.withYear( parsedDateTime.getYear() - 100 );
+                parsedDateTime = parsedDateTime.withYear( parsedDateTime.getYear() - Constants.ERA_CUTOFF );
             }
         }
         return parsedDateTime;
@@ -37,7 +37,7 @@ public class DecadeChangeHelper {
     ) {
         if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
             if ( ( parsedDate.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTOFF ) {
-                parsedDate = parsedDate.withYear( parsedDate.getYear() - 100 );
+                parsedDate = parsedDate.withYear( parsedDate.getYear() - Constants.ERA_CUTOFF );
             }
         }
         return parsedDate;
@@ -48,7 +48,7 @@ public class DecadeChangeHelper {
     ) {
         if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
             if ( ( parsedDateTime.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTOFF ) {
-                parsedDateTime = parsedDateTime.withYear( parsedDateTime.getYear() - 100 );
+                parsedDateTime = parsedDateTime.withYear( parsedDateTime.getYear() - Constants.ERA_CUTOFF );
             }
         }
         return parsedDateTime;
