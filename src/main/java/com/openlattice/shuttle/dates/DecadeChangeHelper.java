@@ -6,6 +6,7 @@ import com.openlattice.shuttle.util.Constants;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.regex.Matcher;
 
 public class DecadeChangeHelper {
     /**
@@ -14,9 +15,8 @@ public class DecadeChangeHelper {
      *
      */
     public static boolean checkDatePatternIsTwoDigitYear( String datePattern ) {
-        boolean yyMatch = Cached.getMatcherForString( datePattern, ".*yy.*" ).matches();
-        boolean yyyyMatch = Cached.getMatcherForString( datePattern, ".*yyyy.*" ).matches();
-        return yyMatch && !yyyyMatch;
+        Matcher yearLengthTester = Cached.getMatcherForString( datePattern, ".*(yy)(y+)?.*");
+        return yearLengthTester.matches() && yearLengthTester.group( 2 ) == null;
     }
 
     public static LocalDateTime fixTwoYearPatternLocalDateTime (
