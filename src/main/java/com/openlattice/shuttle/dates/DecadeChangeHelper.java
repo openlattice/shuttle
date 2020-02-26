@@ -19,38 +19,35 @@ public class DecadeChangeHelper {
         return yyMatch && !yyyyMatch;
     }
 
-    public static LocalDateTime fixTwoYearPatternLocalDate (
+    public static LocalDateTime fixTwoYearPatternLocalDateTime (
             LocalDateTime parsedDateTime,
             String datePattern
     ) {
-        if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
-            if ( ( parsedDateTime.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTOFF ) {
-                parsedDateTime = parsedDateTime.withYear( parsedDateTime.getYear() - Constants.ERA_CUTOFF );
-            }
-        }
-        return parsedDateTime;
+        var localDate = fixTwoYearPatternLocalDate( parsedDateTime.toLocalDate(), datePattern );
+        return LocalDateTime.of( localDate, parsedDateTime.toLocalTime() );
     }
 
     public static LocalDate fixTwoYearPatternLocalDate (
             LocalDate parsedDate,
             String datePattern
     ) {
-        if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
-            if ( ( parsedDate.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTOFF ) {
-                parsedDate = parsedDate.withYear( parsedDate.getYear() - Constants.ERA_CUTOFF );
-            }
+        if (shouldAdjustTwoDigitYear ( datePattern, LocalDate.now().getYear() )) {
+            parsedDate = parsedDate.withYear( parsedDate.getYear() - Constants.ERA_CUTOFF );
         }
         return parsedDate;
     }
+
     public static OffsetDateTime fixTwoYearPatternOffsetDateTime (
             OffsetDateTime parsedDateTime,
             String datePattern
     ) {
-        if ( checkDatePatternIsTwoDigitYear( datePattern ) ) {
-            if ( ( parsedDateTime.getYear() - LocalDate.now().getYear() ) > Constants.DECADE_CUTOFF ) {
-                parsedDateTime = parsedDateTime.withYear( parsedDateTime.getYear() - Constants.ERA_CUTOFF );
-            }
+        if (shouldAdjustTwoDigitYear ( datePattern, LocalDate.now().getYear() )) {
+            parsedDateTime = parsedDateTime.withYear( parsedDateTime.getYear() - Constants.ERA_CUTOFF );
         }
         return parsedDateTime;
+    }
+
+    private static boolean shouldAdjustTwoDigitYear( String datePattern, int year ) {
+        return checkDatePatternIsTwoDigitYear( datePattern ) && year - LocalDate.now().getYear() > Constants.DECADE_CUTOFF;
     }
 }

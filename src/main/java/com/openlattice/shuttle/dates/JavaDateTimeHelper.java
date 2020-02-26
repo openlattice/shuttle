@@ -72,7 +72,7 @@ public class JavaDateTimeHelper {
         LocalDateTime ldt_p = parseFromPatterns(
                 date,
                 ( toParse, formatter ) -> LocalDateTime.parse( toParse, formatter ),
-                ( local_odt, datePattern ) -> DecadeChangeHelper.fixTwoYearPatternLocalDate( local_odt, datePattern ) );
+                ( local_odt, datePattern ) -> DecadeChangeHelper.fixTwoYearPatternLocalDateTime( local_odt, datePattern ) );
         if ( ldt_p != null )
             return ldt_p.atZone( zoneId ).toOffsetDateTime();
 
