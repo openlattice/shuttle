@@ -31,7 +31,7 @@ public class DecadeChangeHelper {
             LocalDate parsedDate,
             String datePattern
     ) {
-        if (shouldAdjustTwoDigitYear ( datePattern, LocalDate.now().getYear() )) {
+        if (shouldAdjustTwoDigitYear ( datePattern, parsedDate.getYear() )) {
             parsedDate = parsedDate.withYear( parsedDate.getYear() - Constants.ERA_CUTOFF );
         }
         return parsedDate;
@@ -41,7 +41,7 @@ public class DecadeChangeHelper {
             OffsetDateTime parsedDateTime,
             String datePattern
     ) {
-        if (shouldAdjustTwoDigitYear ( datePattern, LocalDate.now().getYear() )) {
+        if (shouldAdjustTwoDigitYear ( datePattern, parsedDateTime.getYear() )) {
             parsedDateTime = parsedDateTime.withYear( parsedDateTime.getYear() - Constants.ERA_CUTOFF );
         }
         return parsedDateTime;
