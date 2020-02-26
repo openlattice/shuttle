@@ -39,7 +39,7 @@ public class JavaDateTimeHelper {
      */
     public OffsetDateTime parseDateTime( String date ) {
 
-        if ( StringUtils.isBlank( date ) || date.equals( "NULL" ) )
+        if ( StringUtils.isBlank( date ) )
             return null;
 
         // Try parsing into a OffsetDateTime
