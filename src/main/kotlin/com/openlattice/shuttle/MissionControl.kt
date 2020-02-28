@@ -29,7 +29,6 @@ import com.google.common.base.Suppliers
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
-import com.openlattice.data.integration.S3EntityData
 import com.openlattice.shuttle.destinations.IntegrationDestination
 import com.openlattice.shuttle.destinations.StorageDestination
 import com.openlattice.shuttle.destinations.PostgresDestination
@@ -42,7 +41,6 @@ import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.retrofit.RhizomeRetrofitCallException
-import com.openlattice.rhizome.proxy.RetrofitBuilders
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
@@ -242,7 +240,7 @@ class MissionControl(
             .addConverterFactory(RhizomeByteConverterFactory())
             .addConverterFactory(RhizomeJacksonConverterFactory(ObjectMappers.getJsonMapper()))
             .addCallAdapterFactory(RhizomeCallAdapterFactory())
-            .client(RetrofitBuilders.okHttpClient().build())
+            .client(RetrofitFactory.okHttpClient().build())
             .build().create(S3Api::class.java)
 
     private val entitySets = entitySetsApi.getEntitySets().filter { it as EntitySet? != null }.map { it.name to it }.toMap().toMutableMap()
@@ -302,6 +300,7 @@ class MissionControl(
 
         return Shuttle(
                 environment,
+                false,
                 flightPlan,
                 entitySets,
                 entityTypes,

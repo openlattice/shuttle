@@ -1,13 +1,13 @@
 package com.openlattice.shuttle
 
-import com.dataloom.mappers.ObjectMappers
 import com.google.common.base.Preconditions.checkState
 import com.google.common.util.concurrent.MoreExecutors
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.query.Predicates
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.Principals
-import com.openlattice.client.RetrofitFactory.decorateWithLoomFactories
+import com.openlattice.client.RetrofitFactory
+import com.openlattice.client.RetrofitFactory.decorateWithOpenLatticeFactories
 import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.S3Api
 import com.openlattice.data.integration.S3EntityData
@@ -22,10 +22,6 @@ import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.hazelcast.HazelcastQueue
-import com.openlattice.retrofit.RhizomeByteConverterFactory
-import com.openlattice.retrofit.RhizomeCallAdapterFactory
-import com.openlattice.retrofit.RhizomeJacksonConverterFactory
-import com.openlattice.rhizome.proxy.RetrofitBuilders
 import com.openlattice.hazelcast.processors.shuttle.UpdateIntegrationEntryProcessor
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.hazelcast.mapstores.shuttle.INTEGRATION_STATUS
@@ -163,6 +159,7 @@ class IntegrationService(
 
         val shuttle = Shuttle(
                 integration.environment,
+                true,
                 flightPlan,
                 entitySets.values.associateBy { it.name },
                 entityTypes.values.associateBy { it.id },
@@ -271,9 +268,9 @@ class IntegrationService(
             return mapOf(StorageDestination.POSTGRES to pgDestination)
         }
 
-        val s3Api = decorateWithLoomFactories( Retrofit.Builder() )
+        val s3Api = decorateWithOpenLatticeFactories( Retrofit.Builder() )
                 .baseUrl(s3BucketUrl)
-                .client(RetrofitBuilders.okHttpClient().build())
+                .client(RetrofitFactory.okHttpClient().build())
                 .build().create(S3Api::class.java)
         val s3Destination = PostgresS3Destination(pgDestination, s3Api, generatePresignedUrlsFun)
         return mapOf(StorageDestination.POSTGRES to pgDestination, StorageDestination.S3 to s3Destination)
@@ -299,7 +296,7 @@ class IntegrationService(
     }
 
     private fun buildLogEntitySetName(integrationName: String): String {
-        var name = "Integration logs for $integrationName"
+        val name = "Integration logs for $integrationName"
         var nameAttempt = name
         var count = 1
 
