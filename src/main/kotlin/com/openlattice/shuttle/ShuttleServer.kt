@@ -15,6 +15,7 @@ import com.openlattice.jdbc.JdbcPod
 import com.openlattice.postgres.PostgresPod
 import com.openlattice.shuttle.pods.*
 import com.openlattice.tasks.pods.TaskSchedulerPod
+import com.openlattice.transporter.pods.TransporterPod
 
 
 private val shuttlePods = arrayOf(
@@ -38,6 +39,7 @@ private val shuttlePods = arrayOf(
         PostgresPod::class.java,
         SharedStreamSerializersPod::class.java,
         ShuttleServicesPod::class.java,
+        TransporterPod::class.java,
         TaskSchedulerPod::class.java,
         NearCachesPod::class.java
 )
