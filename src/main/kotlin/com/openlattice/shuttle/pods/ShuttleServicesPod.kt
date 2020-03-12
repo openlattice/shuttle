@@ -227,9 +227,10 @@ class ShuttleServicesPod {
         return if (auth0Configuration.managementApiUrl.contains(Auth0Configuration.NO_SYNC_URL)) {
             LocalUserListingService(auth0Configuration)
         } else {
+            val auth0Token = auth0TokenProvider().token
             Auth0UserListingService(
-                    ManagementAPI(auth0Configuration.domain, auth0TokenProvider().token),
-                    Auth0ApiExtension( auth0Configuration.domain, auth0TokenProvider().token )
+                    ManagementAPI(auth0Configuration.domain, auth0Token),
+                    Auth0ApiExtension(auth0Configuration.domain, auth0Token)
             )
         }
     }
@@ -356,14 +357,14 @@ class ShuttleServicesPod {
 
     @Bean
     fun dataModelService() = EdmService(
-                hds,
-                hazelcastInstance,
-                aclKeyReservationService(),
-                authorizationManager(),
-                pgEdmManager(),
-                entityTypeManager(),
-                schemaManager()
-        )
+            hds,
+            hazelcastInstance,
+            aclKeyReservationService(),
+            authorizationManager(),
+            pgEdmManager(),
+            entityTypeManager(),
+            schemaManager()
+    )
 
     @Bean
     fun entitySetManager() = EntitySetService(
