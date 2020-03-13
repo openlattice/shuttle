@@ -58,8 +58,6 @@ import javax.annotation.PostConstruct
 import javax.inject.Inject
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.auth0.AwsAuth0TokenProvider
-import com.openlattice.data.DataGraphManager
-import com.openlattice.data.EntityKeyIdService
 import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.data.storage.aws.AwsDataSinkService
 import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
@@ -67,6 +65,7 @@ import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.IdCipherManager
 import com.openlattice.users.*
+import com.openlattice.users.export.Auth0ApiExtension
 
 /**
  *
@@ -228,9 +227,13 @@ class ShuttleServicesPod {
     fun userListingService(): UserListingService {
         return if (auth0Configuration.managementApiUrl.contains(Auth0Configuration.NO_SYNC_URL)) {
             LocalUserListingService(auth0Configuration)
-        } else Auth0UserListingService(ManagementAPI(auth0Configuration.domain,
-                auth0TokenProvider().token))
-
+        } else {
+            val auth0Token = auth0TokenProvider().token
+            Auth0UserListingService(
+                    ManagementAPI(auth0Configuration.domain, auth0Token),
+                    Auth0ApiExtension(auth0Configuration.domain, auth0Token)
+            )
+        }
     }
 
     @Bean
@@ -355,14 +358,14 @@ class ShuttleServicesPod {
 
     @Bean
     fun dataModelService() = EdmService(
-                hds,
-                hazelcastInstance,
-                aclKeyReservationService(),
-                authorizationManager(),
-                pgEdmManager(),
-                entityTypeManager(),
-                schemaManager()
-        )
+            hds,
+            hazelcastInstance,
+            aclKeyReservationService(),
+            authorizationManager(),
+            pgEdmManager(),
+            entityTypeManager(),
+            schemaManager()
+    )
 
     @Bean
     fun idCipherManager() = IdCipherManager(hazelcastInstance)
