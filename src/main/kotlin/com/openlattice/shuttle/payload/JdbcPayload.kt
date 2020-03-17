@@ -61,10 +61,9 @@ private fun read(columns: List<String>, rs: ResultSet): Map<String, Any?> {
         try {
             when (val obj: Any? = rs.getObject(col)) {
                 is ByteArray -> obj
-                is Timestamp -> OffsetDateTime.ofInstant(obj.toInstant(), UTC).toString()
+                is Timestamp -> obj.toLocalDateTime().atZone(UTC).toOffsetDateTime().toString()
                 else -> obj?.toString()
             }
-
         } catch (e: SQLException) {
             logger.error("Unable to read col {}.", col, e)
         }
