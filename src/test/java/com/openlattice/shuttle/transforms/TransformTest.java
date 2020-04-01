@@ -23,6 +23,7 @@ public class TransformTest {
     String address           = "560 Scott Street, San Francisco, CA 94117";
     String dateArrest        = "10/01/92";
     String dateRelease       = "10-01-25";
+    String dateTimeCharged   = "03/05/00 10:00-00:00";
     String datetimeCommitted = "03/05/00 10:00";
     String fullname          = "John_Paul_Doe";
     String partialname       = "John_Doe";
@@ -41,6 +42,7 @@ public class TransformTest {
         testrow.put( "Sex", sex );
         testrow.put( "Address", address );
         testrow.put( "CommittedDateTime", datetimeCommitted );
+        testrow.put( "ChargedDateTime", dateTimeCharged );
         testrow.put( "Lat", lat );
         testrow.put( "Long", lon );
         return testrow;
@@ -223,6 +225,16 @@ public class TransformTest {
     //==================//
     // DATETIME TESTS   //
     //==================//
+
+    @Test
+    public void testDateTimeShiftTransform() {
+        String[] patterns = { "MM/dd/yy HH:mmXXX" };
+        OffsetDateTime expected1 = OffsetDateTime
+                .of( LocalDateTime.of( 2000, 03, 05, 10, 0 ), ZoneOffset.ofHours( -8 ) );
+        Object dateTimeTest1 = new DateTimeShiftTransform( patterns, Optional.of("America/Los_Angeles") )
+                .apply( getTestRow().get( "ChargedDateTime" ) );
+        Assert.assertEquals( expected1.toString(), dateTimeTest1 );
+    }
 
     @Test
     public void testDateTimeTransform() {
