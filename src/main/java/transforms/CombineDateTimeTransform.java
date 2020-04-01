@@ -86,9 +86,6 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
             time = tHelper.parseDateTimeAsTime( t );
         }
 
-        if ( ( date == null ) || ( time == null ) ) {return null;}
-        ;
-
         // combine
         if ( date == null | time == null ) {
             return null;
