@@ -58,7 +58,8 @@ public class DateTimeShiftTransform extends Transformation<String> {
         final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( this.timezone,
                 pattern );
         OffsetDateTime in = dtHelper.parseDateTime( o );
-        OffsetDateTime out = dtHelper.parseDateTime( o )
+        if ( in == null ) return null;
+        OffsetDateTime out = in
                 .toLocalDateTime()
                 .atZone(this.timezone.toZoneId()).toOffsetDateTime();
 
