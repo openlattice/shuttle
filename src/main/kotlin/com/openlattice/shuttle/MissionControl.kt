@@ -273,7 +273,9 @@ class MissionControl(
             destinations[StorageDestination.POSTGRES] = pgDestination
 
             if (s3BucketUrl.isNotBlank()) {
-                destinations[StorageDestination.S3] = PostgresS3Destination(pgDestination, s3Api!!, generatePresignedUrlsFun)
+                destinations[StorageDestination.S3] = PostgresS3Destination(
+                        pgDestination, s3Api!!, generatePresignedUrlsFun
+                )
             }
         } else {
             destinations[StorageDestination.REST] = RestDestination(dataApi)
@@ -330,11 +332,14 @@ class MissionControl(
                             edmApi.getEntityTypeId(fqn.namespace, fqn.name),
                             entityDefinition.getEntitySetName(),
                             entityDefinition.getEntitySetName(),
-                            Optional.of(entityDefinition.getEntitySetName()),
-                            contacts,
+                            entityDefinition.getEntitySetName(),
+                            contacts.toMutableSet(),
+                            mutableSetOf(),
                             organizationId
                     )
-                    val entitySetId = entitySetsApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
+                    val entitySetId = entitySetsApi
+                            .createEntitySets(setOf(entitySet))
+                            .getValue(entityDefinition.entitySetName)
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[entityDefinition.entitySetName] = entitySet
                 }
@@ -348,13 +353,14 @@ class MissionControl(
                             entityTypeId,
                             associationDefinition.getEntitySetName(),
                             associationDefinition.getEntitySetName(),
-                            Optional.of(associationDefinition.getEntitySetName()),
-                            contacts,
+                            associationDefinition.getEntitySetName(),
+                            contacts.toMutableSet(),
+                            mutableSetOf(),
                             organizationId
                     )
-                    val entitySetId = entitySetsApi.createEntitySets(
-                            setOf(entitySet)
-                    )[associationDefinition.entitySetName]!!
+                    val entitySetId = entitySetsApi
+                            .createEntitySets(setOf(entitySet))
+                            .getValue(associationDefinition.entitySetName)
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[associationDefinition.entitySetName] = entitySet
                 }
