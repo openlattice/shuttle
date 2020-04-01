@@ -87,7 +87,7 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
         }
 
         // combine
-        if ( date == null | time == null ) {
+        if ( date == null || time == null ) {
             return null;
         }
         LocalDateTime dateTime = LocalDateTime.of( date, time );
