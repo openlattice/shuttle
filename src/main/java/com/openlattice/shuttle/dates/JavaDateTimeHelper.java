@@ -58,8 +58,9 @@ public class JavaDateTimeHelper {
                 ( local_odt, datePattern ) -> DecadeChangeHelper
                         .fixTwoYearPatternOffsetDateTime( local_odt, datePattern ) );
         if ( odtParsed != null ) {
-            if ( shouldAddTimezone )
+            if ( shouldAddTimezone ) {
                 TimeZones.checkTimezonesMatch( odtParsed, zoneId );
+            }
             return odtParsed;
         }
 
