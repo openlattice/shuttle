@@ -63,12 +63,12 @@ class IntegrationService(
         private val blackbox: Blackbox
 ) {
 
-    private val integrations = HazelcastMap.INTEGRATIONS.getMap( hazelcastInstance )
-    private val entitySets = HazelcastMap.ENTITY_SETS.getMap( hazelcastInstance )
-    private val entityTypes = HazelcastMap.ENTITY_TYPES.getMap( hazelcastInstance )
-    private val propertyTypes = HazelcastMap.PROPERTY_TYPES.getMap( hazelcastInstance )
-    private val integrationJobs = HazelcastMap.INTEGRATION_JOBS.getMap( hazelcastInstance )
-    private val jobQueue = HazelcastQueue.QUEUED_INTEGRATION_JOBS.getQueue( hazelcastInstance )
+    private val integrations = HazelcastMap.INTEGRATIONS.getMap(hazelcastInstance)
+    private val entitySets = HazelcastMap.ENTITY_SETS.getMap(hazelcastInstance)
+    private val entityTypes = HazelcastMap.ENTITY_TYPES.getMap(hazelcastInstance)
+    private val propertyTypes = HazelcastMap.PROPERTY_TYPES.getMap(hazelcastInstance)
+    private val integrationJobs = HazelcastMap.INTEGRATION_JOBS.getMap(hazelcastInstance)
+    private val jobQueue = HazelcastQueue.QUEUED_INTEGRATION_JOBS.getQueue(hazelcastInstance)
     private val semaphore = Semaphore(threadCount)
     private val executor = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(threadCount))
     private val statusPredicate = Predicates.or(
@@ -102,7 +102,9 @@ class IntegrationService(
                     try {
                         loadCargo(job.jobId)
                     } catch (ex: Exception) {
-                        logger.info("Encountered exception $ex when trying to start integration job with id ${job.jobId}")
+                        logger.info(
+                                "Encountered exception $ex when trying to start integration job with id ${job.jobId}"
+                        )
 
                         job.integrationJob.integrationStatus = IntegrationStatus.FAILED_TO_START
                         integrationJobs[job.jobId] = job.integrationJob
@@ -121,7 +123,9 @@ class IntegrationService(
     }
 
     fun enqueueIntegrationJob(integrationName: String, integrationKey: UUID): UUID {
-        val integration = integrations[integrationName] ?: throw IllegalStateException("Integration with name $integrationName does not exist")
+        val integration = integrations[integrationName] ?: throw IllegalStateException(
+                "Integration with name $integrationName does not exist"
+        )
         checkState(integrationKey == integration.key, "Integration key $integrationKey is incorrect")
         val integrationJob = IntegrationJob(integrationName, IntegrationStatus.QUEUED)
         val jobId = generateIntegrationJobId(integrationJob)
@@ -149,7 +153,7 @@ class IntegrationService(
         }
 
         val generatePresignedUrlsFun: (List<S3EntityData>) -> List<String> = {
-            val propertyTypesByEntitySetId = it.map{ elem ->
+            val propertyTypesByEntitySetId = it.map { elem ->
                 elem.entitySetId to entitySetManager.getPropertyTypesForEntitySet(elem.entitySetId)
             }.toMap()
             awsDataSinkService.generatePresignedUrls(it, propertyTypesByEntitySetId)
@@ -188,7 +192,9 @@ class IntegrationService(
     }
 
     fun pollIntegrationStatus(jobId: UUID): IntegrationStatus {
-        return integrationJobs[jobId]?.integrationStatus ?: throw IllegalStateException("Job Id $jobId is not assigned to an existing integration job")
+        return integrationJobs[jobId]?.integrationStatus ?: throw IllegalStateException(
+                "Job Id $jobId is not assigned to an existing integration job"
+        )
     }
 
     fun pollAllIntegrationStatuses(): Map<UUID, IntegrationJob> {
@@ -218,7 +224,9 @@ class IntegrationService(
     }
 
     fun readIntegrationDefinition(integrationName: String): Integration {
-        return integrations[integrationName] ?: throw IllegalStateException("Integration with name $integrationName does not exist.")
+        return integrations[integrationName] ?: throw IllegalStateException(
+                "Integration with name $integrationName does not exist."
+        )
     }
 
     fun updateIntegrationDefinition(integrationName: String, integrationUpdate: IntegrationUpdate) {
@@ -240,7 +248,9 @@ class IntegrationService(
     }
 
     private fun checkIntegrationDoesNotExist(integrationName: String) {
-        checkState(!integrations.containsKey(integrationName), "An integration with name $integrationName already exists.")
+        checkState(
+                !integrations.containsKey(integrationName), "An integration with name $integrationName already exists."
+        )
 
     }
 
@@ -268,7 +278,7 @@ class IntegrationService(
             return mapOf(StorageDestination.POSTGRES to pgDestination)
         }
 
-        val s3Api = decorateWithOpenLatticeFactories( Retrofit.Builder() )
+        val s3Api = decorateWithOpenLatticeFactories(Retrofit.Builder())
                 .baseUrl(s3BucketUrl)
                 .client(RetrofitFactory.okHttpClient().build())
                 .build().create(S3Api::class.java)
@@ -282,15 +292,12 @@ class IntegrationService(
         val orgId = integration.organizationId
         val description = buildLogEntitySetDescription(integration.flightPlanParameters)
         val logEntitySet = EntitySet(
-                logEntityType.id,
-                name,
-                name,
-                Optional.of(description),
-                contacts,
-                Optional.empty(),
-                orgId,
-                Optional.empty(),
-                Optional.empty()
+                entityTypeId = logEntityType.id,
+                name = name,
+                _title = name,
+                _description = description,
+                contacts = contacts.toMutableSet(),
+                organizationId = orgId
         )
         return entitySetManager.createEntitySet(Principals.getCurrentUser(), logEntitySet)
     }
@@ -345,7 +352,9 @@ class IntegrationService(
                 val response = httpClient.newCall(request).execute()
                 response.body()?.close()
             } catch (ex: IOException) {
-                logger.info("Encountered exception $ex when submitting callback to url $url for integration job with id $jobId")
+                logger.info(
+                        "Encountered exception $ex when submitting callback to url $url for integration job with id $jobId"
+                )
             }
         }
     }
