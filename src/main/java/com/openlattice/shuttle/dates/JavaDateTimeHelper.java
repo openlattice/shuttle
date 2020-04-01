@@ -52,15 +52,15 @@ public class JavaDateTimeHelper {
          }
 
         // Try parsing into OffsetDateTime with patterns
-        OffsetDateTime odt_p = parseFromPatterns(
+        OffsetDateTime odtParsed = parseFromPatterns(
                 date,
                 ( toParse, formatter ) -> OffsetDateTime.parse( toParse, formatter ),
                 ( local_odt, datePattern ) -> DecadeChangeHelper
                         .fixTwoYearPatternOffsetDateTime( local_odt, datePattern ) );
-        if ( odt_p != null ) {
+        if ( odtParsed != null ) {
             if ( shouldAddTimezone )
-                TimeZones.checkTimezonesMatch( odt_p, zoneId );
-            return odt_p;
+                TimeZones.checkTimezonesMatch( odtParsed, zoneId );
+            return odtParsed;
         }
 
         // Try parsing into a LocalDateTime
