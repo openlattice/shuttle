@@ -90,11 +90,13 @@ public class HashTransform extends Transformation<Object> {
                 }
             }
             return hasher.hash().toString();
-        } else if (input instanceof String) {
-            return super.apply( input );
-        } else {
-            throw  new IllegalArgumentException("This isn't a known input datatype");
         }
+
+        if (input instanceof String) {
+            return super.apply( input );
+        }
+
+        throw  new IllegalArgumentException("This isn't a known input datatype");
     }
 
     @Override
