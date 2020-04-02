@@ -21,17 +21,11 @@
 
 package transforms;
 
-import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
-import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
+import com.openlattice.shuttle.util.Cached;
 
-import java.util.List;
-import java.util.Objects;
+import static com.openlattice.shuttle.transformations.Transformation.TRANSFORM;
 
 @JsonIgnoreProperties( value = { TRANSFORM } )
 public class RemoveDigitsTransform extends Transformation<String> {
@@ -44,12 +38,7 @@ public class RemoveDigitsTransform extends Transformation<String> {
 
     @Override
     public Object applyValue( String o ) {
-        String outstring = o.replaceAll( "[\\d]+", "" );
-        if ( StringUtils.isBlank( outstring ) ) {
-            return null;
-        } else {
-            return outstring;
-        }
+        return Cached.getMatcherForString( o, "[\\d]+").replaceAll( "" );
     }
 
 }

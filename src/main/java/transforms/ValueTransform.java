@@ -3,9 +3,7 @@ package transforms;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
-import java.util.List;
 import java.util.Map;
 
 public class ValueTransform extends Transformation<Map<String, String>> {
@@ -23,7 +21,7 @@ public class ValueTransform extends Transformation<Map<String, String>> {
     }
 
     @Override
-    public Object applyValue( String o ) {
+    public String applyValueWrapper( String o ) {
         return value;
     }
 }

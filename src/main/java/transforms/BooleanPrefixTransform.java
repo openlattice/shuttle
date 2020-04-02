@@ -2,19 +2,16 @@ package transforms;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.BooleanTransformation;
-import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public class BooleanPrefixTransform extends BooleanTransformation {
+public class BooleanPrefixTransform<I extends Object> extends BooleanTransformation<I> {
     private final String  prefix;
     private final String  column;
     private final Boolean ignoreCase;
@@ -36,8 +33,8 @@ public class BooleanPrefixTransform extends BooleanTransformation {
             @JsonProperty( Constants.PREFIX ) String prefix,
             @JsonProperty( Constants.COLUMN ) String column,
             @JsonProperty( Constants.IGNORE_CASE ) Optional<Boolean> ignoreCase,
-            @JsonProperty( Constants.TRANSFORMS_IF_TRUE ) Optional<Transformations> transformsIfTrue,
-            @JsonProperty( Constants.TRANSFORMS_IF_FALSE ) Optional<Transformations> transformsIfFalse ) {
+            @JsonProperty( Constants.TRANSFORMS_IF_TRUE ) Optional<List<Transformation>> transformsIfTrue,
+            @JsonProperty( Constants.TRANSFORMS_IF_FALSE ) Optional<List<Transformation>> transformsIfFalse ) {
         super( transformsIfTrue, transformsIfFalse );
         this.column = column;
         this.ignoreCase = ignoreCase.orElse(false);
@@ -54,20 +51,24 @@ public class BooleanPrefixTransform extends BooleanTransformation {
     }
 
     @Override
-    public boolean applyCondition( Map<String, String> row ) {
+    public boolean applyCondition( Map<String, Object> row ) {
 
         if ( !( row.containsKey( column ) ) ) {
             throw new IllegalStateException( String.format( "The column %s is not found.", column ) );
         }
 
-        final String o;
+        Object input = row.get( column );
+        if (input == null) return false;
+        String o = input.toString();
+
+        final String oCased;
         if ( this.ignoreCase ) {
-            o = row.get( column ).toLowerCase();
+            oCased = o.toLowerCase();
         } else {
-            o = row.get( column );
+            oCased = o.toString();
         }
-        if ( StringUtils.isNotBlank( o ) ) {
-            if ( o.startsWith( prefix ) ) {
+        if ( StringUtils.isNotBlank( oCased ) ) {
+            if ( oCased.startsWith( prefix ) ) {
                 return true;
             }
         }

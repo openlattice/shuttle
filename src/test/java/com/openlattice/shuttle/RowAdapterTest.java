@@ -22,8 +22,7 @@ package com.openlattice.shuttle;
 
 import com.google.common.collect.ImmutableMap;
 import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.shuttle.adapter.Row;
-import org.apache.commons.lang3.RandomStringUtils;
+import com.openlattice.mapstores.TestDataFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -35,7 +34,7 @@ import java.util.Map;
 public class RowAdapterTest {
     @Test
     public void testRowAdapter() {
-        final Map<String, String> row = ImmutableMap.of( "test", RandomStringUtils.random( 5 ) );
+        final Map<String, Object> row = ImmutableMap.of( "test", TestDataFactory.random( 5 ) );
         final SerializableFunction<Row, Object> sf = r -> r.getAs( "test" );
 
         RowAdapter adapter = new RowAdapter( sf );

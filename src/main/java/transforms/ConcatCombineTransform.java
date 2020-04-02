@@ -34,23 +34,19 @@ public class ConcatCombineTransform extends Transformation<Map<String, String>> 
     public Object apply( Map<String, String> row ) {
         StringBuilder sb = new StringBuilder();
         String sep = "";
-        for ( Transformation s : transforms )
-        {
-            Object toadd = s.apply(row);
-            if ( !(toadd == null)) {
-                if (!StringUtils.isBlank( toadd.toString()) ) {
-                    sb.append(sep).append(toadd);
-                    sep = separator;
-                }
+        for ( Transformation s : transforms ) {
+            Object toAdd = s.apply(row);
+            if ( toAdd != null && !StringUtils.isBlank( toAdd.toString()) ) {
+                sb.append(sep).append(toAdd);
+                sep = separator;
             }
         }
 
         String outstring = sb.toString();
-        if ( !StringUtils.isBlank( outstring ) ) {
-            return outstring;
-        } else {
+        if ( StringUtils.isBlank( outstring ) ) {
             return null;
         }
+        return outstring;
     }
 
 }

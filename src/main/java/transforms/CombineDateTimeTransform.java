@@ -3,7 +3,6 @@ package transforms;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.dates.JavaDateTimeHelper;
-import com.openlattice.shuttle.dates.TimeZones;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
@@ -13,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TimeZone;
 
 
@@ -21,6 +21,7 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
     private final String[] datePattern;
     private final String   timeColumn;
     private final String[] timePattern;
+    private final TimeZone timezone;
 
     /**
      * Represents a transformation from string to datetime.
@@ -29,18 +30,25 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
      * @param datePattern: list of patterns of date
      * @param timeColumn:  column of time
      * @param timePattern: list of patterns of time
+     * @param timezone: name of the timezone
      */
     @JsonCreator
     public CombineDateTimeTransform(
             @JsonProperty( Constants.DATE_COLUMN ) String dateColumn,
             @JsonProperty( Constants.DATE_PATTERN ) String[] datePattern,
             @JsonProperty( Constants.TIME_COLUMN ) String timeColumn,
-            @JsonProperty( Constants.TIME_PATTERN ) String[] timePattern
+            @JsonProperty( Constants.TIME_PATTERN ) String[] timePattern,
+            @JsonProperty( Constants.TIMEZONE ) Optional<String> timezone
     ) {
         this.dateColumn = dateColumn;
         this.datePattern = datePattern;
         this.timeColumn = timeColumn;
         this.timePattern = timePattern;
+        if (timezone.isPresent()){
+            this.timezone = TimeZone.getTimeZone( timezone.get() );
+        } else {
+            this.timezone = Constants.DEFAULT_TIMEZONE;
+        }
     }
 
     @Override
@@ -55,7 +63,7 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
         if ( StringUtils.isBlank( d ) | d == null ) {
             return null;
         }
-        final JavaDateTimeHelper dHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
+        final JavaDateTimeHelper dHelper = new JavaDateTimeHelper( this.timezone,
                 datePattern );
 
         LocalDate date;
@@ -70,7 +78,7 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
         if ( StringUtils.isBlank( t ) | t == null ) {
             return null;
         }
-        final JavaDateTimeHelper tHelper = new JavaDateTimeHelper( TimeZones.America_NewYork,
+        final JavaDateTimeHelper tHelper = new JavaDateTimeHelper( this.timezone,
                 timePattern );
 
         LocalTime time;
@@ -87,7 +95,7 @@ public class CombineDateTimeTransform extends Transformation<Map<String, String>
             return null;
         }
         LocalDateTime dateTime = LocalDateTime.of( date, time );
-        TimeZone tz = TimeZones.America_NewYork;
+        TimeZone tz = this.timezone;
         OffsetDateTime out = dateTime.atZone( tz.toZoneId() ).toOffsetDateTime();
         return out;
     }

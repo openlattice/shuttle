@@ -1,11 +1,10 @@
 package com.openlattice.shuttle.transforms;
 
-import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.transformations.Transformation;
 import org.junit.Assert;
 import org.junit.Test;
 import transforms.*;
 
-import javax.management.AttributeList;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -25,17 +24,21 @@ public class TransformTest {
     String dateArrest        = "10/01/92";
     String dateRelease       = "10-01-25";
     String datetimeCommitted = "03/05/00 10:00";
+    String fullname          = "John_Paul_Doe";
+    String partialname       = "John_Doe";
 
     public Map<String, String> getTestRow() {
         Map<String, String> testrow = new HashMap<String, String>();
         testrow.put( "FirstName", first );
         testrow.put( "LastName", last );
         testrow.put( "Family", family );
+        testrow.put( "FullName", fullname );
+        testrow.put( "PartialName", partialname );
         testrow.put( "DOB", DOB );
         testrow.put( "ArrestedDate", dateArrest );
         testrow.put( "ReleasedDate", dateRelease );
         testrow.put( "SSN", null );
-        testrow.put( "Sex", sex);
+        testrow.put( "Sex", sex );
         testrow.put( "Address", address );
         testrow.put( "CommittedDateTime", datetimeCommitted );
         testrow.put( "Lat", lat );
@@ -47,14 +50,14 @@ public class TransformTest {
     // HELPER FUNCTIONS //
     //==================//
 
-    public Transformations getTrueTestTransforms() {
-        Transformations transfos = new Transformations();
+    public List<Transformation> getTrueTestTransforms() {
+        List<Transformation> transfos = new ArrayList<>();
         transfos.add( new ValueTransform( "yup" ) );
         return transfos;
     }
 
-    public Transformations getFalseTestTransforms() {
-        Transformations transfos = new Transformations();
+    public List<Transformation> getFalseTestTransforms() {
+        List<Transformation> transfos = new ArrayList<>();
         transfos.add( new ValueTransform( "nope" ) );
         return transfos;
     }
@@ -65,9 +68,9 @@ public class TransformTest {
 
     @Test
     public void testGeographyPointTransform() {
-        Transformations latTransfos = new Transformations();
+        List<Transformation> latTransfos = new ArrayList<>();
         latTransfos.add( new ColumnTransform( "Lat" ) );
-        Transformations lonTransfos = new Transformations();
+        List<Transformation> lonTransfos = new ArrayList<>();
         lonTransfos.add( new ColumnTransform( "Long" ) );
         Object geographypointTest1 = new GeographyPointTransform(
                 latTransfos, lonTransfos
@@ -80,8 +83,8 @@ public class TransformTest {
     public void testBooleanContainsTransform() {
         Optional<Boolean> optrue = Optional.of( true );
         Optional<Boolean> opfals = Optional.of( false );
-        Optional<Transformations> truetransfo = Optional.of( getTrueTestTransforms() );
-        Optional<Transformations> falsetransfo = Optional.of( getFalseTestTransforms() );
+        Optional<List<Transformation>> truetransfo = Optional.of( getTrueTestTransforms() );
+        Optional<List<Transformation>> falsetransfo = Optional.of( getFalseTestTransforms() );
         Object booleanContainsTest1 = new BooleanContainsTransform(
                 "DOB",
                 "1998",
@@ -114,8 +117,8 @@ public class TransformTest {
     @Test
     public void testBooleanIsNullTransform() {
         Optional<Boolean> blue = Optional.of( true );
-        Optional<Transformations> truetransfo = Optional.of( getTrueTestTransforms() );
-        Optional<Transformations> falsetransfo = Optional.of( getFalseTestTransforms() );
+        Optional<List<Transformation>> truetransfo = Optional.of( getTrueTestTransforms() );
+        Optional<List<Transformation>> falsetransfo = Optional.of( getFalseTestTransforms() );
         Object booleanIsNullTest1 = new BooleanIsNullTransform(
                 "SSN",
                 truetransfo,
@@ -136,8 +139,8 @@ public class TransformTest {
 
         Optional<Boolean> optrue = Optional.of( true );
         Optional<Boolean> opfals = Optional.of( false );
-        Optional<Transformations> truetransfo = Optional.of( getTrueTestTransforms() );
-        Optional<Transformations> falsetransfo = Optional.of( getFalseTestTransforms() );
+        Optional<List<Transformation>> truetransfo = Optional.of( getTrueTestTransforms() );
+        Optional<List<Transformation>> falsetransfo = Optional.of( getFalseTestTransforms() );
 
         // test true with ignorecase = true
         Object booleanPrefixTest1 = new BooleanPrefixTransform(
@@ -173,8 +176,8 @@ public class TransformTest {
 
     @Test
     public void testBooleanRegexTransform() {
-        Optional<Transformations> truetransfo = Optional.of( getTrueTestTransforms() );
-        Optional<Transformations> falsetransfo = Optional.of( getFalseTestTransforms() );
+        Optional<List<Transformation>> truetransfo = Optional.of( getTrueTestTransforms() );
+        Optional<List<Transformation>> falsetransfo = Optional.of( getFalseTestTransforms() );
 
         // test true with ignorecase = true
         Object booleanRegexTest1 = new BooleanRegexTransform(
@@ -183,6 +186,15 @@ public class TransformTest {
                 truetransfo,
                 falsetransfo
         ).apply( getTestRow() );
+        Assert.assertEquals( "yup", booleanRegexTest1 );
+
+        Object booleanRegexTest2 = new BooleanRegexTransform(
+                "SSN",
+                "^$",
+                truetransfo,
+                falsetransfo
+        ).apply( getTestRow() );
+
         Assert.assertEquals( "yup", booleanRegexTest1 );
     }
 
@@ -193,19 +205,19 @@ public class TransformTest {
     @Test
     public void testParseIntTransform() {
         Object parseIntTest1 = new ParseIntTransform().apply( "3" );
-        Assert.assertEquals( 3, parseIntTest1 );
+        Assert.assertEquals( "3", parseIntTest1 );
     }
 
     @Test
     public void testParseBooleanTransform() {
         Object parseBoolTest1 = new ParseBoolTransform().apply( "1" );
-        Assert.assertEquals( true, parseBoolTest1 );
+        Assert.assertEquals( "true", parseBoolTest1 );
         Object parseBoolTest2 = new ParseBoolTransform().apply( "0" );
-        Assert.assertEquals( false, parseBoolTest2 );
+        Assert.assertEquals( "false", parseBoolTest2 );
         Object parseBoolTest3 = new ParseBoolTransform().apply( "true" );
-        Assert.assertEquals( true, parseBoolTest3 );
+        Assert.assertEquals( "true", parseBoolTest3 );
         Object parseBoolTest4 = new ParseBoolTransform().apply( "false" );
-        Assert.assertEquals( false, parseBoolTest4 );
+        Assert.assertEquals( "false", parseBoolTest4 );
     }
 
     //==================//
@@ -218,12 +230,12 @@ public class TransformTest {
         OffsetDateTime expected1 = OffsetDateTime
                 .of( LocalDateTime.of( 1998, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
         Object dateTimeTest1 = new DateTimeTransform( patterns ).apply( getTestRow().get( "DOB" ) );
-        Assert.assertEquals( expected1, dateTimeTest1 );
+        Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         OffsetDateTime expected2 = OffsetDateTime
                 .of( LocalDateTime.of( 2000, 03, 05, 10, 0 ), ZoneOffset.ofHours( -5 ) );
         Object dateTimeTest2 = new DateTimeTransform( patterns ).apply( getTestRow().get( "CommittedDateTime" ) );
-        Assert.assertEquals( expected1, dateTimeTest1 );
-        Assert.assertEquals( expected2, dateTimeTest2 );
+        Assert.assertEquals( expected1.toString(), dateTimeTest1 );
+        Assert.assertEquals( expected2.toString(), dateTimeTest2 );
     }
 
     @Test
@@ -231,10 +243,10 @@ public class TransformTest {
         String[] patterns = { "MM/dd/yy", "MM-dd-yy" };
         LocalDate expected1 = LocalDate.of( 1992, 10, 01 );
         Object dateTimeTest1 = new DateTransform( patterns ).apply( getTestRow().get( "ArrestedDate" ) );
-        Assert.assertEquals( expected1, dateTimeTest1 );
+        Assert.assertEquals( expected1.toString(), dateTimeTest1 );
         LocalDate expected2 = LocalDate.of( 2025, 10, 01 );
         Object dateTimeTest2 = new DateTransform( patterns ).apply( getTestRow().get( "ReleasedDate" ) );
-        Assert.assertEquals( expected2, dateTimeTest2 );
+        Assert.assertEquals( expected2.toString(), dateTimeTest2 );
     }
 
     //==================//
@@ -248,6 +260,26 @@ public class TransformTest {
 
         Object prefixTest2 = new PrefixTransform( "prefix_" ).apply( null );
         Assert.assertEquals( null, prefixTest2 );
+    }
+
+    @Test
+    public void testSplitTransform() {
+        Object lastName1 = new SplitTransform( "_", "2", Optional.empty(), Optional.empty() )
+                .apply( getTestRow().get( "FullName" ) );
+        Assert.assertEquals( "Doe", lastName1 );
+
+        Object lastName2 = new SplitTransform( "_", "last", Optional.empty(), Optional.empty() )
+                .apply( getTestRow().get( "PartialName" ) );
+        Assert.assertEquals( "Doe", lastName2 );
+
+        Object middleName1 = new SplitTransform( "_", "1", Optional.empty(), Optional.of( 2 ) )
+                .apply( getTestRow().get( "FullName" ) );
+        Assert.assertEquals( "Paul", middleName1 );
+
+        Object middleName2 = new SplitTransform( "_", "1", Optional.empty(), Optional.of( 2 ) )
+                .apply( getTestRow().get( "PartialName" ) );
+        Assert.assertEquals( null, middleName2 );
+
     }
 
     @Test
@@ -266,7 +298,6 @@ public class TransformTest {
         Assert.assertEquals( "Janine Vanderginst", casingTest6 );
     }
 
-
     @Test
     public void testConcatTransform() {
         String expected = "John Doe";
@@ -275,7 +306,7 @@ public class TransformTest {
         Assert.assertEquals( expected, concatTest1 );
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test( expected = IllegalStateException.class )
     public void testColumnAbsence() {
         String unknownColumn = "thisdoesnotexist";
         Object concatTest1 = new ColumnTransform( unknownColumn ).apply( getTestRow() );
@@ -287,8 +318,8 @@ public class TransformTest {
         String goal = "";
 
         Object replaceRegexTest1 = new ReplaceRegexTransform( target, goal )
-                .apply(getTestRow().get("Family"));
-        Assert.assertEquals( "mother", replaceRegexTest1);
+                .apply( getTestRow().get( "Family" ) );
+        Assert.assertEquals( "mother", replaceRegexTest1 );
     }
 
     @Test
@@ -327,20 +358,181 @@ public class TransformTest {
 
     }
 
-    @Test(timeout=3000)
+    @Test( timeout = 3000 )
     public void testGeocoderTransform() {
         String expectedStreet = "Scott Street";
         Object geocoderTest1 = new GeocoderTransform( "road", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
+
         String expectedNo = "560";
         Object geocoderTest2 = new GeocoderTransform( "house_number", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
+
         String expectedType = "house";
         Object geocoderTest3 = new GeocoderTransform( "type", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
+
+        String expectedGeoPoint = "37.7748313877551,-122.435947714286";
+        Object geocoderTest4 = new GeocoderTransform( "geographypoint", Optional.empty() )
+                .applyValue( getTestRow().get( "Address" ) );
+
         Assert.assertEquals( expectedStreet, geocoderTest1 );
         Assert.assertEquals( expectedNo, geocoderTest2 );
         Assert.assertEquals( expectedType, geocoderTest3 );
+        Assert.assertEquals( expectedGeoPoint, geocoderTest4 );
+    }
+
+
+    @Test(expected = IllegalStateException.class)
+    public void testArithmeticTransformInvalid() {
+        // Tests with problematic input
+
+        List<Transformation> leftTransfos = new ArrayList<>();
+        leftTransfos.add( new ColumnTransform( "Lat" ) );
+
+        List<Transformation> rightTransfos = new ArrayList<>();
+        rightTransfos.add( new ColumnTransform( "Long" ) );
+
+        Object arithmeticTest = new ArithmeticTransform(
+                leftTransfos, rightTransfos, ":", Optional.empty()
+        ).apply( getTestRow() );
+    }
+
+
+    @Test
+    public void testArithmeticTransform() {
+        double expectedSum = 36.23452 + 30.34573;
+        double expectedDiff = 36.23452 - 30.34573;
+        double expectedProd = 36.23452 * 30.34573;
+        double expectedQuo = 36.23452 / 30.34573;
+        double expectedSumLeft = 36.23452;
+
+        List<Transformation> leftTransfos = new ArrayList<>();
+        leftTransfos.add( new ColumnTransform( "Lat" ) );
+
+        List<Transformation> rightTransfos = new ArrayList<>();
+        rightTransfos.add( new ColumnTransform( "Long" ) );
+
+        Object arithmeticTest1 = new ArithmeticTransform(
+                leftTransfos, rightTransfos, "+", Optional.empty()
+        ).apply( getTestRow() );
+
+        if (!(arithmeticTest1 instanceof Double))
+        {
+            Assert.fail("Arithmetic transform with addition did not return a Double.");
+        }
+        Double value = (Double)arithmeticTest1;
+
+        Assert.assertTrue( expectedSum - .00001 < value && expectedSum + .00001 > value );
+
+
+        Object arithmeticTest2 = new ArithmeticTransform(
+                leftTransfos, rightTransfos, "-", Optional.empty()
+        ).apply( getTestRow() );
+
+        if (!(arithmeticTest2 instanceof Double))
+        {
+            Assert.fail("Arithmetic transform with subtraction did not return a Double.");
+        }
+        value = (Double)arithmeticTest2;
+
+        Assert.assertTrue( expectedDiff - .00001 < value && expectedDiff + .00001 > value );
+
+
+
+        Object arithmeticTest3 = new ArithmeticTransform(
+                leftTransfos, rightTransfos, "*", Optional.empty()
+        ).apply( getTestRow() );
+
+        if (!(arithmeticTest3 instanceof Double))
+        {
+            Assert.fail("Arithmetic transform with multiplication did not return a Double.");
+        }
+        value = (Double)arithmeticTest3;
+
+        Assert.assertTrue( expectedProd - .00001 < value && expectedProd + .00001 > value );
+
+
+
+        Object arithmeticTest4 = new ArithmeticTransform(
+                leftTransfos, rightTransfos, "/", Optional.empty()
+        ).apply( getTestRow() );
+
+        if (!(arithmeticTest4 instanceof Double))
+        {
+            Assert.fail("Arithmetic transform with division did not return a Double.");
+        }
+        value = (Double)arithmeticTest4;
+
+        Assert.assertTrue( expectedQuo - .00001 < value && expectedQuo + .00001 > value );
+
+
+        // invalid value returning 0 as alternative
+
+        List<Transformation> rightTransfos_string = new ArrayList<>();
+        rightTransfos_string.add( new ValueTransform( "Long" ) );
+
+        Object arithmeticTest5 = new ArithmeticTransform(
+                leftTransfos, rightTransfos_string, "+", Optional.of(0.0)
+        ).apply( getTestRow() );
+
+        if (!(arithmeticTest5 instanceof Double))
+        {
+            Assert.fail("Arithmetic transform with sum did not return a Double.");
+        }
+        value = (Double)arithmeticTest5;
+
+        Assert.assertTrue( expectedSumLeft - .00001 < value && expectedSumLeft + .00001 > value );
+
+        // invalid value returning null as alternative
+
+        Object arithmeticTest = new ArithmeticTransform(
+                leftTransfos, rightTransfos_string, "+", Optional.empty()
+        ).apply( getTestRow() );
+        Assert.assertEquals( arithmeticTest , null );
+
+        // check when null is input
+
+        List<Transformation> nullTransfos = new ArrayList<>();
+        nullTransfos.add( new ValueTransform( null ) );
+        Object arithmeticTest6 = new ArithmeticTransform(
+                nullTransfos, rightTransfos, "+", Optional.empty()
+        ).apply( getTestRow() );
+
+
+    }
+
+
+    @Test
+    public void testPaddingTransform() {
+
+        Optional<Boolean> optrue = Optional.of(true);
+        Optional<Boolean> opfalse = Optional.of(false);
+        Optional<Boolean> opnull = Optional.empty();
+
+
+        Object paddingTransformTest1 = new PaddingTransform("dog", 21, optrue, opnull)
+                .applyValue( getTestRow().get( "FirstName" ) );
+        Assert.assertEquals( "ogdogdogdogdogdogJohn", paddingTransformTest1 );
+
+
+        Object paddingTransformTest2 = new PaddingTransform("dog", 21, opfalse, opnull)
+                .applyValue( getTestRow().get( "FirstName" ) );
+        Assert.assertEquals( "Johndogdogdogdogdogdo", paddingTransformTest2 );
+
+
+        Object paddingTransformTest3 = new PaddingTransform("dog", 21, optrue, optrue)
+                .applyValue( getTestRow().get( "Address" ) );
+        Assert.assertEquals( "n Francisco, CA 94117", paddingTransformTest3 );
+
+
+        Object paddingTransformTest4 = new PaddingTransform("dog", 21, opfalse, optrue)
+                .applyValue( getTestRow().get( "Address" ) );
+        Assert.assertEquals( "560 Scott Street, San", paddingTransformTest4 );
+
+        Object paddingTransformTest5 = new PaddingTransform("dog", 21, opfalse, opfalse)
+                .applyValue( getTestRow().get( "Address" ) );
+        Assert.assertEquals( "560 Scott Street, San Francisco, CA 94117", paddingTransformTest5 );
     }
 
 }
