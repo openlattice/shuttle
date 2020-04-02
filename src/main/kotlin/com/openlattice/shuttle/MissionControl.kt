@@ -102,6 +102,15 @@ class MissionControl(
         }
 
         @JvmStatic
+        fun failWithBadInputs( message: String, ex: Throwable ) {
+            logger.error("Shuttle encountered a problematic input!")
+            logger.error(message)
+            logger.error("Stacktrace: ", ex)
+            ShuttleCliOptions.printHelp()
+            kotlin.system.exitProcess(0)
+        }
+
+        @JvmStatic
         @Throws(Auth0Exception::class)
         fun getIdToken(username: String, password: String): String {
             return getIdToken(client, AUTH0_CONNECTION, username, password)
