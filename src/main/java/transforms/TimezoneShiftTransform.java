@@ -5,13 +5,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.dates.JavaDateTimeHelper;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
-import microsoft.sql.DateTimeOffset;
 
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.TimeZone;
 
-public class DateTimeShiftTransform extends Transformation<String> {
+public class TimezoneShiftTransform extends Transformation<String> {
     private final String[] pattern;
     private final TimeZone timezone;
 
@@ -22,7 +21,7 @@ public class DateTimeShiftTransform extends Transformation<String> {
      * @param timezone: name of the timezone
      */
     @JsonCreator
-    public DateTimeShiftTransform(
+    public TimezoneShiftTransform(
             @JsonProperty( Constants.PATTERN ) String[] pattern,
             @JsonProperty( Constants.TIMEZONE ) Optional<String> timezone
     ) {
@@ -34,7 +33,7 @@ public class DateTimeShiftTransform extends Transformation<String> {
         }
     }
 
-    public DateTimeShiftTransform(
+    public TimezoneShiftTransform(
             @JsonProperty( Constants.PATTERN ) String[] pattern
     ) {
         this(

@@ -231,7 +231,7 @@ public class TransformTest {
         String[] patterns = { "MM/dd/yy HH:mmXXX" };
         OffsetDateTime expected1 = OffsetDateTime
                 .of( LocalDateTime.of( 2000, 03, 05, 10, 0 ), ZoneOffset.ofHours( -8 ) );
-        Object dateTimeTest1 = new DateTimeShiftTransform( patterns, Optional.of("America/Los_Angeles") )
+        Object dateTimeTest1 = new TimezoneShiftTransform( patterns, Optional.of("America/Los_Angeles") )
                 .apply( getTestRow().get( "ChargedDateTime" ) );
         Assert.assertEquals( expected1.toString(), dateTimeTest1 );
     }
