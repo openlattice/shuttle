@@ -3,14 +3,10 @@ package transforms;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.openlattice.shuttle.transformations.Transformation;
-import com.openlattice.shuttle.transformations.Transformations;
-import com.openlattice.shuttle.util.Cached;
 import com.openlattice.shuttle.util.Constants;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
 
 public class PaddingTransform extends Transformation<Map<String, String>> {
     private final String pattern;

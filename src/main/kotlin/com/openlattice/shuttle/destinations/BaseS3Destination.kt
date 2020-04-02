@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018. OpenLattice, Inc.
+ * Copyright (C) 2020. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,22 +19,19 @@
  *
  */
 
-package com.openlattice.data.integration.destinations
+package com.openlattice.shuttle.destinations
 
 import com.geekbeast.util.ExponentialBackoff
-import com.geekbeast.util.Retryable
 import com.geekbeast.util.StopWatch
 import com.geekbeast.util.attempt
 import com.openlattice.data.*
 import com.openlattice.data.integration.*
 import com.openlattice.data.integration.Entity
 import com.openlattice.data.util.PostgresDataHasher
-import org.apache.commons.lang3.RandomUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.stream.Collectors
-import kotlin.math.max
 
 private val logger = LoggerFactory.getLogger(S3Destination::class.java)
 const val MAX_DELAY_MILLIS = 60 * 1000L
@@ -46,7 +43,7 @@ const val MAX_RETRY_COUNT = 22
  */
 abstract class BaseS3Destination(
         private val s3Api: S3Api,
-        private val dataIntegrationApi: DataIntegrationApi
+        private val generatePresignedUrlsFun: (List<S3EntityData>) -> List<String>
 ) : IntegrationDestination {
     override fun integrateEntities(
             data: Collection<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
@@ -106,7 +103,7 @@ abstract class BaseS3Destination(
 
         val (s3entities, values) = s3entitiesAndValues.unzip()
         val presignedUrls = attempt(retryStrategy, MAX_RETRY_COUNT) {
-            dataIntegrationApi.generatePresignedUrls(s3entities)
+            generatePresignedUrlsFun(s3entities)
         }
 
         var s3eds = s3entities

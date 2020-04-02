@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017. OpenLattice, Inc
+ * Copyright (C) 2020. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,31 +16,28 @@
  *
  * You can contact the owner of the copyright at support@openlattice.com
  *
+ *
  */
 
-package com.openlattice.shuttle;
+package com.openlattice.shuttle.destinations
 
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.shuttle.adapter.Row;
-
-import java.util.Map;
+import com.openlattice.data.EntityKey
+import com.openlattice.data.UpdateType
+import com.openlattice.data.integration.Association
+import com.openlattice.data.integration.Entity
+import java.util.*
 
 /**
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-class RowAdapter implements SerializableFunction<Map<String, Object>, Object> {
-    private final SerializableFunction<Row, Object> extractor;
+interface IntegrationDestination {
+    fun integrateEntities(data: Collection<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>) : Long
+    fun integrateAssociations(
+            data: Collection<Association>,
+            entityKeyIds: Map<EntityKey, UUID>,
+            updateTypes: Map<UUID, UpdateType>
+    ) : Long
 
-    RowAdapter( SerializableFunction<Row, Object> extractor ) {
-        this.extractor = extractor;
-    }
-
-    @Override public Object apply( final Map<String, Object> row ) {
-        return extractor.apply( new Row() {
-            @Override public <T> T getAs( String column ) {
-                return (T) row.get( column );
-            }
-        } );
-    }
-
+    fun accepts(): StorageDestination
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018. OpenLattice, Inc.
+ * Copyright (C) 2020. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
  *
  */
 
-package com.openlattice.data.integration.destinations
+package com.openlattice.shuttle.destinations
 
 import com.dataloom.mappers.ObjectMappers
 import com.fasterxml.jackson.module.kotlin.readValue
@@ -32,8 +32,6 @@ import com.openlattice.data.EntityKey
 import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
-import com.openlattice.data.integration.IntegrationDestination
-import com.openlattice.data.integration.StorageDestination
 import com.openlattice.data.storage.buildUpsertEntitiesAndLinkedData
 import com.openlattice.data.storage.getPartition
 import com.openlattice.data.storage.updateVersionsForPropertyTypesInEntitiesInEntitySet
@@ -92,7 +90,6 @@ class PostgresDestination(
                         val entitySet = entitySets.getValue(entitySetId)
 
                         val partitions = entitySet.partitions.toList()
-                        val partitionsVersion = entitySet.partitionsVersion
 
                         val baseVersion = System.currentTimeMillis()
                         val tombstoneVersion = -baseVersion
@@ -129,7 +126,6 @@ class PostgresDestination(
                                                 updatePropertyValueVersion,
                                                 tombstoneLinks,
                                                 entitySet,
-                                                partitionsVersion,
                                                 entityKeyIdsArr,
                                                 partitionsArr,
                                                 propertyTypeIdsArr,
@@ -143,7 +139,6 @@ class PostgresDestination(
                                             upsertPropertyValues,
                                             entitySet,
                                             partition,
-                                            partitionsVersion,
                                             entityMap,
                                             relevantPropertyTypes,
                                             writeVersionArray,
@@ -226,14 +221,10 @@ class PostgresDestination(
     }
 
     internal fun createEdges(keys: Set<DataEdgeKey>): Long {
-        val partitionsInfoByEntitySet = keys
+        val partitionsByEntitySet = keys
                 .flatMap { listOf(it.src.entitySetId, it.dst.entitySetId, it.edge.entitySetId) }
                 .toSet()
-                .associateWith { entitySetId ->
-                    val entitySet = entitySets.getValue(entitySetId)
-                    entitySet.partitionsVersion to entitySet.partitions.toList()
-
-                }
+                .associateWith { entitySetId -> entitySets.getValue(entitySetId).partitions.toList() }
 
         return hds.connection.use { connection ->
             val ps = connection.prepareStatement(EDGES_UPSERT_SQL)
@@ -242,7 +233,7 @@ class PostgresDestination(
 
             ps.use {
                 keys.forEach { dataEdgeKey ->
-                    bindColumnsForEdge(ps, dataEdgeKey, version, versions, partitionsInfoByEntitySet)
+                    bindColumnsForEdge(ps, dataEdgeKey, version, versions, partitionsByEntitySet)
                 }
 
                 ps.executeBatch().sum().toLong()
@@ -267,7 +258,6 @@ class PostgresDestination(
             upsertPropertyValues: MutableMap<UUID, PreparedStatement>,
             entitySet: EntitySet,
             partition: Int,
-            partitionsVersion: Int,
             entities: Map<UUID, Map<UUID, Set<Any>>>,
             propertyTypes: Map<UUID, PropertyType>,
             versionArray: java.sql.Array,
@@ -310,8 +300,7 @@ class PostgresDestination(
                     upsertPropertyValue.setObject(5, propertyHash)
                     upsertPropertyValue.setObject(6, version)
                     upsertPropertyValue.setArray(7, versionArray)
-                    upsertPropertyValue.setInt(8, partitionsVersion)
-                    upsertPropertyValue.setObject(9, insertValue)
+                    upsertPropertyValue.setObject(8, insertValue)
                     upsertPropertyValue.addBatch()
                 }
             }
@@ -323,7 +312,6 @@ class PostgresDestination(
             updatePropertyValueVersion: PreparedStatement,
             tombstoneLinks: PreparedStatement,
             entitySet: EntitySet,
-            partitionsVersion: Int,
             entityKeyIdsArr: java.sql.Array,
             partitionsArr: java.sql.Array,
             propertyTypeIdsArr: java.sql.Array,
@@ -338,7 +326,6 @@ class PostgresDestination(
         updatePropertyValueVersion.setArray(5, propertyTypeIdsArr)
         updatePropertyValueVersion.setArray(6, entityKeyIdsArr)
         updatePropertyValueVersion.setArray(7, partitionsArr)
-        updatePropertyValueVersion.setInt(8, partitionsVersion)
 
         tombstoneLinks.setLong(1, -version)
         tombstoneLinks.setLong(2, -version)
@@ -347,7 +334,6 @@ class PostgresDestination(
         tombstoneLinks.setArray(5, propertyTypeIdsArr)
         tombstoneLinks.setArray(6, entityKeyIdsArr)
         tombstoneLinks.setArray(7, partitionsArr)
-        tombstoneLinks.setInt(8, partitionsVersion)
 
 
         val numUpdated = updatePropertyValueVersion.executeUpdate()

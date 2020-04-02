@@ -29,19 +29,19 @@ import com.google.common.base.Suppliers
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
-import com.openlattice.data.integration.EmailConfiguration
-import com.openlattice.data.integration.StorageDestination
-import com.openlattice.data.integration.destinations.PostgresDestination
-import com.openlattice.data.integration.destinations.PostgresS3Destination
-import com.openlattice.data.integration.destinations.RestDestination
-import com.openlattice.data.integration.destinations.S3Destination
+import com.openlattice.shuttle.destinations.IntegrationDestination
+import com.openlattice.shuttle.destinations.StorageDestination
+import com.openlattice.shuttle.destinations.PostgresDestination
+import com.openlattice.shuttle.destinations.PostgresS3Destination
+import com.openlattice.shuttle.destinations.RestDestination
+import com.openlattice.shuttle.destinations.S3Destination
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
 import com.openlattice.edm.EntitySet
 import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.retrofit.RhizomeRetrofitCallException
-import com.openlattice.rhizome.proxy.RetrofitBuilders
+import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -68,7 +68,7 @@ private const val AUTH0_SCOPES = "openid email nickname roles user_id organizati
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 class MissionControl(
-        environment: RetrofitFactory.Environment,
+        private val environment: RetrofitFactory.Environment,
         authToken: Supplier<String>,
         s3BucketUrl: String,
         private val parameters: MissionParameters
@@ -235,12 +235,12 @@ class MissionControl(
     private val dataApi = apiClient.dataApi
     private val dataIntegrationApi = apiClient.dataIntegrationApi
 
-    private val s3Api = Retrofit.Builder()
+    private val s3Api = if (s3BucketUrl.isBlank()) null else Retrofit.Builder()
             .baseUrl(s3BucketUrl)
             .addConverterFactory(RhizomeByteConverterFactory())
             .addConverterFactory(RhizomeJacksonConverterFactory(ObjectMappers.getJsonMapper()))
             .addCallAdapterFactory(RhizomeCallAdapterFactory())
-            .client(RetrofitBuilders.okHttpClient().build())
+            .client(RetrofitFactory.okHttpClient().build())
             .build().create(S3Api::class.java)
 
     private val entitySets = entitySetsApi.getEntitySets().filter { it as EntitySet? != null }.map { it.name to it }.toMap().toMutableMap()
@@ -248,39 +248,61 @@ class MissionControl(
     private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
     private val propertyTypesById = propertyTypes.mapKeys { it.value.id }
 
-    private val integrationDestinations =
-            if (parameters.postgres.enabled) {
-                val pgDestination = PostgresDestination(
-                        entitySets.mapKeys { it.value.id },
-                        entityTypes,
-                        propertyTypes.mapKeys { it.value.id },
-                        HikariDataSource(HikariConfig(parameters.postgres.config))
-                )
-                mapOf(
-                        StorageDestination.REST to RestDestination(dataApi),
-                        StorageDestination.POSTGRES to pgDestination,
-                        StorageDestination.S3 to PostgresS3Destination(pgDestination, s3Api, dataIntegrationApi)
+    private val binaryStorageDestination = if (s3BucketUrl.isBlank()) {
+        StorageDestination.REST
+    } else {
+        StorageDestination.S3
+    }
 
-                )
-            } else {
-                mapOf(
-                        StorageDestination.REST to RestDestination(dataApi),
-                        StorageDestination.S3 to S3Destination(dataApi, s3Api, dataIntegrationApi)
+    private val integrationDestinations: Map<StorageDestination, IntegrationDestination>
+
+    init {
+        val destinations = mutableMapOf<StorageDestination, IntegrationDestination>()
+        destinations[StorageDestination.REST] = RestDestination(dataApi)
+        val generatePresignedUrlsFun = dataIntegrationApi::generatePresignedUrls
+
+
+        if (parameters.postgres.enabled) {
+            val pgDestination = PostgresDestination(
+                    entitySets.mapKeys { it.value.id },
+                    entityTypes,
+                    propertyTypes.mapKeys { it.value.id },
+                    HikariDataSource(HikariConfig(parameters.postgres.config))
+            )
+
+            destinations[StorageDestination.POSTGRES] = pgDestination
+
+            if (s3BucketUrl.isNotBlank()) {
+                destinations[StorageDestination.S3] = PostgresS3Destination(
+                        pgDestination, s3Api!!, generatePresignedUrlsFun
                 )
             }
+        } else {
+            destinations[StorageDestination.REST] = RestDestination(dataApi)
+
+            if (s3BucketUrl.isNotBlank()) {
+                destinations[StorageDestination.S3] = S3Destination(dataApi, s3Api!!, generatePresignedUrlsFun)
+            }
+        }
+
+        integrationDestinations = destinations.toMap()
+    }
 
 
     fun prepare(
             flightPlan: Map<Flight, Payload>,
             createEntitySets: Boolean = false,
-            primaryKeyCols: List<String> = listOf(),
+            primaryKeyCols: Map<Flight, List<String>> = mapOf(),
             contacts: Set<String> = setOf()
     ): Shuttle {
         if (createEntitySets) {
             createMissingEntitySets(flightPlan, contacts)
         }
         ensureValidIntegration(flightPlan)
+
         return Shuttle(
+                environment,
+                false,
                 flightPlan,
                 entitySets,
                 entityTypes,
@@ -288,34 +310,42 @@ class MissionControl(
                 integrationDestinations,
                 dataIntegrationApi,
                 primaryKeyCols,
-                parameters
+                parameters,
+                binaryStorageDestination,
+                Blackbox.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                null,
+                null
         )
     }
 
     private fun createMissingEntitySets(flightPlan: Map<Flight, Payload>, contacts: Set<String>) {
         flightPlan.keys.forEach {
+            check(it.organizationId.isPresent) { "Flight ${it.name} cannot create missing entity sets because organizationId is not present" }
+            val organizationId = it.organizationId.get()
             it.entities.forEach { entityDefinition ->
-                if (entitySets.containsKey(entityDefinition.entitySetName)) {
-
-                } else {
+                if (!entitySets.containsKey(entityDefinition.entitySetName)) {
                     val fqn = entityDefinition.getEntityTypeFqn()
                     val entitySet = EntitySet(
                             entityDefinition.getId().orElse(UUID.randomUUID()),
                             edmApi.getEntityTypeId(fqn.namespace, fqn.name),
                             entityDefinition.getEntitySetName(),
                             entityDefinition.getEntitySetName(),
-                            Optional.of(entityDefinition.getEntitySetName()),
-                            contacts
+                            entityDefinition.getEntitySetName(),
+                            contacts.toMutableSet(),
+                            mutableSetOf(),
+                            organizationId
                     )
-                    val entitySetId = entitySetsApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
+                    val entitySetId = entitySetsApi
+                            .createEntitySets(setOf(entitySet))
+                            .getValue(entityDefinition.entitySetName)
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[entityDefinition.entitySetName] = entitySet
                 }
             }
             it.associations.forEach { associationDefinition ->
-                if (entitySets.containsKey(associationDefinition.entitySetName)) {
-
-                } else {
+                if (!entitySets.containsKey(associationDefinition.entitySetName)) {
                     val fqn = associationDefinition.getEntityTypeFqn()
                     val entityTypeId = edmApi.getEntityTypeId(fqn.namespace, fqn.name)
                     val entitySet = EntitySet(
@@ -323,12 +353,14 @@ class MissionControl(
                             entityTypeId,
                             associationDefinition.getEntitySetName(),
                             associationDefinition.getEntitySetName(),
-                            Optional.of(associationDefinition.getEntitySetName()),
-                            contacts
+                            associationDefinition.getEntitySetName(),
+                            contacts.toMutableSet(),
+                            mutableSetOf(),
+                            organizationId
                     )
-                    val entitySetId = entitySetsApi.createEntitySets(
-                            setOf(entitySet)
-                    )[associationDefinition.entitySetName]!!
+                    val entitySetId = entitySetsApi
+                            .createEntitySets(setOf(entitySet))
+                            .getValue(associationDefinition.entitySetName)
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[associationDefinition.entitySetName] = entitySet
                 }

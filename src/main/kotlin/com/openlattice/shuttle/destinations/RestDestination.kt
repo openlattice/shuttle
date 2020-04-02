@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018. OpenLattice, Inc.
+ * Copyright (C) 2020. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,21 +19,21 @@
  *
  */
 
-package com.openlattice.data.integration.destinations
+package com.openlattice.shuttle.destinations
 
 import com.geekbeast.util.ExponentialBackoff
 import com.geekbeast.util.attempt
 import com.openlattice.data.*
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
-import com.openlattice.data.integration.IntegrationDestination
-import com.openlattice.data.integration.StorageDestination
-import com.openlattice.shuttle.MAX_DELAY
 import java.util.*
 
 /**
  * Writes data using the REST API
  */
+
+const val MAX_DELAY = 8L * 60L * 1000L //8 min
+
 class RestDestination(
         private val dataApi: DataApi
 ) : IntegrationDestination {
@@ -68,7 +68,7 @@ class RestDestination(
 
         return integrateEntities(entities, entityKeyIds, updateTypes) +
                 attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRY_COUNT) {
-                    dataApi.createAssociations(edges).toLong()
+                    dataApi.createEdges(edges).toLong()
                 }
     }
 
