@@ -94,13 +94,13 @@ fun main(args: Array<String>) {
          ObjectMappers.getYamlMapper().readValue(File(cl.getOptionValue(FLIGHT)), Flight::class.java)
     } catch (io: IOException) {
         MissionControl.failWithBadInputs("IOException encountered converting yaml file into java flight objects", io)
-        Flight.emptyFlight() // only here for compiler, above statement exits process
+        Flight.newFlight("fail").done() // only here for compiler, above statement exits process
     } catch (jp: JsonParseException) {
         MissionControl.failWithBadInputs("Shuttle was unable to parse the flight yaml file", jp)
-        Flight.emptyFlight() // only here for compiler, above statement exits process
+        Flight.newFlight("fail").done() // only here for compiler, above statement exits process
     } catch (jm: JsonMappingException) {
         MissionControl.failWithBadInputs( "Shuttle was unable to map the flight yaml objects into java flight objects", jm)
-        Flight.emptyFlight() // only here for compiler, above statement exits process
+        Flight.newFlight("fail").done() // only here for compiler, above statement exits process
     }
 
 
