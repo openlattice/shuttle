@@ -26,10 +26,10 @@ import com.auth0.exception.Auth0Exception
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.base.Suppliers
+import com.google.common.collect.ImmutableMap
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
-import com.openlattice.data.integration.S3EntityData
 import com.openlattice.shuttle.destinations.IntegrationDestination
 import com.openlattice.shuttle.destinations.StorageDestination
 import com.openlattice.shuttle.destinations.PostgresDestination
@@ -38,11 +38,12 @@ import com.openlattice.shuttle.destinations.RestDestination
 import com.openlattice.shuttle.destinations.S3Destination
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
 import com.openlattice.edm.EntitySet
+import com.openlattice.edm.type.EntityType
+import com.openlattice.edm.type.PropertyType
 import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.retrofit.RhizomeRetrofitCallException
-import com.openlattice.rhizome.proxy.RetrofitBuilders
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
@@ -51,6 +52,7 @@ import jodd.mail.Email
 import jodd.mail.EmailAddress
 import jodd.mail.MailServer
 import org.apache.commons.lang3.exception.ExceptionUtils
+import org.apache.olingo.commons.api.edm.FullQualifiedName
 import org.slf4j.LoggerFactory
 import retrofit2.Retrofit
 import java.util.*
@@ -101,6 +103,15 @@ class MissionControl(
                     logger.info("The JVM is going through its normal shutdown process.")
                 }
             })
+        }
+
+        @JvmStatic
+        fun failWithBadInputs( message: String, ex: Throwable ) {
+            logger.error("Shuttle encountered a problematic input!")
+            logger.error(message)
+            logger.error("Stacktrace: ", ex)
+            ShuttleCliOptions.printHelp()
+            kotlin.system.exitProcess(0)
         }
 
         @JvmStatic
@@ -214,8 +225,6 @@ class MissionControl(
 
             kotlin.system.exitProcess(code)
         }
-
-
     }
 
     //TODO: We need to figure out why this isn't registered or a better way of controlling watch ObjectMapper is used
@@ -226,7 +235,7 @@ class MissionControl(
             fail(
                     -999, Flight.newFlight().done(), Throwable(
                     "PRODUCTION is not a valid integration environment. The valid environments are PROD_INTEGRATION and LOCAL"
-            )
+                )
             )
         }
     }
@@ -242,13 +251,13 @@ class MissionControl(
             .addConverterFactory(RhizomeByteConverterFactory())
             .addConverterFactory(RhizomeJacksonConverterFactory(ObjectMappers.getJsonMapper()))
             .addCallAdapterFactory(RhizomeCallAdapterFactory())
-            .client(RetrofitBuilders.okHttpClient().build())
+            .client(RetrofitFactory.okHttpClient().build())
             .build().create(S3Api::class.java)
 
-    private val entitySets = entitySetsApi.getEntitySets().filter { it as EntitySet? != null }.map { it.name to it }.toMap().toMutableMap()
-    private val entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
-    private val propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
-    private val propertyTypesById = propertyTypes.mapKeys { it.value.id }
+    private val entitySets: MutableMap<String, EntitySet>
+    private val entityTypes: MutableMap<UUID, EntityType>
+    private val propertyTypes: MutableMap<FullQualifiedName, PropertyType>
+    private val propertyTypesById: Map<UUID, PropertyType>
 
     private val binaryStorageDestination = if (s3BucketUrl.isBlank()) {
         StorageDestination.REST
@@ -259,6 +268,14 @@ class MissionControl(
     private val integrationDestinations: Map<StorageDestination, IntegrationDestination>
 
     init {
+        try {
+            entitySets = entitySetsApi.getEntitySets().filter { it as EntitySet? != null }.map { it.name to it }.toMap().toMutableMap()
+            entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
+            propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
+            propertyTypesById = propertyTypes.mapKeys { it.value.id }
+        } catch ( thrown: Throwable ) {
+            MissionControl.fail(1, Flight.newFlight().done(), thrown)
+        }
         val destinations = mutableMapOf<StorageDestination, IntegrationDestination>()
         destinations[StorageDestination.REST] = RestDestination(dataApi)
         val generatePresignedUrlsFun = dataIntegrationApi::generatePresignedUrls
@@ -275,7 +292,9 @@ class MissionControl(
             destinations[StorageDestination.POSTGRES] = pgDestination
 
             if (s3BucketUrl.isNotBlank()) {
-                destinations[StorageDestination.S3] = PostgresS3Destination(pgDestination, s3Api!!, generatePresignedUrlsFun)
+                destinations[StorageDestination.S3] = PostgresS3Destination(
+                        pgDestination, s3Api!!, generatePresignedUrlsFun
+                )
             }
         } else {
             destinations[StorageDestination.REST] = RestDestination(dataApi)
@@ -332,11 +351,14 @@ class MissionControl(
                             edmApi.getEntityTypeId(fqn.namespace, fqn.name),
                             entityDefinition.getEntitySetName(),
                             entityDefinition.getEntitySetName(),
-                            Optional.of(entityDefinition.getEntitySetName()),
-                            contacts,
+                            entityDefinition.getEntitySetName(),
+                            contacts.toMutableSet(),
+                            mutableSetOf(),
                             organizationId
                     )
-                    val entitySetId = entitySetsApi.createEntitySets(setOf(entitySet))[entityDefinition.entitySetName]!!
+                    val entitySetId = entitySetsApi
+                            .createEntitySets(setOf(entitySet))
+                            .getValue(entityDefinition.entitySetName)
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[entityDefinition.entitySetName] = entitySet
                 }
@@ -350,13 +372,14 @@ class MissionControl(
                             entityTypeId,
                             associationDefinition.getEntitySetName(),
                             associationDefinition.getEntitySetName(),
-                            Optional.of(associationDefinition.getEntitySetName()),
-                            contacts,
+                            associationDefinition.getEntitySetName(),
+                            contacts.toMutableSet(),
+                            mutableSetOf(),
                             organizationId
                     )
-                    val entitySetId = entitySetsApi.createEntitySets(
-                            setOf(entitySet)
-                    )[associationDefinition.entitySetName]!!
+                    val entitySetId = entitySetsApi
+                            .createEntitySets(setOf(entitySet))
+                            .getValue(associationDefinition.entitySetName)
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[associationDefinition.entitySetName] = entitySet
                 }
