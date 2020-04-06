@@ -5,6 +5,8 @@ import com.amazonaws.regions.RegionUtils
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.dataloom.mappers.ObjectMappers
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.google.common.base.Preconditions
 import com.openlattice.ResourceConfigurationLoader
 import com.openlattice.client.RetrofitFactory
@@ -43,6 +45,7 @@ import com.openlattice.shuttle.source.S3BucketOrigin
 import org.apache.commons.cli.CommandLine
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.IOException
 import java.nio.file.Paths
 import java.util.*
 import java.util.function.Supplier
@@ -82,13 +85,25 @@ fun main(args: Array<String>) {
         }
     }
 
-    if (cl.hasOption(FLIGHT)) {
-        flight = ObjectMappers.getYamlMapper().readValue(File(cl.getOptionValue(FLIGHT)), Flight::class.java)
-    } else {
+    if (!cl.hasOption(FLIGHT)) {
         System.err.println("A flight is required in order to run shuttle.")
         ShuttleCliOptions.printHelp()
         return
     }
+
+    flight = try {
+         ObjectMappers.getYamlMapper().readValue(File(cl.getOptionValue(FLIGHT)), Flight::class.java)
+    } catch (io: IOException) {
+        MissionControl.failWithBadInputs("IOException encountered converting yaml file into java flight objects", io)
+        Flight.newFlight("fail").done() // only here for compiler, above statement exits process
+    } catch (jp: JsonParseException) {
+        MissionControl.failWithBadInputs("Shuttle was unable to parse the flight yaml file", jp)
+        Flight.newFlight("fail").done() // only here for compiler, above statement exits process
+    } catch (jm: JsonMappingException) {
+        MissionControl.failWithBadInputs( "Shuttle was unable to map the flight yaml objects into java flight objects", jm)
+        Flight.newFlight("fail").done() // only here for compiler, above statement exits process
+    }
+
 
     //You can have a configuration without any JDBC datasources
     when {
