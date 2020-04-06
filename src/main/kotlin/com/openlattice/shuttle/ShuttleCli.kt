@@ -28,7 +28,8 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.POSTGRES
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PROFILES
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.READ_RATE_LIMIT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3
-import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_EXPECTED_ARGS_COUNT
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_MAXIMUM_ARGS_COUNT
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_MINIMUM_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SERVER
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SMTP_SERVER
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SMTP_SERVER_PORT
@@ -173,20 +174,23 @@ fun main(args: Array<String>) {
                 val arguments = cl.getOptionValues(DATA_ORIGIN)
                 val dataOrigin = when (arguments[0]) {
                     "S3" -> {
-                        if (arguments.size < S3_ORIGIN_EXPECTED_ARGS_COUNT) {
+                        if (arguments.size < S3_ORIGIN_MINIMUM_ARGS_COUNT) {
                             println("Not enough arguments provided for S3 data origin, provide AWS region, S3 URL and bucket name")
                             ShuttleCliOptions.printHelp()
                             exitProcess(1)
-                            return
                         }
-                        S3BucketOrigin(arguments[2], makeAWSS3Client(arguments[1]))
+                        val filePrefix = if ( arguments.size == S3_ORIGIN_MAXIMUM_ARGS_COUNT) {
+                            arguments[3]
+                        } else {
+                            ""
+                        }
+                        S3BucketOrigin(arguments[2], makeAWSS3Client(arguments[1]), filePrefix)
                     }
                     "local" -> {
                         if (arguments.size < LOCAL_ORIGIN_EXPECTED_ARGS_COUNT) {
                             println("Not enough arguments provided for local data origin, provide a local file path")
                             ShuttleCliOptions.printHelp()
                             exitProcess(1)
-                            return
                         }
                         LocalFileOrigin(Paths.get(arguments[1]))
                     }
@@ -194,7 +198,6 @@ fun main(args: Array<String>) {
                         println("The specified configuration is invalid ${cl.getOptionValues(DATA_ORIGIN)}")
                         ShuttleCliOptions.printHelp()
                         exitProcess(1)
-                        return
                     }
                 }
                 payload = XmlFilesPayload(dataOrigin)
@@ -206,7 +209,6 @@ fun main(args: Array<String>) {
             System.err.println("At least one valid data origin must be specified.")
             ShuttleCliOptions.printHelp()
             exitProcess(1)
-            return
         }
     }
 
