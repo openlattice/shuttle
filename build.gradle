@@ -1,10 +1,16 @@
+import jdk.jshell.Eval
+
+import java.util.regex.MatchResult
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
 plugins {
     id "application"
     id "java"
-    id 'org.jetbrains.kotlin.jvm' version '1.3.50'
-    id 'org.jetbrains.kotlin.plugin.spring' version '1.3.50'
+    id 'org.jetbrains.kotlin.jvm' version '1.3.61'
+    id 'org.jetbrains.kotlin.plugin.spring' version '1.3.61'
     id 'org.jetbrains.dokka' version '0.9.18'
-    id 'com.github.spotbugs' version '2.0.1'
+    id 'com.github.spotbugs' version '3.0.0'
     id "signing"
     id "eclipse"
     id "checkstyle"
@@ -44,7 +50,8 @@ tasks.withType(Checkstyle) {
 }
 
 spotbugs {
-    toolVersion = '3.1.12'
+    reportLevel = 'high'
+    toolVersion = "${spotbugs_annotations_version}"
 }
 
 tasks.withType(com.github.spotbugs.SpotBugsTask) {
@@ -97,12 +104,17 @@ sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
 
 run {
-    if (S_ARGS != null) {
+    if (System.getProperty("exec.args") != null) {
+        Pattern pat = Pattern.compile("[^\\s\"']+|\"([^\"]*)\"|'([^']*)'");
+        List<String> execArgs = new ArrayList<String> ();
+        MatchResult matcher = pat.matcher(System.getProperty("exec.args"));
+        while (((Matcher)matcher).find()){
+            execArgs.add(matcher.group(0))
+        }
+        args execArgs
+    } else if (S_ARGS != null) {
         args S_ARGS.split()
-    } else if (System.getProperty("exec.args") != null) {
-        args System.getProperty("exec.args").split()
-    }
-    if (project.hasProperty('appArgs')) {
+    } else if (project.hasProperty('appArgs')) {
         args Eval.me(appArgs)
     }
 
@@ -133,7 +145,10 @@ sourceSets {
 jar {
     doFirst {
         manifest {
-            attributes "Class-Path": configurations.runtime.files.collect { it.getName() }.join(" ")
+            attributes (
+                    "Class-Path": configurations.runtime.files.collect { it.getName() }.join(" "),
+                    "Main-Class": mainClassName
+            )
         }
     }
 }
@@ -239,4 +254,3 @@ compileTestKotlin {
         jvmTarget = "1.8"
     }
 }
-

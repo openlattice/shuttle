@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018. OpenLattice, Inc.
+ * Copyright (C) 2020. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,36 +19,24 @@
  *
  */
 
-package com.openlattice.shuttle.transformations;
+package com.openlattice.shuttle.destinations
 
-import java.util.ArrayList;
-import java.util.Collection;
+import com.openlattice.data.*
+import com.openlattice.data.integration.S3EntityData
+import org.slf4j.LoggerFactory
 
-import org.jetbrains.annotations.NotNull;
+private val logger = LoggerFactory.getLogger(PostgresS3Destination::class.java)
 
 /**
+ *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-public class Transformations extends ArrayList<Transformation> {
-    public Transformations( int initialCapacity ) {
-        super( initialCapacity );
-    }
-
-    public Transformations() {
-        super();
-    }
-
-    public Transformations(
-            @NotNull
-                    Collection<? extends Transformation> c ) {
-        super( c );
-    }
-
-    public static Transformations of( Transformation... transformations ) {
-        Transformations t = new Transformations( transformations.length );
-        for ( Transformation transform : transformations ) {
-            t.add( transform );
-        }
-        return t;
+class PostgresS3Destination(
+        private val postgresDestination: PostgresDestination,
+        s3Api: S3Api,
+        generatePresignedUrlsFun: (List<S3EntityData>) -> List<String>
+) : BaseS3Destination(s3Api, generatePresignedUrlsFun) {
+    override fun createAssociations(entities: Set<DataEdgeKey>): Long {
+        return postgresDestination.createEdges(entities)
     }
 }

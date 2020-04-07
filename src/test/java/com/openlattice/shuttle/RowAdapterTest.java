@@ -23,7 +23,6 @@ package com.openlattice.shuttle;
 import com.google.common.collect.ImmutableMap;
 import com.openlattice.client.serialization.SerializableFunction;
 import com.openlattice.mapstores.TestDataFactory;
-import com.openlattice.shuttle.adapter.Row;
 import org.junit.Assert;
 import org.junit.Test;
 

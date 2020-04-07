@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018. OpenLattice, Inc.
+ * Copyright (C) 2020. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,23 +19,25 @@
  *
  */
 
-package com.openlattice.data.integration
+package com.openlattice.shuttle.destinations
 
-import com.openlattice.data.EntityKey
-import com.openlattice.data.UpdateType
-import java.util.*
+import com.openlattice.data.*
+import com.openlattice.data.integration.S3EntityData
+import org.slf4j.LoggerFactory
+
+private val logger = LoggerFactory.getLogger(S3Destination::class.java)
+
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-interface IntegrationDestination {
-    fun integrateEntities(data: Collection<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>) : Long
-    fun integrateAssociations(
-            data: Collection<Association>,
-            entityKeyIds: Map<EntityKey, UUID>,
-            updateTypes: Map<UUID, UpdateType>
-    ) : Long
-
-    fun accepts(): StorageDestination
+class S3Destination(
+        private val dataApi: DataApi,
+        s3Api: S3Api,
+        generatePresignedUrlsFun: (List<S3EntityData>) -> List<String>
+) : BaseS3Destination(s3Api, generatePresignedUrlsFun) {
+    override fun createAssociations(entities: Set<DataEdgeKey>): Long {
+        return dataApi.createEdges(entities).toLong()
+    }
 }

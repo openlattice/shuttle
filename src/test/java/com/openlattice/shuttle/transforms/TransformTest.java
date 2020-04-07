@@ -1,6 +1,6 @@
 package com.openlattice.shuttle.transforms;
 
-import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.transformations.Transformation;
 import org.junit.Assert;
 import org.junit.Test;
 import transforms.*;
@@ -50,14 +50,14 @@ public class TransformTest {
     // HELPER FUNCTIONS //
     //==================//
 
-    public Transformations getTrueTestTransforms() {
-        Transformations transfos = new Transformations();
+    public List<Transformation> getTrueTestTransforms() {
+        List<Transformation> transfos = new ArrayList<>();
         transfos.add( new ValueTransform( "yup" ) );
         return transfos;
     }
 
-    public Transformations getFalseTestTransforms() {
-        Transformations transfos = new Transformations();
+    public List<Transformation> getFalseTestTransforms() {
+        List<Transformation> transfos = new ArrayList<>();
         transfos.add( new ValueTransform( "nope" ) );
         return transfos;
     }
@@ -68,9 +68,9 @@ public class TransformTest {
 
     @Test
     public void testGeographyPointTransform() {
-        Transformations latTransfos = new Transformations();
+        List<Transformation> latTransfos = new ArrayList<>();
         latTransfos.add( new ColumnTransform( "Lat" ) );
-        Transformations lonTransfos = new Transformations();
+        List<Transformation> lonTransfos = new ArrayList<>();
         lonTransfos.add( new ColumnTransform( "Long" ) );
         Object geographypointTest1 = new GeographyPointTransform(
                 latTransfos, lonTransfos
@@ -83,8 +83,8 @@ public class TransformTest {
     public void testBooleanContainsTransform() {
         Optional<Boolean> optrue = Optional.of( true );
         Optional<Boolean> opfals = Optional.of( false );
-        Optional<Transformations> truetransfo = Optional.of( getTrueTestTransforms() );
-        Optional<Transformations> falsetransfo = Optional.of( getFalseTestTransforms() );
+        Optional<List<Transformation>> truetransfo = Optional.of( getTrueTestTransforms() );
+        Optional<List<Transformation>> falsetransfo = Optional.of( getFalseTestTransforms() );
         Object booleanContainsTest1 = new BooleanContainsTransform(
                 "DOB",
                 "1998",
@@ -117,8 +117,8 @@ public class TransformTest {
     @Test
     public void testBooleanIsNullTransform() {
         Optional<Boolean> blue = Optional.of( true );
-        Optional<Transformations> truetransfo = Optional.of( getTrueTestTransforms() );
-        Optional<Transformations> falsetransfo = Optional.of( getFalseTestTransforms() );
+        Optional<List<Transformation>> truetransfo = Optional.of( getTrueTestTransforms() );
+        Optional<List<Transformation>> falsetransfo = Optional.of( getFalseTestTransforms() );
         Object booleanIsNullTest1 = new BooleanIsNullTransform(
                 "SSN",
                 truetransfo,
@@ -139,8 +139,8 @@ public class TransformTest {
 
         Optional<Boolean> optrue = Optional.of( true );
         Optional<Boolean> opfals = Optional.of( false );
-        Optional<Transformations> truetransfo = Optional.of( getTrueTestTransforms() );
-        Optional<Transformations> falsetransfo = Optional.of( getFalseTestTransforms() );
+        Optional<List<Transformation>> truetransfo = Optional.of( getTrueTestTransforms() );
+        Optional<List<Transformation>> falsetransfo = Optional.of( getFalseTestTransforms() );
 
         // test true with ignorecase = true
         Object booleanPrefixTest1 = new BooleanPrefixTransform(
@@ -176,8 +176,8 @@ public class TransformTest {
 
     @Test
     public void testBooleanRegexTransform() {
-        Optional<Transformations> truetransfo = Optional.of( getTrueTestTransforms() );
-        Optional<Transformations> falsetransfo = Optional.of( getFalseTestTransforms() );
+        Optional<List<Transformation>> truetransfo = Optional.of( getTrueTestTransforms() );
+        Optional<List<Transformation>> falsetransfo = Optional.of( getFalseTestTransforms() );
 
         // test true with ignorecase = true
         Object booleanRegexTest1 = new BooleanRegexTransform(
@@ -387,10 +387,10 @@ public class TransformTest {
     public void testArithmeticTransformInvalid() {
         // Tests with problematic input
 
-        Transformations leftTransfos = new Transformations();
+        List<Transformation> leftTransfos = new ArrayList<>();
         leftTransfos.add( new ColumnTransform( "Lat" ) );
 
-        Transformations rightTransfos = new Transformations();
+        List<Transformation> rightTransfos = new ArrayList<>();
         rightTransfos.add( new ColumnTransform( "Long" ) );
 
         Object arithmeticTest = new ArithmeticTransform(
@@ -407,10 +407,10 @@ public class TransformTest {
         double expectedQuo = 36.23452 / 30.34573;
         double expectedSumLeft = 36.23452;
 
-        Transformations leftTransfos = new Transformations();
+        List<Transformation> leftTransfos = new ArrayList<>();
         leftTransfos.add( new ColumnTransform( "Lat" ) );
 
-        Transformations rightTransfos = new Transformations();
+        List<Transformation> rightTransfos = new ArrayList<>();
         rightTransfos.add( new ColumnTransform( "Long" ) );
 
         Object arithmeticTest1 = new ArithmeticTransform(
@@ -469,7 +469,7 @@ public class TransformTest {
 
         // invalid value returning 0 as alternative
 
-        Transformations rightTransfos_string = new Transformations();
+        List<Transformation> rightTransfos_string = new ArrayList<>();
         rightTransfos_string.add( new ValueTransform( "Long" ) );
 
         Object arithmeticTest5 = new ArithmeticTransform(
@@ -493,7 +493,7 @@ public class TransformTest {
 
         // check when null is input
 
-        Transformations nullTransfos = new Transformations();
+        List<Transformation> nullTransfos = new ArrayList<>();
         nullTransfos.add( new ValueTransform( null ) );
         Object arithmeticTest6 = new ArithmeticTransform(
                 nullTransfos, rightTransfos, "+", Optional.empty()

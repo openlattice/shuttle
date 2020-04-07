@@ -38,7 +38,8 @@ import com.openlattice.edm.type.PropertyType;
 import com.openlattice.entitysets.EntitySetsApi;
 import com.openlattice.mapstores.TestDataFactory;
 import com.openlattice.shuttle.Flight;
-import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.transformations.Transformation;
+import com.openlattice.shuttle.util.CsvUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -49,14 +50,10 @@ import transforms.PrefixTransform;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.openlattice.shuttle.util.CsvUtil.newDefaultMapper;
-import static com.openlattice.shuttle.util.CsvUtil.newDefaultSchemaFromHeader;
 import static org.mockito.Mockito.*;
 
 public class ShuttleTest extends ShuttleTestBootstrap {
@@ -140,10 +137,6 @@ public class ShuttleTest extends ShuttleTestBootstrap {
             // PROPERTIES.entrySet()
             // .forEach( e -> when( edmApi.getPropertyTypeId( e.getAclKey().getNamespace(), e.getAclKey().getName() ) )
             // .thenReturn( e.getValue() ) );
-
-            doAnswer( Answers.incrementCreateDataInvocationCount() )
-                    .when( mockDataIntegrationApi )
-                    .integrateEntityAndAssociationData( Mockito.any(), Mockito.anyBoolean() );
 
             return mockApiFactory;
         };
@@ -254,7 +247,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .addProperty( ALGO_PT.getType() ).extractor( row -> row.get( "algo" ) ).ok()
                         .addProperty( MODE_PT.getType() ).value( "mode" ).ok()
                         .addProperty( CYPHER_HASH_PT.getType() )
-                            .value( ImmutableList.of("algo", "mode", "keySize"), HashTransform.HashType.murmur128 )
+                            .value( Collections.singletonList( new HashTransform( ImmutableList.of("algo", "mode", "keySize"), HashTransform.HashType.murmur128)) )
                             .ok()
                         .endEntity()
                     .addEntity( MORE_CYPHERS_ALIAS )
@@ -264,7 +257,7 @@ public class ShuttleTest extends ShuttleTestBootstrap {
                         .addProperty(
                                 ALGO_PT.getType().getFullQualifiedNameAsString(),
                                 "algo",
-                                Transformations.of(new PrefixTransform( "COWBELL_" ))  )
+                                new ArrayList<Transformation>( Collections.singletonList( new PrefixTransform( "COWBELL_" ) ) )  )
                         .endEntity()
                     .endEntities()
                 .createAssociations()
@@ -286,9 +279,9 @@ public class ShuttleTest extends ShuttleTestBootstrap {
         URL url = Resources.getResource( "cyphers.csv" );
         payload = StreamUtil.stream( () -> {
             try {
-                return newDefaultMapper()
+                return CsvUtil.newDefaultMapper()
                         .readerFor( Map.class )
-                        .with( newDefaultSchemaFromHeader() )
+                        .with( CsvUtil.newDefaultSchemaFromHeader() )
                         .readValues( url );
             } catch ( IOException e ) {
                 logger.error( "Unable to read csv file", e );

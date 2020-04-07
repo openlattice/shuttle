@@ -7,8 +7,6 @@ import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class BooleanIsNullCondition extends Condition<Map<String, String>> {
     private final String  column;

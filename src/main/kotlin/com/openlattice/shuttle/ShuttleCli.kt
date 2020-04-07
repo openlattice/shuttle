@@ -5,10 +5,11 @@ import com.amazonaws.regions.RegionUtils
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.dataloom.mappers.ObjectMappers
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.databind.JsonMappingException
 import com.google.common.base.Preconditions
 import com.openlattice.ResourceConfigurationLoader
 import com.openlattice.client.RetrofitFactory
-import com.openlattice.data.integration.EmailConfiguration
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CONFIGURATION
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CSV
@@ -27,7 +28,8 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.POSTGRES
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PROFILES
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.READ_RATE_LIMIT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3
-import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_EXPECTED_ARGS_COUNT
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_MAXIMUM_ARGS_COUNT
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_MINIMUM_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SERVER
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SMTP_SERVER
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SMTP_SERVER_PORT
@@ -43,6 +45,7 @@ import com.openlattice.shuttle.source.S3BucketOrigin
 import org.apache.commons.cli.CommandLine
 import org.slf4j.LoggerFactory
 import java.io.File
+import java.io.IOException
 import java.nio.file.Paths
 import java.util.*
 import java.util.function.Supplier
@@ -64,7 +67,7 @@ fun main(args: Array<String>) {
     val flight: Flight
     val createEntitySets: Boolean
     val contacts: Set<String>
-    val rowColsToPrint: List<String>
+    val rowColsToPrint: Map<Flight, List<String>>
 
     if (cl.hasOption(HELP)) {
         ShuttleCliOptions.printHelp()
@@ -82,13 +85,25 @@ fun main(args: Array<String>) {
         }
     }
 
-    if (cl.hasOption(FLIGHT)) {
-        flight = ObjectMappers.getYamlMapper().readValue(File(cl.getOptionValue(FLIGHT)), Flight::class.java)
-    } else {
+    if (!cl.hasOption(FLIGHT)) {
         System.err.println("A flight is required in order to run shuttle.")
         ShuttleCliOptions.printHelp()
         return
     }
+
+    flight = try {
+         ObjectMappers.getYamlMapper().readValue(File(cl.getOptionValue(FLIGHT)), Flight::class.java)
+    } catch (io: IOException) {
+        MissionControl.failWithBadInputs("IOException encountered converting yaml file into java flight objects", io)
+        Flight.newFlight("fail").done() // only here for compiler, above statement exits process
+    } catch (jp: JsonParseException) {
+        MissionControl.failWithBadInputs("Shuttle was unable to parse the flight yaml file", jp)
+        Flight.newFlight("fail").done() // only here for compiler, above statement exits process
+    } catch (jm: JsonMappingException) {
+        MissionControl.failWithBadInputs( "Shuttle was unable to map the flight yaml objects into java flight objects", jm)
+        Flight.newFlight("fail").done() // only here for compiler, above statement exits process
+    }
+
 
     //You can have a configuration without any JDBC datasources
     when {
@@ -129,7 +144,7 @@ fun main(args: Array<String>) {
             // get JDBC payload
             val hds = configuration.getHikariDatasource(cl.getOptionValue(DATASOURCE))
             val sql = cl.getOptionValue(SQL)
-            rowColsToPrint = configuration.primaryKeyColumns
+            rowColsToPrint = mapOf(flight to configuration.primaryKeyColumns)
             val readRateLimit = if (cl.hasOption(READ_RATE_LIMIT)) {
                 cl.getOptionValue(READ_RATE_LIMIT).toInt()
             } else {
@@ -150,29 +165,32 @@ fun main(args: Array<String>) {
                 ShuttleCliOptions.printHelp()
                 return
             }
-            rowColsToPrint = listOf()
+            rowColsToPrint = mapOf()
             payload = CsvPayload(cl.getOptionValue(CSV))
         }
         cl.hasOption(XML) -> {// get xml payload
-            rowColsToPrint = listOf()
+            rowColsToPrint = mapOf()
             if (cl.hasOption(DATA_ORIGIN)) {
-                val arguments = cl.getOptionValues(DATA_ORIGIN);
+                val arguments = cl.getOptionValues(DATA_ORIGIN)
                 val dataOrigin = when (arguments[0]) {
                     "S3" -> {
-                        if (arguments.size < S3_ORIGIN_EXPECTED_ARGS_COUNT) {
+                        if (arguments.size < S3_ORIGIN_MINIMUM_ARGS_COUNT) {
                             println("Not enough arguments provided for S3 data origin, provide AWS region, S3 URL and bucket name")
                             ShuttleCliOptions.printHelp()
                             exitProcess(1)
-                            return
                         }
-                        S3BucketOrigin(arguments[2], makeAWSS3Client(arguments[1]))
+                        val filePrefix = if ( arguments.size == S3_ORIGIN_MAXIMUM_ARGS_COUNT) {
+                            arguments[3]
+                        } else {
+                            ""
+                        }
+                        S3BucketOrigin(arguments[2], makeAWSS3Client(arguments[1]), filePrefix)
                     }
                     "local" -> {
                         if (arguments.size < LOCAL_ORIGIN_EXPECTED_ARGS_COUNT) {
                             println("Not enough arguments provided for local data origin, provide a local file path")
                             ShuttleCliOptions.printHelp()
                             exitProcess(1)
-                            return
                         }
                         LocalFileOrigin(Paths.get(arguments[1]))
                     }
@@ -180,7 +198,6 @@ fun main(args: Array<String>) {
                         println("The specified configuration is invalid ${cl.getOptionValues(DATA_ORIGIN)}")
                         ShuttleCliOptions.printHelp()
                         exitProcess(1)
-                        return
                     }
                 }
                 payload = XmlFilesPayload(dataOrigin)
@@ -192,7 +209,6 @@ fun main(args: Array<String>) {
             System.err.println("At least one valid data origin must be specified.")
             ShuttleCliOptions.printHelp()
             exitProcess(1)
-            return
         }
     }
 
@@ -224,8 +240,9 @@ fun main(args: Array<String>) {
             else -> "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
         }
     } else {
-        "https://tempy-media-storage.s3-website-us-gov-west-1.amazonaws.com"
+        ""
     }
+
     val shuttleConfig = if (cl.hasOption(POSTGRES)) {
         val pgCfg = cl.getOptionValues(POSTGRES)
         require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
@@ -294,7 +311,7 @@ fun main(args: Array<String>) {
         logger.info("Pre-flight check list complete. ")
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()
-    } catch (ex: Exception) {
+    } catch (ex: Throwable) {
         MissionControl.fail(1, flight, ex)
     }
 }

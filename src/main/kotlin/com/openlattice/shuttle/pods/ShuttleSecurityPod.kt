@@ -23,4 +23,5 @@ class ShuttleSecurityPod : Auth0SecurityPod() {
                 .antMatchers(HttpMethod.OPTIONS).permitAll()
                 .antMatchers("/shuttle/**").authenticated()
     }
+
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019. OpenLattice, Inc.
+ * Copyright (C) 2020. OpenLattice, Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,16 +19,17 @@
  *
  */
 
-package com.openlattice.data.integration
+package com.openlattice.shuttle.destinations
+
+import com.openlattice.data.integration.Association
+import com.openlattice.data.integration.Entity
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
-data class EmailConfiguration(
-        val fromEmail: String,
-        val fromEmailPassword: String,
-        val notificationEmails: Set<String>,
-        val smtpServer: String,
-        val smtpServerPort: Int
+data class AddressedDataHolder(
+        val entities: MutableMap<StorageDestination, MutableSet<Entity>>,
+        val associations: MutableMap<StorageDestination, MutableSet<Association>>,
+        val batchId: Long
 )

@@ -1,9 +1,6 @@
 package com.openlattice.shuttle.util;
 
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.LocalDate;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +28,7 @@ public class Parsers {
                 return Integer.parseInt( intStr );
             } catch ( NumberFormatException e ) {
                 try {
-                    Double d = Double.parseDouble( intStr );
+                    double d = Double.parseDouble( intStr );
                     BigInteger k = BigDecimal.valueOf( d ).toBigInteger();
                     return k.intValue();
                 } catch ( NumberFormatException f ) {

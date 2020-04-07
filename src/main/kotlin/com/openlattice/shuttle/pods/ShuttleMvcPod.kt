@@ -2,7 +2,7 @@ package com.openlattice.shuttle.pods
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.openlattice.data.DataApi
-import com.openlattice.shuttle.controllers.ShuttleControllers
+import com.openlattice.shuttle.controllers.ShuttleController
 import com.openlattice.web.converters.CsvHttpMessageConverter
 import com.openlattice.web.converters.YamlHttpMessageConverter
 import com.openlattice.web.mediatypes.CustomMediaType
@@ -16,6 +16,7 @@ import org.springframework.http.converter.HttpMessageConverter
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter
 import org.springframework.scheduling.annotation.EnableAsync
 import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
 import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer
 import org.springframework.web.servlet.config.annotation.CorsRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport
@@ -27,7 +28,7 @@ import javax.inject.Inject
  */
 @Configuration
 @ComponentScan(
-        basePackageClasses = [ShuttleControllers::class],
+        basePackageClasses = [ShuttleController::class],
         includeFilters = [ComponentScan.Filter(
                 value = [org.springframework.stereotype.Controller::class,
                     org.springframework.web.bind.annotation.RestControllerAdvice::class],
@@ -45,9 +46,9 @@ class ShuttleMvcPod : WebMvcConfigurationSupport() {
 
     protected override fun configureMessageConverters(converters: MutableList<HttpMessageConverter<*>>?) {
         super.addDefaultHttpMessageConverters(converters!!)
-        for (converter in converters!!) {
+        for (converter in converters) {
             if (converter is MappingJackson2HttpMessageConverter) {
-                converter.objectMapper = defaultObjectMapper!!
+                converter.objectMapper = defaultObjectMapper
             }
         }
         converters.add(CsvHttpMessageConverter())

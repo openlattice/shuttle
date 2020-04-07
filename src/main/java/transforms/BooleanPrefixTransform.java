@@ -2,14 +2,11 @@ package transforms;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.openlattice.client.serialization.SerializableFunction;
-import com.openlattice.shuttle.transformations.TransformValueMapper;
 import com.openlattice.shuttle.transformations.BooleanTransformation;
-import com.openlattice.shuttle.transformations.Transformations;
+import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.Constants;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -36,8 +33,8 @@ public class BooleanPrefixTransform<I extends Object> extends BooleanTransformat
             @JsonProperty( Constants.PREFIX ) String prefix,
             @JsonProperty( Constants.COLUMN ) String column,
             @JsonProperty( Constants.IGNORE_CASE ) Optional<Boolean> ignoreCase,
-            @JsonProperty( Constants.TRANSFORMS_IF_TRUE ) Optional<Transformations> transformsIfTrue,
-            @JsonProperty( Constants.TRANSFORMS_IF_FALSE ) Optional<Transformations> transformsIfFalse ) {
+            @JsonProperty( Constants.TRANSFORMS_IF_TRUE ) Optional<List<Transformation>> transformsIfTrue,
+            @JsonProperty( Constants.TRANSFORMS_IF_FALSE ) Optional<List<Transformation>> transformsIfFalse ) {
         super( transformsIfTrue, transformsIfFalse );
         this.column = column;
         this.ignoreCase = ignoreCase.orElse(false);
