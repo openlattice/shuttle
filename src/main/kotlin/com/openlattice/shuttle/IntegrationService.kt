@@ -177,7 +177,8 @@ class IntegrationService(
                 Optional.of(entitySets.getValue(integration.logEntitySetId.get())),
                 Optional.of(jobId),
                 idService,
-                hazelcastInstance
+                hazelcastInstance,
+                false
         )
 
         executor.submit {

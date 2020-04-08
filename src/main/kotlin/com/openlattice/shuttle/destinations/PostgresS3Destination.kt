@@ -24,6 +24,7 @@ package com.openlattice.shuttle.destinations
 import com.openlattice.data.*
 import com.openlattice.data.integration.S3EntityData
 import org.slf4j.LoggerFactory
+import java.util.*
 
 private val logger = LoggerFactory.getLogger(PostgresS3Destination::class.java)
 
@@ -38,5 +39,9 @@ class PostgresS3Destination(
 ) : BaseS3Destination(s3Api, generatePresignedUrlsFun) {
     override fun createAssociations(entities: Set<DataEdgeKey>): Long {
         return postgresDestination.createEdges(entities)
+    }
+
+    override fun getMissingEntityKeys(entityKeyIds: Map<EntityKey, UUID>): Map<EntityKey, UUID> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 }

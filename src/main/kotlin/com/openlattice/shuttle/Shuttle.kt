@@ -97,6 +97,7 @@ class Shuttle (
         private val maybeJobId: Optional<UUID>,
         private val idService: EntityKeyIdService?,
         private val hazelcastInstance: HazelcastInstance?,
+        private val integrityCheck: Boolean,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
                 Executors.newFixedThreadPool(threadCount)
         )
@@ -268,6 +269,11 @@ class Shuttle (
 
             val ekidsGeneratedUpdate = "Generated ${entityKeys.size} entity key ids in ${ekSw.elapsed(TimeUnit.MILLISECONDS)} ms"
             writeLog(flight.name, setOf(ekidsGeneratedUpdate), IntegrationStatus.IN_PROGRESS)
+
+            if (integrityCheck) {
+                // TODO(do something)
+                return
+            }
 
             integrationDestinations.forEach { (storageDestination, integrationDestination) ->
                 if (batch.entities.containsKey(storageDestination)) {

@@ -312,7 +312,8 @@ class MissionControl(
             flightPlan: Map<Flight, Payload>,
             createEntitySets: Boolean = false,
             primaryKeyCols: Map<Flight, List<String>> = mapOf(),
-            contacts: Set<String> = setOf()
+            contacts: Set<String> = setOf(),
+            integrityCheck: Boolean = false
     ): Shuttle {
         if (createEntitySets) {
             createMissingEntitySets(flightPlan, contacts)
@@ -335,7 +336,8 @@ class MissionControl(
                 Optional.empty(),
                 Optional.empty(),
                 null,
-                null
+                null,
+                integrityCheck
         )
     }
 

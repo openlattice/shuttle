@@ -21,6 +21,7 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.FLIGHT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.FROM_EMAIL
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.FROM_EMAIL_PASSWORD
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.HELP
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.INTEGRITY_CHECK
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.LOCAL_ORIGIN_EXPECTED_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.NOTIFICATION_EMAILS
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PASSWORD
@@ -244,14 +245,16 @@ fun main(args: Array<String>) {
     }
 
     val shuttleConfig = if (cl.hasOption(POSTGRES)) {
-        val pgCfg = cl.getOptionValues(POSTGRES)
-        require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
-        val bucket = pgCfg[0]
-        val region = pgCfg[1]
-        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(
-                InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)
-        ).withRegion(RegionUtils.getRegion(region).name).build()
-        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java)
+        ResourceConfigurationLoader.loadConfiguration(MissionParameters::class.java)
+
+//        val pgCfg = cl.getOptionValues(POSTGRES)
+//        require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
+//        val bucket = pgCfg[0]
+//        val region = pgCfg[1]
+//        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(
+//                InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)
+//        ).withRegion(RegionUtils.getRegion(region).name).build()
+//        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java)
     } else {
         MissionParameters.empty()
     }
@@ -304,10 +307,12 @@ fun main(args: Array<String>) {
 
     val flightPlan = mapOf(flight to payload)
 
+    val integrityCheck = cl.hasOption(INTEGRITY_CHECK)
+
     try {
         MissionControl.setEmailConfiguration(emailConfiguration)
         logger.info("Preparing flight plan.")
-        val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts)
+        val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts, integrityCheck)
         logger.info("Pre-flight check list complete. ")
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()

@@ -49,6 +49,7 @@ class ShuttleCliOptions {
         const val PROFILES = "profiles"
         const val S3 = "s3"
         const val UPLOAD_SIZE = "upload-size"
+        const val INTEGRITY_CHECK = "integrity-check"
         const val NOTIFICATION_EMAILS = "notify-emails"
         const val FROM_EMAIL = "from-email"
         const val FROM_EMAIL_PASSWORD = "from-email-password"
@@ -248,6 +249,12 @@ class ShuttleCliOptions {
                 .argName("Port used to connect to smtp server")
                 .build()
 
+        private val integrityOption = Option.builder()
+                .longOpt(INTEGRITY_CHECK)
+                .hasArg(false)
+                .desc("Whether to run an integrity check, whether primary keys are present in the database.")
+                .build()
+
         init {
             options
                     .addOption(helpOption)
@@ -272,6 +279,7 @@ class ShuttleCliOptions {
                     .addOption(postgresOption)
                     .addOption(threadsOption)
                     .addOption(serverOption)
+                    .addOption(integrityOption)
 
             options.addOptionGroup(
                     OptionGroup()

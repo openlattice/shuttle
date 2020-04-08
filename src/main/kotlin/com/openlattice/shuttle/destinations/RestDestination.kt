@@ -75,4 +75,8 @@ class RestDestination(
     override fun accepts(): StorageDestination {
         return StorageDestination.REST
     }
+
+    override fun getMissingEntityKeys(entityKeyIds: Map<EntityKey, UUID>): Map<EntityKey, UUID> {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
 }

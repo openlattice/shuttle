@@ -40,4 +40,8 @@ interface IntegrationDestination {
     ) : Long
 
     fun accepts(): StorageDestination
+
+    fun getMissingEntityKeys(
+            entityKeyIds: Map<EntityKey, UUID>
+    ) : Map<EntityKey, UUID>
 }

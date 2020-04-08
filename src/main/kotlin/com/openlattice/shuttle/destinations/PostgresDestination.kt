@@ -68,6 +68,12 @@ class PostgresDestination(
         private val mapper = ObjectMappers.newJsonMapper()
     }
 
+    override fun getMissingEntityKeys(entityKeyIds: Map<EntityKey, UUID>): Map<EntityKey, UUID> {
+        "select id from table_a except (select id from table_b);"
+
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+    }
+
     override fun integrateEntities(
             data: Collection<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
     ): Long {
