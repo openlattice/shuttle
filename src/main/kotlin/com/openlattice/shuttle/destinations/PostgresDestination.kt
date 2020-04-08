@@ -69,9 +69,9 @@ class PostgresDestination(
     }
 
     override fun getMissingEntityKeys(entityKeyIds: Map<EntityKey, UUID>): Map<EntityKey, UUID> {
-        "select id from table_a except (select id from table_b);"
+        "select <in some way> entity_set_id, id from entityKeyIds except (select entity_set_id, id from sync_ids);"
 
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        TODO("get something like select entity")
     }
 
     override fun integrateEntities(

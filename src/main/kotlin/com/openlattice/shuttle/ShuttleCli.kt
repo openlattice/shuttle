@@ -245,16 +245,14 @@ fun main(args: Array<String>) {
     }
 
     val shuttleConfig = if (cl.hasOption(POSTGRES)) {
-        ResourceConfigurationLoader.loadConfiguration(MissionParameters::class.java)
-
-//        val pgCfg = cl.getOptionValues(POSTGRES)
-//        require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
-//        val bucket = pgCfg[0]
-//        val region = pgCfg[1]
-//        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(
-//                InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)
-//        ).withRegion(RegionUtils.getRegion(region).name).build()
-//        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java)
+        val pgCfg = cl.getOptionValues(POSTGRES)
+        require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
+        val bucket = pgCfg[0]
+        val region = pgCfg[1]
+        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(
+                InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)
+        ).withRegion(RegionUtils.getRegion(region).name).build()
+        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java)
     } else {
         MissionParameters.empty()
     }

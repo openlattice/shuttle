@@ -42,6 +42,5 @@ class PostgresS3Destination(
     }
 
     override fun getMissingEntityKeys(entityKeyIds: Map<EntityKey, UUID>): Map<EntityKey, UUID> {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-    }
+        TODO("should throw an error, only possible in postgresDestination")    }
 }
