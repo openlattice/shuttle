@@ -69,9 +69,7 @@ class PostgresDestination(
     }
 
     override fun getMissingEntityKeys(entityKeyIds: Map<EntityKey, UUID>): Map<EntityKey, UUID> {
-        "select <in some way> entity_set_id, id from entityKeyIds except (select entity_set_id, id from sync_ids);"
-
-        TODO("get something like select entity")
+        TODO("select <in some way> entity_set_id, id from entityKeyIds except (select entity_set_id, id from sync_ids);")
     }
 
     override fun integrateEntities(
