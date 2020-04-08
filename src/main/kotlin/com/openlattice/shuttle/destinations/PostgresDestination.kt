@@ -92,7 +92,7 @@ class PostgresDestination(
                         val partitions = entitySet.partitions.toList()
 
                         val baseVersion = System.currentTimeMillis()
-                        val tombstoneVersion = -baseVersion
+                        val tombstoneVersion = baseVersion
                         val writeVersion = baseVersion + 1
                         val relevantPropertyTypes = entityTypes
                                 .getValue(entitySets.getValue(entitySetId).entityTypeId)
