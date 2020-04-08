@@ -271,7 +271,9 @@ class Shuttle (
             writeLog(flight.name, setOf(ekidsGeneratedUpdate), IntegrationStatus.IN_PROGRESS)
 
             if (integrityCheck) {
-                // TODO(do something)
+                integrationDestinations!!.get(StorageDestination.POSTGRES)!!.getMissingEntityKeys(entityKeyIds)
+                TODO("Avoid NPE's here. Add an argument to shuttlecli on where to write these entityKeyIds or do something with them")
+                TODO("It'd be neat if we could rewrite the complete table, but I wonder if that wouldn't be too much overhead.")
                 return
             }
 
