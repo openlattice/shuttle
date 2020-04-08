@@ -272,8 +272,9 @@ class Shuttle (
 
             if (integrityCheck) {
                 integrationDestinations!!.get(StorageDestination.POSTGRES)!!.getMissingEntityKeys(entityKeyIds)
+                // This is where the magic should happen.  This function should pull the missing entity keys (from the IntegrationDestination)
+                // And do something with them (write to a table, write full data table with missing data, filter only these and integrate missing,...)
                 TODO("Avoid NPE's here. Add an argument to shuttlecli on where to write these entityKeyIds or do something with them")
-                TODO("It'd be neat if we could rewrite the complete table, but I wonder if that wouldn't be too much overhead.")
                 return
             }
 
