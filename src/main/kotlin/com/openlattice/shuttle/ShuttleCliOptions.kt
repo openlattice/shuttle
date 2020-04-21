@@ -40,6 +40,7 @@ class ShuttleCliOptions {
         const val ENVIRONMENT = "environment"
         const val SQL = "sql"
         const val CSV = "csv"
+        const val ORC = "orc"
         const val XML = "xml"
         const val DATA_ORIGIN = "data-origin"
         const val DATASOURCE = "datasource"

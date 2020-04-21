@@ -388,8 +388,8 @@ class MissionControl(
     }
 
 
-    private fun ensureValidIntegration(flight: Map<Flight, Payload>) {
-        flight.keys.forEach { flight ->
+    private fun ensureValidIntegration(flightPlan: Map<Flight, Payload>) {
+        flightPlan.keys.forEach { flight ->
 
             flight
                     .entities

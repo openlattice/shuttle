@@ -170,6 +170,9 @@ dependencies {
     compile "com.sun.xml.bind:jaxb-impl:$jaxb_api_version"
     compile "javax.activation:activation:$javax_activation_version"
 
+    compile "org.apache.spark:spark-core_2.11:${spark_version}"
+    compile "org.apache.spark:spark-sql_2.11:${spark_version}"
+
     compile "org.jodd:jodd-mail:$jodd_mail_version"
 
     compile "com.microsoft.sqlserver:mssql-jdbc:$mssql_jdbc_version"
