@@ -1,5 +1,6 @@
 package com.openlattice.shuttle.payload
 
+import com.google.common.collect.ImmutableList
 import com.google.common.collect.Lists
 import com.google.common.collect.Maps
 import com.openlattice.shuttle.source.LocalFileOrigin
@@ -7,16 +8,19 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.orc.OrcFile
 import org.apache.orc.RecordReader
 import org.apache.orc.storage.ql.exec.vector.*
+import org.apache.spark.sql.SparkSession
 import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.*
 
-class OrcFilesPayload( val origin: LocalFileOrigin ) : Payload {
+class OrcFilesPayload(
+        val origin: LocalFileOrigin,
+        val spark: SparkSession?
+) : Payload {
 
-    constructor(source: String) : this(LocalFileOrigin(Paths.get(source)) {
+    constructor(source: String, spark: SparkSession? ) : this(LocalFileOrigin(Paths.get(source)) {
         it.toString().endsWith(OrcFilesPayload.ORC_SUFFIX)
-    })
+    }, spark)
 
     companion object {
         private val logger = LoggerFactory.getLogger(OrcFilesPayload::class.java)
@@ -39,9 +43,10 @@ class OrcIterator(val path: Path): Iterator<Map<String, Any?>> {
     private val orcConfiguration = Configuration()
     private var currentBatch: VectorizedRowBatch
     private var rows: RecordReader
-    private var currentBuffer: ArrayList<Map<String, Any>> = Lists.newArrayList()
-    private var currentBufferIndex: Int = 0
-    private var fields: ArrayList<String>
+    private var currentBuffer: Array<MutableMap<String, Any?>> = emptyArray()
+    private var currentBufferIndex: Int
+    private var totalColumnCount: Int
+    private var fieldNames: List<String>
 
     init {
         orcConfiguration.setBoolean("header", true)
@@ -55,55 +60,115 @@ class OrcIterator(val path: Path): Iterator<Map<String, Any?>> {
 
     init {
         rows = orcReader.rows()
-        currentBatch= orcReader.schema.createRowBatch()
-        val fieldNames = orcReader.schema.fieldNames
-        fields = ArrayList<String>( fieldNames.size )
-        fieldNames.forEachIndexed { index, s ->  fields.add(index, s) }
+        currentBatch = orcReader.schema.createRowBatch()
+        fieldNames = orcReader.schema.fieldNames
+        currentBufferIndex = 0
+        rows.nextBatch( currentBatch )
+        totalColumnCount = currentBatch.numCols
+        currentBuffer = mapBatchToRealTypes(currentBatch.size)
     }
 
     override fun hasNext(): Boolean {
         return !currentBatch.endOfFile
     }
 
-    fun mapRow( rowIndex: Int ): Map<String, Any> {
-        val map = Maps.newLinkedHashMapWithExpectedSize<String, Any>(currentBatch.numCols)
-        currentBatch.cols.forEachIndexed { index: Int, columnVector: ColumnVector? ->
-            when (columnVector?.type) {
+    companion object {
+        fun processList( columnVector: ColumnVector ): List<Any>{
+            when (columnVector.type) {
                 ColumnVector.Type.LONG -> {
-                    map.put(fields[index], (columnVector as LongColumnVector).vector[rowIndex])
+                    return Lists.newArrayList( (columnVector as LongColumnVector).vector )
                 }
                 ColumnVector.Type.DOUBLE -> {
-                    map.put(fields[index], (columnVector as DoubleColumnVector).vector[rowIndex])
+                    return Lists.newArrayList( (columnVector as DoubleColumnVector).vector )
                 }
                 ColumnVector.Type.BYTES -> {
-                    map.put(fields[index], (columnVector as BytesColumnVector).vector[rowIndex])
+                    return Lists.newArrayList( (columnVector as BytesColumnVector).vector )
                 }
                 ColumnVector.Type.DECIMAL -> {
-                    map.put(fields[index], (columnVector as DecimalColumnVector).vector[rowIndex])
+                    return Lists.newArrayList( (columnVector as DecimalColumnVector).vector )
                 }
                 ColumnVector.Type.DECIMAL_64 -> {
-                    map.put(fields[index], (columnVector as Decimal64ColumnVector).vector[rowIndex])
+                    return Lists.newArrayList( (columnVector as Decimal64ColumnVector).vector )
+                }
+                ColumnVector.Type.LIST -> {
+                    return processList( (columnVector as ListColumnVector ))
                 }
                 ColumnVector.Type.TIMESTAMP,
                 ColumnVector.Type.INTERVAL_DAY_TIME,
                 ColumnVector.Type.STRUCT,
-                ColumnVector.Type.LIST,
                 ColumnVector.Type.MAP,
                 ColumnVector.Type.UNION,
                 ColumnVector.Type.VOID,
-                ColumnVector.Type.NONE,
+                ColumnVector.Type.NONE -> {
+                }
+            }
+            return ImmutableList.of()
+        }
+
+        fun processColumnVectorType(columnVector: ColumnVector, newBufferSize: Int, columnName: String, buffer: Array<MutableMap<String, Any?>>){
+            println("it a ${columnVector.type}")
+            when (columnVector.type) {
+                ColumnVector.Type.LONG -> {
+                    val longVector = (columnVector as LongColumnVector).vector
+                    for (rowIndex in 0 until newBufferSize) {
+                        buffer[rowIndex].put(columnName, longVector[rowIndex])
+                    }
+                }
+                ColumnVector.Type.DOUBLE -> {
+                    val doubleVector = (columnVector as DoubleColumnVector).vector
+                    for (rowIndex in 0 until newBufferSize) {
+                        buffer[rowIndex].put(columnName, doubleVector[rowIndex])
+                    }
+                }
+                ColumnVector.Type.BYTES -> {
+                    val byteArrayVector = (columnVector as BytesColumnVector).vector
+                    for (rowIndex in 0 until newBufferSize) {
+                        buffer[rowIndex].put(columnName, byteArrayVector.get(rowIndex))
+                    }
+                }
+                ColumnVector.Type.DECIMAL -> {
+                    val decimalVector = (columnVector as DecimalColumnVector).vector
+                    for (rowIndex in 0 until newBufferSize) {
+                        buffer[rowIndex].put(columnName, decimalVector[rowIndex])
+                    }
+                }
+                ColumnVector.Type.DECIMAL_64 -> {
+                    val decimal64Vector = (columnVector as Decimal64ColumnVector).vector
+                    for (rowIndex in 0 until newBufferSize) {
+                        buffer[rowIndex].put(columnName, decimal64Vector[rowIndex])
+                    }
+                }
+                ColumnVector.Type.LIST -> {
+                    val vecList = (columnVector as ListColumnVector)
+                    for (rowIndex in 0 until newBufferSize) {
+                        buffer[rowIndex].put(columnName, processList( vecList.child ))
+                    }
+                }
+                ColumnVector.Type.TIMESTAMP,
+                ColumnVector.Type.INTERVAL_DAY_TIME,
+                ColumnVector.Type.STRUCT,
+                ColumnVector.Type.MAP,
+                ColumnVector.Type.UNION,
+                ColumnVector.Type.VOID,
+                ColumnVector.Type.NONE -> {
+                    for (rowIndex in 0 until newBufferSize) {
+                        buffer[rowIndex].put(columnName, columnVector)
+                    }
+                }
                 null -> {
-                    null
                 }
             }
         }
-        return map
     }
 
-    fun mapBatchToRealTypes(): ArrayList<Map<String, Any>> {
-        val buffer = Lists.newArrayListWithCapacity<Map<String, Any>>(currentBatch.size)
-        for (i in 0 until currentBatch.size ) {
-            buffer.add(mapRow(i))
+    fun mapBatchToRealTypes(newBufferSize: Int): Array<MutableMap<String, Any?>> {
+        val buffer = Array<MutableMap<String, Any?>>(newBufferSize, {
+            Maps.newLinkedHashMapWithExpectedSize<String, Any>(totalColumnCount)
+        })
+        for (columnIndex in 0 until totalColumnCount) {
+            val columnName = fieldNames.get(columnIndex)
+            val columnVector = currentBatch.cols[columnIndex]
+            processColumnVectorType(columnVector, newBufferSize, columnName, buffer)
         }
         return buffer
     }
@@ -111,9 +176,9 @@ class OrcIterator(val path: Path): Iterator<Map<String, Any?>> {
     override fun next(): Map<String, Any?> {
         // end of buffer, refresh
         if ( currentBufferIndex == currentBuffer.size ) {
-            currentBufferIndex = 0
             rows.nextBatch( currentBatch )
-            currentBuffer = mapBatchToRealTypes()
+            currentBuffer = mapBatchToRealTypes(currentBatch.size)
+            currentBufferIndex = 0
         }
         return currentBuffer[currentBufferIndex++]
     }

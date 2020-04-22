@@ -200,6 +200,9 @@ dependencies {
 
     compile fileTree(dir: "lib/", include: "*.jar")
 
+    testCompile "org.apache.spark:spark-core_2.11:${spark_version}"
+    testCompile "org.apache.spark:spark-sql_2.11:${spark_version}"
+
     testCompile "io.findify:s3mock_2.12:$s3mock_version"
     testCompile "junit:junit:${junit_version}"
     testCompile "org.mockito:mockito-core:$mockito_version"
