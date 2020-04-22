@@ -274,7 +274,11 @@ class MissionControl(
             propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
             propertyTypesById = propertyTypes.mapKeys { it.value.id }
         } catch ( thrown: Throwable ) {
-            MissionControl.fail(1, Flight.newFlight().done(), thrown)
+            MissionControl.fail(
+                    1,
+                    throw IllegalStateException("Could not load EDM elements.  Check your authentication."),
+                    thrown
+            )
         }
         val destinations = mutableMapOf<StorageDestination, IntegrationDestination>()
         destinations[StorageDestination.REST] = RestDestination(dataApi)
