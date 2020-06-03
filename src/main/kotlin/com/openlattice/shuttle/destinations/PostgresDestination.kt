@@ -352,15 +352,18 @@ class PostgresDestination(
             version: Long
     ): Int {
         //Make data visible by marking new version in ids table.
+        upsertEntities.setObject(1, entitySetId)
+        upsertEntities.setArray(2, entityKeyIdsArr)
+        upsertEntities.setInt(3, partition)
 
-        upsertEntities.setObject(1, versionArray)
-        upsertEntities.setObject(2, version)
-        upsertEntities.setObject(3, version)
-        upsertEntities.setObject(4, entitySetId)
-        upsertEntities.setArray(5, entityKeyIdsArr)
-        upsertEntities.setInt(6, partition)
-        upsertEntities.setInt(7, partition)
-        upsertEntities.setLong(8, version)
+        upsertEntities.setObject(4, versionArray)
+        upsertEntities.setObject(5, version)
+        upsertEntities.setObject(6, version)
+        upsertEntities.setObject(7, entitySetId)
+        upsertEntities.setArray(8, entityKeyIdsArr)
+        upsertEntities.setInt(9, partition)
+        upsertEntities.setInt(10, partition)
+        upsertEntities.setLong(11, version)
 
         val updatedLinkedEntities = upsertEntities.executeUpdate()
         logger.info("Updated $updatedLinkedEntities linked entities as part of insert.")
