@@ -92,7 +92,7 @@ class PostgresDestination(
                         val partitions = entitySet.partitions.toList()
 
                         val baseVersion = System.currentTimeMillis()
-                        val tombstoneVersion = -baseVersion
+                        val tombstoneVersion = baseVersion
                         val writeVersion = baseVersion + 1
                         val relevantPropertyTypes = entityTypes
                                 .getValue(entitySets.getValue(entitySetId).entityTypeId)
@@ -245,10 +245,9 @@ class PostgresDestination(
     private fun normalize(entityKeyIds: Map<EntityKey, UUID>, entity: Entity): Pair<UUID, Map<UUID, Set<Any>>> {
         val sw = Stopwatch.createStarted()
         val propertyValues = mapper.readValue<Map<UUID, Set<Any>>>(mapper.writeValueAsBytes(entity.details))
-        val validatedPropertyValues = Multimaps.asMap(
-                JsonDeserializer.validateFormatAndNormalize(propertyValues, propertyTypes) {
+        val validatedPropertyValues = JsonDeserializer.validateFormatAndNormalize(propertyValues, propertyTypes) {
                     "Error validating during integration"
-                })
+                }
         logger.debug("Normalizing took {} ms", sw.elapsed(TimeUnit.MILLISECONDS))
         return entityKeyIds.getValue(entity.key) to validatedPropertyValues
     }
@@ -353,15 +352,18 @@ class PostgresDestination(
             version: Long
     ): Int {
         //Make data visible by marking new version in ids table.
+        upsertEntities.setObject(1, entitySetId)
+        upsertEntities.setArray(2, entityKeyIdsArr)
+        upsertEntities.setInt(3, partition)
 
-        upsertEntities.setObject(1, versionArray)
-        upsertEntities.setObject(2, version)
-        upsertEntities.setObject(3, version)
-        upsertEntities.setObject(4, entitySetId)
-        upsertEntities.setArray(5, entityKeyIdsArr)
-        upsertEntities.setInt(6, partition)
-        upsertEntities.setInt(7, partition)
-        upsertEntities.setLong(8, version)
+        upsertEntities.setObject(4, versionArray)
+        upsertEntities.setObject(5, version)
+        upsertEntities.setObject(6, version)
+        upsertEntities.setObject(7, entitySetId)
+        upsertEntities.setArray(8, entityKeyIdsArr)
+        upsertEntities.setInt(9, partition)
+        upsertEntities.setInt(10, partition)
+        upsertEntities.setLong(11, version)
 
         val updatedLinkedEntities = upsertEntities.executeUpdate()
         logger.info("Updated $updatedLinkedEntities linked entities as part of insert.")
