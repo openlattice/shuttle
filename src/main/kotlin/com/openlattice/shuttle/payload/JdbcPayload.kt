@@ -10,11 +10,11 @@ import java.sql.SQLException
 import java.sql.Timestamp
 import java.time.OffsetDateTime
 import java.time.ZoneId
-import java.util.TimeZone
+import java.util.*
 
 private val logger = LoggerFactory.getLogger(JdbcPayload::class.java)
 const val DEFAULT_PERMITS_PER_SECOND = 10_000.0
-internal const val DEFAULT_FETCH_SIZE = 50000
+internal const val DEFAULT_FETCH_SIZE = 50_000
 
 
 /**
