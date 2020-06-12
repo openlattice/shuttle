@@ -55,7 +55,7 @@ public class TimezoneShiftTransform extends Transformation<String> {
     @Override
     public Object applyValue( String o ) {
         final JavaDateTimeHelper dtHelper = new JavaDateTimeHelper( this.timezone,
-                pattern );
+                pattern, false );
         OffsetDateTime in = dtHelper.parseDateTime( o );
         if ( in == null ) return null;
         OffsetDateTime out = in
