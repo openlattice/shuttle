@@ -354,7 +354,6 @@ class PostgresDestination(
             versionArray: java.sql.Array,
             version: Long
     ): Int {
-
         connection.autoCommit = false
         try {
             lockEntities.setObject(1, entitySetId)
