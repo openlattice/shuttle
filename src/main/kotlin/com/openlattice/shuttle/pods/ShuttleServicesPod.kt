@@ -16,9 +16,11 @@ import com.openlattice.assembler.Assembler
 import com.openlattice.assembler.AssemblerConfiguration
 import com.openlattice.assembler.AssemblerConnectionManager
 import com.openlattice.assembler.AssemblerDependencies
+import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
 import com.openlattice.auditing.AuditingConfiguration
 import com.openlattice.auth0.Auth0TokenProvider
+import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
 import com.openlattice.authorization.*
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
@@ -27,6 +29,8 @@ import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
 import com.openlattice.authorization.mapstores.SecurablePrincipalsMapLoader
 import com.openlattice.conductor.rpc.ConductorConfiguration
 import com.openlattice.data.ids.PostgresEntityKeyIdService
+import com.openlattice.data.storage.ByteBlobDataManager
+import com.openlattice.data.storage.aws.AwsDataSinkService
 import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
@@ -34,17 +38,22 @@ import com.openlattice.edm.PostgresEdmManager
 import com.openlattice.edm.properties.PostgresTypeManager
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
 import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
+import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
 import com.openlattice.postgres.mapstores.EntityTypeMapstore
-import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.IntegrationService
+import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.tasks.PostConstructInitializerTaskDependencies
+import com.openlattice.users.*
+import com.openlattice.users.export.Auth0ApiExtension
 import com.zaxxer.hikari.HikariDataSource
 import org.jdbi.v3.core.Jdbi
 import org.slf4j.LoggerFactory
@@ -56,15 +65,6 @@ import org.springframework.context.annotation.Profile
 import java.io.IOException
 import javax.annotation.PostConstruct
 import javax.inject.Inject
-import com.openlattice.assembler.pods.AssemblerConfigurationPod
-import com.openlattice.auth0.AwsAuth0TokenProvider
-import com.openlattice.data.storage.ByteBlobDataManager
-import com.openlattice.data.storage.aws.AwsDataSinkService
-import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
-import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
-import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
-import com.openlattice.users.*
-import com.openlattice.users.export.Auth0ApiExtension
 
 /**
  *
@@ -296,6 +296,7 @@ class ShuttleServicesPod {
         return OrganizationsInitializationDependencies(
                 organizationsManager(),
                 principalService(),
+                partitionManager(),
                 getLocalConductorConfiguration()
         )
     }
@@ -310,6 +311,7 @@ class ShuttleServicesPod {
         return OrganizationsInitializationDependencies(
                 organizationsManager(),
                 principalService(),
+                partitionManager(),
                 getAwsConductorConfiguration()
         )
     }
