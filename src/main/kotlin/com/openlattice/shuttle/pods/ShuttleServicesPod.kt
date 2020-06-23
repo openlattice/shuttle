@@ -45,7 +45,6 @@ import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
-import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
 import com.openlattice.postgres.mapstores.EntityTypeMapstore
 import com.openlattice.shuttle.IntegrationService
@@ -287,33 +286,6 @@ class ShuttleServicesPod {
     @Bean
     fun assemblerInitializationTask(): UsersAndRolesInitializationTask {
         return UsersAndRolesInitializationTask()
-    }
-
-    @Bean
-    @Profile(ConfigurationConstants.Profiles.LOCAL_CONFIGURATION_PROFILE)
-    @Throws(IOException::class)
-    fun organizationLocalBootstrapDependencies(): OrganizationsInitializationDependencies {
-        return OrganizationsInitializationDependencies(
-                organizationsManager(),
-                principalService(),
-                partitionManager(),
-                getLocalConductorConfiguration()
-        )
-    }
-
-    @Bean
-    @Profile(
-            ConfigurationConstants.Profiles.AWS_CONFIGURATION_PROFILE,
-            ConfigurationConstants.Profiles.AWS_TESTING_PROFILE
-    )
-    @Throws(IOException::class)
-    fun organizationAwsBootstrapDependencies(): OrganizationsInitializationDependencies {
-        return OrganizationsInitializationDependencies(
-                organizationsManager(),
-                principalService(),
-                partitionManager(),
-                getAwsConductorConfiguration()
-        )
     }
 
     @Bean
