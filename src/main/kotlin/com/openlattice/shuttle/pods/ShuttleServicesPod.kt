@@ -393,6 +393,7 @@ class ShuttleServicesPod {
             authorizationManager(),
             partitionManager(),
             dataModelService(),
+            hds,
             auditingConfiguration
     )
 
