@@ -169,7 +169,7 @@ class ShuttleServicesPod {
     fun authorizationQueryService() = AuthorizationQueryService(hds, hazelcastInstance)
 
     @Bean
-    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, authorizationQueryService(), eventBus)
+    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, eventBus)
 
     @Bean
     fun phoneNumberService(): PhoneNumberService {
