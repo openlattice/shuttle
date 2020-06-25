@@ -45,6 +45,7 @@ import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
+import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
 import com.openlattice.postgres.mapstores.EntityTypeMapstore
 import com.openlattice.shuttle.IntegrationService
@@ -165,10 +166,7 @@ class ShuttleServicesPod {
     fun defaultObjectMapper() = ObjectMappers.getJsonMapper()
 
     @Bean
-    fun authorizationQueryService() = AuthorizationQueryService(hds, hazelcastInstance)
-
-    @Bean
-    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, authorizationQueryService(), eventBus)
+    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, eventBus)
 
     @Bean
     fun phoneNumberService(): PhoneNumberService {
