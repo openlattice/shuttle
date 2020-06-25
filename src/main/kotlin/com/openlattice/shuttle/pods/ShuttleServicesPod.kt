@@ -165,10 +165,7 @@ class ShuttleServicesPod {
     fun defaultObjectMapper() = ObjectMappers.getJsonMapper()
 
     @Bean
-    fun authorizationQueryService() = AuthorizationQueryService(hds, hazelcastInstance)
-
-    @Bean
-    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, authorizationQueryService(), eventBus)
+    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, eventBus)
 
     @Bean
     fun phoneNumberService(): PhoneNumberService {
@@ -289,31 +286,6 @@ class ShuttleServicesPod {
     }
 
     @Bean
-    @Profile(ConfigurationConstants.Profiles.LOCAL_CONFIGURATION_PROFILE)
-    @Throws(IOException::class)
-    fun organizationLocalBootstrapDependencies(): OrganizationsInitializationDependencies {
-        return OrganizationsInitializationDependencies(
-                organizationsManager(),
-                principalService(),
-                getLocalConductorConfiguration()
-        )
-    }
-
-    @Bean
-    @Profile(
-            ConfigurationConstants.Profiles.AWS_CONFIGURATION_PROFILE,
-            ConfigurationConstants.Profiles.AWS_TESTING_PROFILE
-    )
-    @Throws(IOException::class)
-    fun organizationAwsBootstrapDependencies(): OrganizationsInitializationDependencies {
-        return OrganizationsInitializationDependencies(
-                organizationsManager(),
-                principalService(),
-                getAwsConductorConfiguration()
-        )
-    }
-
-    @Bean
     fun organizationBootstrap(): OrganizationsInitializationTask {
         return OrganizationsInitializationTask()
     }
@@ -387,6 +359,7 @@ class ShuttleServicesPod {
             authorizationManager(),
             partitionManager(),
             dataModelService(),
+            hds,
             auditingConfiguration
     )
 
