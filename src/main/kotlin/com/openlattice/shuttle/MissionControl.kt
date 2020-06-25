@@ -26,7 +26,6 @@ import com.auth0.exception.Auth0Exception
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.base.Suppliers
-import com.google.common.collect.ImmutableMap
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
