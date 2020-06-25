@@ -347,7 +347,6 @@ class ShuttleServicesPod {
 
     @Bean
     fun dataModelService() = EdmService(
-            hds,
             hazelcastInstance,
             aclKeyReservationService(),
             authorizationManager(),
