@@ -34,7 +34,6 @@ import com.openlattice.data.storage.aws.AwsDataSinkService
 import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
-import com.openlattice.edm.PostgresEdmManager
 import com.openlattice.edm.properties.PostgresTypeManager
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
 import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
@@ -334,9 +333,6 @@ class ShuttleServicesPod {
     )
 
     @Bean
-    fun pgEdmManager() = PostgresEdmManager(hds, hazelcastInstance)
-
-    @Bean
     fun entityTypeManager() = PostgresTypeManager(hds)
 
     @Bean
@@ -350,7 +346,6 @@ class ShuttleServicesPod {
             hazelcastInstance,
             aclKeyReservationService(),
             authorizationManager(),
-            pgEdmManager(),
             entityTypeManager(),
             schemaManager()
     )
@@ -359,7 +354,6 @@ class ShuttleServicesPod {
     fun entitySetManager() = EntitySetService(
             hazelcastInstance,
             eventBus,
-            pgEdmManager(),
             aclKeyReservationService(),
             authorizationManager(),
             partitionManager(),
