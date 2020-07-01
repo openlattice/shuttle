@@ -16,9 +16,11 @@ import com.openlattice.assembler.Assembler
 import com.openlattice.assembler.AssemblerConfiguration
 import com.openlattice.assembler.AssemblerConnectionManager
 import com.openlattice.assembler.AssemblerDependencies
+import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
 import com.openlattice.auditing.AuditingConfiguration
 import com.openlattice.auth0.Auth0TokenProvider
+import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
 import com.openlattice.authorization.*
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
@@ -27,24 +29,30 @@ import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
 import com.openlattice.authorization.mapstores.SecurablePrincipalsMapLoader
 import com.openlattice.conductor.rpc.ConductorConfiguration
 import com.openlattice.data.ids.PostgresEntityKeyIdService
+import com.openlattice.data.storage.ByteBlobDataManager
+import com.openlattice.data.storage.aws.AwsDataSinkService
 import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
-import com.openlattice.edm.PostgresEdmManager
 import com.openlattice.edm.properties.PostgresTypeManager
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
 import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
+import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
+import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
 import com.openlattice.postgres.mapstores.EntityTypeMapstore
-import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.IntegrationService
+import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.tasks.PostConstructInitializerTaskDependencies
+import com.openlattice.users.*
+import com.openlattice.users.export.Auth0ApiExtension
 import com.zaxxer.hikari.HikariDataSource
 import org.jdbi.v3.core.Jdbi
 import org.slf4j.LoggerFactory
@@ -56,15 +64,6 @@ import org.springframework.context.annotation.Profile
 import java.io.IOException
 import javax.annotation.PostConstruct
 import javax.inject.Inject
-import com.openlattice.assembler.pods.AssemblerConfigurationPod
-import com.openlattice.auth0.AwsAuth0TokenProvider
-import com.openlattice.data.storage.ByteBlobDataManager
-import com.openlattice.data.storage.aws.AwsDataSinkService
-import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
-import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
-import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
-import com.openlattice.users.*
-import com.openlattice.users.export.Auth0ApiExtension
 
 /**
  *
@@ -145,13 +144,18 @@ class ShuttleServicesPod {
     }
 
     @Bean(name = ["conductorConfiguration"])
-    @Profile(ConfigurationConstants.Profiles.AWS_CONFIGURATION_PROFILE, ConfigurationConstants.Profiles.AWS_TESTING_PROFILE)
+    @Profile(
+            ConfigurationConstants.Profiles.AWS_CONFIGURATION_PROFILE,
+            ConfigurationConstants.Profiles.AWS_TESTING_PROFILE
+    )
     @Throws(IOException::class)
     fun getAwsConductorConfiguration(): ConductorConfiguration {
-        val config = ResourceConfigurationLoader.loadConfigurationFromS3(s3,
+        val config = ResourceConfigurationLoader.loadConfigurationFromS3(
+                s3,
                 awsLaunchConfig!!.bucket,
                 awsLaunchConfig!!.folder,
-                ConductorConfiguration::class.java)
+                ConductorConfiguration::class.java
+        )
 
         logger.info("Using aws conductor configuration: {}", config)
         return config
@@ -161,10 +165,7 @@ class ShuttleServicesPod {
     fun defaultObjectMapper() = ObjectMappers.getJsonMapper()
 
     @Bean
-    fun authorizationQueryService() = AuthorizationQueryService(hds, hazelcastInstance)
-
-    @Bean
-    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, authorizationQueryService(), eventBus)
+    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, eventBus)
 
     @Bean
     fun phoneNumberService(): PhoneNumberService {
@@ -173,7 +174,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun dbcs(): DbCredentialService {
-        return DbCredentialService(hazelcastInstance, pgUserApi)
+        return DbCredentialService(hazelcastInstance)
     }
 
     @Bean
@@ -204,7 +205,8 @@ class ShuttleServicesPod {
                 principalService(),
                 phoneNumberService(),
                 partitionManager(),
-                assembler())
+                assembler()
+        )
     }
 
     @Bean
@@ -262,13 +264,15 @@ class ShuttleServicesPod {
 
     @Bean
     fun assemblerConnectionManager(): AssemblerConnectionManager {
-        return AssemblerConnectionManager(assemblerConfiguration,
+        return AssemblerConnectionManager(
+                assemblerConfiguration,
                 hds,
                 principalService(),
                 organizationsManager(),
                 dbcs(),
                 eventBus,
-                metricRegistry)
+                metricRegistry
+        )
     }
 
     @Bean
@@ -279,24 +283,6 @@ class ShuttleServicesPod {
     @Bean
     fun assemblerInitializationTask(): UsersAndRolesInitializationTask {
         return UsersAndRolesInitializationTask()
-    }
-
-    @Bean
-    @Profile(ConfigurationConstants.Profiles.LOCAL_CONFIGURATION_PROFILE)
-    @Throws(IOException::class)
-    fun organizationLocalBootstrapDependencies(): OrganizationsInitializationDependencies {
-        return OrganizationsInitializationDependencies(organizationsManager(),
-                principalService(),
-                getLocalConductorConfiguration())
-    }
-
-    @Bean
-    @Profile(ConfigurationConstants.Profiles.AWS_CONFIGURATION_PROFILE, ConfigurationConstants.Profiles.AWS_TESTING_PROFILE)
-    @Throws(IOException::class)
-    fun organizationAwsBootstrapDependencies(): OrganizationsInitializationDependencies {
-        return OrganizationsInitializationDependencies(organizationsManager(),
-                principalService(),
-                getAwsConductorConfiguration())
     }
 
     @Bean
@@ -328,7 +314,8 @@ class ShuttleServicesPod {
             hazelcastInstance,
             aclKeyReservationService(),
             authorizationManager(),
-            eventBus)
+            eventBus
+    )
 
     @Bean
     fun idGenerationService() = HazelcastIdGenerationService(hazelcastClientProvider, executorService)
@@ -337,14 +324,13 @@ class ShuttleServicesPod {
     internal fun partitionManager() = PartitionManager(hazelcastInstance, hds)
 
     @Bean
-    fun idService() = PostgresEntityKeyIdService(hazelcastClientProvider,
+    fun idService() = PostgresEntityKeyIdService(
+            hazelcastClientProvider,
             executorService,
             hds,
             idGenerationService(),
-            partitionManager())
-
-    @Bean
-    fun pgEdmManager() = PostgresEdmManager(hds, hazelcastInstance)
+            partitionManager()
+    )
 
     @Bean
     fun entityTypeManager() = PostgresTypeManager(hds)
@@ -357,11 +343,9 @@ class ShuttleServicesPod {
 
     @Bean
     fun dataModelService() = EdmService(
-            hds,
             hazelcastInstance,
             aclKeyReservationService(),
             authorizationManager(),
-            pgEdmManager(),
             entityTypeManager(),
             schemaManager()
     )
@@ -370,11 +354,11 @@ class ShuttleServicesPod {
     fun entitySetManager() = EntitySetService(
             hazelcastInstance,
             eventBus,
-            pgEdmManager(),
             aclKeyReservationService(),
             authorizationManager(),
             partitionManager(),
             dataModelService(),
+            hds,
             auditingConfiguration
     )
 
@@ -383,6 +367,7 @@ class ShuttleServicesPod {
         return AwsDataSinkService(
                 partitionManager(),
                 byteBlobDataManager,
+                hds,
                 hds
         )
     }
@@ -397,7 +382,8 @@ class ShuttleServicesPod {
                 entitySetManager(),
                 aclKeyReservationService(),
                 awsDataSinkService(),
-                blackbox)
+                blackbox
+        )
     }
 
     @PostConstruct
