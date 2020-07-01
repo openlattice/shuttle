@@ -318,15 +318,13 @@ class ShuttleServicesPod {
     )
 
     @Bean
-    fun idGenerationService() = HazelcastIdGenerationService(hazelcastClientProvider, executorService)
+    fun idGenerationService() = HazelcastIdGenerationService(hazelcastClientProvider)
 
     @Bean
     internal fun partitionManager() = PartitionManager(hazelcastInstance, hds)
 
     @Bean
     fun idService() = PostgresEntityKeyIdService(
-            hazelcastClientProvider,
-            executorService,
             hds,
             idGenerationService(),
             partitionManager()
