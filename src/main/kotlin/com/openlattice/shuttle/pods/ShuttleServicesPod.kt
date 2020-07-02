@@ -364,7 +364,6 @@ class ShuttleServicesPod {
 
     @Bean
     fun integrationService(): IntegrationService {
-        entityTypeMapstore.loadAllKeys()
         return IntegrationService(
                 hazelcastInstance,
                 missionParametersConfiguration,
