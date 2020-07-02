@@ -6,7 +6,6 @@ import com.codahale.metrics.MetricRegistry
 import com.dataloom.mappers.ObjectMappers
 import com.geekbeast.hazelcast.HazelcastClientProvider
 import com.google.common.eventbus.EventBus
-import com.google.common.util.concurrent.ListeningExecutorService
 import com.hazelcast.core.HazelcastInstance
 import com.kryptnostic.rhizome.configuration.ConfigurationConstants
 import com.kryptnostic.rhizome.configuration.amazon.AmazonLaunchConfiguration
@@ -87,9 +86,6 @@ class ShuttleServicesPod {
 
     @Inject
     private lateinit var hazelcastClientProvider: HazelcastClientProvider
-
-    @Inject
-    private lateinit var executorService: ListeningExecutorService
 
     @Inject
     private lateinit var auditingConfiguration: AuditingConfiguration
