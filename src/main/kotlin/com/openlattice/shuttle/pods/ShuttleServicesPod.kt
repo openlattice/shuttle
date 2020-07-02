@@ -44,7 +44,6 @@ import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
-import com.openlattice.organizations.tasks.OrganizationsInitializationDependencies
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
 import com.openlattice.postgres.mapstores.EntityTypeMapstore
 import com.openlattice.shuttle.IntegrationService
@@ -54,7 +53,6 @@ import com.openlattice.tasks.PostConstructInitializerTaskDependencies
 import com.openlattice.users.*
 import com.openlattice.users.export.Auth0ApiExtension
 import com.zaxxer.hikari.HikariDataSource
-import org.jdbi.v3.core.Jdbi
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
@@ -111,13 +109,7 @@ class ShuttleServicesPod {
     private lateinit var auth0Configuration: Auth0Configuration
 
     @Inject
-    private lateinit var jdbi: Jdbi
-
-    @Inject
     private lateinit var entityTypeMapstore: EntityTypeMapstore
-
-    @Inject
-    private lateinit var pgUserApi: PostgresUserApi
 
     @Inject
     private lateinit var configurationService: ConfigurationService
