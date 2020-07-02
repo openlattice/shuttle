@@ -6,7 +6,6 @@ import com.codahale.metrics.MetricRegistry
 import com.dataloom.mappers.ObjectMappers
 import com.geekbeast.hazelcast.HazelcastClientProvider
 import com.google.common.eventbus.EventBus
-import com.google.common.util.concurrent.ListeningExecutorService
 import com.hazelcast.core.HazelcastInstance
 import com.kryptnostic.rhizome.configuration.ConfigurationConstants
 import com.kryptnostic.rhizome.configuration.amazon.AmazonLaunchConfiguration
@@ -45,12 +44,13 @@ import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
-import com.openlattice.postgres.mapstores.EntityTypeMapstore
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.tasks.PostConstructInitializerTaskDependencies
-import com.openlattice.users.*
+import com.openlattice.users.Auth0UserListingService
+import com.openlattice.users.LocalUserListingService
+import com.openlattice.users.UserListingService
 import com.openlattice.users.export.Auth0ApiExtension
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
@@ -88,9 +88,6 @@ class ShuttleServicesPod {
     private lateinit var hazelcastClientProvider: HazelcastClientProvider
 
     @Inject
-    private lateinit var executorService: ListeningExecutorService
-
-    @Inject
     private lateinit var auditingConfiguration: AuditingConfiguration
 
     @Inject
@@ -107,9 +104,6 @@ class ShuttleServicesPod {
 
     @Inject
     private lateinit var auth0Configuration: Auth0Configuration
-
-    @Inject
-    private lateinit var entityTypeMapstore: EntityTypeMapstore
 
     @Inject
     private lateinit var configurationService: ConfigurationService
@@ -202,11 +196,6 @@ class ShuttleServicesPod {
     }
 
     @Bean
-    fun auth0SyncService(): Auth0SyncService {
-        return Auth0SyncService(hazelcastInstance, hds, principalService(), organizationsManager())
-    }
-
-    @Bean
     fun auth0TokenProvider(): Auth0TokenProvider {
         return AwsAuth0TokenProvider(auth0Configuration)
     }
@@ -227,21 +216,6 @@ class ShuttleServicesPod {
                     Auth0ApiExtension(auth0Configuration.domain, auth0Token)
             )
         }
-    }
-
-    @Bean
-    fun auth0SyncTaskDependencies(): Auth0SyncTaskDependencies {
-        return Auth0SyncTaskDependencies(auth0SyncService(), userListingService(), executorService)
-    }
-
-    @Bean
-    fun auth0SyncTask(): Auth0SyncTask {
-        return Auth0SyncTask()
-    }
-
-    @Bean
-    fun auth0SyncInitializationTask(): Auth0SyncInitializationTask {
-        return Auth0SyncInitializationTask()
     }
 
     @Bean
