@@ -158,6 +158,7 @@ class PostgresDestination(
                                             lockEntities,
                                             entitySetId,
                                             partition,
+                                            entityMap.keys,
                                             entityKeyIdsArr,
                                             writeVersionArray,
                                             writeVersion
@@ -351,16 +352,21 @@ class PostgresDestination(
             lockEntities: PreparedStatement,
             entitySetId: UUID,
             partition: Int,
+            entityKeyIds: Set<UUID>,
             entityKeyIdsArr: java.sql.Array,
             versionArray: java.sql.Array,
             version: Long
     ): Int {
-        connection.autoCommit = false
-        try {
-            lockEntities.setObject(1, entitySetId)
-            lockEntities.setArray(2, entityKeyIdsArr)
-            lockEntities.setInt(3, partition)
-            lockEntities.executeQuery()
+        return try {
+            connection.autoCommit = false
+            entityKeyIds.sorted().forEach { id ->
+                lockEntities.setObject(1, entitySetId)
+                lockEntities.setArray(2, id)
+                lockEntities.setInt(3, partition)
+                lockEntities.addBatch()
+            }
+            val lockCount = lockEntities.executeBatch()
+            PostgresEntityDataQueryService.logger.info("Successfully locked batch of $lockCount entities for update.")
 
             //Make data visible by marking new version in ids table.
 
@@ -377,7 +383,7 @@ class PostgresDestination(
             connection.commit()
             connection.autoCommit=true
             logger.info("Updated $updatedLinkedEntities linked entities as part of insert.")
-            return updatedLinkedEntities
+            updatedLinkedEntities
         } catch (ex: PSQLException) {
             //Should be pretty rare.
             connection.rollback()
