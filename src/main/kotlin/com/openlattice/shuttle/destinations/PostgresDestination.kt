@@ -33,6 +33,7 @@ import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
 import com.openlattice.data.storage.*
+import com.openlattice.data.storage.partitions.getPartition
 import com.openlattice.data.util.PostgresDataHasher
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
