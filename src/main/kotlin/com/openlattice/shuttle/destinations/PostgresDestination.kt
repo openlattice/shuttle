@@ -68,7 +68,9 @@ class PostgresDestination(
     }
 
     override fun integrateEntities(
-            data: Collection<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+            data: Collection<Entity>,
+            entityKeyIds: Map<EntityKey, UUID>,
+            updateTypes: Map<UUID, UpdateType>
     ): Long {
 
         return hds.connection.use { connection ->
@@ -361,12 +363,12 @@ class PostgresDestination(
             connection.autoCommit = false
             entityKeyIds.sorted().forEach { id ->
                 lockEntities.setObject(1, entitySetId)
-                lockEntities.setArray(2, id)
+                lockEntities.setObject(2, id)
                 lockEntities.setInt(3, partition)
                 lockEntities.addBatch()
             }
             val lockCount = lockEntities.executeBatch()
-            PostgresEntityDataQueryService.logger.info("Successfully locked batch of $lockCount entities for update.")
+            logger.info("Successfully locked batch of $lockCount entities for update.")
 
             //Make data visible by marking new version in ids table.
 
@@ -381,13 +383,14 @@ class PostgresDestination(
 
             val updatedLinkedEntities = upsertEntities.executeUpdate()
             connection.commit()
-            connection.autoCommit=true
             logger.info("Updated $updatedLinkedEntities linked entities as part of insert.")
             updatedLinkedEntities
         } catch (ex: PSQLException) {
             //Should be pretty rare.
             connection.rollback()
             throw ex
+        } finally {
+            connection.autoCommit = true
         }
     }
 
