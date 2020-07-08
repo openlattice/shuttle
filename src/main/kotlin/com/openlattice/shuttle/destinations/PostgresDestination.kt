@@ -365,10 +365,9 @@ class PostgresDestination(
                 lockEntities.setObject(1, entitySetId)
                 lockEntities.setObject(2, id)
                 lockEntities.setInt(3, partition)
-                lockEntities.addBatch()
+                lockEntities.execute()
             }
-            val lockCount = lockEntities.executeBatch()
-            logger.info("Successfully locked batch of $lockCount entities for update.")
+            logger.info("Successfully locked batch of ${entityKeyIds.size} entities for update.")
 
             //Make data visible by marking new version in ids table.
 
