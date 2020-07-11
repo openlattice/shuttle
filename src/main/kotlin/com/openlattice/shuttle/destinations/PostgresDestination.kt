@@ -327,17 +327,17 @@ class PostgresDestination(
         updatePropertyValueVersion.setLong(2, -version)
         updatePropertyValueVersion.setLong(3, -version)
         updatePropertyValueVersion.setObject(4, entitySetId)
-        updatePropertyValueVersion.setArray(5, propertyTypeIdsArr)
-        updatePropertyValueVersion.setArray(6, entityKeyIdsArr)
-        updatePropertyValueVersion.setArray(7, partitionsArr)
+        updatePropertyValueVersion.setArray(5, partitionsArr)
+        updatePropertyValueVersion.setArray(6, propertyTypeIdsArr)
+        updatePropertyValueVersion.setArray(7, entityKeyIdsArr)
 
         tombstoneLinks.setLong(1, -version)
         tombstoneLinks.setLong(2, -version)
         tombstoneLinks.setLong(3, -version)
         tombstoneLinks.setObject(4, entitySetId)
-        tombstoneLinks.setArray(5, propertyTypeIdsArr)
-        tombstoneLinks.setArray(6, entityKeyIdsArr)
-        tombstoneLinks.setArray(7, partitionsArr)
+        tombstoneLinks.setArray(5, partitionsArr)
+        tombstoneLinks.setArray(6, propertyTypeIdsArr)
+        tombstoneLinks.setArray(7, entityKeyIdsArr)
 
 
         val numUpdated = updatePropertyValueVersion.executeUpdate()
