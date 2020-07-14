@@ -25,15 +25,17 @@ import com.dataloom.mappers.ObjectMappers
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.base.Stopwatch
 import com.google.common.collect.ImmutableList
-import com.google.common.collect.Multimaps
 import com.openlattice.data.DataEdgeKey
 import com.openlattice.data.EntityDataKey
 import com.openlattice.data.EntityKey
 import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
-import com.openlattice.data.storage.*
+import com.openlattice.data.storage.buildUpsertEntitiesAndLinkedData
+import com.openlattice.data.storage.lockEntitiesInIdsTable
 import com.openlattice.data.storage.partitions.getPartition
+import com.openlattice.data.storage.updateVersionsForPropertyTypesInEntitiesInEntitySet
+import com.openlattice.data.storage.upsertPropertyValueSql
 import com.openlattice.data.util.PostgresDataHasher
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
@@ -290,9 +292,6 @@ class PostgresDestination(
                     val dataType = propertyTypes.getValue(propertyTypeId).datatype
 
                     val (propertyHash, insertValue) = getPropertyHash(
-                            entitySetId,
-                            entityKeyId,
-                            propertyTypeId,
                             value,
                             dataType
                     )
@@ -395,9 +394,6 @@ class PostgresDestination(
     }
 
     private fun getPropertyHash(
-            entitySetId: UUID,
-            entityKeyId: UUID,
-            propertyTypeId: UUID,
             value: Any,
             dataType: EdmPrimitiveTypeKind
     ): Pair<ByteArray, Any> {
