@@ -350,7 +350,7 @@ class PostgresDestination(
                 ps.setObject(2 + offset, version)
                 ps.setObject(3 + offset, version)
                 ps.setObject(4 + offset, entitySetId)
-                ps.setArray(5 + offset, PostgresArrays.createUuidArray(connection, entities.keys))
+                ps.setArray(5 + offset, PostgresArrays.createUuidArray(connection, entityKeyIds))
                 ps.setInt(6 + offset, partition)
             }
 
