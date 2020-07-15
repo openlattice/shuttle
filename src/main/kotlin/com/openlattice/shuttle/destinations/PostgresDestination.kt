@@ -152,6 +152,7 @@ class PostgresDestination(
                                             entitySetId,
                                             partition,
                                             entityMap.keys,
+                                            entityKeyIdsArr,
                                             writeVersionArray,
                                             writeVersion
                                     )
@@ -328,6 +329,7 @@ class PostgresDestination(
             entitySetId: UUID,
             partition: Int,
             entityKeyIds: Set<UUID>,
+            entityKeyIdsArr: java.sql.Array,
             versionArray: java.sql.Array,
             version: Long
     ): Int {
@@ -345,7 +347,7 @@ class PostgresDestination(
                 ps.setObject(2 + offset, version)
                 ps.setObject(3 + offset, version)
                 ps.setObject(4 + offset, entitySetId)
-                ps.setArray(5 + offset, PostgresArrays.createUuidArray(connection, entityKeyIds))
+                ps.setArray(5 + offset, entityKeyIdsArr)
                 ps.setInt(6 + offset, partition)
             }
 
