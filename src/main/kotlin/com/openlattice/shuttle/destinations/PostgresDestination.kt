@@ -31,9 +31,9 @@ import com.openlattice.data.EntityKey
 import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
-import com.openlattice.data.storage.buildUpsertEntitiesAndLinkedData
 import com.openlattice.data.storage.partitions.getPartition
 import com.openlattice.data.storage.updateVersionsForPropertyTypesInEntitiesInEntitySet
+import com.openlattice.data.storage.upsertEntitiesSql
 import com.openlattice.data.storage.upsertPropertyValueSql
 import com.openlattice.data.util.PostgresDataHasher
 import com.openlattice.edm.EntitySet
@@ -342,7 +342,7 @@ class PostgresDestination(
             //Make data visible by marking new version in ids table.
             val numUpdates = lockIdsAndExecute(
                     connection,
-                    buildUpsertEntitiesAndLinkedData(),
+                    upsertEntitiesSql,
                     entitySetId,
                     mapOf(partition to entityKeyIds)
             ) { ps, _, offset ->
@@ -350,10 +350,8 @@ class PostgresDestination(
                 ps.setObject(2 + offset, version)
                 ps.setObject(3 + offset, version)
                 ps.setObject(4 + offset, entitySetId)
-                ps.setArray(5 + offset, entityKeyIdsArr)
+                ps.setArray(5 + offset, PostgresArrays.createUuidArray(connection, entities.keys))
                 ps.setInt(6 + offset, partition)
-                ps.setInt(7 + offset, partition)
-                ps.setLong(8 + offset, version)
             }
 
             connection.commit()
