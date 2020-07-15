@@ -281,9 +281,6 @@ class PostgresDestination(
                     val dataType = propertyTypes.getValue(propertyTypeId).datatype
 
                     val (propertyHash, insertValue) = getPropertyHash(
-                            entitySetId,
-                            entityKeyId,
-                            propertyTypeId,
                             value,
                             dataType
                     )
@@ -350,7 +347,7 @@ class PostgresDestination(
                 ps.setObject(2 + offset, version)
                 ps.setObject(3 + offset, version)
                 ps.setObject(4 + offset, entitySetId)
-                ps.setArray(5 + offset, PostgresArrays.createUuidArray(connection, entities.keys))
+                ps.setArray(5 + offset, entityKeyIdsArr)
                 ps.setInt(6 + offset, partition)
             }
 
@@ -367,9 +364,6 @@ class PostgresDestination(
     }
 
     private fun getPropertyHash(
-            entitySetId: UUID,
-            entityKeyId: UUID,
-            propertyTypeId: UUID,
             value: Any,
             dataType: EdmPrimitiveTypeKind
     ): Pair<ByteArray, Any> {
