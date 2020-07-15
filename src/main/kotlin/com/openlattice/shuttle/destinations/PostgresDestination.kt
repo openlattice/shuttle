@@ -152,7 +152,6 @@ class PostgresDestination(
                                             entitySetId,
                                             partition,
                                             entityMap.keys,
-                                            entityKeyIdsArr,
                                             writeVersionArray,
                                             writeVersion
                                     )
@@ -281,9 +280,6 @@ class PostgresDestination(
                     val dataType = propertyTypes.getValue(propertyTypeId).datatype
 
                     val (propertyHash, insertValue) = getPropertyHash(
-                            entitySetId,
-                            entityKeyId,
-                            propertyTypeId,
                             value,
                             dataType
                     )
@@ -332,7 +328,6 @@ class PostgresDestination(
             entitySetId: UUID,
             partition: Int,
             entityKeyIds: Set<UUID>,
-            entityKeyIdsArr: java.sql.Array,
             versionArray: java.sql.Array,
             version: Long
     ): Int {
@@ -350,7 +345,7 @@ class PostgresDestination(
                 ps.setObject(2 + offset, version)
                 ps.setObject(3 + offset, version)
                 ps.setObject(4 + offset, entitySetId)
-                ps.setArray(5 + offset, PostgresArrays.createUuidArray(connection, entities.keys))
+                ps.setArray(5 + offset, PostgresArrays.createUuidArray(connection, entityKeyIds))
                 ps.setInt(6 + offset, partition)
             }
 
@@ -367,9 +362,6 @@ class PostgresDestination(
     }
 
     private fun getPropertyHash(
-            entitySetId: UUID,
-            entityKeyId: UUID,
-            propertyTypeId: UUID,
             value: Any,
             dataType: EdmPrimitiveTypeKind
     ): Pair<ByteArray, Any> {
