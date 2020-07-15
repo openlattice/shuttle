@@ -281,9 +281,6 @@ class PostgresDestination(
                     val dataType = propertyTypes.getValue(propertyTypeId).datatype
 
                     val (propertyHash, insertValue) = getPropertyHash(
-                            entitySetId,
-                            entityKeyId,
-                            propertyTypeId,
                             value,
                             dataType
                     )
@@ -367,9 +364,6 @@ class PostgresDestination(
     }
 
     private fun getPropertyHash(
-            entitySetId: UUID,
-            entityKeyId: UUID,
-            propertyTypeId: UUID,
             value: Any,
             dataType: EdmPrimitiveTypeKind
     ): Pair<ByteArray, Any> {
