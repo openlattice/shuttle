@@ -32,6 +32,7 @@ import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
 import com.openlattice.data.storage.partitions.getPartition
+import com.openlattice.data.storage.updateIdVersionSql
 import com.openlattice.data.storage.updateVersionsForPropertyTypesInEntitiesInEntitySet
 import com.openlattice.data.storage.upsertEntitiesSql
 import com.openlattice.data.storage.upsertPropertyValueSql
@@ -113,6 +114,7 @@ class PostgresDestination(
                                 esSw.elapsed(TimeUnit.MILLISECONDS)
                         )
                         val esCount = entities.groupBy { getPartition(it.first, partitions) }
+                                .toSortedMap()
                                 .map { (partition, entityPairs) ->
                                     val partSw = Stopwatch.createStarted()
                                     val entityMap = entityPairs.toMap()
@@ -335,26 +337,38 @@ class PostgresDestination(
             version: Long
     ): Int {
         return try {
-            connection.autoCommit = false
+            val ps = connection.prepareStatement(updateIdVersionSql)
 
-            //Make data visible by marking new version in ids table.
-            val numUpdates = lockIdsAndExecute(
-                    connection,
-                    entitySetId,
-                    partition,
-                    entityKeyIds
-            ) {
-                val ps = connection.prepareStatement(upsertEntitiesSql)
-                ps.setObject(1, versionArray)
+            entityKeyIds.sorted().forEach { entityKeyId ->
+                ps.setArray(1, versionArray)
                 ps.setObject(2, version)
                 ps.setObject(3, version)
                 ps.setObject(4, entitySetId)
-                ps.setArray(5, entityKeyIdsArr)
+                ps.setObject(5, entityKeyId)
                 ps.setInt(6, partition)
-                ps.executeUpdate()
+                ps.addBatch()
             }
+            val numUpdates = ps.executeBatch().sum()
+//            connection.autoCommit = false
 
-            connection.commit()
+            //Make data visible by marking new version in ids table.
+//            val numUpdates = lockIdsAndExecute(
+//                    connection,
+//                    entitySetId,
+//                    partition,
+//                    entityKeyIds
+//            ) {
+//                val ps = connection.prepareStatement(upsertEntitiesSql)
+//                ps.setObject(1, versionArray)
+//                ps.setObject(2, version)
+//                ps.setObject(3, version)
+//                ps.setObject(4, entitySetId)
+//                ps.setArray(5, entityKeyIdsArr)
+//                ps.setInt(6, partition)
+//                ps.executeUpdate()
+//            }
+//
+//            connection.commit()
             logger.info("Updated $numUpdates entities as part of insert.")
             numUpdates
         } catch (ex: PSQLException) {
