@@ -44,6 +44,7 @@ import com.openlattice.graph.bindColumnsForEdge
 import com.openlattice.postgres.JsonDeserializer
 import com.openlattice.postgres.PostgresArrays
 import com.openlattice.postgres.lockIdsAndExecute
+import com.openlattice.postgres.lockIdsAndExecuteAndCommit
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.postgresql.util.PSQLException
@@ -339,16 +340,18 @@ class PostgresDestination(
             //Make data visible by marking new version in ids table.
             val numUpdates = lockIdsAndExecute(
                     connection,
-                    upsertEntitiesSql,
                     entitySetId,
-                    mapOf(partition to entityKeyIds)
-            ) { ps, _, offset ->
-                ps.setObject(1 + offset, versionArray)
-                ps.setObject(2 + offset, version)
-                ps.setObject(3 + offset, version)
-                ps.setObject(4 + offset, entitySetId)
-                ps.setArray(5 + offset, entityKeyIdsArr)
-                ps.setInt(6 + offset, partition)
+                    partition,
+                    entityKeyIds
+            ) {
+                val ps = connection.prepareStatement(upsertEntitiesSql)
+                ps.setObject(1, versionArray)
+                ps.setObject(2, version)
+                ps.setObject(3, version)
+                ps.setObject(4, entitySetId)
+                ps.setArray(5, entityKeyIdsArr)
+                ps.setInt(6, partition)
+                ps.executeUpdate()
             }
 
             connection.commit()
