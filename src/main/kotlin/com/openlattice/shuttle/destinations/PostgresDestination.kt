@@ -346,26 +346,7 @@ class PostgresDestination(
                 ps.addBatch()
             }
             val numUpdates = ps.executeBatch().sum()
-//            connection.autoCommit = false
 
-            //Make data visible by marking new version in ids table.
-//            val numUpdates = lockIdsAndExecute(
-//                    connection,
-//                    entitySetId,
-//                    partition,
-//                    entityKeyIds
-//            ) {
-//                val ps = connection.prepareStatement(upsertEntitiesSql)
-//                ps.setObject(1, versionArray)
-//                ps.setObject(2, version)
-//                ps.setObject(3, version)
-//                ps.setObject(4, entitySetId)
-//                ps.setArray(5, entityKeyIdsArr)
-//                ps.setInt(6, partition)
-//                ps.executeUpdate()
-//            }
-//
-//            connection.commit()
             logger.info("Updated $numUpdates entities as part of insert.")
             return numUpdates
     }
