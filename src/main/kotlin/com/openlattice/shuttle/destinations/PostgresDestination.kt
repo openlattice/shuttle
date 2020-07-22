@@ -32,9 +32,8 @@ import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
 import com.openlattice.data.storage.partitions.getPartition
-import com.openlattice.data.storage.updateIdVersionSql
+import com.openlattice.data.storage.updateEntitySql
 import com.openlattice.data.storage.updateVersionsForPropertyTypesInEntitiesInEntitySet
-import com.openlattice.data.storage.upsertEntitiesSql
 import com.openlattice.data.storage.upsertPropertyValueSql
 import com.openlattice.data.util.PostgresDataHasher
 import com.openlattice.edm.EntitySet
@@ -44,8 +43,6 @@ import com.openlattice.graph.EDGES_UPSERT_SQL
 import com.openlattice.graph.bindColumnsForEdge
 import com.openlattice.postgres.JsonDeserializer
 import com.openlattice.postgres.PostgresArrays
-import com.openlattice.postgres.lockIdsAndExecute
-import com.openlattice.postgres.lockIdsAndExecuteAndCommit
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.postgresql.util.PSQLException
@@ -336,8 +333,8 @@ class PostgresDestination(
             versionArray: java.sql.Array,
             version: Long
     ): Int {
-        return try {
-            val ps = connection.prepareStatement(updateIdVersionSql)
+
+            val ps = connection.prepareStatement(updateEntitySql)
 
             entityKeyIds.sorted().forEach { entityKeyId ->
                 ps.setArray(1, versionArray)
@@ -370,14 +367,7 @@ class PostgresDestination(
 //
 //            connection.commit()
             logger.info("Updated $numUpdates entities as part of insert.")
-            numUpdates
-        } catch (ex: PSQLException) {
-            //Should be pretty rare.
-            connection.rollback()
-            throw ex
-        } finally {
-            connection.autoCommit = true
-        }
+            return numUpdates
     }
 
     private fun getPropertyHash(
