@@ -366,13 +366,14 @@ class Shuttle (
 
             val propertyType = propertyTypes.getValue(propertyDefinition.fullQualifiedName)
 
-            val storageDestination = propertyDefinition.storageDestination.orElseGet {
-                if ( entityDefinition.associateOnly ) {
-                    return@orElseGet StorageDestination.NO_OP
-                }
-                when (propertyType.datatype) {
-                    EdmPrimitiveTypeKind.Binary -> binaryDestination
-                    else -> if (parameters.postgres.enabled) StorageDestination.POSTGRES else StorageDestination.REST
+            val storageDestination = if ( entityDefinition.associateOnly ) {
+                StorageDestination.NO_OP
+            } else {
+                propertyDefinition.storageDestination.orElseGet {
+                    when (propertyType.datatype) {
+                        EdmPrimitiveTypeKind.Binary -> binaryDestination
+                        else -> if (parameters.postgres.enabled) StorageDestination.POSTGRES else StorageDestination.REST
+                    }
                 }
             }
 
