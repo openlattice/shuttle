@@ -260,8 +260,7 @@ class Shuttle (
             val ekidGenStartingUpdate = "Starting entity key id generation in thread ${Thread.currentThread().id}"
             writeLog(flight.name, setOf(ekidGenStartingUpdate), IntegrationStatus.IN_PROGRESS)
             val ekSw = Stopwatch.createStarted()
-            val entityKeys = (batch.entities.flatMap { e -> e.value.map { it.key } }
-                    + batch.associations.flatMap { it.value.map { assoc -> assoc.key } }).toSet()
+            val entityKeys = batch.entities.flatMap { e -> e.value.map { it.key } }.toSet()
             val entityKeyIds = attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
                 entityKeys.zip(getEntityKeyIds(entityKeys)).toMap()
             }
