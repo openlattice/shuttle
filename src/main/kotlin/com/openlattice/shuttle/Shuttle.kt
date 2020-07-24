@@ -349,9 +349,10 @@ class Shuttle (
 
     private fun buildPropertiesFromPropertyDefinitions(
             row: Map<String, Any?>,
-            propertyDefinitions: Collection<PropertyDefinition>
+            entityDefinition: EntityDefinition
     ): Pair<MutableMap<UUID, MutableSet<Any>>, MutableMap<StorageDestination, MutableMap<UUID, MutableSet<Any>>>> {
 
+        val propertyDefinitions = entityDefinition.properties
         val properties =  Maps.newHashMapWithExpectedSize<UUID, MutableSet<Any>>(propertyDefinitions.size)
         val addressedProperties = Maps.newLinkedHashMapWithExpectedSize<StorageDestination, MutableMap<UUID, MutableSet<Any>>>(1)
 
@@ -365,6 +366,9 @@ class Shuttle (
             val propertyType = propertyTypes.getValue(propertyDefinition.fullQualifiedName)
 
             val storageDestination = propertyDefinition.storageDestination.orElseGet {
+                if ( entityDefinition.associateOnly ) {
+                    return@orElseGet StorageDestination.NO_OP
+                }
                 when (propertyType.datatype) {
                     EdmPrimitiveTypeKind.Binary -> binaryDestination
                     else -> if (parameters.postgres.enabled) StorageDestination.POSTGRES else StorageDestination.REST
@@ -397,6 +401,9 @@ class Shuttle (
         return Pair(properties, addressedProperties)
     }
 
+    /**
+     * HERE BE DARGONS
+     */
     private fun impulse(flight: Flight, batch: List<Map<String, Any?>>, batchNumber: Long): AddressedDataHolder {
         val addressedDataHolder = AddressedDataHolder(
                 Maps.newLinkedHashMapWithExpectedSize(batch.size * flight.entities.size),
@@ -417,7 +424,7 @@ class Shuttle (
                 }
 
                 val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(
-                        row, entityDefinition.properties
+                        row, entityDefinition
                 )
 
                 /*
@@ -469,7 +476,7 @@ class Shuttle (
                 if ((wasCreated[associationDefinition.srcAlias]!! && wasCreated[associationDefinition.dstAlias]!!)) {
 
                     val (properties, addressedProperties) = buildPropertiesFromPropertyDefinitions(
-                            row, associationDefinition.properties
+                            row, associationDefinition
                     )
 
                     val entityId = associationDefinition.generator
