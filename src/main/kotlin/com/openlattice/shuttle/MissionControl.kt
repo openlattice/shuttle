@@ -26,6 +26,7 @@ import com.auth0.exception.Auth0Exception
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.base.Suppliers
+import com.google.common.collect.Maps
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
@@ -270,11 +271,9 @@ class MissionControl(
         } catch ( thrown: Throwable ) {
             MissionControl.fail(1, Flight.failed(), thrown)
         }
-        val destinations = mutableMapOf<StorageDestination, IntegrationDestination>()
-        destinations[StorageDestination.REST] = RestDestination(dataApi)
+        val destinations = Maps.newHashMapWithExpectedSize<StorageDestination, IntegrationDestination>(3)
         destinations[StorageDestination.NO_OP] = NoOpDestination()
         val generatePresignedUrlsFun = dataIntegrationApi::generatePresignedUrls
-
 
         if (parameters.postgres.enabled) {
             val pgDestination = PostgresDestination(

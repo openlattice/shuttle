@@ -360,7 +360,7 @@ class Shuttle (
         for (propertyDefinition in propertyDefinitions) {
             val propertyValue = propertyDefinition.propertyValue.apply(row)
 
-            if (propertyValue == null || !((propertyValue !is String) || propertyValue.isNotBlank())) {
+            if (propertyValue == null || ((propertyValue is String) && propertyValue.isBlank()) ) {
                 continue
             }
 
