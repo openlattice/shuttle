@@ -487,9 +487,12 @@ class Shuttle (
                         val src = aliasesToEntityKey[associationDefinition.srcAlias]
                         val dst = aliasesToEntityKey[associationDefinition.dstAlias]
                         addressedProperties.forEach { (storageDestination, data) ->
+                            addressedDataHolder.entities
+                                    .getOrPut(storageDestination) { mutableSetOf() }
+                                    .add(Entity(key, data))
                             addressedDataHolder.associations
                                     .getOrPut(storageDestination) { mutableSetOf() }
-                                    .add(Association(key, src, dst, data))
+                                    .add(Association(key, src, dst))
                         }
                     } else {
                         val blankEntityIdError = "Encountered blank entity id for entity set ${associationDefinition.entitySetName}"

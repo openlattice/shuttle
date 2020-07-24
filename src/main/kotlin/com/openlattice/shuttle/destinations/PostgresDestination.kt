@@ -195,18 +195,10 @@ class PostgresDestination(
             DataEdgeKey(srcDataKey, dstDataKey, edgeDataKey)
         }.toSet()
         val numCreatedEdges = createEdges(dataEdgeKeys)
-        val numIntegratedEdges = integrateEntities(
-                data.map { Entity(it.key, it.details) }.toSet(),
-                entityKeyIds,
-                updateTypes
-        )
-
-        if (numCreatedEdges != numIntegratedEdges) {
-            logger.warn("Created $numCreatedEdges edges, but only integrated $numIntegratedEdges.")
-        }
 
         logger.info(
-                "Integrated ${data.size} edges and update $numIntegratedEdges rows in {} ms.",
+                "Integrated {} edges in {} ms.",
+                numCreatedEdges,
                 sw.elapsed(TimeUnit.MILLISECONDS)
         )
 
