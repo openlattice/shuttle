@@ -26,16 +26,10 @@ import com.auth0.exception.Auth0Exception
 import com.dataloom.mappers.ObjectMappers
 import com.google.common.annotations.VisibleForTesting
 import com.google.common.base.Suppliers
-import com.google.common.collect.ImmutableMap
+import com.google.common.collect.Maps
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
-import com.openlattice.shuttle.destinations.IntegrationDestination
-import com.openlattice.shuttle.destinations.StorageDestination
-import com.openlattice.shuttle.destinations.PostgresDestination
-import com.openlattice.shuttle.destinations.PostgresS3Destination
-import com.openlattice.shuttle.destinations.RestDestination
-import com.openlattice.shuttle.destinations.S3Destination
 import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
@@ -44,6 +38,7 @@ import com.openlattice.retrofit.RhizomeByteConverterFactory
 import com.openlattice.retrofit.RhizomeCallAdapterFactory
 import com.openlattice.retrofit.RhizomeJacksonConverterFactory
 import com.openlattice.retrofit.RhizomeRetrofitCallException
+import com.openlattice.shuttle.destinations.*
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
@@ -274,12 +269,11 @@ class MissionControl(
             propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
             propertyTypesById = propertyTypes.mapKeys { it.value.id }
         } catch ( thrown: Throwable ) {
-            MissionControl.fail(1, Flight.newFlight().done(), thrown)
+            MissionControl.fail(1, Flight.failed(), thrown)
         }
-        val destinations = mutableMapOf<StorageDestination, IntegrationDestination>()
-        destinations[StorageDestination.REST] = RestDestination(dataApi)
+        val destinations = Maps.newHashMapWithExpectedSize<StorageDestination, IntegrationDestination>(3)
+        destinations[StorageDestination.NO_OP] = NoOpDestination()
         val generatePresignedUrlsFun = dataIntegrationApi::generatePresignedUrls
-
 
         if (parameters.postgres.enabled) {
             val pgDestination = PostgresDestination(
