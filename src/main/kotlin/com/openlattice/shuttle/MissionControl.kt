@@ -101,7 +101,7 @@ class MissionControl(
         }
 
         @JvmStatic
-        fun failWithBadInputs( message: String, ex: Throwable ) {
+        fun failWithBadInputs(message: String, ex: Throwable) {
             logger.error("Shuttle encountered a problematic input!")
             logger.error(message)
             logger.error("Stacktrace: ", ex)
@@ -230,7 +230,7 @@ class MissionControl(
             fail(
                     -999, Flight.newFlight().done(), Throwable(
                     "PRODUCTION is not a valid integration environment. The valid environments are PROD_INTEGRATION and LOCAL"
-                )
+            )
             )
         }
     }
@@ -268,7 +268,7 @@ class MissionControl(
             entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
             propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
             propertyTypesById = propertyTypes.mapKeys { it.value.id }
-        } catch ( thrown: Throwable ) {
+        } catch (thrown: Throwable) {
             MissionControl.fail(1, Flight.failed(), thrown)
         }
         val destinations = Maps.newHashMapWithExpectedSize<StorageDestination, IntegrationDestination>(3)
@@ -350,9 +350,17 @@ class MissionControl(
                             mutableSetOf(),
                             organizationId
                     )
-                    val entitySetId = entitySetsApi
-                            .createEntitySets(setOf(entitySet))
-                            .getValue(entityDefinition.entitySetName)
+                    val entitySetId = try {
+                        entitySetsApi
+                                .createEntitySets(setOf(entitySet))
+                                .getValue(entityDefinition.entitySetName)
+                    } catch (ex: RhizomeRetrofitCallException) {
+                        if (ex.body.contains("Type ${entityDefinition.entitySetName} already exists.")) {
+                            logger.warn("Entity set ${entityDefinition.entitySetName} already exists.")
+                        } else {
+                            throw ex
+                        }
+                    }
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[entityDefinition.entitySetName] = entitySet
                 }
@@ -371,9 +379,17 @@ class MissionControl(
                             mutableSetOf(),
                             organizationId
                     )
-                    val entitySetId = entitySetsApi
-                            .createEntitySets(setOf(entitySet))
-                            .getValue(associationDefinition.entitySetName)
+                    val entitySetId = try {
+                        entitySetsApi
+                                .createEntitySets(setOf(entitySet))
+                                .getValue(associationDefinition.entitySetName)
+                    } catch (ex: RhizomeRetrofitCallException) {
+                        if (ex.body.contains("Type ${associationDefinition.entitySetName} already exists.")) {
+                            logger.warn("Entity set ${associationDefinition.entitySetName} already exists.")
+                        } else {
+                            throw ex
+                        }
+                    }
                     check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
                     entitySets[associationDefinition.entitySetName] = entitySet
                 }
