@@ -350,19 +350,23 @@ class MissionControl(
                             mutableSetOf(),
                             organizationId
                     )
-                    val entitySetId = try {
+                    entitySets[entityDefinition.entitySetName] = try {
                         entitySetsApi
                                 .createEntitySets(setOf(entitySet))
+                                .getValue(entityDefinition.entitySetName)
+                        entitySetsApi
+                                .getEntitySetsByName(setOf(entityDefinition.entitySetName))
                                 .getValue(entityDefinition.entitySetName)
                     } catch (ex: RhizomeRetrofitCallException) {
                         if (ex.body.contains("Type ${entityDefinition.entitySetName} already exists.")) {
                             logger.warn("Entity set ${entityDefinition.entitySetName} already exists.")
+                            entitySetsApi
+                                    .getEntitySetsByName(setOf(entityDefinition.entitySetName))
+                                    .getValue(entityDefinition.entitySetName)
                         } else {
                             throw ex
                         }
                     }
-                    check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
-                    entitySets[entityDefinition.entitySetName] = entitySet
                 }
             }
             it.associations.forEach { associationDefinition ->
@@ -379,19 +383,23 @@ class MissionControl(
                             mutableSetOf(),
                             organizationId
                     )
-                    val entitySetId = try {
+                    entitySets[associationDefinition.entitySetName] = try {
                         entitySetsApi
                                 .createEntitySets(setOf(entitySet))
+                                .getValue(associationDefinition.entitySetName)
+                        entitySetsApi
+                                .getEntitySetsByName(setOf(associationDefinition.entitySetName))
                                 .getValue(associationDefinition.entitySetName)
                     } catch (ex: RhizomeRetrofitCallException) {
                         if (ex.body.contains("Type ${associationDefinition.entitySetName} already exists.")) {
                             logger.warn("Entity set ${associationDefinition.entitySetName} already exists.")
+                            entitySetsApi
+                                    .getEntitySetsByName(setOf(associationDefinition.entitySetName))
+                                    .getValue(associationDefinition.entitySetName)
                         } else {
                             throw ex
                         }
                     }
-                    check(entitySetId == entitySet.id) { "Submitted entity set id does not match return." }
-                    entitySets[associationDefinition.entitySetName] = entitySet
                 }
             }
         }
