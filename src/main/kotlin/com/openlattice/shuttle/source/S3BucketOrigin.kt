@@ -24,5 +24,4 @@ data class S3BucketOrigin(val bucketName: String, val s3Client: AmazonS3, val fo
             s3Client.getObject(GetObjectRequest(bucketName, it.key)).objectContent
         }.iterator()
     }
-
 }
