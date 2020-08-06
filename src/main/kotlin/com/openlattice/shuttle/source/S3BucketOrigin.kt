@@ -32,5 +32,4 @@ data class S3BucketOrigin(
             s3Client.getObject(GetObjectRequest(bucketName, it.key)).objectContent
         }.iterator()
     }
-
 }
