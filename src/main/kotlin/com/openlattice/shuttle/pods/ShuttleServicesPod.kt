@@ -164,17 +164,10 @@ class ShuttleServicesPod {
     }
 
     @Bean
-    fun authorizingComponent(): EdmAuthorizationHelper {
-        return EdmAuthorizationHelper(dataModelService(), authorizationManager(), entitySetManager())
-    }
-
-    @Bean
     fun assembler(): Assembler {
         return Assembler(
                 dbcs(),
-                hds,
                 authorizationManager(),
-                authorizingComponent(),
                 principalService(),
                 metricRegistry,
                 hazelcastInstance,
