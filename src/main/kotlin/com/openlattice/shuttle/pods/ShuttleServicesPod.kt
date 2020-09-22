@@ -21,7 +21,11 @@ import com.openlattice.auditing.AuditingConfiguration
 import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
-import com.openlattice.authorization.*
+import com.openlattice.authorization.DbCredentialService
+import com.openlattice.authorization.EdmAuthorizationHelper
+import com.openlattice.authorization.HazelcastAclKeyReservationService
+import com.openlattice.authorization.HazelcastAuthorizationService
+import com.openlattice.authorization.Principals
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
@@ -44,6 +48,7 @@ import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
+import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -113,6 +118,9 @@ class ShuttleServicesPod {
 
     @Inject
     private lateinit var byteBlobDataManager: ByteBlobDataManager
+
+    @Inject
+    private lateinit var externalDbConnMan: ExternalDatabaseConnectionManager
 
     @Autowired(required = false)
     private var s3: AmazonS3? = null
@@ -232,6 +240,7 @@ class ShuttleServicesPod {
     fun assemblerConnectionManager(): AssemblerConnectionManager {
         return AssemblerConnectionManager(
                 assemblerConfiguration,
+                externalDbConnMan,
                 hds,
                 principalService(),
                 organizationsManager(),
@@ -243,7 +252,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun assemblerDependencies(): AssemblerDependencies {
-        return AssemblerDependencies(hds, dbcs(), assemblerConnectionManager())
+        return AssemblerDependencies(hds, dbcs(), externalDbConnMan, assemblerConnectionManager())
     }
 
     @Bean
