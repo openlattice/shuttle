@@ -18,10 +18,15 @@ import com.openlattice.assembler.AssemblerDependencies
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
 import com.openlattice.auditing.AuditingConfiguration
+import com.openlattice.auth0.Auth0Pod
 import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
-import com.openlattice.authorization.*
+import com.openlattice.authorization.DbCredentialService
+import com.openlattice.authorization.EdmAuthorizationHelper
+import com.openlattice.authorization.HazelcastAclKeyReservationService
+import com.openlattice.authorization.HazelcastAuthorizationService
+import com.openlattice.authorization.Principals
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
@@ -69,7 +74,10 @@ import javax.inject.Inject
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @Configuration
-@Import(AssemblerConfigurationPod::class)
+@Import(
+        AssemblerConfigurationPod::class,
+        Auth0Pod::class
+)
 class ShuttleServicesPod {
     private val logger = LoggerFactory.getLogger(ShuttleServicesPod::class.java)
 
