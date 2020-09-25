@@ -44,6 +44,7 @@ import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
+import com.openlattice.ids.HazelcastLongIdService
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
@@ -167,8 +168,13 @@ class ShuttleServicesPod {
     }
 
     @Bean
+    fun longIdService(): HazelcastLongIdService {
+        return HazelcastLongIdService(hazelcastClientProvider)
+    }
+
+    @Bean
     fun dbcs(): DbCredentialService {
-        return DbCredentialService(hazelcastInstance)
+        return DbCredentialService(hazelcastInstance, longIdService())
     }
 
     @Bean
