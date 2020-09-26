@@ -18,6 +18,7 @@ import com.openlattice.assembler.AssemblerDependencies
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
 import com.openlattice.auditing.AuditingConfiguration
+import com.openlattice.auth0.Auth0Pod
 import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
@@ -43,6 +44,7 @@ import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
+import com.openlattice.ids.HazelcastLongIdService
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
@@ -73,7 +75,10 @@ import javax.inject.Inject
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @Configuration
-@Import(AssemblerConfigurationPod::class)
+@Import(
+        AssemblerConfigurationPod::class,
+        Auth0Pod::class
+)
 class ShuttleServicesPod {
     private val logger = LoggerFactory.getLogger(ShuttleServicesPod::class.java)
 
@@ -167,8 +172,13 @@ class ShuttleServicesPod {
     }
 
     @Bean
+    fun longIdService(): HazelcastLongIdService {
+        return HazelcastLongIdService(hazelcastClientProvider)
+    }
+
+    @Bean
     fun dbcs(): DbCredentialService {
-        return DbCredentialService(hazelcastInstance)
+        return DbCredentialService(hazelcastInstance, longIdService())
     }
 
     @Bean
