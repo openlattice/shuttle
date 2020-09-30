@@ -93,11 +93,11 @@ class Shuttle (
         private val tableColsToPrint: Map<Flight, List<String>>,
         private val parameters: MissionParameters,
         private val binaryDestination: StorageDestination,
-        private val blackbox: Blackbox,
-        private val maybeLogEntitySet: Optional<EntitySet>,
-        private val maybeJobId: Optional<UUID>,
+        blackbox: Blackbox,
+        maybeLogEntitySet: Optional<EntitySet>,
+        maybeJobId: Optional<UUID>,
         private val idService: EntityKeyIdService?,
-        private val hazelcastInstance: HazelcastInstance?,
+        hazelcastInstance: HazelcastInstance?,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
                 Executors.newFixedThreadPool(threadCount)
         )
