@@ -33,7 +33,7 @@ import com.google.common.util.concurrent.ListeningExecutorService
 import com.google.common.util.concurrent.MoreExecutors
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.map.IMap
-import com.openlattice.ApiUtil
+import com.openlattice.ApiHelpers
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKey
@@ -93,11 +93,11 @@ class Shuttle (
         private val tableColsToPrint: Map<Flight, List<String>>,
         private val parameters: MissionParameters,
         private val binaryDestination: StorageDestination,
-        private val blackbox: Blackbox,
-        private val maybeLogEntitySet: Optional<EntitySet>,
-        private val maybeJobId: Optional<UUID>,
+        blackbox: Blackbox,
+        maybeLogEntitySet: Optional<EntitySet>,
+        maybeJobId: Optional<UUID>,
         private val idService: EntityKeyIdService?,
-        private val hazelcastInstance: HazelcastInstance?,
+        hazelcastInstance: HazelcastInstance?,
         private val uploadingExecutor: ListeningExecutorService = MoreExecutors.listeningDecorator(
                 Executors.newFixedThreadPool(threadCount)
         )
@@ -522,15 +522,15 @@ class Shuttle (
         val sw = Stopwatch.createStarted()
         var total = 0L
         try {
-            total = flightPlan.entries.map { entry ->
-                val launchUpdate = "Launching flight: ${entry.key.name}"
-                writeLog(entry.key.name, setOf(launchUpdate), IntegrationStatus.IN_PROGRESS)
+            total = flightPlan.entries.map { (flight, payload) ->
+                val launchUpdate = "Launching flight: ${flight.name}"
+                writeLog(flight.name, setOf(launchUpdate), IntegrationStatus.IN_PROGRESS)
 
-                val tableColsToPrintForFlight = tableColsToPrint[entry.key] ?: listOf()
-                val count = takeoff(entry.key, entry.value.getPayload(), uploadBatchSize, tableColsToPrintForFlight)
+                val tableColsToPrintForFlight = tableColsToPrint[flight] ?: listOf()
+                val count = takeoff(flight, payload.getPayload(), uploadBatchSize, tableColsToPrintForFlight)
 
-                val finishUpdate = "Finished flight: ${entry.key.name}"
-                writeLog(entry.key.name, setOf(finishUpdate), IntegrationStatus.SUCCEEDED)
+                val finishUpdate = "Finished flight: ${flight.name}"
+                writeLog(flight.name, setOf(finishUpdate), IntegrationStatus.SUCCEEDED)
                 count
             }.sum()
             logger.info("Executed {} entity writes in flight plan in {} ms.", total, sw.elapsed(TimeUnit.MILLISECONDS))
@@ -570,7 +570,7 @@ class Shuttle (
     ): String {
         val keyValuesPresent = key.any { !properties[it].isNullOrEmpty() }
 
-        return if (keyValuesPresent) ApiUtil.generateDefaultEntityId(key.stream(), properties) else ""
+        return if (keyValuesPresent) ApiHelpers.generateDefaultEntityId(key, properties) else ""
     }
 
     private fun storeLog(flightName: String, log: Set<String>, status: IntegrationStatus, jobId: UUID) {

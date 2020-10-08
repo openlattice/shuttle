@@ -50,6 +50,7 @@ import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
+import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -122,6 +123,9 @@ class ShuttleServicesPod {
 
     @Inject
     private lateinit var byteBlobDataManager: ByteBlobDataManager
+
+    @Inject
+    private lateinit var externalDbConnMan: ExternalDatabaseConnectionManager
 
     @Autowired(required = false)
     private var s3: AmazonS3? = null
@@ -246,6 +250,7 @@ class ShuttleServicesPod {
     fun assemblerConnectionManager(): AssemblerConnectionManager {
         return AssemblerConnectionManager(
                 assemblerConfiguration,
+                externalDbConnMan,
                 hds,
                 principalService(),
                 organizationsManager(),
@@ -257,7 +262,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun assemblerDependencies(): AssemblerDependencies {
-        return AssemblerDependencies(hds, dbcs(), assemblerConnectionManager())
+        return AssemblerDependencies(hds, dbcs(), externalDbConnMan, assemblerConnectionManager())
     }
 
     @Bean

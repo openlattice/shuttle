@@ -13,6 +13,7 @@ import com.openlattice.hazelcast.pods.NearCachesPod
 import com.openlattice.hazelcast.pods.SharedStreamSerializersPod
 import com.openlattice.jdbc.JdbcPod
 import com.openlattice.postgres.PostgresPod
+import com.openlattice.postgres.pods.ExternalDatabaseConnectionManagerPod
 import com.openlattice.shuttle.pods.*
 import com.openlattice.tasks.pods.TaskSchedulerPod
 
@@ -39,7 +40,9 @@ private val shuttlePods = arrayOf(
         SharedStreamSerializersPod::class.java,
         ShuttleServicesPod::class.java,
         TaskSchedulerPod::class.java,
-        NearCachesPod::class.java
+        NearCachesPod::class.java,
+        ExternalDatabaseConnectionManagerPod::class.java
+
 )
 
 /**
