@@ -23,7 +23,6 @@ import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
 import com.openlattice.authorization.DbCredentialService
-import com.openlattice.authorization.EdmAuthorizationHelper
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.HazelcastAuthorizationService
 import com.openlattice.authorization.Principals
@@ -182,17 +181,11 @@ class ShuttleServicesPod {
     }
 
     @Bean
-    fun authorizingComponent(): EdmAuthorizationHelper {
-        return EdmAuthorizationHelper(dataModelService(), authorizationManager(), entitySetManager())
-    }
-
-    @Bean
     fun assembler(): Assembler {
         return Assembler(
                 dbcs(),
                 hds,
                 authorizationManager(),
-                authorizingComponent(),
                 principalService(),
                 metricRegistry,
                 hazelcastInstance,
