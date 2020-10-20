@@ -21,12 +21,10 @@
 
 package com.openlattice.shuttle
 
-import com.auth0.client.auth.AuthAPI
-import com.auth0.exception.Auth0Exception
 import com.dataloom.mappers.ObjectMappers
-import com.google.common.annotations.VisibleForTesting
 import com.google.common.base.Suppliers
 import com.google.common.collect.Maps
+import com.openlattice.auth0.Auth0Delegate
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
@@ -56,12 +54,6 @@ import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 import kotlin.NoSuchElementException
 
-
-private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
-private const val AUTH0_CLIENT_DOMAIN = "openlattice.auth0.com"
-private const val AUTH0_CONNECTION = "Username-Password-Authentication"
-private const val AUTH0_SCOPES = "openid email nickname roles user_id organizations"
-
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
@@ -81,14 +73,20 @@ class MissionControl(
             parameters: MissionParameters = MissionParameters.empty()
     ) : this(
             environment,
-            Suppliers.memoizeWithExpiration({ getIdToken(username, password) }, 1, TimeUnit.HOURS),
+            Suppliers.memoizeWithExpiration({ auth0Client.getIdToken(username, password) }, 1, TimeUnit.HOURS),
             s3BucketUrl,
             parameters
     )
 
     companion object {
+        private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
+        private const val AUTH0_CONNECTION = "Username-Password-Authentication"
+        const val AUTH0_CLIENT_DOMAIN = "openlattice.auth0.com"
+        const val AUTH0_SCOPES = "openid email nickname roles user_id organizations"
+
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
-        private val client = buildClient(AUTH0_CLIENT_ID)
+        private val auth0Client: Auth0Delegate = Auth0Delegate.fromConstants( AUTH0_CLIENT_DOMAIN, AUTH0_CLIENT_ID,
+                AUTH0_CONNECTION, AUTH0_SCOPES )
         private var emailConfiguration: Optional<EmailConfiguration> = Optional.empty()
         private var terminateOnSuccess = true
 
@@ -110,32 +108,8 @@ class MissionControl(
         }
 
         @JvmStatic
-        @Throws(Auth0Exception::class)
-        fun getIdToken(username: String, password: String): String {
-            return getIdToken(client, AUTH0_CONNECTION, username, password)
-        }
-
-        @JvmStatic
         fun continueAfterSuccess() {
             this.terminateOnSuccess = false
-        }
-
-        @JvmStatic
-        @VisibleForTesting
-        fun buildClient(clientId: String): AuthAPI {
-            return AuthAPI(AUTH0_CLIENT_DOMAIN, clientId, "")
-        }
-
-        @JvmStatic
-        @VisibleForTesting
-        @Throws(Auth0Exception::class)
-        fun getIdToken(auth0: AuthAPI, realm: String, username: String, password: String): String {
-            return auth0
-                    .login(username, password, realm)
-                    .setScope(AUTH0_SCOPES)
-                    .setAudience("https://api.openlattice.com")
-                    .execute()
-                    .idToken
         }
 
         @JvmStatic
@@ -188,9 +162,6 @@ class MissionControl(
 
                         val errorEmail = "An error occurred while running integration ${flight.name}. $errorInfo \n" +
                                 "The cause is ${ex.message} \n The stack trace is $stackTraceText"
-                        val emailAddresses = emailConfiguration.notificationEmails
-                                .map { address -> EmailAddress.of(address) }
-                                .toTypedArray()
                         val email = Email.create()
                                 .from(emailConfiguration.fromEmail)
                                 .subject("Integration error in $flight.name")
@@ -381,10 +352,8 @@ class MissionControl(
         }
     }
 
-
-    private fun ensureValidIntegration(flightPlan: Map<Flight, Payload>) {
-        flightPlan.keys.forEach { flight ->
-
+    private fun ensureValidIntegration(maybeValidFlight: Map<Flight, Payload>) {
+        maybeValidFlight.keys.forEach { flight ->
             flight
                     .entities
                     .forEach { entityDefinition ->

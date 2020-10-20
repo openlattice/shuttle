@@ -8,7 +8,11 @@ import java.io.InputStream
 import java.util.stream.StreamSupport
 
 
-data class S3BucketOrigin(val bucketName: String, val s3Client: AmazonS3, val folderPrefix: String = "") : IntegrationOrigin() {
+data class S3BucketOrigin(
+        val bucketName: String,
+        val s3Client: AmazonS3,
+        val folderPrefix: String = ""
+) : IntegrationOrigin() {
 
     companion object {
         val logger = LoggerFactory.getLogger(S3BucketOrigin::class.java)
@@ -19,7 +23,11 @@ data class S3BucketOrigin(val bucketName: String, val s3Client: AmazonS3, val fo
         val prefixPresent = folderPrefix != ""
 
         return StreamSupport.stream( inBucket.spliterator(), false ).filter{
-            prefixPresent && it.key.startsWith(folderPrefix) && !it.key.endsWith('/')
+            val empty = it.size == 0L
+            if ( empty ) {
+                logger.warn("encountered empty object {} from S3 origin", it.key)
+            }
+            prefixPresent && it.key.startsWith(folderPrefix) && !it.key.endsWith('/') && !empty
         }.map {
             s3Client.getObject(GetObjectRequest(bucketName, it.key)).objectContent
         }.iterator()

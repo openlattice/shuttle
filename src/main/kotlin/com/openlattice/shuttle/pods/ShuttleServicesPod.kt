@@ -18,10 +18,14 @@ import com.openlattice.assembler.AssemblerDependencies
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
 import com.openlattice.auditing.AuditingConfiguration
+import com.openlattice.auth0.Auth0Pod
 import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
-import com.openlattice.authorization.*
+import com.openlattice.authorization.DbCredentialService
+import com.openlattice.authorization.HazelcastAclKeyReservationService
+import com.openlattice.authorization.HazelcastAuthorizationService
+import com.openlattice.authorization.Principals
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
@@ -39,11 +43,13 @@ import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
+import com.openlattice.ids.HazelcastLongIdService
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
+import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -68,7 +74,10 @@ import javax.inject.Inject
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 @Configuration
-@Import(AssemblerConfigurationPod::class)
+@Import(
+        AssemblerConfigurationPod::class,
+        Auth0Pod::class
+)
 class ShuttleServicesPod {
     private val logger = LoggerFactory.getLogger(ShuttleServicesPod::class.java)
 
@@ -113,6 +122,9 @@ class ShuttleServicesPod {
 
     @Inject
     private lateinit var byteBlobDataManager: ByteBlobDataManager
+
+    @Inject
+    private lateinit var externalDbConnMan: ExternalDatabaseConnectionManager
 
     @Autowired(required = false)
     private var s3: AmazonS3? = null
@@ -159,13 +171,13 @@ class ShuttleServicesPod {
     }
 
     @Bean
-    fun dbcs(): DbCredentialService {
-        return DbCredentialService(hazelcastInstance)
+    fun longIdService(): HazelcastLongIdService {
+        return HazelcastLongIdService(hazelcastClientProvider)
     }
 
     @Bean
-    fun authorizingComponent(): EdmAuthorizationHelper {
-        return EdmAuthorizationHelper(dataModelService(), authorizationManager(), entitySetManager())
+    fun dbcs(): DbCredentialService {
+        return DbCredentialService(hazelcastInstance, longIdService())
     }
 
     @Bean
@@ -174,7 +186,6 @@ class ShuttleServicesPod {
                 dbcs(),
                 hds,
                 authorizationManager(),
-                authorizingComponent(),
                 principalService(),
                 metricRegistry,
                 hazelcastInstance,
@@ -232,6 +243,7 @@ class ShuttleServicesPod {
     fun assemblerConnectionManager(): AssemblerConnectionManager {
         return AssemblerConnectionManager(
                 assemblerConfiguration,
+                externalDbConnMan,
                 hds,
                 principalService(),
                 organizationsManager(),
@@ -243,7 +255,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun assemblerDependencies(): AssemblerDependencies {
-        return AssemblerDependencies(hds, dbcs(), assemblerConnectionManager())
+        return AssemblerDependencies(hds, dbcs(), externalDbConnMan, assemblerConnectionManager())
     }
 
     @Bean
