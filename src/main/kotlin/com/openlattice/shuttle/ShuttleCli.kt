@@ -69,6 +69,13 @@ fun main(args: Array<String>) {
     val contacts: Set<String>
     val rowColsToPrint: Map<Flight, List<String>>
 
+    fun printErrorHelpAndExit( errorMessage: String ) {
+        logger.error(errorMessage)
+        logger.info("Arguments: {}", args)
+        ShuttleCliOptions.printHelp()
+        exitProcess(1)
+    }
+
     if (cl.hasOption(HELP)) {
         ShuttleCliOptions.printHelp()
         return
@@ -77,18 +84,16 @@ fun main(args: Array<String>) {
     if (cl.hasOption(SERVER)) {
         if (cl.hasOption(PROFILES)) {
             val shuttleServer = ShuttleServer()
-            println("Server mode specifying ignoring other arguments and starting server.")
+            println("Server mode specified ignoring other arguments and starting server.")
             shuttleServer.start(*cl.getOptionValues(PROFILES))
             return
         } else {
-            println("Server mode was specified but not profiles were provided.")
+            println("Server mode was specified but no profiles were provided.")
         }
     }
 
     if (!cl.hasOption(FLIGHT)) {
-        System.err.println("A flight is required in order to run shuttle.")
-        ShuttleCliOptions.printHelp()
-        return
+        printErrorHelpAndExit("A flight is required in order to run shuttle.")
     }
 
     flight = try {
@@ -104,7 +109,6 @@ fun main(args: Array<String>) {
         Flight.newFlight("fail").done() // only here for compiler, above statement exits process
     }
 
-
     //You can have a configuration without any JDBC datasources
     when {
         cl.hasOption(CONFIGURATION) -> {
@@ -113,32 +117,22 @@ fun main(args: Array<String>) {
 
             if (!cl.hasOption(DATASOURCE)) {
                 // check datasource presence
-                println("Datasource must be specified when doing a JDBC datasource based integration.")
-                ShuttleCliOptions.printHelp()
-                return
+                printErrorHelpAndExit("Datasource must be specified when doing a JDBC datasource based integration.")
             }
             if (!cl.hasOption(SQL)) {
                 // check SQL presence
-                println("SQL expression must be specified when doing a JDBC datasource based integration.")
-                ShuttleCliOptions.printHelp()
-                return
+                printErrorHelpAndExit("SQL expression must be specified when doing a JDBC datasource based integration.")
             }
             if (cl.hasOption(CSV)) {
-                // check csv ABsence
-                println("Cannot specify CSV datasource and JDBC datasource simultaneously.")
-                ShuttleCliOptions.printHelp()
-                return
+                // check csv Absence
+                printErrorHelpAndExit("Cannot specify CSV datasource and JDBC datasource simultaneously.")
             }
             if (cl.hasOption(XML)) {
                 // check xml Absence
-                println("Cannot specify XML datasource and JDBC datasource simultaneously.")
-                ShuttleCliOptions.printHelp()
-                return
+                printErrorHelpAndExit("Cannot specify XML datasource and JDBC datasource simultaneously.")
             }
             if (cl.hasOption(DATA_ORIGIN)) {
-                println("SQL cannot be specified when performing a data origin integration")
-                ShuttleCliOptions.printHelp()
-                return
+                printErrorHelpAndExit("SQL cannot be specified when performing a data origin integration")
             }
 
             // get JDBC payload
@@ -161,23 +155,22 @@ fun main(args: Array<String>) {
         }
         cl.hasOption(CSV) -> {// get csv payload
             if (cl.hasOption(DATA_ORIGIN)) {
-                println("CSV cannot be specified when performing a data origin integration")
-                ShuttleCliOptions.printHelp()
-                return
+                printErrorHelpAndExit("CSV cannot be specified when performing a data origin integration")
             }
             rowColsToPrint = mapOf()
             payload = CsvPayload(cl.getOptionValue(CSV))
         }
         cl.hasOption(XML) -> {// get xml payload
             rowColsToPrint = mapOf()
-            if (cl.hasOption(DATA_ORIGIN)) {
+            if (!cl.hasOption(DATA_ORIGIN)) {
+                payload = XmlFilesPayload(cl.getOptionValue(XML))
+            } else {
                 val arguments = cl.getOptionValues(DATA_ORIGIN)
                 val dataOrigin = when (arguments[0]) {
                     "S3" -> {
                         if (arguments.size < S3_ORIGIN_MINIMUM_ARGS_COUNT) {
-                            println("Not enough arguments provided for S3 data origin, provide AWS region, S3 URL and bucket name")
-                            ShuttleCliOptions.printHelp()
-                            exitProcess(1)
+                            printErrorHelpAndExit("Not enough arguments provided for S3 data origin, provide AWS region, S3 URL and bucket name")
+                            return
                         }
                         val filePrefix = if ( arguments.size == S3_ORIGIN_MAXIMUM_ARGS_COUNT) {
                             arguments[3]
@@ -188,27 +181,21 @@ fun main(args: Array<String>) {
                     }
                     "local" -> {
                         if (arguments.size < LOCAL_ORIGIN_EXPECTED_ARGS_COUNT) {
-                            println("Not enough arguments provided for local data origin, provide a local file path")
-                            ShuttleCliOptions.printHelp()
-                            exitProcess(1)
+                            printErrorHelpAndExit("Not enough arguments provided for local data origin, provide a local file path")
+                            return
                         }
                         LocalFileOrigin(Paths.get(arguments[1]))
                     }
                     else -> {
-                        println("The specified configuration is invalid ${cl.getOptionValues(DATA_ORIGIN)}")
-                        ShuttleCliOptions.printHelp()
-                        exitProcess(1)
+                        printErrorHelpAndExit("The specified configuration is invalid ${cl.getOptionValues(DATA_ORIGIN)}")
+                        return
                     }
                 }
                 payload = XmlFilesPayload(dataOrigin)
-            } else {
-                payload = XmlFilesPayload(cl.getOptionValue(XML))
             }
-        }
-        else -> {
-            System.err.println("At least one valid data origin must be specified.")
-            ShuttleCliOptions.printHelp()
-            exitProcess(1)
+        } else -> {
+            printErrorHelpAndExit("At least one valid data origin must be specified.")
+            return
         }
     }
 
@@ -225,7 +212,6 @@ fun main(args: Array<String>) {
     } else {
         RetrofitFactory.Environment.PROD_INTEGRATION
     }
-
 
     val s3BucketUrl = if (cl.hasOption(S3)) {
         val bucketCategory = cl.getOptionValue(S3)
@@ -271,8 +257,7 @@ fun main(args: Array<String>) {
             MissionControl(environment, user, password, s3BucketUrl, shuttleConfig)
         }
         else -> {
-            System.err.println("User or token must be provided for authentication.")
-            ShuttleCliOptions.printHelp()
+            printErrorHelpAndExit("User or token must be provided for authentication.")
             return
         }
     }
@@ -286,8 +271,7 @@ fun main(args: Array<String>) {
 
         contacts = cl.getOptionValues(CREATE).toSet()
         if (contacts.isEmpty()) {
-            System.err.println("Can't create entity sets automatically without contacts provided")
-            ShuttleCliOptions.printHelp()
+            printErrorHelpAndExit("Can't create entity sets automatically without contacts provided")
             return
         }
     } else {
@@ -386,7 +370,6 @@ fun getEmailConfiguration(cl: CommandLine): Optional<EmailConfiguration> {
         }
         else -> Optional.empty()
     }
-
 }
 
 class ShuttleCli {

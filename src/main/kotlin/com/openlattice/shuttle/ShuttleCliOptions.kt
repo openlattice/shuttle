@@ -168,7 +168,7 @@ class ShuttleCliOptions {
 
         private val xmlOption = Option.builder()
                 .longOpt(XML)
-                .optionalArg(true)
+                .hasArg(true)
                 .desc("Directory of XML files to use as the datasource for a specific flight. If --data-origin S3 is provided then this will use the S3 data origin as the source directory")
                 .argName("directory")
                 .build()

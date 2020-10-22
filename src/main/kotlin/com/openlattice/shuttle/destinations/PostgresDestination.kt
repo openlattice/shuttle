@@ -45,7 +45,6 @@ import com.openlattice.postgres.JsonDeserializer
 import com.openlattice.postgres.PostgresArrays
 import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
-import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 import java.security.InvalidParameterException
 import java.sql.Connection
@@ -152,7 +151,6 @@ class PostgresDestination(
                                             entitySetId,
                                             partition,
                                             entityMap.keys,
-                                            entityKeyIdsArr,
                                             writeVersionArray,
                                             writeVersion
                                     )
@@ -321,7 +319,6 @@ class PostgresDestination(
             entitySetId: UUID,
             partition: Int,
             entityKeyIds: Set<UUID>,
-            entityKeyIdsArr: java.sql.Array,
             versionArray: java.sql.Array,
             version: Long
     ): Int {

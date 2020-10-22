@@ -25,14 +25,13 @@ import com.google.common.collect.ImmutableList;
 import com.openlattice.serializer.AbstractJacksonSerializationTest;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transforms.TransformsSerializerTest.OptionalListOfTransforms;
+import transforms.HashTransform;
+import transforms.PrefixTransform;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-
-import transforms.HashTransform;
-import transforms.PrefixTransform;
 
 /**
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
