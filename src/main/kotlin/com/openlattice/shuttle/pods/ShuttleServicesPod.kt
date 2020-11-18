@@ -14,18 +14,13 @@ import com.openlattice.ResourceConfigurationLoader
 import com.openlattice.assembler.Assembler
 import com.openlattice.assembler.AssemblerConfiguration
 import com.openlattice.assembler.AssemblerConnectionManager
-import com.openlattice.assembler.AssemblerDependencies
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
-import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
 import com.openlattice.auditing.AuditingConfiguration
 import com.openlattice.auth0.Auth0Pod
 import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
-import com.openlattice.authorization.DbCredentialService
-import com.openlattice.authorization.HazelcastAclKeyReservationService
-import com.openlattice.authorization.HazelcastAuthorizationService
-import com.openlattice.authorization.Principals
+import com.openlattice.authorization.*
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
@@ -51,6 +46,7 @@ import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
 import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
+import com.openlattice.postgres.external.ExternalDatabasePermissionsManager
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -127,6 +123,18 @@ class ShuttleServicesPod {
     @Inject
     private lateinit var externalDbConnMan: ExternalDatabaseConnectionManager
 
+    @Inject
+    private lateinit var extDbPermManager: ExternalDatabasePermissionsManager
+
+    @Inject
+    private lateinit var principalService: SecurePrincipalsManager
+
+    @Inject
+    private lateinit var aclKeyReservationService: HazelcastAclKeyReservationService
+
+    @Inject
+    private lateinit var authorizationManager: AuthorizationManager
+
     @Autowired(required = false)
     private var s3: AmazonS3? = null
 
@@ -164,9 +172,6 @@ class ShuttleServicesPod {
     fun defaultObjectMapper() = ObjectMappers.getJsonMapper()
 
     @Bean
-    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, eventBus)
-
-    @Bean
     fun phoneNumberService(): PhoneNumberService {
         return PhoneNumberService(hazelcastInstance)
     }
@@ -191,8 +196,8 @@ class ShuttleServicesPod {
         return Assembler(
                 dbcs(),
                 hds,
-                authorizationManager(),
-                principalService(),
+                authorizationManager,
+                principalService,
                 metricRegistry,
                 hazelcastInstance,
                 eventBus
@@ -203,9 +208,9 @@ class ShuttleServicesPod {
     fun organizationsManager(): HazelcastOrganizationService {
         return HazelcastOrganizationService(
                 hazelcastInstance,
-                aclKeyReservationService(),
-                authorizationManager(),
-                principalService(),
+                aclKeyReservationService,
+                authorizationManager,
+                principalService,
                 phoneNumberService(),
                 partitionManager(),
                 assembler(),
@@ -251,23 +256,13 @@ class ShuttleServicesPod {
         return AssemblerConnectionManager(
                 assemblerConfiguration,
                 externalDbConnMan,
-                hds,
-                principalService(),
+                principalService,
                 organizationsManager(),
                 dbcs(),
+                extDbPermManager,
                 eventBus,
                 metricRegistry
         )
-    }
-
-    @Bean
-    fun assemblerDependencies(): AssemblerDependencies {
-        return AssemblerDependencies(hds, dbcs(), externalDbConnMan, assemblerConnectionManager())
-    }
-
-    @Bean
-    fun assemblerInitializationTask(): UsersAndRolesInitializationTask {
-        return UsersAndRolesInitializationTask()
     }
 
     @Bean
@@ -277,7 +272,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun authorizationBootstrapDependencies(): AuthorizationInitializationDependencies {
-        return AuthorizationInitializationDependencies(principalService())
+        return AuthorizationInitializationDependencies(principalService)
     }
 
     @Bean
@@ -290,17 +285,6 @@ class ShuttleServicesPod {
 
     @Bean
     fun integrationJobsMapstore() = IntegrationJobsMapstore(hds)
-
-    @Bean
-    fun aclKeyReservationService() = HazelcastAclKeyReservationService(hazelcastInstance)
-
-    @Bean
-    fun principalService(): SecurePrincipalsManager = HazelcastPrincipalService(
-            hazelcastInstance,
-            aclKeyReservationService(),
-            authorizationManager(),
-            eventBus
-    )
 
     @Bean
     fun idGenerationService() = HazelcastIdGenerationService(hazelcastClientProvider)
@@ -327,8 +311,8 @@ class ShuttleServicesPod {
     @Bean
     fun dataModelService() = EdmService(
             hazelcastInstance,
-            aclKeyReservationService(),
-            authorizationManager(),
+            aclKeyReservationService,
+            authorizationManager,
             entityTypeManager(),
             schemaManager()
     )
@@ -337,8 +321,8 @@ class ShuttleServicesPod {
     fun entitySetManager() = EntitySetService(
             hazelcastInstance,
             eventBus,
-            aclKeyReservationService(),
-            authorizationManager(),
+            aclKeyReservationService,
+            authorizationManager,
             partitionManager(),
             dataModelService(),
             hds,
@@ -363,7 +347,7 @@ class ShuttleServicesPod {
                 missionParametersConfiguration,
                 idService(),
                 entitySetManager(),
-                aclKeyReservationService(),
+                aclKeyReservationService,
                 awsDataSinkService(),
                 blackbox
         )
@@ -371,7 +355,7 @@ class ShuttleServicesPod {
 
     @PostConstruct
     internal fun initPrincipals() {
-        Principals.init(principalService(), hazelcastInstance)
+        Principals.init(principalService, hazelcastInstance)
         IntegrationService.init(blackbox, dataModelService())
     }
 
