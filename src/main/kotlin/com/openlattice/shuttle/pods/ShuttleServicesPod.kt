@@ -39,7 +39,6 @@ import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.edm.properties.PostgresTypeManager
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
-import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
@@ -316,10 +315,10 @@ class ShuttleServicesPod {
     )
 
     @Bean
-    fun entityTypeManager() = PostgresTypeManager(hds)
+    fun entityTypeManager() = PostgresTypeManager(hds, hazelcastInstance)
 
     @Bean
-    fun schemaQueryService() = PostgresSchemaQueryService(hds)
+    fun schemaQueryService() = entityTypeManager()
 
     @Bean
     fun schemaManager() = HazelcastSchemaManager(hazelcastInstance, schemaQueryService())
