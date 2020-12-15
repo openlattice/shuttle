@@ -28,7 +28,7 @@ ext.scmUrl = 'scm:git:https://github.com/openlattice/shuttle.git'
 ext.connectionUrl = 'scm:git:https://github.com/openlattice/shuttle.git'
 ext.developerConnectionUrl = 'scm:git:https://github.com/openlattice/shuttle.git'
 
-apply from: "https://raw.githubusercontent.com/openlattice/gradles/master/openlattice.gradle"
+apply from: "https://raw.githubusercontent.com/openlattice/openlattice/fix/build/gradles/openlattice.gradle"
 
 distTar {
     archiveName "shuttle.tgz"
