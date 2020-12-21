@@ -399,15 +399,15 @@ public class TransformTest {
         Object geocoderTest1 = new GeocoderTransform( "road", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
-        String expectedNo = "560";
+        String expectedNo = "556;560";
         Object geocoderTest2 = new GeocoderTransform( "house_number", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
-        String expectedType = "house";
+        String expectedType = "yes";
         Object geocoderTest3 = new GeocoderTransform( "type", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
-        String expectedGeoPoint = "37.7748313877551,-122.435947714286";
+        String expectedGeoPoint = "37.77501855,-122.43594782088068";
         Object geocoderTest4 = new GeocoderTransform( "geographypoint", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
