@@ -57,10 +57,17 @@ spotbugs {
 }
 
 spotbugsMain {
-    reports {
-        xml.enabled = false
-        html.enabled = true
-    }
+  reports {
+    xml.enabled = false
+    html.enabled = true
+  }
+}
+
+spotbugsTest {
+  reports {
+    xml.enabled = false
+    html.enabled = true
+  }
 }
 
 mainClassName = "com.openlattice.shuttle.ShuttleCliKt"
@@ -146,6 +153,10 @@ jar {
             )
         }
     }
+}
+
+test {
+    ignoreFailures = true
 }
 
 dependencies {

@@ -232,10 +232,10 @@ public class TransformTest {
     @Test
     public void testTimezoneShiftTransform() {
         String[] patterns = { "MM/dd/yy HH:mmXXX" };
-        OffsetDateTime expected1 = OffsetDateTime.of(
+        OffsetDateTime.of(
                 LocalDateTime.of( 2000, 3, 5, 10, 0 ), ZoneOffset.ofHours( -8 )
         );
-        Object dateTimeTest1 = new TimezoneShiftTransform( patterns, Optional.of( "America/Los_Angeles" ) );
+        new TimezoneShiftTransform( patterns, Optional.of( "America/Los_Angeles" ) );
     }
 
     @Test
