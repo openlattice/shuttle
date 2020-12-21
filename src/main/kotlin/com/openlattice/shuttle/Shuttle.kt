@@ -56,6 +56,7 @@ import com.openlattice.shuttle.logs.BlackboxProperty
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.apache.olingo.commons.api.edm.FullQualifiedName
@@ -81,6 +82,7 @@ private val encoder = Base64.getEncoder()
  *
  * Integration driving logic.
  */
+@SuppressFBWarnings(value= ["RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"], justification=":'(")
 class Shuttle (
         private val environment: RetrofitFactory.Environment,
         private val isShuttleServer: Boolean,

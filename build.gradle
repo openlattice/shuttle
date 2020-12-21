@@ -10,7 +10,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.72'
     id 'org.jetbrains.kotlin.plugin.spring' version '1.3.72'
     id 'org.jetbrains.dokka' version '0.9.18'
-    id 'com.github.spotbugs' version '4.5.1'
+    id 'com.github.spotbugs' version '4.6.0'
     id "signing"
     id "eclipse"
     id "checkstyle"
@@ -119,7 +119,6 @@ run {
     } else if (project.hasProperty('appArgs')) {
         args Eval.me(appArgs)
     }
-
 }
 
 println "Enabled profiles: " + Arrays.toString(run.args)

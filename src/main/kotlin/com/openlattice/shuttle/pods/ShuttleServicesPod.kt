@@ -148,10 +148,11 @@ class ShuttleServicesPod {
     )
     @Throws(IOException::class)
     fun getAwsConductorConfiguration(): ConductorConfiguration {
+        val checked = awsLaunchConfig!!
         val config = ResourceConfigurationLoader.loadConfigurationFromS3(
                 s3,
-                awsLaunchConfig!!.bucket,
-                awsLaunchConfig!!.folder,
+                checked.bucket,
+                checked.folder,
                 ConductorConfiguration::class.java
         )
 
@@ -224,13 +225,14 @@ class ShuttleServicesPod {
 
     @Bean
     fun userListingService(): UserListingService {
-        return if (auth0Configuration.managementApiUrl.contains(Auth0Configuration.NO_SYNC_URL)) {
-            LocalUserListingService(auth0Configuration)
+        val config = auth0Configuration
+        return if (config.managementApiUrl.contains(Auth0Configuration.NO_SYNC_URL)) {
+            LocalUserListingService(config)
         } else {
             val auth0Token = auth0TokenProvider().token
             Auth0UserListingService(
-                    ManagementAPI(auth0Configuration.domain, auth0Token),
-                    Auth0ApiExtension(auth0Configuration.domain, auth0Token)
+                    ManagementAPI(config.domain, auth0Token),
+                    Auth0ApiExtension(config.domain, auth0Token)
             )
         }
     }

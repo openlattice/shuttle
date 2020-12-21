@@ -187,7 +187,7 @@ fun main(args: Array<String>) {
                         LocalFileOrigin(Paths.get(arguments[1]))
                     }
                     else -> {
-                        printErrorHelpAndExit("The specified configuration is invalid ${cl.getOptionValues(DATA_ORIGIN)}")
+                        printErrorHelpAndExit("The specified configuration is invalid ${cl.getOptionValues(DATA_ORIGIN).joinToString()}}")
                         return
                     }
                 }
