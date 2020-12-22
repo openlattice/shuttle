@@ -34,7 +34,6 @@ import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.edm.properties.PostgresTypeManager
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
-import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
@@ -157,10 +156,11 @@ class ShuttleServicesPod {
     )
     @Throws(IOException::class)
     fun getAwsConductorConfiguration(): ConductorConfiguration {
+        val checked = awsLaunchConfig!!
         val config = ResourceConfigurationLoader.loadConfigurationFromS3(
                 s3,
-                awsLaunchConfig!!.bucket,
-                awsLaunchConfig!!.folder,
+                checked.bucket,
+                checked.folder,
                 ConductorConfiguration::class.java
         )
 
@@ -230,13 +230,14 @@ class ShuttleServicesPod {
 
     @Bean
     fun userListingService(): UserListingService {
-        return if (auth0Configuration.managementApiUrl.contains(Auth0Configuration.NO_SYNC_URL)) {
-            LocalUserListingService(auth0Configuration)
+        val config = auth0Configuration
+        return if (config.managementApiUrl.contains(Auth0Configuration.NO_SYNC_URL)) {
+            LocalUserListingService(config)
         } else {
             val auth0Token = auth0TokenProvider().token
             Auth0UserListingService(
-                    ManagementAPI(auth0Configuration.domain, auth0Token),
-                    Auth0ApiExtension(auth0Configuration.domain, auth0Token)
+                    ManagementAPI(config.domain, auth0Token),
+                    Auth0ApiExtension(config.domain, auth0Token)
             )
         }
     }
@@ -300,10 +301,10 @@ class ShuttleServicesPod {
     )
 
     @Bean
-    fun entityTypeManager() = PostgresTypeManager(hds)
+    fun entityTypeManager() = PostgresTypeManager(hds, hazelcastInstance)
 
     @Bean
-    fun schemaQueryService() = PostgresSchemaQueryService(hds)
+    fun schemaQueryService() = entityTypeManager()
 
     @Bean
     fun schemaManager() = HazelcastSchemaManager(hazelcastInstance, schemaQueryService())
