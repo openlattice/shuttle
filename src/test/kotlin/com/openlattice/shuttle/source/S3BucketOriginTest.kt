@@ -6,6 +6,7 @@ import org.junit.Before
 import org.junit.Test
 import java.io.InputStreamReader
 import java.net.URL
+import java.nio.charset.Charset
 import java.nio.file.Paths
 
 class S3BucketOriginTest {
@@ -38,7 +39,7 @@ class S3BucketOriginTest {
         var i = 0
         val s3BucketSource = S3BucketOrigin(TEST_BUCKET, client)
         s3BucketSource.map {
-            Pair( InputStreamReader(it).readText() , i++)
+            Pair( InputStreamReader(it, Charset.defaultCharset()).readText() , i++)
         }.forEach {
             if ( it.second % 2 == 0 ) {
                 assert(it.first == xmlFileAsFile.readText())

@@ -7,6 +7,7 @@ import com.openlattice.web.converters.CsvHttpMessageConverter
 import com.openlattice.web.converters.YamlHttpMessageConverter
 import com.openlattice.web.mediatypes.CustomMediaType
 import com.ryantenney.metrics.spring.config.annotation.EnableMetrics
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -55,8 +56,9 @@ class ShuttleMvcPod : WebMvcConfigurationSupport() {
         converters.add(YamlHttpMessageConverter())
     }
 
-    // TODO: We need to lock this down. Since all endpoints are stateless + authenticated this is more a
+    // TODO: We need to lock this down. Since all endpoints are stateless and authenticated this is more a
     // defense-in-depth measure.
+    @SuppressFBWarnings(value = ["PERMISSIVE_CORS"], justification = "LATTICE-2346")
     protected override fun addCorsMappings(registry: CorsRegistry) {
         registry
                 .addMapping("/**")
