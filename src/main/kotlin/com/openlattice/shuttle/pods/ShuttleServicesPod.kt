@@ -183,7 +183,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun organizationMetadataEntitySetsService(): OrganizationMetadataEntitySetsService {
-        return OrganizationMetadataEntitySetsService(dataModelService())
+        return OrganizationMetadataEntitySetsService(dataModelService(), authorizationManager())
     }
 
     @Bean
