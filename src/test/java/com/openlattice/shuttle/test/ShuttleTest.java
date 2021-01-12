@@ -42,7 +42,6 @@ import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.util.CsvUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import transforms.HashTransform;

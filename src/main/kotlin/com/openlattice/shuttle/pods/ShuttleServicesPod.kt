@@ -23,7 +23,6 @@ import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
 import com.openlattice.authorization.DbCredentialService
-import com.openlattice.authorization.EdmAuthorizationHelper
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.HazelcastAuthorizationService
 import com.openlattice.authorization.Principals
@@ -40,15 +39,17 @@ import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.edm.properties.PostgresTypeManager
 import com.openlattice.edm.schemas.manager.HazelcastSchemaManager
-import com.openlattice.edm.schemas.postgres.PostgresSchemaQueryService
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
+import com.openlattice.ids.HazelcastLongIdService
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
+import com.openlattice.organizations.OrganizationMetadataEntitySetsService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
+import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -122,6 +123,9 @@ class ShuttleServicesPod {
     @Inject
     private lateinit var byteBlobDataManager: ByteBlobDataManager
 
+    @Inject
+    private lateinit var externalDbConnMan: ExternalDatabaseConnectionManager
+
     @Autowired(required = false)
     private var s3: AmazonS3? = null
 
@@ -144,10 +148,11 @@ class ShuttleServicesPod {
     )
     @Throws(IOException::class)
     fun getAwsConductorConfiguration(): ConductorConfiguration {
+        val checked = awsLaunchConfig!!
         val config = ResourceConfigurationLoader.loadConfigurationFromS3(
                 s3,
-                awsLaunchConfig!!.bucket,
-                awsLaunchConfig!!.folder,
+                checked.bucket,
+                checked.folder,
                 ConductorConfiguration::class.java
         )
 
@@ -167,13 +172,18 @@ class ShuttleServicesPod {
     }
 
     @Bean
-    fun dbcs(): DbCredentialService {
-        return DbCredentialService(hazelcastInstance)
+    fun longIdService(): HazelcastLongIdService {
+        return HazelcastLongIdService(hazelcastClientProvider)
     }
 
     @Bean
-    fun authorizingComponent(): EdmAuthorizationHelper {
-        return EdmAuthorizationHelper(dataModelService(), authorizationManager(), entitySetManager())
+    fun dbcs(): DbCredentialService {
+        return DbCredentialService(hazelcastInstance, longIdService())
+    }
+
+    @Bean
+    fun organizationMetadataEntitySetsService(): OrganizationMetadataEntitySetsService {
+        return OrganizationMetadataEntitySetsService(dataModelService(), authorizationManager())
     }
 
     @Bean
@@ -182,7 +192,6 @@ class ShuttleServicesPod {
                 dbcs(),
                 hds,
                 authorizationManager(),
-                authorizingComponent(),
                 principalService(),
                 metricRegistry,
                 hazelcastInstance,
@@ -199,7 +208,8 @@ class ShuttleServicesPod {
                 principalService(),
                 phoneNumberService(),
                 partitionManager(),
-                assembler()
+                assembler(),
+                organizationMetadataEntitySetsService()
         )
     }
 
@@ -215,13 +225,14 @@ class ShuttleServicesPod {
 
     @Bean
     fun userListingService(): UserListingService {
-        return if (auth0Configuration.managementApiUrl.contains(Auth0Configuration.NO_SYNC_URL)) {
-            LocalUserListingService(auth0Configuration)
+        val config = auth0Configuration
+        return if (config.managementApiUrl.contains(Auth0Configuration.NO_SYNC_URL)) {
+            LocalUserListingService(config)
         } else {
             val auth0Token = auth0TokenProvider().token
             Auth0UserListingService(
-                    ManagementAPI(auth0Configuration.domain, auth0Token),
-                    Auth0ApiExtension(auth0Configuration.domain, auth0Token)
+                    ManagementAPI(config.domain, auth0Token),
+                    Auth0ApiExtension(config.domain, auth0Token)
             )
         }
     }
@@ -240,6 +251,7 @@ class ShuttleServicesPod {
     fun assemblerConnectionManager(): AssemblerConnectionManager {
         return AssemblerConnectionManager(
                 assemblerConfiguration,
+                externalDbConnMan,
                 hds,
                 principalService(),
                 organizationsManager(),
@@ -251,7 +263,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun assemblerDependencies(): AssemblerDependencies {
-        return AssemblerDependencies(hds, dbcs(), assemblerConnectionManager())
+        return AssemblerDependencies(hds, dbcs(), externalDbConnMan, assemblerConnectionManager())
     }
 
     @Bean
@@ -305,10 +317,10 @@ class ShuttleServicesPod {
     )
 
     @Bean
-    fun entityTypeManager() = PostgresTypeManager(hds)
+    fun entityTypeManager() = PostgresTypeManager(hds, hazelcastInstance)
 
     @Bean
-    fun schemaQueryService() = PostgresSchemaQueryService(hds)
+    fun schemaQueryService() = entityTypeManager()
 
     @Bean
     fun schemaManager() = HazelcastSchemaManager(hazelcastInstance, schemaQueryService())
@@ -331,6 +343,7 @@ class ShuttleServicesPod {
             partitionManager(),
             dataModelService(),
             hds,
+            organizationMetadataEntitySetsService(),
             auditingConfiguration
     )
 

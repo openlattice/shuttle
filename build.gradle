@@ -10,7 +10,7 @@ plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.72'
     id 'org.jetbrains.kotlin.plugin.spring' version '1.3.72'
     id 'org.jetbrains.dokka' version '0.9.18'
-    id 'com.github.spotbugs' version '3.0.0'
+    id 'com.github.spotbugs' version '4.6.0'
     id "signing"
     id "eclipse"
     id "checkstyle"
@@ -28,7 +28,7 @@ ext.scmUrl = 'scm:git:https://github.com/openlattice/shuttle.git'
 ext.connectionUrl = 'scm:git:https://github.com/openlattice/shuttle.git'
 ext.developerConnectionUrl = 'scm:git:https://github.com/openlattice/shuttle.git'
 
-apply from: "https://raw.githubusercontent.com/openlattice/gradles/master/openlattice.gradle"
+apply from: "https://raw.githubusercontent.com/openlattice/openlattice/develop/gradles/openlattice.gradle"
 
 distTar {
     archiveName "shuttle.tgz"
@@ -40,6 +40,8 @@ jacoco {
 
 checkstyle {
     toolVersion = '7.4'
+    showViolations = false
+    config project.resources.text.fromUri('https://raw.githubusercontent.com/openlattice/openlattice/develop/gradles/checkstyle.xml')
 }
 
 tasks.withType(Checkstyle) {
@@ -54,11 +56,18 @@ spotbugs {
     toolVersion = "${spotbugs_annotations_version}"
 }
 
-tasks.withType(com.github.spotbugs.SpotBugsTask) {
-    reports {
-        xml.enabled = false
-        html.enabled = true
-    }
+spotbugsMain {
+  reports {
+    xml.enabled = false
+    html.enabled = true
+  }
+}
+
+spotbugsTest {
+  reports {
+    xml.enabled = false
+    html.enabled = true
+  }
 }
 
 mainClassName = "com.openlattice.shuttle.ShuttleCliKt"
@@ -117,16 +126,9 @@ run {
     } else if (project.hasProperty('appArgs')) {
         args Eval.me(appArgs)
     }
-
 }
 
 println "Enabled profiles: " + Arrays.toString(run.args)
-
-
-def versions = [
-        checkstyle: '7.4',
-]
-
 
 configurations {
     provided
@@ -153,6 +155,10 @@ jar {
     }
 }
 
+test {
+    ignoreFailures = true
+}
+
 dependencies {
     spotbugsPlugins "com.h3xstream.findsecbugs:findsecbugs-plugin:${findsecbugs_version}"
     compileOnly "net.jcip:jcip-annotations:${jcip_version}"
@@ -175,37 +181,27 @@ dependencies {
     compile "com.microsoft.sqlserver:mssql-jdbc:$mssql_jdbc_version"
     compile "org.postgresql:postgresql:$postgresql_version"
 
-    if (project.hasProperty('developmentMode') && project.developmentMode) {
-        logger.quiet(project.name + " using project dependencies.")
-        compile project(":api")
-        compile project(":rhizome")
-        compile project(":conductor-client")
+    compile "com.openlattice:api:${api_version}"
+    compile "com.openlattice:rhizome:${rhizome_version}"
+    compile "com.openlattice:conductor-client:${conductor_client_version}"
 
-        testCompile(project(path: ":api", configuration: "tests"))
-        testCompile(project(path: ":rhizome", configuration: "tests"))
-        testCompile(project(path: ":rhizome-client", configuration: "tests"))
+    testImplementation "com.openlattice:api:${api_version}"
+
+    if( project.hasProperty('developmentMode') && project.developmentMode ) {
+        testImplementation(project(path: ":api", configuration: "tests"))
+        testImplementation(project(path: ":rhizome", configuration: "tests"))
+        testImplementation(project(path: ":rhizome-client", configuration: "tests"))
     } else {
-        logger.quiet(project.name + " using jar dependencies.")
-        compile "com.openlattice:rhizome:${rhizome_version}"
-        compile "com.openlattice:conductor-client:${conductor_client_version}"
-        compile "com.openlattice:api:${api_version}"
-
-        testCompile "com.openlattice:api:${api_version}:tests"
-        testCompile "com.openlattice:rhizome:${rhizome_version}:tests"
-        testCompile "com.openlattice:rhizome-client:${rhizome_client_version}:tests"
+        testImplementation "com.openlattice:api:${api_version}:tests"
+        testImplementation "com.openlattice:rhizome:${rhizome_version}:tests"
+        testImplementation "com.openlattice:rhizome-client:${rhizome_client_version}:tests"
     }
 
     compile fileTree(dir: "lib/", include: "*.jar")
 
-    testCompile "io.findify:s3mock_2.12:$s3mock_version"
-    testCompile "junit:junit:${junit_version}"
-    testCompile "org.mockito:mockito-core:$mockito_version"
-
-    if (project.hasProperty("developmentMode") && project.developmentMode) {
-        testCompile project(":api")
-    } else {
-        testCompile "com.openlattice:api:${api_version}"
-    }
+    testImplementation "io.findify:s3mock_2.12:$s3mock_version"
+    testImplementation "junit:junit:${junit_version}"
+    testImplementation "org.mockito:mockito-core:$mockito_version"
 }
 
 startScripts {
