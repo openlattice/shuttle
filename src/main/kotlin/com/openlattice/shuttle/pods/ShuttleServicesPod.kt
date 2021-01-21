@@ -45,6 +45,7 @@ import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.ids.HazelcastLongIdService
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
+import com.openlattice.organizations.OrganizationEntitySetsService
 import com.openlattice.organizations.OrganizationMetadataEntitySetsService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
@@ -182,8 +183,13 @@ class ShuttleServicesPod {
     }
 
     @Bean
-    fun organizationMetadataEntitySetsService(): OrganizationMetadataEntitySetsService {
-        return OrganizationMetadataEntitySetsService(dataModelService(), authorizationManager())
+    fun organizationMetadataEntitySetsService(): OrganizationEntitySetsService {
+        return OrganizationEntitySetsService(
+                hazelcastInstance,
+                dataModelService(),
+                principalService(),
+                authorizationManager()
+        )
     }
 
     @Bean
