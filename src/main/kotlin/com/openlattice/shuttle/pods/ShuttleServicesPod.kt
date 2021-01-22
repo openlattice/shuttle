@@ -50,6 +50,7 @@ import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
 import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
+import com.openlattice.postgres.external.ExternalDatabasePermissioningService
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -128,6 +129,9 @@ class ShuttleServicesPod {
 
     @Inject
     private lateinit var principalService: SecurePrincipalsManager
+
+    @Inject
+    private lateinit var extDatabasePermsManager: ExternalDatabasePermissioningService
 
     @Autowired(required = false)
     private var s3: AmazonS3? = null
@@ -259,6 +263,7 @@ class ShuttleServicesPod {
                 principalService,
                 organizationsManager(),
                 dbcs(),
+                extDatabasePermsManager,
                 eventBus,
                 metricRegistry
         )
