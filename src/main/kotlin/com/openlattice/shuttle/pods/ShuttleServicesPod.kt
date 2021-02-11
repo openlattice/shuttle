@@ -45,11 +45,12 @@ import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.ids.HazelcastLongIdService
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
-import com.openlattice.organizations.OrganizationMetadataEntitySetsService
+import com.openlattice.organizations.OrganizationEntitySetsService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
 import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
+import com.openlattice.postgres.external.ExternalDatabasePermissioningService
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -126,6 +127,12 @@ class ShuttleServicesPod {
     @Inject
     private lateinit var externalDbConnMan: ExternalDatabaseConnectionManager
 
+    @Inject
+    private lateinit var principalService: SecurePrincipalsManager
+
+    @Inject
+    private lateinit var extDatabasePermsManager: ExternalDatabasePermissioningService
+
     @Autowired(required = false)
     private var s3: AmazonS3? = null
 
@@ -182,8 +189,13 @@ class ShuttleServicesPod {
     }
 
     @Bean
-    fun organizationMetadataEntitySetsService(): OrganizationMetadataEntitySetsService {
-        return OrganizationMetadataEntitySetsService(dataModelService(), authorizationManager())
+    fun organizationMetadataEntitySetsService(): OrganizationEntitySetsService {
+        return OrganizationEntitySetsService(
+            hazelcastInstance,
+            dataModelService(),
+            principalService,
+            authorizationManager()
+        )
     }
 
     @Bean
@@ -192,7 +204,7 @@ class ShuttleServicesPod {
                 dbcs(),
                 hds,
                 authorizationManager(),
-                principalService(),
+                principalService,
                 metricRegistry,
                 hazelcastInstance,
                 eventBus
@@ -205,7 +217,7 @@ class ShuttleServicesPod {
                 hazelcastInstance,
                 aclKeyReservationService(),
                 authorizationManager(),
-                principalService(),
+                principalService,
                 phoneNumberService(),
                 partitionManager(),
                 assembler(),
@@ -253,9 +265,10 @@ class ShuttleServicesPod {
                 assemblerConfiguration,
                 externalDbConnMan,
                 hds,
-                principalService(),
+                principalService,
                 organizationsManager(),
                 dbcs(),
+                extDatabasePermsManager,
                 eventBus,
                 metricRegistry
         )
@@ -278,7 +291,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun authorizationBootstrapDependencies(): AuthorizationInitializationDependencies {
-        return AuthorizationInitializationDependencies(principalService())
+        return AuthorizationInitializationDependencies(principalService)
     }
 
     @Bean
@@ -294,14 +307,6 @@ class ShuttleServicesPod {
 
     @Bean
     fun aclKeyReservationService() = HazelcastAclKeyReservationService(hazelcastInstance)
-
-    @Bean
-    fun principalService(): SecurePrincipalsManager = HazelcastPrincipalService(
-            hazelcastInstance,
-            aclKeyReservationService(),
-            authorizationManager(),
-            eventBus
-    )
 
     @Bean
     fun idGenerationService() = HazelcastIdGenerationService(hazelcastClientProvider)
@@ -372,7 +377,7 @@ class ShuttleServicesPod {
 
     @PostConstruct
     internal fun initPrincipals() {
-        Principals.init(principalService(), hazelcastInstance)
+        Principals.init(principalService, hazelcastInstance)
         IntegrationService.init(blackbox, dataModelService())
     }
 
