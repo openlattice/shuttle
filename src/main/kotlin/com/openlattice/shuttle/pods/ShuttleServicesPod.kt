@@ -395,7 +395,7 @@ class ShuttleServicesPod {
 
     @PostConstruct
     internal fun initPrincipals() {
-        Principals.init(principalService, hazelcastInstance)
+        Principals.init(principalService(), hazelcastInstance)
         IntegrationService.init(blackbox, dataModelService())
     }
 
