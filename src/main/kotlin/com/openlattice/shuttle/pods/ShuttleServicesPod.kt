@@ -130,12 +130,6 @@ class ShuttleServicesPod {
     @Inject
     private lateinit var externalDbConnMan: ExternalDatabaseConnectionManager
 
-    @Inject
-    private lateinit var principalService: SecurePrincipalsManager
-
-    @Inject
-    private lateinit var extDatabasePermsManager: ExternalDatabasePermissioningService
-
     @Autowired(required = false)
     private var s3: AmazonS3? = null
 
@@ -202,7 +196,7 @@ class ShuttleServicesPod {
                 dbcs(),
                 hds,
                 authorizationManager(),
-                principalService,
+                principalService(),
                 metricRegistry,
                 hazelcastInstance,
                 eventBus
@@ -215,7 +209,7 @@ class ShuttleServicesPod {
                 hazelcastInstance,
                 aclKeyReservationService(),
                 authorizationManager(),
-                principalService,
+                principalService(),
                 phoneNumberService(),
                 partitionManager(),
                 assembler(),
@@ -263,7 +257,7 @@ class ShuttleServicesPod {
                 assemblerConfiguration,
                 externalDbConnMan,
                 hds,
-                principalService,
+                principalService(),
                 organizationsManager(),
                 dbcs(),
                 externalDatabasePermissionsManager(),
@@ -289,7 +283,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun authorizationBootstrapDependencies(): AuthorizationInitializationDependencies {
-        return AuthorizationInitializationDependencies(principalService)
+        return AuthorizationInitializationDependencies(principalService())
     }
 
     @Bean
