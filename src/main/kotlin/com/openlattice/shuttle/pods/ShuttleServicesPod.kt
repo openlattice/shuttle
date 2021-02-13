@@ -25,7 +25,9 @@ import com.openlattice.authentication.Auth0Configuration
 import com.openlattice.authorization.DbCredentialService
 import com.openlattice.authorization.HazelcastAclKeyReservationService
 import com.openlattice.authorization.HazelcastAuthorizationService
+import com.openlattice.authorization.HazelcastPrincipalsMapManager
 import com.openlattice.authorization.Principals
+import com.openlattice.authorization.PrincipalsMapManager
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
@@ -50,6 +52,7 @@ import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
 import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
+import com.openlattice.postgres.external.ExternalDatabasePermissioner
 import com.openlattice.postgres.external.ExternalDatabasePermissioningService
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
@@ -263,7 +266,7 @@ class ShuttleServicesPod {
                 principalService,
                 organizationsManager(),
                 dbcs(),
-                extDatabasePermsManager,
+                externalDatabasePermissionsManager(),
                 eventBus,
                 metricRegistry
         )
@@ -302,6 +305,32 @@ class ShuttleServicesPod {
 
     @Bean
     fun aclKeyReservationService() = HazelcastAclKeyReservationService(hazelcastInstance)
+
+    @Bean
+    fun principalsMapManager(): PrincipalsMapManager {
+        return HazelcastPrincipalsMapManager(hazelcastInstance, aclKeyReservationService())
+    }
+
+    @Bean
+    fun principalService(): SecurePrincipalsManager {
+        return HazelcastPrincipalService(
+                hazelcastInstance,
+                aclKeyReservationService(),
+                authorizationManager(),
+                principalsMapManager(),
+                externalDatabasePermissionsManager()
+        )
+    }
+
+    @Bean
+    fun externalDatabasePermissionsManager(): ExternalDatabasePermissioningService {
+        return ExternalDatabasePermissioner(
+                hazelcastInstance,
+                externalDbConnMan,
+                dbcs(),
+                principalsMapManager()
+        )
+    }
 
     @Bean
     fun idGenerationService() = HazelcastIdGenerationService(hazelcastClientProvider)
