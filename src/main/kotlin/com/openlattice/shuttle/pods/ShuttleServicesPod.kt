@@ -190,7 +190,7 @@ class ShuttleServicesPod {
         return OrganizationMetadataEntitySetsService(
             hazelcastInstance,
             dataModelService(),
-            principalService(),
+            principalsMapManager(),
             authorizationManager()
         )
     }
