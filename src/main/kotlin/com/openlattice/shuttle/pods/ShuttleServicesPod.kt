@@ -22,16 +22,14 @@ import com.openlattice.auth0.Auth0Pod
 import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
-import com.openlattice.authorization.DbCredentialService
-import com.openlattice.authorization.HazelcastAclKeyReservationService
-import com.openlattice.authorization.HazelcastAuthorizationService
-import com.openlattice.authorization.HazelcastPrincipalsMapManager
-import com.openlattice.authorization.Principals
-import com.openlattice.authorization.PrincipalsMapManager
+import com.openlattice.authorization.*
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
 import com.openlattice.authorization.mapstores.SecurablePrincipalsMapLoader
+import com.openlattice.collaborations.CollaborationDatabaseManager
+import com.openlattice.collaborations.CollaborationService
+import com.openlattice.collaborations.PostgresCollaborationDatabaseService
 import com.openlattice.conductor.rpc.ConductorConfiguration
 import com.openlattice.data.ids.PostgresEntityKeyIdService
 import com.openlattice.data.storage.ByteBlobDataManager
@@ -51,9 +49,7 @@ import com.openlattice.organizations.OrganizationMetadataEntitySetsService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
-import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
-import com.openlattice.postgres.external.ExternalDatabasePermissioner
-import com.openlattice.postgres.external.ExternalDatabasePermissioningService
+import com.openlattice.postgres.external.*
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -188,10 +184,10 @@ class ShuttleServicesPod {
     @Bean
     fun organizationMetadataEntitySetsService(): OrganizationMetadataEntitySetsService {
         return OrganizationMetadataEntitySetsService(
-            hazelcastInstance,
-            dataModelService(),
-            principalsMapManager(),
-            authorizationManager()
+                hazelcastInstance,
+                dataModelService(),
+                principalsMapManager(),
+                authorizationManager()
         )
     }
 
@@ -209,6 +205,41 @@ class ShuttleServicesPod {
     }
 
     @Bean
+    fun dbQueryManager(): DatabaseQueryManager {
+        return PostgresDatabaseQueryService(
+                assemblerConfiguration,
+                externalDbConnMan,
+                principalService(),
+                dbcs()
+        )
+    }
+
+    @Bean
+    fun collaborationDatabaseManager(): CollaborationDatabaseManager {
+        return PostgresCollaborationDatabaseService(
+                hazelcastInstance,
+                dbQueryManager(),
+                externalDbConnMan,
+                authorizationManager(),
+                externalDatabasePermissionsManager(),
+                principalService(),
+                dbcs(),
+                assemblerConfiguration
+        )
+    }
+
+    @Bean
+    fun collaborationService(): CollaborationService {
+        return CollaborationService(
+                hazelcastInstance,
+                aclKeyReservationService(),
+                authorizationManager(),
+                principalService(),
+                collaborationDatabaseManager()
+        )
+    }
+
+    @Bean
     fun organizationsManager(): HazelcastOrganizationService {
         return HazelcastOrganizationService(
                 hazelcastInstance,
@@ -218,7 +249,8 @@ class ShuttleServicesPod {
                 phoneNumberService(),
                 partitionManager(),
                 assembler(),
-                organizationMetadataEntitySetsService()
+                organizationMetadataEntitySetsService(),
+                collaborationService()
         )
     }
 
@@ -259,15 +291,10 @@ class ShuttleServicesPod {
     @Bean
     fun assemblerConnectionManager(): AssemblerConnectionManager {
         return AssemblerConnectionManager(
-                assemblerConfiguration,
                 externalDbConnMan,
-                hds,
                 principalService(),
-                organizationsManager(),
-                dbcs(),
-                externalDatabasePermissionsManager(),
-                eventBus,
-                metricRegistry
+                dbQueryManager(),
+                externalDatabasePermissionsManager()
         )
     }
 
