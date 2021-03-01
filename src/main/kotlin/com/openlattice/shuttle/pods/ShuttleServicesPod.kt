@@ -198,6 +198,7 @@ class ShuttleServicesPod {
                 hds,
                 authorizationManager(),
                 principalService(),
+                dbQueryManager(),
                 metricRegistry,
                 hazelcastInstance,
                 eventBus
