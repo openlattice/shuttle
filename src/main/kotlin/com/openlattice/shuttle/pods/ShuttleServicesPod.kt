@@ -13,8 +13,7 @@ import com.kryptnostic.rhizome.configuration.service.ConfigurationService
 import com.openlattice.ResourceConfigurationLoader
 import com.openlattice.assembler.Assembler
 import com.openlattice.assembler.AssemblerConfiguration
-import com.openlattice.assembler.AssemblerConnectionManager
-import com.openlattice.assembler.AssemblerDependencies
+import com.openlattice.assembler.UserRoleSyncTaskDependencies
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
 import com.openlattice.auditing.AuditingConfiguration
@@ -22,7 +21,12 @@ import com.openlattice.auth0.Auth0Pod
 import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
-import com.openlattice.authorization.*
+import com.openlattice.authorization.DbCredentialService
+import com.openlattice.authorization.HazelcastAclKeyReservationService
+import com.openlattice.authorization.HazelcastAuthorizationService
+import com.openlattice.authorization.HazelcastPrincipalsMapManager
+import com.openlattice.authorization.Principals
+import com.openlattice.authorization.PrincipalsMapManager
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
@@ -49,7 +53,11 @@ import com.openlattice.organizations.OrganizationMetadataEntitySetsService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
-import com.openlattice.postgres.external.*
+import com.openlattice.postgres.external.DatabaseQueryManager
+import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
+import com.openlattice.postgres.external.ExternalDatabasePermissioner
+import com.openlattice.postgres.external.ExternalDatabasePermissioningService
+import com.openlattice.postgres.external.PostgresDatabaseQueryService
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -195,9 +203,9 @@ class ShuttleServicesPod {
     fun assembler(): Assembler {
         return Assembler(
                 dbcs(),
-                hds,
                 authorizationManager(),
                 principalService(),
+                dbQueryManager(),
                 metricRegistry,
                 hazelcastInstance,
                 eventBus
@@ -289,18 +297,13 @@ class ShuttleServicesPod {
     }
 
     @Bean
-    fun assemblerConnectionManager(): AssemblerConnectionManager {
-        return AssemblerConnectionManager(
+    fun assemblerDependencies(): UserRoleSyncTaskDependencies {
+        return UserRoleSyncTaskDependencies(
+                dbcs(),
                 externalDbConnMan,
-                principalService(),
-                dbQueryManager(),
-                externalDatabasePermissionsManager()
-        )
-    }
-
-    @Bean
-    fun assemblerDependencies(): AssemblerDependencies {
-        return AssemblerDependencies(hds, dbcs(), externalDbConnMan, assemblerConnectionManager())
+                externalDatabasePermissionsManager(),
+                principalService()
+        );
     }
 
     @Bean
