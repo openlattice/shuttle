@@ -172,7 +172,7 @@ class ShuttleServicesPod {
     fun defaultObjectMapper() = ObjectMappers.getJsonMapper()
 
     @Bean
-    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, eventBus)
+    fun authorizationManager() = HazelcastAuthorizationService(hazelcastInstance, eventBus, principalsMapManager())
 
     @Bean
     fun phoneNumberService(): PhoneNumberService {
