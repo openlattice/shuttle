@@ -1,13 +1,10 @@
 package com.openlattice.shuttle.transforms;
 
 import com.openlattice.shuttle.transformations.Transformation;
-import com.openlattice.shuttle.util.Constants;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import transforms.*;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -403,7 +400,7 @@ public class TransformTest {
         Object geocoderTest2 = new GeocoderTransform( "house_number", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
-        String expectedType = "yes";
+        String expectedType = "house";
         Object geocoderTest3 = new GeocoderTransform( "type", Optional.empty() )
                 .applyValue( getTestRow().get( "Address" ) );
 
