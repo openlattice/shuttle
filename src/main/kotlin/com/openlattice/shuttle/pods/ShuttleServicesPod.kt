@@ -37,6 +37,7 @@ import com.openlattice.collaborations.PostgresCollaborationDatabaseService
 import com.openlattice.conductor.rpc.ConductorConfiguration
 import com.openlattice.data.ids.PostgresEntityKeyIdService
 import com.openlattice.data.storage.ByteBlobDataManager
+import com.openlattice.data.storage.DataSourceResolver
 import com.openlattice.data.storage.aws.AwsDataSinkService
 import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.datasets.DatasetService
@@ -48,6 +49,7 @@ import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.ids.HazelcastLongIdService
+import com.openlattice.jdbc.DataSourceManager
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.OrganizationMetadataEntitySetsService
@@ -134,6 +136,9 @@ class ShuttleServicesPod {
 
     @Inject
     private lateinit var externalDbConnMan: ExternalDatabaseConnectionManager
+
+    @Inject
+    private lateinit var dataSourceManager: DataSourceManager
 
     @Autowired(required = false)
     private var s3: AmazonS3? = null
@@ -398,6 +403,11 @@ class ShuttleServicesPod {
     )
 
     @Bean
+    fun dataSourceResolver(): DataSourceResolver {
+        return DataSourceResolver(hazelcastInstance, dataSourceManager)
+    }
+
+    @Bean
     fun entitySetManager() = EntitySetService(
             hazelcastInstance,
             eventBus,
@@ -416,7 +426,7 @@ class ShuttleServicesPod {
         return AwsDataSinkService(
                 partitionManager(),
                 byteBlobDataManager,
-                hds,
+                dataSourceResolver(),
                 hds
         )
     }
