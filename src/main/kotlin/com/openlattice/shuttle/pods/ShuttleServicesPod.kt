@@ -375,7 +375,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun idService() = PostgresEntityKeyIdService(
-            hds,
+            dataSourceResolver(),
             idGenerationService(),
             partitionManager()
     )
