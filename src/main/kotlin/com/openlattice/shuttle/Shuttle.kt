@@ -278,9 +278,13 @@ class Shuttle(
                         .map { it.key to UUID.fromString(it.details[ID_PTID]!!.first() as String) }
                 }.toMap()
 
+            //Make sure to clear out openlattice.@id from being written. this should really be checked on backend.
+            batch.entities.forEach { e-> e.value.forEach { it.details.remove(ID_PTID) }  }
+
             val assignedEntityKeyIds = attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
                 toAssign.zip(getEntityKeyIds(toAssign)).toMap()
             }
+
             val entityKeyIds = overriden + assignedEntityKeyIds
 
             val ekidsGeneratedUpdate =
