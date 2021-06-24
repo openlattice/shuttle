@@ -97,7 +97,7 @@ class ParallelPayloadTester {
 
                     println("Start ${Thread.currentThread().id}")
                     Thread.sleep(RandomUtils.nextLong(1, 1500))
-                    p.max()
+                    p.maxOrNull()
 
 
 //                    }
@@ -144,7 +144,7 @@ class ParallelPayloadTester {
 
                         println("Start ${Thread.currentThread().id}")
                         Thread.sleep(RandomUtils.nextLong(1, 1500))
-                        val m = p.max()
+                        val m = p.maxOrNull()
                         order.add(m ?: -1)
                         println("Thread ${Thread.currentThread().id} = $m")
 
@@ -168,8 +168,8 @@ class ParallelPayloadTester {
                 .parallel()
                 .map { p ->
                     println("Start ${Thread.currentThread().id}")
-                    Thread.sleep(1500L - (p.max() ?: 0))
-                    p.max()
+                    Thread.sleep(1500L - (p.maxOrNull() ?: 0))
+                    p.maxOrNull()
                 }
                 .map { m ->
                     println("Thread ${Thread.currentThread().id} = $m")
