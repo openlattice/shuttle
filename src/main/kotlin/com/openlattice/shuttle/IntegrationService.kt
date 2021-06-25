@@ -29,6 +29,7 @@ import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import okhttp3.FormBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -337,6 +338,7 @@ class IntegrationService(
         return jobId
     }
 
+    @SuppressFBWarnings("NP_ALWAYS_NULL",justification="Seems to be a kotlin handling issue.")
     private fun submitCallback(jobId: UUID, urls: List<String>, message: String) {
         urls.forEach {
             val url = URL(it)
