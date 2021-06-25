@@ -442,7 +442,7 @@ class Shuttle (
                             generateDefaultEntityId(getKeys(entityDefinition.entitySetName), properties)
                         }
 
-                if (StringUtils.isNotBlank(entityId) and condition and properties.isNotEmpty()) {
+                if (StringUtils.isNotBlank(entityId) && condition && properties.isNotEmpty()) {
 
                     val entitySetId = entitySets[entityDefinition.entitySetName]!!.id
 
