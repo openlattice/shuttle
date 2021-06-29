@@ -182,6 +182,7 @@ dependencies {
     implementation "com.openlattice:api:${api_version}"
     implementation "com.openlattice:rhizome:${rhizome_version}"
     implementation "com.openlattice:conductor-client:${conductor_client_version}"
+    implementation "com.openlattice:scrunchie:${scrunchie_version}"
 
     testImplementation "com.openlattice:api:${api_version}"
 

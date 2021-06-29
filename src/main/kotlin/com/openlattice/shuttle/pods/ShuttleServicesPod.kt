@@ -21,12 +21,7 @@ import com.openlattice.auth0.Auth0Pod
 import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
-import com.openlattice.authorization.DbCredentialService
-import com.openlattice.authorization.HazelcastAclKeyReservationService
-import com.openlattice.authorization.HazelcastAuthorizationService
-import com.openlattice.authorization.HazelcastPrincipalsMapManager
-import com.openlattice.authorization.Principals
-import com.openlattice.authorization.PrincipalsMapManager
+import com.openlattice.authorization.*
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
@@ -35,12 +30,13 @@ import com.openlattice.collaborations.CollaborationDatabaseManager
 import com.openlattice.collaborations.CollaborationService
 import com.openlattice.collaborations.PostgresCollaborationDatabaseService
 import com.openlattice.conductor.rpc.ConductorConfiguration
+import com.openlattice.conductor.rpc.ConductorElasticsearchApi
 import com.openlattice.data.ids.PostgresEntityKeyIdService
 import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.data.storage.DataSourceResolver
 import com.openlattice.data.storage.aws.AwsDataSinkService
 import com.openlattice.data.storage.partitions.PartitionManager
-import com.openlattice.datasets.DatasetService
+import com.openlattice.datasets.DataSetService
 import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.edm.properties.PostgresTypeManager
@@ -56,11 +52,8 @@ import com.openlattice.organizations.OrganizationMetadataEntitySetsService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
-import com.openlattice.postgres.external.DatabaseQueryManager
-import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
-import com.openlattice.postgres.external.ExternalDatabasePermissioner
-import com.openlattice.postgres.external.ExternalDatabasePermissioningService
-import com.openlattice.postgres.external.PostgresDatabaseQueryService
+import com.openlattice.postgres.external.*
+import com.openlattice.scrunchie.search.ConductorElasticsearchImpl
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -390,7 +383,7 @@ class ShuttleServicesPod {
     fun schemaManager() = HazelcastSchemaManager(hazelcastInstance, schemaQueryService())
 
     @Bean
-    fun datasetService() = DatasetService(hazelcastInstance, eventBus)
+    fun datasetService() = DataSetService(hazelcastInstance, elasticsearchApi())
 
     @Bean
     fun dataModelService() = EdmService(
@@ -442,6 +435,12 @@ class ShuttleServicesPod {
                 awsDataSinkService(),
                 blackbox
         )
+    }
+
+    @Bean
+    fun elasticsearchApi(): ConductorElasticsearchApi {
+        val localConductorConfiguration = getLocalConductorConfiguration()
+        return ConductorElasticsearchImpl(localConductorConfiguration.searchConfiguration)
     }
 
     @PostConstruct
