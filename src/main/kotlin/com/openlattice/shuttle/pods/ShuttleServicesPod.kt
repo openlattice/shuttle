@@ -1,16 +1,12 @@
 package com.openlattice.shuttle.pods
 
-import com.amazonaws.services.s3.AmazonS3
 import com.auth0.client.mgmt.ManagementAPI
 import com.codahale.metrics.MetricRegistry
 import com.dataloom.mappers.ObjectMappers
 import com.geekbeast.hazelcast.HazelcastClientProvider
 import com.google.common.eventbus.EventBus
 import com.hazelcast.core.HazelcastInstance
-import com.kryptnostic.rhizome.configuration.ConfigurationConstants
-import com.kryptnostic.rhizome.configuration.amazon.AmazonLaunchConfiguration
-import com.kryptnostic.rhizome.configuration.service.ConfigurationService
-import com.openlattice.ResourceConfigurationLoader
+import com.kryptnostic.rhizome.pods.ConfigurationLoader
 import com.openlattice.assembler.Assembler
 import com.openlattice.assembler.AssemblerConfiguration
 import com.openlattice.assembler.UserRoleSyncTaskDependencies
@@ -64,12 +60,9 @@ import com.openlattice.users.UserListingService
 import com.openlattice.users.export.Auth0ApiExtension
 import com.zaxxer.hikari.HikariDataSource
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
-import org.springframework.context.annotation.Profile
-import java.io.IOException
 import javax.annotation.PostConstruct
 import javax.inject.Inject
 
@@ -79,11 +72,10 @@ import javax.inject.Inject
  */
 @Configuration
 @Import(
-        AssemblerConfigurationPod::class,
-        Auth0Pod::class
+    AssemblerConfigurationPod::class,
+    Auth0Pod::class
 )
 class ShuttleServicesPod {
-    private val logger = LoggerFactory.getLogger(ShuttleServicesPod::class.java)
 
     @Inject
     private lateinit var hds: HikariDataSource
@@ -119,7 +111,7 @@ class ShuttleServicesPod {
     private lateinit var auth0Configuration: Auth0Configuration
 
     @Inject
-    private lateinit var configurationService: ConfigurationService
+    private lateinit var configurationLoader: ConfigurationLoader
 
     @Inject
     private lateinit var assemblerConfiguration: AssemblerConfiguration
@@ -133,38 +125,9 @@ class ShuttleServicesPod {
     @Inject
     private lateinit var dataSourceManager: DataSourceManager
 
-    @Autowired(required = false)
-    private var s3: AmazonS3? = null
-
-    @Autowired(required = false)
-    private var awsLaunchConfig: AmazonLaunchConfiguration? = null
-
-    @Bean(name = ["conductorConfiguration"])
-    @Profile(ConfigurationConstants.Profiles.LOCAL_CONFIGURATION_PROFILE)
-    @Throws(IOException::class)
-    fun getLocalConductorConfiguration(): ConductorConfiguration {
-        val config = configurationService.getConfiguration(ConductorConfiguration::class.java)!!
-        logger.info("Using local conductor configuration: {}", config)
-        return config
-    }
-
-    @Bean(name = ["conductorConfiguration"])
-    @Profile(
-            ConfigurationConstants.Profiles.AWS_CONFIGURATION_PROFILE,
-            ConfigurationConstants.Profiles.AWS_TESTING_PROFILE
-    )
-    @Throws(IOException::class)
-    fun getAwsConductorConfiguration(): ConductorConfiguration {
-        val checked = awsLaunchConfig!!
-        val config = ResourceConfigurationLoader.loadConfigurationFromS3(
-                s3,
-                checked.bucket,
-                checked.folder,
-                ConductorConfiguration::class.java
-        )
-
-        logger.info("Using aws conductor configuration: {}", config)
-        return config
+    @Bean
+    fun conductorConfiguration(): ConductorConfiguration {
+        return configurationLoader.logAndLoad("conductor", ConductorConfiguration::class.java)
     }
 
     @Bean
@@ -439,8 +402,7 @@ class ShuttleServicesPod {
 
     @Bean
     fun elasticsearchApi(): ConductorElasticsearchApi {
-        val localConductorConfiguration = getLocalConductorConfiguration()
-        return ConductorElasticsearchImpl(localConductorConfiguration.searchConfiguration)
+        return ConductorElasticsearchImpl(conductorConfiguration().searchConfiguration)
     }
 
     @PostConstruct
