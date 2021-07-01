@@ -59,7 +59,6 @@ import com.openlattice.users.LocalUserListingService
 import com.openlattice.users.UserListingService
 import com.openlattice.users.export.Auth0ApiExtension
 import com.zaxxer.hikari.HikariDataSource
-import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
