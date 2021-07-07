@@ -1,16 +1,12 @@
 package com.openlattice.shuttle.pods
 
-import com.amazonaws.services.s3.AmazonS3
 import com.auth0.client.mgmt.ManagementAPI
 import com.codahale.metrics.MetricRegistry
 import com.dataloom.mappers.ObjectMappers
 import com.geekbeast.hazelcast.HazelcastClientProvider
 import com.google.common.eventbus.EventBus
 import com.hazelcast.core.HazelcastInstance
-import com.kryptnostic.rhizome.configuration.ConfigurationConstants
-import com.kryptnostic.rhizome.configuration.amazon.AmazonLaunchConfiguration
-import com.kryptnostic.rhizome.configuration.service.ConfigurationService
-import com.openlattice.ResourceConfigurationLoader
+import com.kryptnostic.rhizome.pods.ConfigurationLoader
 import com.openlattice.assembler.Assembler
 import com.openlattice.assembler.AssemblerConfiguration
 import com.openlattice.assembler.UserRoleSyncTaskDependencies
@@ -21,12 +17,7 @@ import com.openlattice.auth0.Auth0Pod
 import com.openlattice.auth0.Auth0TokenProvider
 import com.openlattice.auth0.AwsAuth0TokenProvider
 import com.openlattice.authentication.Auth0Configuration
-import com.openlattice.authorization.DbCredentialService
-import com.openlattice.authorization.HazelcastAclKeyReservationService
-import com.openlattice.authorization.HazelcastAuthorizationService
-import com.openlattice.authorization.HazelcastPrincipalsMapManager
-import com.openlattice.authorization.Principals
-import com.openlattice.authorization.PrincipalsMapManager
+import com.openlattice.authorization.*
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
 import com.openlattice.authorization.mapstores.ResolvedPrincipalTreesMapLoader
@@ -35,12 +26,13 @@ import com.openlattice.collaborations.CollaborationDatabaseManager
 import com.openlattice.collaborations.CollaborationService
 import com.openlattice.collaborations.PostgresCollaborationDatabaseService
 import com.openlattice.conductor.rpc.ConductorConfiguration
+import com.openlattice.conductor.rpc.ConductorElasticsearchApi
 import com.openlattice.data.ids.PostgresEntityKeyIdService
 import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.data.storage.DataSourceResolver
 import com.openlattice.data.storage.aws.AwsDataSinkService
 import com.openlattice.data.storage.partitions.PartitionManager
-import com.openlattice.datasets.DatasetService
+import com.openlattice.datasets.DataSetService
 import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
 import com.openlattice.edm.properties.PostgresTypeManager
@@ -56,11 +48,8 @@ import com.openlattice.organizations.OrganizationMetadataEntitySetsService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
 import com.openlattice.organizations.roles.SecurePrincipalsManager
 import com.openlattice.organizations.tasks.OrganizationsInitializationTask
-import com.openlattice.postgres.external.DatabaseQueryManager
-import com.openlattice.postgres.external.ExternalDatabaseConnectionManager
-import com.openlattice.postgres.external.ExternalDatabasePermissioner
-import com.openlattice.postgres.external.ExternalDatabasePermissioningService
-import com.openlattice.postgres.external.PostgresDatabaseQueryService
+import com.openlattice.postgres.external.*
+import com.openlattice.scrunchie.search.ConductorElasticsearchImpl
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
@@ -70,13 +59,9 @@ import com.openlattice.users.LocalUserListingService
 import com.openlattice.users.UserListingService
 import com.openlattice.users.export.Auth0ApiExtension
 import com.zaxxer.hikari.HikariDataSource
-import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
-import org.springframework.context.annotation.Profile
-import java.io.IOException
 import javax.annotation.PostConstruct
 import javax.inject.Inject
 
@@ -86,11 +71,10 @@ import javax.inject.Inject
  */
 @Configuration
 @Import(
-        AssemblerConfigurationPod::class,
-        Auth0Pod::class
+    AssemblerConfigurationPod::class,
+    Auth0Pod::class
 )
 class ShuttleServicesPod {
-    private val logger = LoggerFactory.getLogger(ShuttleServicesPod::class.java)
 
     @Inject
     private lateinit var hds: HikariDataSource
@@ -126,7 +110,7 @@ class ShuttleServicesPod {
     private lateinit var auth0Configuration: Auth0Configuration
 
     @Inject
-    private lateinit var configurationService: ConfigurationService
+    private lateinit var configurationLoader: ConfigurationLoader
 
     @Inject
     private lateinit var assemblerConfiguration: AssemblerConfiguration
@@ -140,38 +124,9 @@ class ShuttleServicesPod {
     @Inject
     private lateinit var dataSourceManager: DataSourceManager
 
-    @Autowired(required = false)
-    private var s3: AmazonS3? = null
-
-    @Autowired(required = false)
-    private var awsLaunchConfig: AmazonLaunchConfiguration? = null
-
-    @Bean(name = ["conductorConfiguration"])
-    @Profile(ConfigurationConstants.Profiles.LOCAL_CONFIGURATION_PROFILE)
-    @Throws(IOException::class)
-    fun getLocalConductorConfiguration(): ConductorConfiguration {
-        val config = configurationService.getConfiguration(ConductorConfiguration::class.java)!!
-        logger.info("Using local conductor configuration: {}", config)
-        return config
-    }
-
-    @Bean(name = ["conductorConfiguration"])
-    @Profile(
-            ConfigurationConstants.Profiles.AWS_CONFIGURATION_PROFILE,
-            ConfigurationConstants.Profiles.AWS_TESTING_PROFILE
-    )
-    @Throws(IOException::class)
-    fun getAwsConductorConfiguration(): ConductorConfiguration {
-        val checked = awsLaunchConfig!!
-        val config = ResourceConfigurationLoader.loadConfigurationFromS3(
-                s3,
-                checked.bucket,
-                checked.folder,
-                ConductorConfiguration::class.java
-        )
-
-        logger.info("Using aws conductor configuration: {}", config)
-        return config
+    @Bean
+    fun conductorConfiguration(): ConductorConfiguration {
+        return configurationLoader.logAndLoad("conductor", ConductorConfiguration::class.java)
     }
 
     @Bean
@@ -390,7 +345,7 @@ class ShuttleServicesPod {
     fun schemaManager() = HazelcastSchemaManager(hazelcastInstance, schemaQueryService())
 
     @Bean
-    fun datasetService() = DatasetService(hazelcastInstance, eventBus)
+    fun datasetService() = DataSetService(hazelcastInstance, elasticsearchApi())
 
     @Bean
     fun dataModelService() = EdmService(
@@ -442,6 +397,11 @@ class ShuttleServicesPod {
                 awsDataSinkService(),
                 blackbox
         )
+    }
+
+    @Bean
+    fun elasticsearchApi(): ConductorElasticsearchApi {
+        return ConductorElasticsearchImpl(conductorConfiguration().searchConfiguration)
     }
 
     @PostConstruct
