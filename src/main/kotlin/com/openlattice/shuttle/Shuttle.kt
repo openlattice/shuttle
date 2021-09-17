@@ -34,6 +34,7 @@ import com.google.common.util.concurrent.MoreExecutors
 import com.hazelcast.core.HazelcastInstance
 import com.hazelcast.map.IMap
 import com.openlattice.ApiHelpers
+import com.openlattice.IdConstants
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.DataIntegrationApi
 import com.openlattice.data.EntityKey
@@ -75,7 +76,7 @@ import java.util.concurrent.atomic.LongAdder
 const val DEFAULT_UPLOAD_SIZE = 100_000
 const val MAX_DELAY = 8L * 60L * 1000L
 const val MAX_RETRIES = 128
-const val ID_PTID = UUID.fromString()
+val ID_PTID = IdConstants.ID_ID.id
 
 private val threadCount = 2 * Runtime.getRuntime().availableProcessors()
 private val encoder = Base64.getEncoder()
