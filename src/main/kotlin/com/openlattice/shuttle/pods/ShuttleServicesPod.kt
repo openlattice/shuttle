@@ -368,8 +368,7 @@ class ShuttleServicesPod {
         return AwsDataSinkService(
                 partitionManager(),
                 byteBlobDataManager,
-                dataSourceResolver(),
-                hds
+                dataSourceResolver()
         )
     }
 

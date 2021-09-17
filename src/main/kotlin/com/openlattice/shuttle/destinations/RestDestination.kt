@@ -26,6 +26,7 @@ import com.geekbeast.util.attempt
 import com.openlattice.data.*
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
+import com.openlattice.data.PropertyUpdateType
 import java.util.*
 
 /**
@@ -40,7 +41,8 @@ class RestDestination(
     override fun integrateEntities(
             data: Collection<Entity>,
             entityKeyIds: Map<EntityKey, UUID>,
-            updateTypes: Map<UUID, UpdateType>
+            updateTypes: Map<UUID, UpdateType>,
+            propertyUpdateType: Map<UUID,PropertyUpdateType>
     ): Long {
         val entitiesByEntitySet = data
                 .groupBy({ it.entitySetId }, { entityKeyIds.getValue(it.key) to it.details })
@@ -48,7 +50,12 @@ class RestDestination(
 
         return entitiesByEntitySet.entries.parallelStream().mapToLong { (entitySetId, entities) ->
             attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRY_COUNT) {
-                dataApi.updateEntitiesInEntitySet(entitySetId, entities, updateTypes[entitySetId]).toLong()
+                dataApi.updateEntitiesInEntitySet(
+                        entitySetId,
+                        entities,
+                        updateTypes[entitySetId],
+                        propertyUpdateType.getValue(entitySetId)
+                ).toLong()
             }
         }.sum()
     }
