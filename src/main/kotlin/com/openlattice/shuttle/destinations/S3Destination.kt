@@ -35,7 +35,7 @@ private val logger = LoggerFactory.getLogger(S3Destination::class.java)
 class S3Destination(
         private val dataApi: DataApi,
         s3Api: S3Api,
-        generatePresignedUrlsFun: (List<S3EntityData>) -> List<String>
+        generatePresignedUrlsFun: (List<S3EntityData>, PropertyUpdateType) -> List<String>
 ) : BaseS3Destination(s3Api, generatePresignedUrlsFun) {
     override fun createAssociations(entities: Set<DataEdgeKey>): Long {
         return dataApi.createEdges(entities).toLong()

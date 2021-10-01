@@ -31,6 +31,7 @@ import com.openlattice.data.EntityKey
 import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
+import com.openlattice.data.PropertyUpdateType
 import com.openlattice.data.storage.partitions.getPartition
 import com.openlattice.data.storage.updateEntitySql
 import com.openlattice.data.storage.updateVersionsForPropertyTypesInEntitiesInEntitySet
@@ -70,7 +71,8 @@ class PostgresDestination(
     override fun integrateEntities(
             data: Collection<Entity>,
             entityKeyIds: Map<EntityKey, UUID>,
-            updateTypes: Map<UUID, UpdateType>
+            updateTypes: Map<UUID, UpdateType>,
+            propertyUpdateTypes: Map<UUID,PropertyUpdateType>
     ): Long {
 
         return hds.connection.use { connection ->
@@ -136,7 +138,8 @@ class PostgresDestination(
                                             entityMap,
                                             relevantPropertyTypes,
                                             writeVersionArray,
-                                            writeVersion
+                                            writeVersion,
+                                            propertyUpdateTypes.getValue(entitySetId)
                                     )
 
                                     logger.info(
@@ -247,6 +250,7 @@ class PostgresDestination(
             propertyTypes: Map<UUID, PropertyType>,
             versionArray: java.sql.Array,
             version: Long,
+            propertyUpdateType: PropertyUpdateType,
             entitySetId: UUID = entitySet.id
     ): Long {
 
@@ -264,7 +268,7 @@ class PostgresDestination(
             entityData.map { (propertyTypeId, values) ->
                 val upsertPropertyValue = upsertPropertyValues.getOrPut(propertyTypeId) {
                     val pt = propertyTypes[propertyTypeId] ?: abortInsert(entitySetId, entityKeyId)
-                    connection.prepareStatement(upsertPropertyValueSql(pt))
+                    connection.prepareStatement(upsertPropertyValueSql(pt, propertyUpdateType))
                 }
 
                 values.map { value ->

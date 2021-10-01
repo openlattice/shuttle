@@ -36,13 +36,9 @@ import com.hazelcast.map.IMap
 import com.openlattice.ApiHelpers
 import com.openlattice.IdConstants
 import com.openlattice.client.RetrofitFactory
-import com.openlattice.data.DataIntegrationApi
-import com.openlattice.data.EntityKey
-import com.openlattice.data.EntityKeyIdService
-import com.openlattice.data.UpdateType
+import com.openlattice.data.*
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
-import com.openlattice.edm.EdmConstants
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
@@ -295,13 +291,14 @@ class Shuttle(
             integrationDestinations.forEach { (storageDestination, integrationDestination) ->
                 if (batch.entities.containsKey(storageDestination)) {
                     integratedEntities.getOrPut(storageDestination) { AtomicLong(0) }.addAndGet(
-                        attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
-                            integrationDestination.integrateEntities(
-                                batch.entities.getValue(storageDestination),
-                                entityKeyIds,
-                                updateTypes
-                            )
-                        }
+                            attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRIES) {
+                                integrationDestination.integrateEntities(
+                                        batch.entities.getValue(storageDestination),
+                                        entityKeyIds,
+                                        updateTypes,
+                                        propertyUpdateTypes
+                                )
+                            }
                     )
                 }
 
@@ -433,7 +430,8 @@ class Shuttle(
                 .getOrPut(storageDestination) { Maps.newLinkedHashMapWithExpectedSize(propertyDefinitions.size) }
                 .getOrPut(propertyId) { Sets.newLinkedHashSetWithExpectedSize(propertyValueAsCollection.size) }
                 .addAll(propertyValueAsCollection)
-            properties.getOrPut(propertyId) { Sets.newLinkedHashSetWithExpectedSize(propertyValueAsCollection.size) }
+            properties
+                .getOrPut(propertyId) { Sets.newLinkedHashSetWithExpectedSize(propertyValueAsCollection.size) }
                 .addAll(propertyValueAsCollection)
         }
         return Pair(properties, addressedProperties)
@@ -556,6 +554,10 @@ class Shuttle(
                 flight.associations.map { entitySets.getValue(it.entitySetName).id to it.updateType }
     }.toMap()
 
+    private val propertyUpdateTypes = flightPlan.keys.flatMap { flight ->
+        flight.entities.map { entitySets.getValue(it.entitySetName).id to it.propertyUpdateType } +
+                flight.associations.map { entitySets.getValue(it.entitySetName).id to it.propertyUpdateType }
+    }.toMap()
 
     fun launch(uploadBatchSize: Int): Long {
         val sw = Stopwatch.createStarted()
@@ -621,7 +623,10 @@ class Shuttle(
         val logPropertyData = generateLogPropertyData(flightName, log, timestamp, status, jobId)
         val entity = Entity(ek, logPropertyData)
         val ekid = idService!!.getEntityKeyId(ek)
-        logsDestination.integrateEntities(setOf(entity), mapOf(ek to ekid), mapOf(logEntitySetId to UpdateType.Merge))
+        logsDestination.integrateEntities(
+                setOf(entity), mapOf(ek to ekid), mapOf(logEntitySetId to UpdateType.Merge),
+                mapOf(logEntitySetId to PropertyUpdateType.Unversioned)
+        )
     }
 
     private fun generateLogPropertyData(

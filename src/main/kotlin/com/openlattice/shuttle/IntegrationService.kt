@@ -9,22 +9,23 @@ import com.openlattice.authorization.Principals
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.client.RetrofitFactory.decorateWithOpenLatticeFactories
 import com.openlattice.data.EntityKeyIdService
+import com.openlattice.data.PropertyUpdateType
 import com.openlattice.data.S3Api
 import com.openlattice.data.integration.S3EntityData
 import com.openlattice.data.storage.aws.AwsDataSinkService
-import com.openlattice.shuttle.destinations.IntegrationDestination
-import com.openlattice.shuttle.destinations.StorageDestination
-import com.openlattice.shuttle.destinations.PostgresDestination
-import com.openlattice.shuttle.destinations.PostgresS3Destination
 import com.openlattice.datastore.services.EdmManager
 import com.openlattice.datastore.services.EntitySetManager
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.hazelcast.HazelcastQueue
-import com.openlattice.hazelcast.processors.shuttle.UpdateIntegrationEntryProcessor
-import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.hazelcast.mapstores.shuttle.INTEGRATION_STATUS
+import com.openlattice.hazelcast.processors.shuttle.UpdateIntegrationEntryProcessor
+import com.openlattice.shuttle.destinations.IntegrationDestination
+import com.openlattice.shuttle.destinations.PostgresDestination
+import com.openlattice.shuttle.destinations.PostgresS3Destination
+import com.openlattice.shuttle.destinations.StorageDestination
+import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
 import com.zaxxer.hikari.HikariConfig
@@ -38,7 +39,6 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import retrofit2.Retrofit
 import java.io.IOException
-import java.lang.IllegalStateException
 import java.net.URL
 import java.util.*
 import java.util.concurrent.Executors
@@ -153,11 +153,12 @@ class IntegrationService(
             tableColsToPrint[it.flight!!] = it.sourcePrimaryKeyColumns
         }
 
-        val generatePresignedUrlsFun: (List<S3EntityData>) -> List<String> = {
-            val propertyTypesByEntitySetId = it.map { elem ->
+        val generatePresignedUrlsFun: (List<S3EntityData>, PropertyUpdateType) -> List<String> = { s3Entities, propertyUpdateType ->
+            val propertyTypesByEntitySetId = s3Entities.associate { elem ->
                 elem.entitySetId to entitySetManager.getPropertyTypesForEntitySet(elem.entitySetId)
-            }.toMap()
-            awsDataSinkService.generatePresignedUrls(it, propertyTypesByEntitySetId)
+            }
+
+            awsDataSinkService.generatePresignedUrls(s3Entities, propertyTypesByEntitySetId, propertyUpdateType)
         }
 
         val destinationsMap = generateDestinationsMap(integration, missionParameters, generatePresignedUrlsFun)
@@ -262,7 +263,7 @@ class IntegrationService(
     private fun generateDestinationsMap(
             integration: Integration,
             missionParameters: MissionParameters,
-            generatePresignedUrlsFun: (List<S3EntityData>) -> List<String>
+            generatePresignedUrlsFun: (List<S3EntityData>, PropertyUpdateType) -> List<String>
     ): Map<StorageDestination, IntegrationDestination> {
         val s3BucketUrl = integration.s3bucket
         val dstDataSource = HikariDataSource(HikariConfig(missionParameters.postgres.config))
@@ -338,7 +339,7 @@ class IntegrationService(
         return jobId
     }
 
-    @SuppressFBWarnings("NP_ALWAYS_NULL",justification="Seems to be a kotlin handling issue.")
+    @SuppressFBWarnings("NP_ALWAYS_NULL", justification = "Seems to be a kotlin handling issue.")
     private fun submitCallback(jobId: UUID, urls: List<String>, message: String) {
         urls.forEach {
             val url = URL(it)

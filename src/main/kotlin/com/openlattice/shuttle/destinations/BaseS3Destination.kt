@@ -43,10 +43,13 @@ const val MAX_RETRY_COUNT = 22
  */
 abstract class BaseS3Destination(
         private val s3Api: S3Api,
-        private val generatePresignedUrlsFun: (List<S3EntityData>) -> List<String>
+        private val generatePresignedUrlsFun: (List<S3EntityData>, PropertyUpdateType) -> List<String>
 ) : IntegrationDestination {
     override fun integrateEntities(
-            data: Collection<Entity>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+            data: Collection<Entity>,
+            entityKeyIds: Map<EntityKey, UUID>,
+            updateTypes: Map<UUID, UpdateType>,
+            propertyUpdateTypes: Map<UUID, PropertyUpdateType>
     ): Long {
         return StopWatch("Uploading ${data.size} entities to s3").use {
 
@@ -74,7 +77,12 @@ abstract class BaseS3Destination(
                     }
                 }
             }
-            uploadToS3WithRetry(s3entities)
+            s3entities
+                    .groupBy { propertyUpdateTypes.getValue(it.first.entitySetId) }
+                    .forEach { (propertyUpdateTypes, s3entitiesByUpdateType) ->
+                        uploadToS3WithRetry(s3entitiesByUpdateType, propertyUpdateTypes)
+                    }
+
             s3entities.size.toLong()
         }
     }
@@ -96,13 +104,16 @@ abstract class BaseS3Destination(
         }
     }
 
-    private fun uploadToS3WithRetry(s3entitiesAndValues: List<Pair<S3EntityData, ByteArray>>) {
+    private fun uploadToS3WithRetry(
+            s3entitiesAndValues: List<Pair<S3EntityData, ByteArray>>,
+            propertyUpdateType: PropertyUpdateType
+    ) {
         var currentRetryCount = 0
         val retryStrategy = ExponentialBackoff(MAX_DELAY_MILLIS)
 
         val (s3entities, values) = s3entitiesAndValues.unzip()
         val presignedUrls = attempt(retryStrategy, MAX_RETRY_COUNT) {
-            generatePresignedUrlsFun(s3entities)
+            generatePresignedUrlsFun(s3entities, propertyUpdateType)
         }
 
         var s3eds = s3entities

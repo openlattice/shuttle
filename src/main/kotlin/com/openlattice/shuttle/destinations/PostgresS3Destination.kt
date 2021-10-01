@@ -22,6 +22,7 @@
 package com.openlattice.shuttle.destinations
 
 import com.openlattice.data.DataEdgeKey
+import com.openlattice.data.PropertyUpdateType
 import com.openlattice.data.S3Api
 import com.openlattice.data.integration.S3EntityData
 
@@ -32,7 +33,7 @@ import com.openlattice.data.integration.S3EntityData
 class PostgresS3Destination(
         private val postgresDestination: PostgresDestination,
         s3Api: S3Api,
-        generatePresignedUrlsFun: (List<S3EntityData>) -> List<String>
+        generatePresignedUrlsFun: (List<S3EntityData>, PropertyUpdateType) -> List<String>
 ) : BaseS3Destination(s3Api, generatePresignedUrlsFun) {
     override fun createAssociations(entities: Set<DataEdgeKey>): Long {
         return postgresDestination.createEdges(entities)

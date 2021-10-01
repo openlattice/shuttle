@@ -236,8 +236,8 @@ class MissionControl(
     init {
         try {
             entitySets = entitySetsApi.getEntitySets().filter { it as EntitySet? != null }.map { it.name to it }.toMap().toMutableMap()
-            entityTypes = edmApi.entityTypes.map { it.id to it }.toMap().toMutableMap()
-            propertyTypes = edmApi.propertyTypes.map { it.type to it }.toMap().toMutableMap()
+            entityTypes = edmApi.entityTypes.associateBy { it.id }.toMutableMap()
+            propertyTypes = edmApi.propertyTypes.associateBy { it.type }.toMutableMap()
             propertyTypesById = propertyTypes.mapKeys { it.value.id }
         } catch ( thrown: Throwable ) {
             MissionControl.fail(1, Flight.failed(), thrown)
