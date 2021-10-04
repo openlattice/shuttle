@@ -9,13 +9,14 @@ import java.util.*
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 data class PostgresConfiguration(
-        @JsonProperty("enabled") val enabled: Boolean,
-        @JsonProperty("config") val config: Properties
+    @JsonProperty("enabled") val enabled: Boolean,
+    @JsonProperty("config") val config: Properties
 )
 
 @ReloadableConfiguration(uri = "shuttle.yaml")
 data class MissionParameters(
-        @JsonProperty("postgres") val postgres: PostgresConfiguration
+    @JsonProperty("postgres") val postgres: PostgresConfiguration,
+    @JsonProperty("aurora") val aurora: PostgresConfiguration = postgres
 ) {
     companion object {
         @JvmStatic
