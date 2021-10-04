@@ -246,12 +246,13 @@ class MissionControl(
         destinations[StorageDestination.NO_OP] = NoOpDestination()
         val generatePresignedUrlsFun = dataIntegrationApi::generatePresignedUrls
 
-        if (parameters.postgres.enabled) {
+        if (parameters.postgres.enabled || parameters.aurora.enabled) {
+            val pgConfig = if (parameters.postgres.enabled) parameters.postgres.config else parameters.aurora.config
             val pgDestination = PostgresDestination(
                     entitySets.mapKeys { it.value.id },
                     entityTypes,
                     propertyTypes.mapKeys { it.value.id },
-                    HikariDataSource(HikariConfig(parameters.postgres.config))
+                    HikariDataSource(HikariConfig(pgConfig))
             )
 
             destinations[StorageDestination.POSTGRES] = pgDestination

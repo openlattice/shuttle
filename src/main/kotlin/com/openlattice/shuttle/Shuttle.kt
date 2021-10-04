@@ -154,7 +154,8 @@ class Shuttle(
 
             logEntitySet = maybeLogEntitySet.get()
             val logEntityTypeId = logEntitySet.entityTypeId
-            val logDataSource = HikariDataSource(HikariConfig(parameters.postgres.config))
+            val pgConfig = if (parameters.postgres.enabled) parameters.postgres.config else parameters.aurora.config
+            val logDataSource = HikariDataSource(HikariConfig(pgConfig))
             logsDestination = PostgresDestination(
                 mapOf(logEntitySet.id to logEntitySet),
                 mapOf(logEntityTypeId to entityTypes.getValue(logEntityTypeId)),
@@ -404,7 +405,7 @@ class Shuttle(
                 propertyDefinition.storageDestination.orElseGet {
                     when (propertyType.datatype) {
                         EdmPrimitiveTypeKind.Binary -> binaryDestination
-                        else -> if (parameters.postgres.enabled) StorageDestination.POSTGRES else StorageDestination.REST
+                        else -> if (parameters.postgres.enabled || parameters.aurora.enabled) StorageDestination.POSTGRES else StorageDestination.REST
                     }
                 }
             }
