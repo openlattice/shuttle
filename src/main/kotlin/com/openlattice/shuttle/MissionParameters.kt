@@ -24,4 +24,9 @@ data class MissionParameters(
             return MissionParameters(PostgresConfiguration(false, Properties()))
         }
     }
+    init {
+        require(postgres.enabled xor aurora.enabled) {
+            "only one of \"postgres\", \"aurora\" can be enabled"
+        }
+    }
 }
