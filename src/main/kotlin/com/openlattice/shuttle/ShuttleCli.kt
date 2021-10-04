@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.google.common.base.Preconditions
 import com.openlattice.ResourceConfigurationLoader
 import com.openlattice.client.RetrofitFactory
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.AURORA
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CONFIGURATION
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CSV
@@ -229,16 +230,23 @@ fun main(args: Array<String>) {
         ""
     }
 
-    val shuttleConfig = if (cl.hasOption(POSTGRES)) {
-        val pgCfg = cl.getOptionValues(POSTGRES)
-        require(pgCfg.size == 2) { "Must specify in format <bucket>,<region>" }
-        val bucket = pgCfg[0]
-        val region = pgCfg[1]
-        val s3Client = AmazonS3ClientBuilder.standard().withCredentials(
-                InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true)
-        ).withRegion(RegionUtils.getRegion(region).name).build()
-        ResourceConfigurationLoader.loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java)
-    } else {
+    val postgresParams = cl.getOptionValues(POSTGRES)
+        ?: cl.getOptionValues(AURORA)
+        ?: arrayOf()
+
+    val shuttleConfig = if (postgresParams.isNotEmpty()) {
+        require(postgresParams.size == 2) { "Must specify in format <bucket>,<region>" }
+        val bucket = postgresParams[0]
+        val region = postgresParams[1]
+        val s3Client = AmazonS3ClientBuilder
+            .standard()
+            .withCredentials(InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true))
+            .withRegion(RegionUtils.getRegion(region).name)
+            .build()
+        ResourceConfigurationLoader
+            .loadConfigurationFromS3(s3Client, bucket, "shuttle/", MissionParameters::class.java)
+    }
+    else {
         MissionParameters.empty()
     }
 
