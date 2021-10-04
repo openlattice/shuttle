@@ -46,6 +46,7 @@ class ShuttleCliOptions {
         const val FETCHSIZE = "fetchsize"
         const val CONFIGURATION = "config"
         const val POSTGRES = "postgres"
+        const val AURORA = "aurora"
         const val PROFILES = "profiles"
         const val S3 = "s3"
         const val UPLOAD_SIZE = "upload-size"
@@ -195,6 +196,14 @@ class ShuttleCliOptions {
                 .valueSeparator(',')
                 .build()
 
+        private val auroraOption = Option.builder()
+                .longOpt(AURORA)
+                .desc("Bucket and region to be used for aurora configuration")
+                .hasArgs()
+                .argName("bucket,region")
+                .valueSeparator(',')
+                .build()
+
         private val threadsOption = Option.builder()
                 .longOpt(THREADS)
                 .desc("Number of integration threads to use.")
@@ -269,9 +278,14 @@ class ShuttleCliOptions {
                     .addOption(fromEmailPasswordOption)
                     .addOption(smtpServerOption)
                     .addOption(smtpServerPortOption)
-                    .addOption(postgresOption)
                     .addOption(threadsOption)
                     .addOption(serverOption)
+
+            options.addOptionGroup(
+                OptionGroup()
+                    .addOption(postgresOption)
+                    .addOption(auroraOption)
+            )
 
             options.addOptionGroup(
                     OptionGroup()
