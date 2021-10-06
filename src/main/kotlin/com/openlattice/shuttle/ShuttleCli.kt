@@ -10,12 +10,12 @@ import com.fasterxml.jackson.databind.JsonMappingException
 import com.google.common.base.Preconditions
 import com.openlattice.ResourceConfigurationLoader
 import com.openlattice.client.RetrofitFactory
-import com.openlattice.shuttle.ShuttleCliOptions.Companion.AURORA
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CONFIGURATION
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CREATE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CSV
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.DATASOURCE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.DATA_ORIGIN
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.DATA_STORE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.ENVIRONMENT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.FETCHSIZE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.FLIGHT
@@ -25,13 +25,13 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.HELP
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.LOCAL_ORIGIN_EXPECTED_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.NOTIFICATION_EMAILS
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PASSWORD
-import com.openlattice.shuttle.ShuttleCliOptions.Companion.POSTGRES
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.PROFILES
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.READ_RATE_LIMIT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_MAXIMUM_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.S3_ORIGIN_MINIMUM_ARGS_COUNT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SERVER
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.SHUTTLE_CONFIG
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SMTP_SERVER
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SMTP_SERVER_PORT
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.SQL
@@ -43,6 +43,7 @@ import com.openlattice.shuttle.config.IntegrationConfig
 import com.openlattice.shuttle.payload.*
 import com.openlattice.shuttle.source.LocalFileOrigin
 import com.openlattice.shuttle.source.S3BucketOrigin
+import com.openlattice.shuttle.util.DataStoreType
 import org.apache.commons.cli.CommandLine
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -230,14 +231,11 @@ fun main(args: Array<String>) {
         ""
     }
 
-    val postgresParams = cl.getOptionValues(POSTGRES)
-        ?: cl.getOptionValues(AURORA)
-        ?: arrayOf()
-
-    val shuttleConfig = if (postgresParams.isNotEmpty()) {
-        require(postgresParams.size == 2) { "Must specify in format <bucket>,<region>" }
-        val bucket = postgresParams[0]
-        val region = postgresParams[1]
+    val shuttleConfig = if (cl.hasOption(SHUTTLE_CONFIG)) {
+        val shuttleConfigOptions = cl.getOptionValues(SHUTTLE_CONFIG) ?: arrayOf()
+        require(shuttleConfigOptions.size == 2)
+        val bucket = shuttleConfigOptions[0]
+        val region = shuttleConfigOptions[1]
         val s3Client = AmazonS3ClientBuilder
             .standard()
             .withCredentials(InstanceProfileCredentialsProvider.createAsyncRefreshingProvider(true))
@@ -252,17 +250,22 @@ fun main(args: Array<String>) {
 
     //TODO: Use the right method to select the JWT token for the appropriate environment.
 
+    val dataStore = if (cl.hasOption(DATA_STORE))
+        DataStoreType.valueOf(DATA_STORE)
+    else
+        DataStoreType.NONE
+
     val missionControl = when {
         cl.hasOption(TOKEN) -> {
             Preconditions.checkArgument(!cl.hasOption(PASSWORD))
             val jwt = cl.getOptionValue(TOKEN)
-            MissionControl(environment, Supplier { jwt }, s3BucketUrl, shuttleConfig)
+            MissionControl(environment, { jwt }, s3BucketUrl, shuttleConfig, dataStore)
         }
         cl.hasOption(USER) -> {
             Preconditions.checkArgument(cl.hasOption(PASSWORD))
             val user = cl.getOptionValue(USER)
             val password = cl.getOptionValue(PASSWORD)
-            MissionControl(environment, user, password, s3BucketUrl, shuttleConfig)
+            MissionControl(environment, user, password, s3BucketUrl, shuttleConfig, dataStore)
         }
         else -> {
             printErrorHelpAndExit("User or token must be provided for authentication.")
@@ -299,7 +302,7 @@ fun main(args: Array<String>) {
     try {
         MissionControl.setEmailConfiguration(emailConfiguration)
         logger.info("Preparing flight plan.")
-        val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts)
+        val shuttle = missionControl.prepare(flightPlan, createEntitySets, rowColsToPrint, contacts, dataStore)
         logger.info("Pre-flight check list complete. ")
         shuttle.launch(uploadBatchSize)
         MissionControl.succeed()

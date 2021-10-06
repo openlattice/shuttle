@@ -39,6 +39,7 @@ import com.openlattice.retrofit.RhizomeRetrofitCallException
 import com.openlattice.shuttle.destinations.*
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.Payload
+import com.openlattice.shuttle.util.DataStoreType
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import jodd.mail.Email
@@ -52,30 +53,32 @@ import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
-import kotlin.NoSuchElementException
 
 /**
  *
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 class MissionControl(
-        private val environment: RetrofitFactory.Environment,
-        authToken: Supplier<String>,
-        s3BucketUrl: String,
-        private val parameters: MissionParameters
+    private val environment: RetrofitFactory.Environment,
+    authToken: Supplier<String>,
+    s3BucketUrl: String,
+    private val parameters: MissionParameters,
+    dataStore: DataStoreType
 ) {
 
     constructor(
-            environment: RetrofitFactory.Environment,
-            username: String,
-            password: String,
-            s3BucketUrl: String,
-            parameters: MissionParameters = MissionParameters.empty()
+        environment: RetrofitFactory.Environment,
+        username: String,
+        password: String,
+        s3BucketUrl: String,
+        parameters: MissionParameters = MissionParameters.empty(),
+        dataStore: DataStoreType
     ) : this(
-            environment,
-            Suppliers.memoizeWithExpiration({ auth0Client.getIdToken(username, password) }, 1, TimeUnit.HOURS),
-            s3BucketUrl,
-            parameters
+        environment,
+        Suppliers.memoizeWithExpiration({ auth0Client.getIdToken(username, password) }, 1, TimeUnit.HOURS),
+        s3BucketUrl,
+        parameters,
+        dataStore
     )
 
     companion object {
@@ -246,8 +249,11 @@ class MissionControl(
         destinations[StorageDestination.NO_OP] = NoOpDestination()
         val generatePresignedUrlsFun = dataIntegrationApi::generatePresignedUrls
 
-        if (parameters.postgres.enabled || parameters.aurora.enabled) {
-            val pgConfig = if (parameters.postgres.enabled) parameters.postgres.config else parameters.aurora.config
+        if (dataStore != DataStoreType.NONE) {
+            val pgConfig = if (DataStoreType.AURORA == dataStore)
+                parameters.aurora.config
+            else
+                parameters.postgres.config
             val pgDestination = PostgresDestination(
                     entitySets.mapKeys { it.value.id },
                     entityTypes,
@@ -275,10 +281,11 @@ class MissionControl(
 
 
     fun prepare(
-            flightPlan: Map<Flight, Payload>,
-            createEntitySets: Boolean = false,
-            primaryKeyCols: Map<Flight, List<String>> = mapOf(),
-            contacts: Set<String> = setOf()
+        flightPlan: Map<Flight, Payload>,
+        createEntitySets: Boolean = false,
+        primaryKeyCols: Map<Flight, List<String>> = mapOf(),
+        contacts: Set<String> = setOf(),
+        dataStore: DataStoreType
     ): Shuttle {
         if (createEntitySets) {
             createMissingEntitySets(flightPlan, contacts)
@@ -286,22 +293,23 @@ class MissionControl(
         ensureValidIntegration(flightPlan)
 
         return Shuttle(
-                environment,
-                false,
-                flightPlan,
-                entitySets,
-                entityTypes,
-                propertyTypes,
-                integrationDestinations,
-                dataIntegrationApi,
-                primaryKeyCols,
-                parameters,
-                binaryStorageDestination,
-                Blackbox.empty(),
-                Optional.empty(),
-                Optional.empty(),
-                null,
-                null
+            environment,
+            false,
+            flightPlan,
+            entitySets,
+            entityTypes,
+            propertyTypes,
+            integrationDestinations,
+            dataIntegrationApi,
+            primaryKeyCols,
+            parameters,
+            dataStore,
+            binaryStorageDestination,
+            Blackbox.empty(),
+            Optional.empty(),
+            Optional.empty(),
+            null,
+            null
         )
     }
 

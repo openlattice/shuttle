@@ -30,37 +30,37 @@ import kotlin.system.exitProcess
  */
 class ShuttleCliOptions {
     companion object {
-        const val HELP = "help"
 
-        const val FLIGHT = "flight"
-        const val USER = "user"
-        const val PASSWORD = "password"
-        const val TOKEN = "token"
-        const val CREATE = "create"
-        const val ENVIRONMENT = "environment"
-        const val SQL = "sql"
-        const val CSV = "csv"
-        const val XML = "xml"
-        const val DATA_ORIGIN = "data-origin"
-        const val DATASOURCE = "datasource"
-        const val FETCHSIZE = "fetchsize"
         const val CONFIGURATION = "config"
-        const val POSTGRES = "postgres"
-        const val AURORA = "aurora"
-        const val PROFILES = "profiles"
-        const val S3 = "s3"
-        const val UPLOAD_SIZE = "upload-size"
-        const val NOTIFICATION_EMAILS = "notify-emails"
+        const val CREATE = "create"
+        const val CSV = "csv"
+        const val DATASOURCE = "datasource"
+        const val DATA_ORIGIN = "data-origin"
+        const val DATA_STORE = "data-store"
+        const val ENVIRONMENT = "environment"
+        const val FETCHSIZE = "fetchsize"
+        const val FLIGHT = "flight"
         const val FROM_EMAIL = "from-email"
         const val FROM_EMAIL_PASSWORD = "from-email-password"
+        const val HELP = "help"
+        const val LOCAL_ORIGIN_EXPECTED_ARGS_COUNT = 2
+        const val NOTIFICATION_EMAILS = "notify-emails"
+        const val PASSWORD = "password"
+        const val PROFILES = "profiles"
         const val READ_RATE_LIMIT = "read-rate-limit"
-        const val SERVER = "server"
-        const val SMTP_SERVER = "smtp-server"
-        const val SMTP_SERVER_PORT = "smtp-server-port"
-        const val THREADS = "threads"
+        const val S3 = "s3"
         const val S3_ORIGIN_MAXIMUM_ARGS_COUNT = 4
         const val S3_ORIGIN_MINIMUM_ARGS_COUNT = 3
-        const val LOCAL_ORIGIN_EXPECTED_ARGS_COUNT = 2
+        const val SERVER = "server"
+        const val SHUTTLE_CONFIG = "shuttle-config"
+        const val SMTP_SERVER = "smtp-server"
+        const val SMTP_SERVER_PORT = "smtp-server-port"
+        const val SQL = "sql"
+        const val THREADS = "threads"
+        const val TOKEN = "token"
+        const val UPLOAD_SIZE = "upload-size"
+        const val USER = "user"
+        const val XML = "xml"
 
         private val options = Options()
         private val clp = DefaultParser()
@@ -188,22 +188,6 @@ class ShuttleCliOptions {
                 .argName("bucket")
                 .build()
 
-        private val postgresOption = Option.builder()
-                .longOpt(POSTGRES)
-                .desc("Bucket and region to be used for postgres configuration")
-                .hasArgs()
-                .argName("bucket,region")
-                .valueSeparator(',')
-                .build()
-
-        private val auroraOption = Option.builder()
-                .longOpt(AURORA)
-                .desc("Bucket and region to be used for aurora configuration")
-                .hasArgs()
-                .argName("bucket,region")
-                .valueSeparator(',')
-                .build()
-
         private val threadsOption = Option.builder()
                 .longOpt(THREADS)
                 .desc("Number of integration threads to use.")
@@ -257,6 +241,20 @@ class ShuttleCliOptions {
                 .argName("Port used to connect to smtp server")
                 .build()
 
+        private val dataStoreOption = Option.builder()
+            .argName(DATA_STORE)
+            .longOpt(DATA_STORE)
+            .desc("target data store to integrate into")
+            .hasArg(true)
+            .build()
+
+        private val shuttleConfigOption = Option.builder()
+            .argName(SHUTTLE_CONFIG)
+            .longOpt(SHUTTLE_CONFIG)
+            .numberOfArgs(2)
+            .desc("S3 bucket and region containing shuttle.yaml")
+            .build()
+
         init {
             options
                     .addOption(helpOption)
@@ -280,12 +278,8 @@ class ShuttleCliOptions {
                     .addOption(smtpServerPortOption)
                     .addOption(threadsOption)
                     .addOption(serverOption)
-
-            options.addOptionGroup(
-                OptionGroup()
-                    .addOption(postgresOption)
-                    .addOption(auroraOption)
-            )
+                    .addOption(dataStoreOption)
+                    .addOption(shuttleConfigOption)
 
             options.addOptionGroup(
                     OptionGroup()
