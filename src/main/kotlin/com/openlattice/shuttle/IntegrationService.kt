@@ -28,6 +28,7 @@ import com.openlattice.shuttle.destinations.StorageDestination
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
+import com.openlattice.shuttle.util.DataStoreType
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
@@ -174,6 +175,7 @@ class IntegrationService(
                 null,
                 tableColsToPrint,
                 missionParameters,
+                DataStoreType.NONE,
                 StorageDestination.S3,
                 blackbox,
                 Optional.of(entitySets.getValue(integration.logEntitySetId.get())),
