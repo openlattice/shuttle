@@ -40,8 +40,6 @@ import com.openlattice.shuttle.destinations.*
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.Payload
 import com.openlattice.shuttle.util.DataStoreType
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import jodd.mail.Email
 import jodd.mail.EmailAddress
 import jodd.mail.MailServer
@@ -250,22 +248,23 @@ class MissionControl(
         val generatePresignedUrlsFun = dataIntegrationApi::generatePresignedUrls
 
         if (dataStore != DataStoreType.NONE) {
-            val pgConfig = if (DataStoreType.AURORA == dataStore)
-                parameters.aurora.config
-            else
-                parameters.postgres.config
+
             val pgDestination = PostgresDestination(
-                    entitySets.mapKeys { it.value.id },
-                    entityTypes,
-                    propertyTypes.mapKeys { it.value.id },
-                    HikariDataSource(HikariConfig(pgConfig))
+                entitySets.mapKeys { it.value.id },
+                entityTypes,
+                propertyTypes.mapKeys { it.value.id },
+                dataStore,
+                parameters.postgres.config,
+                parameters.aurora.config
             )
 
             destinations[StorageDestination.POSTGRES] = pgDestination
 
             if (s3BucketUrl.isNotBlank()) {
                 destinations[StorageDestination.S3] = PostgresS3Destination(
-                        pgDestination, s3Api!!, generatePresignedUrlsFun
+                    pgDestination,
+                    s3Api!!,
+                    generatePresignedUrlsFun
                 )
             }
         } else {

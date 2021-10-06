@@ -8,17 +8,20 @@ import com.openlattice.data.integration.Entity
 import java.util.*
 
 class NoOpDestination : IntegrationDestination {
+
     override fun integrateEntities(
-            data: Collection<Entity>,
-            entityKeyIds: Map<EntityKey, UUID>,
-            updateTypes: Map<UUID, UpdateType>,
-            propertyUpdateType: Map<UUID,PropertyUpdateType>
+        data: Collection<Entity>,
+        entityKeyIds: Map<EntityKey, UUID>,
+        updateTypes: Map<UUID, UpdateType>,
+        propertyUpdateTypes: Map<UUID, PropertyUpdateType>
     ): Long {
         return 0
     }
 
     override fun integrateAssociations(
-            data: Collection<Association>, entityKeyIds: Map<EntityKey, UUID>, updateTypes: Map<UUID, UpdateType>
+        data: Collection<Association>,
+        entityKeyIds: Map<EntityKey, UUID>,
+        updateTypes: Map<UUID, UpdateType>
     ): Long {
         return 0
     }

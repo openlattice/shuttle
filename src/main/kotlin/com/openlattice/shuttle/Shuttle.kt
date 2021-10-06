@@ -93,7 +93,7 @@ class Shuttle(
     private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
     private val dataIntegrationApi: DataIntegrationApi?,
     private val tableColsToPrint: Map<Flight, List<String>>,
-    private val parameters: MissionParameters,
+    parameters: MissionParameters,
     private val dataStore: DataStoreType,
     private val binaryDestination: StorageDestination,
     blackbox: Blackbox,
@@ -156,15 +156,13 @@ class Shuttle(
 
             logEntitySet = maybeLogEntitySet.get()
             val logEntityTypeId = logEntitySet.entityTypeId
-            val logDataSource = if (dataStore == DataStoreType.AURORA)
-                HikariDataSource(HikariConfig(parameters.aurora.config))
-            else
-                HikariDataSource(HikariConfig(parameters.postgres.config))
             logsDestination = PostgresDestination(
                 mapOf(logEntitySet.id to logEntitySet),
                 mapOf(logEntityTypeId to entityTypes.getValue(logEntityTypeId)),
                 logProperties.map { logProp -> logProp.value.id to logProp.value }.toMap(),
-                logDataSource
+                dataStore,
+                parameters.postgres.config,
+                parameters.aurora.config
             )
 
         } else {

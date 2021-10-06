@@ -22,10 +22,10 @@
 package com.openlattice.shuttle.destinations
 
 import com.openlattice.data.EntityKey
+import com.openlattice.data.PropertyUpdateType
 import com.openlattice.data.UpdateType
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
-import com.openlattice.data.PropertyUpdateType
 import java.util.*
 
 /**
@@ -33,17 +33,18 @@ import java.util.*
  * @author Matthew Tamayo-Rios &lt;matthew@openlattice.com&gt;
  */
 interface IntegrationDestination {
+
     fun integrateEntities(
-            data: Collection<Entity>,
-            entityKeyIds: Map<EntityKey, UUID>,
-            updateTypes: Map<UUID, UpdateType>,
-            propertyUpdateType: Map<UUID,PropertyUpdateType>
+        data: Collection<Entity>,
+        entityKeyIds: Map<EntityKey, UUID>,
+        updateTypes: Map<UUID, UpdateType>,
+        propertyUpdateTypes: Map<UUID, PropertyUpdateType>
     ): Long
 
     fun integrateAssociations(
-            data: Collection<Association>,
-            entityKeyIds: Map<EntityKey, UUID>,
-            updateTypes: Map<UUID, UpdateType>
+        data: Collection<Association>,
+        entityKeyIds: Map<EntityKey, UUID>,
+        updateTypes: Map<UUID, UpdateType>
     ): Long
 
     fun accepts(): StorageDestination

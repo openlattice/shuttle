@@ -26,7 +26,6 @@ import com.geekbeast.util.attempt
 import com.openlattice.data.*
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
-import com.openlattice.data.PropertyUpdateType
 import java.util.*
 
 /**
@@ -36,34 +35,35 @@ import java.util.*
 const val MAX_DELAY = 8L * 60L * 1000L //8 min
 
 class RestDestination(
-        private val dataApi: DataApi
+    private val dataApi: DataApi
 ) : IntegrationDestination {
+
     override fun integrateEntities(
-            data: Collection<Entity>,
-            entityKeyIds: Map<EntityKey, UUID>,
-            updateTypes: Map<UUID, UpdateType>,
-            propertyUpdateType: Map<UUID,PropertyUpdateType>
+        data: Collection<Entity>,
+        entityKeyIds: Map<EntityKey, UUID>,
+        updateTypes: Map<UUID, UpdateType>,
+        propertyUpdateTypes: Map<UUID, PropertyUpdateType>
     ): Long {
         val entitiesByEntitySet = data
-                .groupBy({ it.entitySetId }, { entityKeyIds.getValue(it.key) to it.details })
-                .mapValues { it.value.toMap() }
+            .groupBy({ it.entitySetId }, { entityKeyIds.getValue(it.key) to it.details })
+            .mapValues { it.value.toMap() }
 
         return entitiesByEntitySet.entries.parallelStream().mapToLong { (entitySetId, entities) ->
             attempt(ExponentialBackoff(MAX_DELAY), MAX_RETRY_COUNT) {
                 dataApi.updateEntitiesInEntitySet(
-                        entitySetId,
-                        entities,
-                        updateTypes[entitySetId],
-                        propertyUpdateType.getValue(entitySetId)
+                    entitySetId,
+                    entities,
+                    updateTypes[entitySetId],
+                    propertyUpdateTypes.getValue(entitySetId)
                 ).toLong()
             }
         }.sum()
     }
 
     override fun integrateAssociations(
-            data: Collection<Association>,
-            entityKeyIds: Map<EntityKey, UUID>,
-            updateTypes: Map<UUID, UpdateType>
+        data: Collection<Association>,
+        entityKeyIds: Map<EntityKey, UUID>,
+        updateTypes: Map<UUID, UpdateType>
     ): Long {
         val edges = data.map {
             val srcDataKey = EntityDataKey(it.src.entitySetId, entityKeyIds[it.src])

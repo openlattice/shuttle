@@ -175,7 +175,8 @@ class IntegrationService(
                 null,
                 tableColsToPrint,
                 missionParameters,
-                DataStoreType.NONE,
+                // TODO: how do we configure writing into aurora?
+                DataStoreType.POSTGRES,
                 StorageDestination.S3,
                 blackbox,
                 Optional.of(entitySets.getValue(integration.logEntitySetId.get())),
@@ -268,14 +269,19 @@ class IntegrationService(
             generatePresignedUrlsFun: (List<S3EntityData>, PropertyUpdateType) -> List<String>
     ): Map<StorageDestination, IntegrationDestination> {
         val s3BucketUrl = integration.s3bucket
-        val dstDataSource = HikariDataSource(HikariConfig(missionParameters.postgres.config))
-        integration.maxConnections.ifPresent { dstDataSource.maximumPoolSize = it }
+        val postgresDataSource = HikariDataSource(HikariConfig(missionParameters.postgres.config))
+        val auroraDataSource = HikariDataSource(HikariConfig(missionParameters.aurora.config))
+        integration.maxConnections.ifPresent { postgresDataSource.maximumPoolSize = it }
+        integration.maxConnections.ifPresent { auroraDataSource.maximumPoolSize = it }
 
         val pgDestination = PostgresDestination(
-                entitySets.mapKeys { it.value.id },
-                entityTypes,
-                propertyTypes.mapKeys { it.value.id },
-                dstDataSource
+            entitySets.mapKeys { it.value.id },
+            entityTypes,
+            propertyTypes.mapKeys { it.value.id },
+            // TODO: how do we configure writing into aurora?
+            DataStoreType.POSTGRES,
+            missionParameters.postgres.config,
+            missionParameters.aurora.config
         )
 
         if (s3BucketUrl.isBlank()) {
