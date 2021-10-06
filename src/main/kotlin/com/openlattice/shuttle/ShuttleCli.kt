@@ -251,7 +251,7 @@ fun main(args: Array<String>) {
     //TODO: Use the right method to select the JWT token for the appropriate environment.
 
     val dataStore = if (cl.hasOption(DATA_STORE))
-        DataStoreType.valueOf(DATA_STORE)
+        DataStoreType.valueOf(cl.getOptionValue(DATA_STORE).uppercase())
     else
         DataStoreType.NONE
 
