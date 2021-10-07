@@ -271,8 +271,10 @@ class IntegrationService(
         val s3BucketUrl = integration.s3bucket
         val postgresDataSource = HikariDataSource(HikariConfig(missionParameters.postgres.config))
         val auroraDataSource = HikariDataSource(HikariConfig(missionParameters.aurora.config))
+        val alprDataSource = HikariDataSource(HikariConfig(missionParameters.alpr.config))
         integration.maxConnections.ifPresent { postgresDataSource.maximumPoolSize = it }
         integration.maxConnections.ifPresent { auroraDataSource.maximumPoolSize = it }
+        integration.maxConnections.ifPresent { alprDataSource.maximumPoolSize = it }
 
         val pgDestination = PostgresDestination(
             entitySets.mapKeys { it.value.id },
