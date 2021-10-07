@@ -40,6 +40,7 @@ import com.openlattice.graph.EDGES_UPSERT_SQL
 import com.openlattice.graph.bindColumnsForEdge
 import com.openlattice.postgres.JsonDeserializer
 import com.openlattice.postgres.PostgresArrays
+import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.util.DataStoreType
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
@@ -60,8 +61,7 @@ class PostgresDestination(
     private val entityTypes: Map<UUID, EntityType>,
     private val propertyTypes: Map<UUID, PropertyType>,
     private val targetDataStore: DataStoreType,
-    private val postgresConfig: Properties,
-    private val auroraConfig: Properties
+    private val parameters: MissionParameters
 ) : IntegrationDestination {
 
     companion object {
@@ -76,11 +76,8 @@ class PostgresDestination(
         propertyUpdateTypes: Map<UUID,PropertyUpdateType>
     ): Long {
 
-        val hds = HikariDataSource(HikariConfig(postgresConfig))
-        val dataHds = if (targetDataStore == DataStoreType.AURORA)
-            HikariDataSource(HikariConfig(auroraConfig))
-        else
-            HikariDataSource(HikariConfig(postgresConfig))
+        val hds = HikariDataSource(HikariConfig(parameters.postgres.config))
+        val dataHds = parameters.getTargetHikariDataSource(targetDataStore)
 
         return hds.connection.use { connection ->
             dataHds.connection.use { dataConnection ->
@@ -231,11 +228,7 @@ class PostgresDestination(
             .toSet()
             .associateWith { entitySetId -> entitySets.getValue(entitySetId).partitions.toList() }
 
-        val hds = if (targetDataStore == DataStoreType.AURORA)
-            HikariDataSource(HikariConfig(auroraConfig))
-        else
-            HikariDataSource(HikariConfig(postgresConfig))
-
+        val hds = parameters.getTargetHikariDataSource(targetDataStore)
         return hds.connection.use { connection ->
             val ps = connection.prepareStatement(EDGES_UPSERT_SQL)
             val version = System.currentTimeMillis()

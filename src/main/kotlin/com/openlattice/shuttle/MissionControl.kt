@@ -254,8 +254,7 @@ class MissionControl(
                 entityTypes,
                 propertyTypes.mapKeys { it.value.id },
                 dataStore,
-                parameters.postgres.config,
-                parameters.aurora.config
+                parameters
             )
 
             destinations[StorageDestination.POSTGRES] = pgDestination

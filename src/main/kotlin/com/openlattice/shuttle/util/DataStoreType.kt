@@ -1,7 +1,8 @@
 package com.openlattice.shuttle.util
 
 enum class DataStoreType {
-    NONE,
+    ALPR,
     AURORA,
+    NONE,
     POSTGRES
 }

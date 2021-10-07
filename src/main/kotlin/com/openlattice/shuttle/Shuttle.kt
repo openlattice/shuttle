@@ -161,8 +161,7 @@ class Shuttle(
                 mapOf(logEntityTypeId to entityTypes.getValue(logEntityTypeId)),
                 logProperties.map { logProp -> logProp.value.id to logProp.value }.toMap(),
                 dataStore,
-                parameters.postgres.config,
-                parameters.aurora.config
+                parameters
             )
 
         } else {

@@ -280,8 +280,7 @@ class IntegrationService(
             propertyTypes.mapKeys { it.value.id },
             // TODO: how do we configure writing into aurora?
             DataStoreType.POSTGRES,
-            missionParameters.postgres.config,
-            missionParameters.aurora.config
+            missionParameters
         )
 
         if (s3BucketUrl.isBlank()) {
