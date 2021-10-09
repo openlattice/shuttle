@@ -52,6 +52,7 @@ import com.openlattice.shuttle.destinations.StorageDestination
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.logs.BlackboxProperty
 import com.openlattice.shuttle.payload.Payload
+import com.openlattice.shuttle.util.DataStoreType
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
@@ -92,7 +93,8 @@ class Shuttle(
     private val integrationDestinations: Map<StorageDestination, IntegrationDestination>,
     private val dataIntegrationApi: DataIntegrationApi?,
     private val tableColsToPrint: Map<Flight, List<String>>,
-    private val parameters: MissionParameters,
+    parameters: MissionParameters,
+    private val dataStore: DataStoreType,
     private val binaryDestination: StorageDestination,
     blackbox: Blackbox,
     maybeLogEntitySet: Optional<EntitySet>,
@@ -154,12 +156,12 @@ class Shuttle(
 
             logEntitySet = maybeLogEntitySet.get()
             val logEntityTypeId = logEntitySet.entityTypeId
-            val logDataSource = HikariDataSource(HikariConfig(parameters.postgres.config))
             logsDestination = PostgresDestination(
                 mapOf(logEntitySet.id to logEntitySet),
                 mapOf(logEntityTypeId to entityTypes.getValue(logEntityTypeId)),
                 logProperties.map { logProp -> logProp.value.id to logProp.value }.toMap(),
-                logDataSource
+                dataStore,
+                parameters
             )
 
         } else {
@@ -404,7 +406,7 @@ class Shuttle(
                 propertyDefinition.storageDestination.orElseGet {
                     when (propertyType.datatype) {
                         EdmPrimitiveTypeKind.Binary -> binaryDestination
-                        else -> if (parameters.postgres.enabled) StorageDestination.POSTGRES else StorageDestination.REST
+                        else -> if (dataStore != DataStoreType.NONE) StorageDestination.POSTGRES else StorageDestination.REST
                     }
                 }
             }

@@ -28,6 +28,7 @@ import com.openlattice.shuttle.destinations.StorageDestination
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.JdbcPayload
 import com.openlattice.shuttle.payload.Payload
+import com.openlattice.shuttle.util.DataStoreType
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
@@ -174,6 +175,8 @@ class IntegrationService(
                 null,
                 tableColsToPrint,
                 missionParameters,
+                // TODO: how do we configure writing into aurora?
+                DataStoreType.POSTGRES,
                 StorageDestination.S3,
                 blackbox,
                 Optional.of(entitySets.getValue(integration.logEntitySetId.get())),
@@ -266,14 +269,20 @@ class IntegrationService(
             generatePresignedUrlsFun: (List<S3EntityData>, PropertyUpdateType) -> List<String>
     ): Map<StorageDestination, IntegrationDestination> {
         val s3BucketUrl = integration.s3bucket
-        val dstDataSource = HikariDataSource(HikariConfig(missionParameters.postgres.config))
-        integration.maxConnections.ifPresent { dstDataSource.maximumPoolSize = it }
+        val postgresDataSource = HikariDataSource(HikariConfig(missionParameters.postgres.config))
+        val auroraDataSource = HikariDataSource(HikariConfig(missionParameters.aurora.config))
+        val alprDataSource = HikariDataSource(HikariConfig(missionParameters.alpr.config))
+        integration.maxConnections.ifPresent { postgresDataSource.maximumPoolSize = it }
+        integration.maxConnections.ifPresent { auroraDataSource.maximumPoolSize = it }
+        integration.maxConnections.ifPresent { alprDataSource.maximumPoolSize = it }
 
         val pgDestination = PostgresDestination(
-                entitySets.mapKeys { it.value.id },
-                entityTypes,
-                propertyTypes.mapKeys { it.value.id },
-                dstDataSource
+            entitySets.mapKeys { it.value.id },
+            entityTypes,
+            propertyTypes.mapKeys { it.value.id },
+            // TODO: how do we configure writing into aurora?
+            DataStoreType.POSTGRES,
+            missionParameters
         )
 
         if (s3BucketUrl.isBlank()) {
