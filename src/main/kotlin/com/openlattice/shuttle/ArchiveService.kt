@@ -21,18 +21,6 @@ const val DEFAULT_DAYS = 1
  * @author Andrew Carter andrew@openlattice.com
  */
 
-//Export
-//1. Accept parameters in shuttle cli
-//2. Validate parameters
-//3. Pass parameters to new class
-//4. New class creates chunks by day or specified duration
-//5. Ensure that s3 is reachable?
-//6. Connect to atlas
-//7. Execute query per day - updating file path and export query per step
-//8. Check if succeeded per step
-//9. Write finished chechpoint
-//10. Validate write succeed by querying s3 to ensure row count matches (per step?)
-
 private val logger = LoggerFactory.getLogger(ArchiveService::class.java)
 
 @Service
