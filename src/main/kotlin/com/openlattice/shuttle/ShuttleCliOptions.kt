@@ -60,6 +60,11 @@ class ShuttleCliOptions {
         const val S3_ORIGIN_MAXIMUM_ARGS_COUNT = 4
         const val S3_ORIGIN_MINIMUM_ARGS_COUNT = 3
         const val LOCAL_ORIGIN_EXPECTED_ARGS_COUNT = 2
+        const val ARCHIVE = "archive"
+        const val START_DATE = "start-date"
+        const val DAYS = "days"
+        const val EXPORT = "export"
+        const val IMPORT = "import"
 
         private val options = Options()
         private val clp = DefaultParser()
@@ -248,6 +253,41 @@ class ShuttleCliOptions {
                 .argName("Port used to connect to smtp server")
                 .build()
 
+        private val archiveOption = Option.builder()
+            .longOpt(ARCHIVE)
+            .hasArg(false)
+            .desc("Archive or import data between jdbc and s3")
+            .argName("archive")
+            .build()
+
+        private val startDateOption = Option.builder()
+            .longOpt(START_DATE)
+            .hasArg(true)
+            .desc("Indicate date to begin archiving data (inclusive beginning at 00:00)")
+            .argName("start date")
+            .build()
+
+        private val daysOption = Option.builder()
+            .longOpt(DAYS)
+            .hasArg(true)
+            .desc("Indicates number of days from startDate to archive. Includes start date.")
+            .argName("days")
+            .build()
+
+        private val exportOption = Option.builder()
+            .longOpt(EXPORT)
+            .hasArg(false)
+            .desc("Indicates export for archival")
+            .argName("export-archive")
+            .build()
+
+        private val importOption = Option.builder()
+            .longOpt(IMPORT)
+            .hasArg(false)
+            .desc("Indicates import for archival")
+            .argName("import-archive")
+            .build()
+
         init {
             options
                     .addOption(helpOption)
@@ -272,6 +312,15 @@ class ShuttleCliOptions {
                     .addOption(postgresOption)
                     .addOption(threadsOption)
                     .addOption(serverOption)
+                    .addOption(archiveOption)
+                    .addOption(startDateOption)
+                    .addOption(daysOption)
+
+            options.addOptionGroup(
+                OptionGroup()
+                    .addOption(importOption)
+                    .addOption(exportOption)
+            )
 
             options.addOptionGroup(
                     OptionGroup()
