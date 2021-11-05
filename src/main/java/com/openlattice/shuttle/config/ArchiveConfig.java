@@ -13,6 +13,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * @author Andrew Carter andrew@openlattice.com
+ *
+ * Contains connection details (jdbc and s3) for archiving.
  */
 public class ArchiveConfig {
     private static final Logger logger = LoggerFactory.getLogger( ArchiveYamlMapping.class );
@@ -39,13 +41,4 @@ public class ArchiveConfig {
     @JsonProperty( "s3Region" )
     public String getS3Region() { return s3Region; }
 
-
-    @JsonIgnore
-    public HikariDataSource getHikariDataSource(String name ) {
-        Properties properties = checkNotNull( (Properties) hikariConfiguration.get( name ), "Hikari configuration does not exist.");
-
-        HikariConfig hc = new HikariConfig( properties );
-        logger.info( "JDBC URL = {}", hc.getJdbcUrl() );
-        return new HikariDataSource( hc );
-    }
 }

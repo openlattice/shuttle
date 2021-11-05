@@ -5,6 +5,7 @@ import com.openlattice.shuttle.config.ArchiveConfig
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import org.joda.time.Days
+import org.postgresql.util.PSQLException
 import org.slf4j.LoggerFactory
 
 import org.springframework.stereotype.Service
@@ -13,6 +14,8 @@ import java.time.temporal.ChronoUnit.DAYS
 import java.sql.Connection
 import java.sql.Statement
 import java.time.LocalDate
+
+const val DEFAULT_DAYS = 1
 
 /**
  * @author Andrew Carter andrew@openlattice.com
@@ -44,18 +47,20 @@ class ArchiveService(
         logger.info("Initiating ArchiveService...")
     }
 
+    // archives data
     fun mummify(startDate: LocalDate, days: Int) {
         logger.info("Beginning mummification...")
-        connectAsSuperuser(dbName).use { connection ->
+        connectToDatabase(dbName).use { connection ->
             connection.createStatement().use { statement ->
                 generateAndExecuteSqlPerDay(statement, startDate, days, ::exportSql)
             }
         }
     }
 
+    // restores data
     fun exhume(startDate: LocalDate, days: Int) {
         logger.info("Exhuming data...")
-        connectAsSuperuser(dbName).use { connection ->
+        connectToDatabase(dbName).use { connection ->
             connection.createStatement().use { statement ->
                 generateAndExecuteSqlPerDay(statement, startDate, days, ::importSql)
             }
@@ -72,19 +77,24 @@ class ArchiveService(
             val currentDate = startDate.plusDays(index.toLong()).toString()
             val sql = sqlGenerator(currentDate)
             logger.info("Executing query:\n $sql")
-            if (statement.execute(sql)) {
+            try {
+                statement.execute(sql)
                 logger.info("Successfully executed query of $currentDate from $sourceName to $destinationName")
+            } catch (e: PSQLException) {
+                throw Error("Unsuccessful sql execution", e)
             }
         }
     }
 
-    fun connectAsSuperuser(dbName: String): Connection {
+    fun connectToDatabase(dbName: String): Connection {
         val config = HikariConfig(archiveConfig.hikariConfiguration)
+        // append org database name to the jdbc url
         config.jdbcUrl = "${config.jdbcUrl.removeSuffix("/")}/$dbName"
 
         return HikariDataSource(config).connection
     }
 
+    // generates sql to invoke an export using aws_s3 postgres extension
     fun exportSql(
         date: String,
     ): String {
@@ -97,6 +107,7 @@ class ArchiveService(
                 "));"
     }
 
+    // generates sql to invoke an import using aws_s3 postgres extension
     fun importSql(
         date: String,
     ): String {
@@ -109,5 +120,4 @@ class ArchiveService(
                 "   '${archiveConfig.s3Region}'\n" +
                 "));"
     }
-
 }

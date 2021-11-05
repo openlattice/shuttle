@@ -108,7 +108,7 @@ fun main(args: Array<String>) {
             val days = if (cl.hasOption(DAYS)) {
                 cl.getOptionValue(DAYS).toInt()
             } else {
-                1
+                DEFAULT_DAYS
             }
             val archiver = ArchiveService(
                 archiveYamlMapping.archiveConfig,

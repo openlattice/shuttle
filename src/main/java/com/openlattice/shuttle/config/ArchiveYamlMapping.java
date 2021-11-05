@@ -2,10 +2,12 @@ package com.openlattice.shuttle.config;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.openlattice.shuttle.ArchiveService;
 
 /**
  * @author Andrew Carter andrew@openlattice.com
+ *
+ * Archive configuration files are mapped to this class.
+ * This class contains all fields required to create an ArchiveService.
  */
 public class ArchiveYamlMapping {
     private final ArchiveConfig     archiveConfig;
