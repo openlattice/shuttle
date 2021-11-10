@@ -17,7 +17,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Contains connection details (jdbc and s3) for archiving.
  */
 public class ArchiveConfig {
-    private static final Logger logger = LoggerFactory.getLogger( ArchiveYamlMapping.class );
     private final Properties      hikariConfiguration;
     private final String          s3Bucket;
     private final String          s3Region;

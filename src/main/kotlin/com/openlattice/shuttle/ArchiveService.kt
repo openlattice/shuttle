@@ -38,7 +38,7 @@ class ArchiveService(
     private val schemaName: String = "openlattice",
     private val sourceName: String,
     private val destinationName: String = sourceName,
-    private val dateField: String // TODO: Add to sql statements once ready to test
+    private val dateField: String
 ) {
     private val s3Client: AmazonS3
 
@@ -91,7 +91,7 @@ class ArchiveService(
     private fun importHandler(statement: Statement, currentDate: String) {
         val parts = countOfS3ObjectsWithPrefix(currentDate)
         for(part in 0 until parts) {
-            // add one to part to account for 0 vs 1 indexing
+            // +1 to part to account for 0 vs 1 indexing
             executeStatement(statement, importSql(currentDate, part + 1))
         }
         validateImport(statement,currentDate)
@@ -140,9 +140,11 @@ class ArchiveService(
         val query = "SELECT count(*) count " +
                 "FROM $destinationName " +
                 "WHERE $dateField = '$date';"
+
         val resultSet = executeStatement(statement, query)
         resultSet.next()
         val numRowsWritten = resultSet.getInt(1)
+
         if (numRowsWritten > 0) {
             logger.info("Import validation succeeded. $numRowsWritten rows found in $destinationName for $date.")
         } else {
@@ -151,7 +153,6 @@ class ArchiveService(
         }
     }
 
-    // TODO: Refactor into init to establish the connection asap?
     private fun connectToDatabase(dbName: String): Connection {
         val config = HikariConfig(archiveConfig.hikariConfiguration)
         // append org database name to the jdbc url
@@ -191,7 +192,7 @@ class ArchiveService(
             throw Exception(e)
         }
         if (objects.isTruncated) {
-            // TODO: Provide support for truncated result
+            // TODO: Provide support for truncated / paginated result
             throw Exception("Too many objects with prefix ${prefix()}. Truncated ObjectListing not supported.")
         }
         return objects.objectSummaries.size
