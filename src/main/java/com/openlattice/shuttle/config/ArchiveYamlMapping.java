@@ -15,6 +15,7 @@ public class ArchiveYamlMapping {
     private final String            schemaName;
     private final String            sourceName;
     private final String            destinationName;
+    private final String            dateField;
 
     @JsonCreator
     public ArchiveYamlMapping(
@@ -22,13 +23,15 @@ public class ArchiveYamlMapping {
         @JsonProperty( "dbName" )               String dbName,
         @JsonProperty( "schemaName" )           String schemaName,
         @JsonProperty( "sourceName" )           String sourceName,
-        @JsonProperty( "destinationName" )      String destinationName
+        @JsonProperty( "destinationName" )      String destinationName,
+        @JsonProperty( "dateField" )            String dateField
     ) {
         this.archiveConfig = archiveConfig;
         this.dbName = dbName;
         this.schemaName = schemaName;
         this.sourceName = sourceName;
         this.destinationName = destinationName;
+        this.dateField = dateField;
     }
 
     @JsonProperty( "archiveConfig" )
@@ -45,4 +48,7 @@ public class ArchiveYamlMapping {
 
     @JsonProperty( "destinationName" )
     public String getDestinationName() { return destinationName; }
+
+    @JsonProperty( "dateField" )
+    public String getDateField() { return dateField; }
 }

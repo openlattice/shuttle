@@ -115,7 +115,8 @@ fun main(args: Array<String>) {
                 archiveYamlMapping.dbName,
                 archiveYamlMapping.schemaName,
                 archiveYamlMapping.sourceName,
-                archiveYamlMapping.destinationName
+                archiveYamlMapping.destinationName,
+                archiveYamlMapping.dateField
             )
 
             if (cl.hasOption(EXPORT)) {
