@@ -89,7 +89,7 @@ fun main(args: Array<String>) {
     }
 
     if (cl.hasOption(ARCHIVE)) {
-        if (cl.hasOption(CONFIGURATION) && cl.hasOption(START_DATE)) {
+        if (cl.hasOption(CONFIGURATION)) {
 
             val archiveYamlMapping = try {
                 ObjectMappers.getYamlMapper()
@@ -110,6 +110,14 @@ fun main(args: Array<String>) {
             } else {
                 DEFAULT_DAYS
             }
+
+            val startDate = if (cl.hasOption(START_DATE)) {
+                cl.getOptionValue(START_DATE)
+            } else {
+                logger.info("No start date provided.")
+                NO_START_DATE
+            }
+
             val archiver = ArchiveService(
                 archiveYamlMapping.archiveConfig,
                 archiveYamlMapping.dbName,
@@ -119,18 +127,26 @@ fun main(args: Array<String>) {
                 archiveYamlMapping.dateField
             )
 
-            if (cl.hasOption(EXPORT)) {
+            val archiveOption = cl.getOptionValue(ARCHIVE)
+
+            if (archiveOption.equals(EXPORT)) {
                 archiver.mummify(
-                    LocalDate.parse(cl.getOptionValue(START_DATE)),
+                    startDate,
                     days
                 )
-            } else if (cl.hasOption(IMPORT)) {
+            } else if (archiveOption.equals(IMPORT)) {
                 archiver.exhume(
-                    LocalDate.parse(cl.getOptionValue(START_DATE)),
+                    startDate,
                     days
                 )
-            } else { printErrorHelpAndExit("Export or import option must be specified.") }
-        } else { printErrorHelpAndExit("Archive specified but either config or start_date missing.") }
+            } else {
+                logger.error("Export or import option must be specified with archive. \n\t--archive import\n\t--archive export")
+                exitProcess(1)
+            }
+        } else {
+            logger.error("Archive specified, but config yaml file not provided. \n\t--config /path/to/file.yaml")
+            exitProcess(1)
+        }
         return
     }
 

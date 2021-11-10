@@ -6,6 +6,7 @@ import com.amazonaws.auth.BasicAWSCredentials
 import com.amazonaws.regions.RegionUtils
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
+import com.amazonaws.services.s3.model.ListObjectsRequest
 import com.amazonaws.services.s3.model.ObjectListing
 import com.openlattice.shuttle.config.ArchiveConfig
 import com.zaxxer.hikari.HikariConfig
@@ -20,6 +21,7 @@ import java.sql.Statement
 import java.time.LocalDate
 
 const val DEFAULT_DAYS = 1
+const val NO_START_DATE = ""
 
 /**
  * @author Andrew Carter andrew@openlattice.com
@@ -51,7 +53,7 @@ class ArchiveService(
 
     // archive data
     // overwrite if already exists
-    fun mummify(startDate: LocalDate, days: Int) {
+    fun mummify(startDate: String, days: Int) {
         logger.info("Beginning mummification...")
         connectToDatabase(dbName).use { connection ->
             connection.createStatement().use { statement ->
@@ -61,7 +63,7 @@ class ArchiveService(
     }
 
     // restore data
-    fun exhume(startDate: LocalDate, days: Int) {
+    fun exhume(startDate: String, days: Int) {
         logger.info("Exhuming data...")
         connectToDatabase(dbName).use { connection ->
             connection.createStatement().use { statement ->
@@ -72,13 +74,20 @@ class ArchiveService(
 
     private fun generateAndExecuteSqlPerDay(
         statement: Statement,
-        startDate: LocalDate,
+        date: String,
         days: Int,
         sqlAndExecuteHandler: (statement: Statement, date: String) -> Unit
     ) {
-        for (dayIndex in 0 until days) {
-            val currentDate = startDate.plusDays(dayIndex.toLong()).toString()
-            sqlAndExecuteHandler(statement, currentDate)
+        if (date == NO_START_DATE) {
+            // if no start date provided, pass empty string
+            sqlAndExecuteHandler(statement, NO_START_DATE)
+        } else {
+            // convert to date to LocalDate, so we can add days in loop
+            val startDate = LocalDate.parse(date)
+            for (dayIndex in 0 until days) {
+                val currentDate = startDate.plusDays(dayIndex.toLong()).toString()
+                sqlAndExecuteHandler(statement, currentDate)
+            }
         }
     }
 
@@ -101,12 +110,16 @@ class ArchiveService(
     private fun exportSql(
         date: String,
     ): String {
+
+        // avoid quoting hell in Postgres by using dollar-sign quotes ($exportQuery$)
         return  "SELECT * FROM aws_s3.query_export_to_s3(" +
-                "'SELECT * FROM $schemaName.$sourceName " +
-                "WHERE $dateField = ''$date'' '," +
+                "\$exportQuery\$" +
+                "SELECT * FROM $schemaName.$sourceName " +
+                whereClauseByDate(date) +
+                "\$exportQuery\$," +
                 "aws_commons.create_s3_uri(\n" +
                 "   '${archiveConfig.s3Bucket}',\n" +
-                "   '$dbName/$schemaName/$destinationName-$date',\n" +
+                "   '${destinationPrefix(date)}',\n" +
                 "   '${archiveConfig.s3Region}'\n" +
                 "));"
     }
@@ -122,7 +135,7 @@ class ArchiveService(
                 "'', ''," +
                 "aws_commons.create_s3_uri(\n" +
                 "   '${archiveConfig.s3Bucket}',\n" +
-                "   '$dbName/$schemaName/$sourceName-$date$partString',\n" +
+                "   '${sourcePrefix(date)}$partString',\n" +
                 "   '${archiveConfig.s3Region}'\n" +
                 "));"
     }
@@ -139,17 +152,72 @@ class ArchiveService(
     private fun validateImport(statement: Statement, date: String) {
         val query = "SELECT count(*) count " +
                 "FROM $destinationName " +
-                "WHERE $dateField = '$date';"
+                "${whereClauseByDate(date)};"
 
         val resultSet = executeStatement(statement, query)
         resultSet.next()
         val numRowsWritten = resultSet.getInt(1)
 
         if (numRowsWritten > 0) {
-            logger.info("Import validation succeeded. $numRowsWritten rows found in $destinationName for $date.")
+            logger.info("Import validation succeeded. $numRowsWritten rows found of $destinationName $date.")
         } else {
             logger.error("Import validation failed: no data written was written to $destinationName. " +
                     "Either there was a problem importing or there is no data in the source.")
+        }
+    }
+
+    private fun isOverwrite(date: String) {
+        val count = countOfS3ObjectsWithPrefix(date)
+        if (count > 0) {
+            logger.info("Overwriting. Number of existing objects in s3 with prefix ${destinationPrefix(date)}: $count")
+        } else {
+            logger.info("Creating new objects. No objects exist in s3 with prefix ${destinationPrefix(date)}")
+        }
+    }
+
+    private fun countOfS3ObjectsWithPrefix(date: String): Int {
+        val objects: ObjectListing
+        val objectsRequest = ListObjectsRequest(
+            archiveConfig.s3Bucket,
+            destinationPrefix(date),
+            "",
+            "/",
+            1000
+        )
+        try {
+            objects = s3Client.listObjects(objectsRequest)
+        } catch (e: SdkClientException) {
+            throw Exception(e)
+        }
+        if (objects.isTruncated) {
+            // TODO: Provide support for truncated / paginated result
+            throw Exception("Too many objects with prefix ${destinationPrefix(date)}. Truncated ObjectListing not supported.")
+        }
+        return objects.objectSummaries.size
+    }
+
+    private fun destinationPrefix(date: String): String {
+        return "archive01/$dbName/$schemaName/$destinationName${dateSuffix(date)}"
+    }
+
+    private fun sourcePrefix(date: String): String {
+        return "archive01/$dbName/$schemaName/$sourceName${dateSuffix(date)}"
+    }
+
+    private fun dateSuffix(date: String): String {
+        return if (date == NO_START_DATE) {
+            ""
+        } else {
+            "/${sourceName}_$date"
+        }
+    }
+
+    // if date not provided then don't include WHERE clause
+    private fun whereClauseByDate(date: String): String {
+        return if (date == NO_START_DATE) {
+            ""
+        } else {
+            "WHERE DATE($dateField) = '$date' "
         }
     }
 
@@ -173,36 +241,5 @@ class ArchiveService(
         } catch (e: PSQLException) {
             throw Error("Unsuccessful sql execution of $sql", e)
         }
-    }
-
-    private fun isOverwrite(date: String) {
-        val count = countOfS3ObjectsWithPrefix(date)
-        if (count > 0) {
-            logger.info("Overwriting. Number of existing objects in s3 with prefix ${prefix(date)}: $count")
-        } else {
-            logger.info("Creating new objects. No objects exist in s3 with prefix ${prefix(date)}")
-        }
-    }
-
-    private fun countOfS3ObjectsWithPrefix(date: String): Int {
-        val objects: ObjectListing
-        try {
-            objects = s3Client.listObjects(archiveConfig.s3Bucket, prefix(date))
-        } catch (e: SdkClientException) {
-            throw Exception(e)
-        }
-        if (objects.isTruncated) {
-            // TODO: Provide support for truncated / paginated result
-            throw Exception("Too many objects with prefix ${prefix()}. Truncated ObjectListing not supported.")
-        }
-        return objects.objectSummaries.size
-    }
-
-    private fun prefix(): String {
-        return "$dbName/$schemaName/$sourceName"
-    }
-
-    private fun prefix(date: String): String {
-        return "$dbName/$schemaName/$sourceName-$date"
     }
 }

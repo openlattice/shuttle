@@ -255,9 +255,10 @@ class ShuttleCliOptions {
 
         private val archiveOption = Option.builder()
             .longOpt(ARCHIVE)
-            .hasArg(false)
-            .desc("Archive or import data between jdbc and s3")
-            .argName("archive")
+            .hasArg(true)
+            .desc("Archive or restore data between JDBC and s3.\n" +
+                    "\t--archive <\"export\" or \"import\"> --config </path/to/file.yaml> [--start-date --days]")
+            .argName("\"export\" or \"import\"")
             .build()
 
         private val startDateOption = Option.builder()
@@ -272,20 +273,6 @@ class ShuttleCliOptions {
             .hasArg(true)
             .desc("Indicates number of days from startDate to archive. Includes start date.")
             .argName("days")
-            .build()
-
-        private val exportOption = Option.builder()
-            .longOpt(EXPORT)
-            .hasArg(false)
-            .desc("Indicates export for archival")
-            .argName("export-archive")
-            .build()
-
-        private val importOption = Option.builder()
-            .longOpt(IMPORT)
-            .hasArg(false)
-            .desc("Indicates import for archival")
-            .argName("import-archive")
             .build()
 
         init {
@@ -315,12 +302,6 @@ class ShuttleCliOptions {
                     .addOption(archiveOption)
                     .addOption(startDateOption)
                     .addOption(daysOption)
-
-            options.addOptionGroup(
-                OptionGroup()
-                    .addOption(importOption)
-                    .addOption(exportOption)
-            )
 
             options.addOptionGroup(
                     OptionGroup()
