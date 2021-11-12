@@ -20,15 +20,21 @@ public class ArchiveConfig {
     private final Properties      hikariConfiguration;
     private final String          s3Bucket;
     private final String          s3Region;
+    private final String          accessKey;
+    private final String          secretKey;
 
     ArchiveConfig(
             @JsonProperty( "hikariConfig" ) Properties hikariConfiguration,
             @JsonProperty( "s3Bucket" )             String s3Bucket,
-            @JsonProperty( "s3Region" )             String s3Region
-    ) {
+            @JsonProperty( "s3Region" )             String s3Region,
+            @JsonProperty( "accessKey" )            String accessKey,
+            @JsonProperty( "secretKey" )            String secretKey
+            ) {
         this.hikariConfiguration = hikariConfiguration;
         this.s3Bucket = s3Bucket;
         this.s3Region = s3Region;
+        this.accessKey = accessKey;
+        this.secretKey = secretKey;
     }
 
     @JsonProperty( "hikariConfig" )
@@ -39,5 +45,11 @@ public class ArchiveConfig {
 
     @JsonProperty( "s3Region" )
     public String getS3Region() { return s3Region; }
+
+    @JsonProperty( "accessKey ")
+    public String getAccessKey() { return accessKey; }
+
+    @JsonProperty( "secretKey" )
+    public String getSecretKey() { return secretKey; }
 
 }

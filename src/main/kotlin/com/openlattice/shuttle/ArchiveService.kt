@@ -22,16 +22,15 @@ import java.time.LocalDate
 
 const val DEFAULT_DAYS = 1
 const val NO_START_DATE = ""
+const val S3_DELIMITER = "/"
+const val S3_MARKER = ""
+const val S3_MAX_KEYS = 1000
 
 /**
  * @author Andrew Carter andrew@openlattice.com
  */
 
 private val logger = LoggerFactory.getLogger(ArchiveService::class.java)
-private val s3Credentials = BasicAWSCredentials(
-    "***",
-    "***"
-)
 
 @Service
 class ArchiveService(
@@ -47,7 +46,12 @@ class ArchiveService(
     init {
         logger.info("Initiating ArchiveService...")
         s3Client = AmazonS3ClientBuilder.standard().withCredentials(
-            AWSStaticCredentialsProvider(s3Credentials)
+            AWSStaticCredentialsProvider(
+                BasicAWSCredentials (
+                    archiveConfig.accessKey,
+                    archiveConfig.secretKey
+                    )
+            )
         ).withRegion(RegionUtils.getRegion(archiveConfig.s3Region).name).build()
     }
 
@@ -184,9 +188,9 @@ class ArchiveService(
         val objectsRequest = ListObjectsRequest(
             archiveConfig.s3Bucket,
             prefix(date),
-            "",
-            "/",
-            1000
+            S3_MARKER,
+            S3_DELIMITER,
+            S3_MAX_KEYS
         )
         try {
             objects = s3Client.listObjects(objectsRequest)
