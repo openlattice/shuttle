@@ -28,10 +28,9 @@ import com.google.common.collect.ImmutableList
 import com.openlattice.data.*
 import com.openlattice.data.integration.Association
 import com.openlattice.data.integration.Entity
-import com.openlattice.data.storage.partitions.getPartition
-import com.openlattice.data.storage.updateEntitySql
-import com.openlattice.data.storage.updateVersionsForPropertyTypesInEntitiesInEntitySet
-import com.openlattice.data.storage.upsertPropertyValueSql
+import com.openlattice.data.storage.postgres.updateEntitySql
+import com.openlattice.data.storage.postgres.updateVersionsForPropertyTypesInEntitiesInEntitySet
+import com.openlattice.data.storage.postgres.upsertPropertyValueSql
 import com.openlattice.data.util.PostgresDataHasher
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
@@ -42,8 +41,6 @@ import com.openlattice.postgres.JsonDeserializer
 import com.openlattice.postgres.PostgresArrays
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.util.DataStoreType
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind
 import org.slf4j.LoggerFactory
 import java.security.InvalidParameterException
@@ -119,60 +116,49 @@ class PostgresDestination(
                                 entitySets.getValue(entitySetId).name,
                                 esSw.elapsed(TimeUnit.MILLISECONDS)
                         )
-                        val esCount = entities.groupBy { getPartition(it.first, partitions) }
-                                .toSortedMap()
-                                .map { (partition, entityPairs) ->
-                                    val partSw = Stopwatch.createStarted()
-                                    val entityMap = entityPairs.toMap()
-                                    val entityKeyIdsArr = PostgresArrays.createUuidArray(connection, entityMap.keys)
-                                    val partitionArr = PostgresArrays.createIntArray(connection, listOf(partition))
+                        val partSw = Stopwatch.createStarted()
+                        val entityMap = entities.toMap()
+                        val entityKeyIdsArr = PostgresArrays.createUuidArray(connection, entityMap.keys)
 
-                                    when (updateTypes.getValue(entitySetId)) {
-                                        UpdateType.Replace, UpdateType.PartialReplace -> tombstone(
-                                                updatePropertyValueVersion,
-                                                entitySet,
-                                                entityKeyIdsArr,
-                                                partitionArr,
-                                                propertyTypeIdsArr,
-                                                tombstoneVersion
-                                        )
-                                    }
+                        when (updateTypes.getValue(entitySetId)) {
+                            UpdateType.Replace, UpdateType.PartialReplace -> tombstone(
+                                    updatePropertyValueVersion,
+                                    entitySet,
+                                    entityKeyIdsArr,
+                                    propertyTypeIdsArr,
+                                    tombstoneVersion
+                            )
+                        }
 
-                                    val committedProperties = upsertEntities(
-                                            connection,
-                                            upsertPropertyValues,
-                                            entitySet,
-                                            partition,
-                                            entityMap,
-                                            relevantPropertyTypes,
-                                            writeVersionArrayconnection,
-                                            writeVersion,
-                                            propertyUpdateTypes.getValue(entitySetId)
-                                    )
+                        val committedProperties = upsertEntities(
+                                connection,
+                                upsertPropertyValues,
+                                entitySet,
+                                entityMap,
+                                relevantPropertyTypes,
+                                writeVersionArrayconnection,
+                                writeVersion,
+                                propertyUpdateTypes.getValue(entitySetId)
+                        )
 
-                                    logger.info(
-                                            "Upserted $committedProperties properties for partition $partition and entity set {} in {} ms ",
-                                            partition,
+                        logger.info(
+                                "Upserted $committedProperties properties entity set {} in {} ms ",
+                                partSw.elapsed(TimeUnit.MILLISECONDS)
+                        )
 
-                                            partSw.elapsed(TimeUnit.MILLISECONDS)
-                                    )
-
-                                    commitEntities(
-                                            connection,
-                                            entitySetId,
-                                            partition,
-                                            entityMap.keys,
-                                            writeVersionArray,
-                                            writeVersion
-                                    )
-                                    val committed = entityMap.size.toLong()
-                                    logger.info(
-                                            "Integrated $committed entities and $committedProperties properties for partition $partition and entity set {} in {} ms",
-                                            entitySets.getValue(entitySetId).name,
-                                            partSw.elapsed(TimeUnit.MILLISECONDS)
-                                    )
-                                    committed
-                                }.sum()
+                        commitEntities(
+                                connection,
+                                entitySetId,
+                                entityMap.keys,
+                                writeVersionArray,
+                                writeVersion
+                        )
+                        val esCount = entityMap.size.toLong()
+                        logger.info(
+                                "Integrated $esCount entities and $committedProperties properties for entity set {} in {} ms",
+                                entitySets.getValue(entitySetId).name,
+                                partSw.elapsed(TimeUnit.MILLISECONDS)
+                        )
                         logger.info(
                                 "Integrated $esCount entities for entity set {} in {} ms",
                                 entitySets.getValue(entitySetId).name,
@@ -234,7 +220,7 @@ class PostgresDestination(
 
             ps.use {
                 keys.forEach { dataEdgeKey ->
-                    bindColumnsForEdge(ps, dataEdgeKey, version, versions, partitionsByEntitySet)
+                    bindColumnsForEdge(ps, dataEdgeKey, version, versions)
                 }
 
                 ps.executeBatch().sum().toLong()
@@ -257,7 +243,6 @@ class PostgresDestination(
             connection: Connection,
             upsertPropertyValues: MutableMap<UUID, PreparedStatement>,
             entitySet: EntitySet,
-            partition: Int,
             entities: Map<UUID, Map<UUID, Set<Any>>>,
             propertyTypes: Map<UUID, PropertyType>,
             versionArray: java.sql.Array,
@@ -276,7 +261,7 @@ class PostgresDestination(
         //Update property values. We use multiple prepared statements in batch while re-using ARRAY[version].
 
 
-        return entities.entries.map { (entityKeyId, entityData) ->
+        return entities.entries.sumOf { (entityKeyId, entityData) ->
             entityData.map { (propertyTypeId, values) ->
                 val upsertPropertyValue = upsertPropertyValues.getOrPut(propertyTypeId) {
                     val pt = propertyTypes[propertyTypeId] ?: abortInsert(entitySetId, entityKeyId)
@@ -293,24 +278,22 @@ class PostgresDestination(
 
                     upsertPropertyValue.setObject(1, entitySetId)
                     upsertPropertyValue.setObject(2, entityKeyId)
-                    upsertPropertyValue.setInt(3, partition)
-                    upsertPropertyValue.setObject(4, propertyTypeId)
-                    upsertPropertyValue.setObject(5, propertyHash)
-                    upsertPropertyValue.setObject(6, version)
-                    upsertPropertyValue.setArray(7, versionArray)
-                    upsertPropertyValue.setObject(8, insertValue)
+                    upsertPropertyValue.setObject(3, propertyTypeId)
+                    upsertPropertyValue.setObject(4, propertyHash)
+                    upsertPropertyValue.setObject(5, version)
+                    upsertPropertyValue.setArray(6, versionArray)
+                    upsertPropertyValue.setObject(7, insertValue)
                     upsertPropertyValue.addBatch()
                 }
             }
-            upsertPropertyValues.values.map { it.executeBatch().sum().toLong() }.sum()
-        }.sum()
+            upsertPropertyValues.values.sumOf { it.executeBatch().sum().toLong() }
+        }
     }
 
     private fun tombstone(
             updatePropertyValueVersion: PreparedStatement,
             entitySet: EntitySet,
             entityKeyIdsArr: java.sql.Array,
-            partitionsArr: java.sql.Array,
             propertyTypeIdsArr: java.sql.Array,
             version: Long,
             entitySetId: UUID = entitySet.id
@@ -320,9 +303,8 @@ class PostgresDestination(
         updatePropertyValueVersion.setLong(2, -version)
         updatePropertyValueVersion.setLong(3, -version)
         updatePropertyValueVersion.setObject(4, entitySetId)
-        updatePropertyValueVersion.setArray(5, partitionsArr)
-        updatePropertyValueVersion.setArray(6, propertyTypeIdsArr)
-        updatePropertyValueVersion.setArray(7, entityKeyIdsArr)
+        updatePropertyValueVersion.setArray(5, propertyTypeIdsArr)
+        updatePropertyValueVersion.setArray(6, entityKeyIdsArr)
 
         val numUpdated = updatePropertyValueVersion.executeUpdate()
 
@@ -333,7 +315,6 @@ class PostgresDestination(
     private fun commitEntities(
             connection: Connection,
             entitySetId: UUID,
-            partition: Int,
             entityKeyIds: Set<UUID>,
             versionArray: java.sql.Array,
             version: Long
@@ -347,7 +328,6 @@ class PostgresDestination(
             ps.setObject(3, version)
             ps.setObject(4, entitySetId)
             ps.setObject(5, entityKeyId)
-            ps.setInt(6, partition)
             ps.addBatch()
         }
         val numUpdates = ps.executeBatch().sum()
