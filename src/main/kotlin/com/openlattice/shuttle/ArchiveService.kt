@@ -79,10 +79,10 @@ class ArchiveService(
         sqlAndExecuteHandler: (statement: Statement, date: String) -> Unit
     ) {
         if (date == NO_START_DATE) {
-            // if no start date provided, pass empty string
+            // if start date not provided, pass empty string
             sqlAndExecuteHandler(statement, NO_START_DATE)
         } else {
-            // convert to date to LocalDate, so we can add days in loop
+            // convert to date to LocalDate for date arithmetic
             val startDate = LocalDate.parse(date)
             for (dayIndex in 0 until days) {
                 val currentDate = startDate.plusDays(dayIndex.toLong()).toString()
@@ -98,7 +98,8 @@ class ArchiveService(
     }
 
     private fun importHandler(statement: Statement, currentDate: String) {
-        val parts = countOfS3ObjectsWithPrefix(currentDate)
+        val parts = countOfS3ObjectsWithPrefix(currentDate, ::sourcePrefix)
+        logger.info("Number of objects in s3 with prefix ${sourcePrefix(currentDate)}: $parts")
         for(part in 0 until parts) {
             // +1 to part to account for 0 vs 1 indexing
             executeStatement(statement, importSql(currentDate, part + 1))
@@ -113,10 +114,10 @@ class ArchiveService(
 
         // avoid quoting hell in Postgres by using dollar-sign quotes ($exportQuery$)
         return  "SELECT * FROM aws_s3.query_export_to_s3(" +
-                "\$exportQuery\$" +
+                "\$exportQuery\$ " +
                 "SELECT * FROM $schemaName.$sourceName " +
                 whereClauseByDate(date) +
-                "\$exportQuery\$," +
+                " \$exportQuery\$," +
                 "aws_commons.create_s3_uri(\n" +
                 "   '${archiveConfig.s3Bucket}',\n" +
                 "   '${destinationPrefix(date)}',\n" +
@@ -141,7 +142,7 @@ class ArchiveService(
     }
 
     private fun validateExport(date: String) {
-        if (countOfS3ObjectsWithPrefix(date) > 0) {
+        if (countOfS3ObjectsWithPrefix(date, ::destinationPrefix) > 0) {
             logger.info("Export validation succeeded. Data written to s3.")
         } else {
             logger.error("Export validation failed: no data written was written to s3. " +
@@ -167,19 +168,22 @@ class ArchiveService(
     }
 
     private fun isOverwrite(date: String) {
-        val count = countOfS3ObjectsWithPrefix(date)
+        val count = countOfS3ObjectsWithPrefix(date, ::destinationPrefix)
         if (count > 0) {
-            logger.info("Overwriting. Number of existing objects in s3 with prefix ${destinationPrefix(date)}: $count")
+            logger.info("Overwriting. Number of objects in s3 with prefix ${destinationPrefix(date)}: $count")
         } else {
             logger.info("Creating new objects. No objects exist in s3 with prefix ${destinationPrefix(date)}")
         }
     }
 
-    private fun countOfS3ObjectsWithPrefix(date: String): Int {
+    private fun countOfS3ObjectsWithPrefix(
+        date: String,
+        prefix: (date: String) -> String
+    ): Int {
         val objects: ObjectListing
         val objectsRequest = ListObjectsRequest(
             archiveConfig.s3Bucket,
-            destinationPrefix(date),
+            prefix(date),
             "",
             "/",
             1000
@@ -217,7 +221,7 @@ class ArchiveService(
         return if (date == NO_START_DATE) {
             ""
         } else {
-            "WHERE DATE($dateField) = '$date' "
+            "WHERE DATE($dateField) = '$date'"
         }
     }
 
@@ -236,10 +240,10 @@ class ArchiveService(
         logger.info("Executing query:\n $sql")
         try {
             val rs = statement.executeQuery(sql)
-            logger.info("Successfully executed query.")
+            logger.info("Successfully executed query.\n")
             return rs
         } catch (e: PSQLException) {
-            throw Error("Unsuccessful sql execution of $sql", e)
+            throw Error("Unsuccessful execution of sql $sql", e)
         }
     }
 }
