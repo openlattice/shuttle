@@ -31,7 +31,6 @@ import com.openlattice.data.ids.PostgresEntityKeyIdService
 import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.data.storage.DataSourceResolver
 import com.openlattice.data.storage.aws.AwsDataSinkService
-import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.datasets.DataSetService
 import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
@@ -205,7 +204,6 @@ class ShuttleServicesPod {
                 authorizationManager(),
                 principalService(),
                 phoneNumberService(),
-                partitionManager(),
                 assembler(),
                 collaborationService()
         )
@@ -314,13 +312,9 @@ class ShuttleServicesPod {
     fun idGenerationService() = HazelcastIdGenerationService(hazelcastClientProvider)
 
     @Bean
-    internal fun partitionManager() = PartitionManager(hazelcastInstance, hds)
-
-    @Bean
     fun idService() = PostgresEntityKeyIdService(
             dataSourceResolver(),
-            idGenerationService(),
-            partitionManager()
+            idGenerationService()
     )
 
     @Bean
@@ -356,7 +350,6 @@ class ShuttleServicesPod {
             eventBus,
             aclKeyReservationService(),
             authorizationManager(),
-            partitionManager(),
             dataModelService(),
             hds,
             datasetService(),
@@ -366,7 +359,6 @@ class ShuttleServicesPod {
     @Bean
     internal fun awsDataSinkService(): AwsDataSinkService {
         return AwsDataSinkService(
-                partitionManager(),
                 byteBlobDataManager,
                 dataSourceResolver()
         )
