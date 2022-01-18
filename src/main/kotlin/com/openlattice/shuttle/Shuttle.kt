@@ -44,7 +44,7 @@ import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
 import com.openlattice.hazelcast.HazelcastMap
 import com.openlattice.hazelcast.processors.shuttle.UpdateIntegrationStatusEntryProcessor
-import com.openlattice.retrofit.RhizomeRetrofitCallException
+import com.geekbeast.retrofit.RhizomeRetrofitCallException
 import com.openlattice.shuttle.destinations.AddressedDataHolder
 import com.openlattice.shuttle.destinations.IntegrationDestination
 import com.openlattice.shuttle.destinations.PostgresDestination
@@ -53,8 +53,6 @@ import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.logs.BlackboxProperty
 import com.openlattice.shuttle.payload.Payload
 import com.openlattice.shuttle.util.DataStoreType
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings
 import org.apache.commons.lang3.StringUtils
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind

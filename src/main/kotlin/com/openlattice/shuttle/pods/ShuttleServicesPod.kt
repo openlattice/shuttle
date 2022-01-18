@@ -2,7 +2,7 @@ package com.openlattice.shuttle.pods
 
 import com.auth0.client.mgmt.ManagementAPI
 import com.codahale.metrics.MetricRegistry
-import com.dataloom.mappers.ObjectMappers
+import com.geekbeast.mappers.mappers.ObjectMappers
 import com.geekbeast.hazelcast.HazelcastClientProvider
 import com.google.common.eventbus.EventBus
 import com.hazelcast.core.HazelcastInstance
@@ -13,10 +13,10 @@ import com.openlattice.assembler.UserRoleSyncTaskDependencies
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
 import com.openlattice.auditing.AuditingConfiguration
-import com.openlattice.auth0.Auth0Pod
-import com.openlattice.auth0.Auth0TokenProvider
-import com.openlattice.auth0.AwsAuth0TokenProvider
-import com.openlattice.authentication.Auth0Configuration
+import com.geekbeast.auth0.Auth0Pod
+import com.geekbeast.auth0.Auth0TokenProvider
+import com.geekbeast.auth0.AwsAuth0TokenProvider
+import com.geekbeast.authentication.Auth0Configuration
 import com.openlattice.authorization.*
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
@@ -40,7 +40,7 @@ import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.ids.HazelcastLongIdService
-import com.openlattice.jdbc.DataSourceManager
+import com.geekbeast.jdbc.DataSourceManager
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
@@ -51,7 +51,7 @@ import com.openlattice.scrunchie.search.ConductorElasticsearchImpl
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
-import com.openlattice.tasks.PostConstructInitializerTaskDependencies
+import com.geekbeast.tasks.PostConstructInitializerTaskDependencies
 import com.openlattice.users.Auth0UserListingService
 import com.openlattice.users.LocalUserListingService
 import com.openlattice.users.UserListingService

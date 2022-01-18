@@ -2,7 +2,7 @@ package com.openlattice.shuttle
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration
+import com.geekbeast.rhizome.configuration.configuration.annotation.ReloadableConfiguration
 import com.openlattice.shuttle.util.DataStoreType
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource

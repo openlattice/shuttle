@@ -21,7 +21,7 @@
 
 package com.openlattice.shuttle.transforms;
 
-import com.openlattice.serializer.AbstractJacksonSerializationTest;
+import com.geekbeast.serializer.serializer.AbstractJacksonSerializationTest;
 import transforms.PrefixTransform;
 
 /**

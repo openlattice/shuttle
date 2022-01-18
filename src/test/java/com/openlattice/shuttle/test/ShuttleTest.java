@@ -19,7 +19,7 @@
 
 package com.openlattice.shuttle.test;
 
-import com.dataloom.streams.StreamUtil;
+import com.geekbeast.streams.StreamUtil;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;

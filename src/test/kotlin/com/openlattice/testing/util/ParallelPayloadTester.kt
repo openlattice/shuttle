@@ -21,7 +21,7 @@
 
 package com.openlattice.testing.util
 
-import com.dataloom.streams.StreamUtil
+import com.geekbeast.streams.StreamUtil
 import com.google.common.collect.Queues
 import com.google.common.util.concurrent.MoreExecutors
 import org.apache.commons.lang3.RandomUtils

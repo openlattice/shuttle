@@ -1,6 +1,6 @@
 package com.openlattice.shuttle.pods
 
-import com.openlattice.auth0.Auth0SecurityPod
+import com.geekbeast.auth0.Auth0SecurityPod
 import com.ryantenney.metrics.spring.config.annotation.EnableMetrics
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpMethod

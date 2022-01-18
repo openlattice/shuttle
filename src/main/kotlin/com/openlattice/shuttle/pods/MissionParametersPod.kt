@@ -1,9 +1,9 @@
 package com.openlattice.shuttle.pods
 
 import com.amazonaws.services.s3.AmazonS3
-import com.kryptnostic.rhizome.configuration.ConfigurationConstants
-import com.kryptnostic.rhizome.configuration.amazon.AmazonLaunchConfiguration
-import com.openlattice.ResourceConfigurationLoader
+import com.geekbeast.rhizome.configuration.ConfigurationConstants
+import com.geekbeast.rhizome.configuration.configuration.amazon.AmazonLaunchConfiguration
+import com.geekbeast.ResourceConfigurationLoader
 import com.openlattice.shuttle.MissionParameters
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -31,8 +31,9 @@ class MissionParametersPod {
     }
 
     @Bean(name = ["missionParametersConfiguration"])
-    @Profile(ConfigurationConstants.Profiles.AWS_TESTING_PROFILE,
-            ConfigurationConstants.Profiles.AWS_CONFIGURATION_PROFILE)
+    @Profile(
+        ConfigurationConstants.Profiles.AWS_TESTING_PROFILE,
+        ConfigurationConstants.Profiles.AWS_CONFIGURATION_PROFILE)
     fun awsMissionParameterConfiguration(): MissionParameters {
         val alc = awsLaunchConfig!!
         val config = ResourceConfigurationLoader.loadConfigurationFromS3(
