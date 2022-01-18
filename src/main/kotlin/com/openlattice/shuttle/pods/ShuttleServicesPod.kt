@@ -6,7 +6,7 @@ import com.geekbeast.mappers.mappers.ObjectMappers
 import com.geekbeast.hazelcast.HazelcastClientProvider
 import com.google.common.eventbus.EventBus
 import com.hazelcast.core.HazelcastInstance
-import com.kryptnostic.rhizome.pods.ConfigurationLoader
+import com.geekbeast.rhizome.pods.ConfigurationLoader
 import com.openlattice.assembler.Assembler
 import com.openlattice.assembler.AssemblerConfiguration
 import com.openlattice.assembler.UserRoleSyncTaskDependencies
