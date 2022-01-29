@@ -5,8 +5,8 @@ import java.util.regex.Pattern
 plugins {
     id "application"
     id "java"
-    id 'org.jetbrains.kotlin.jvm' version '1.5.10'
-    id 'org.jetbrains.kotlin.plugin.spring' version '1.5.10'
+    id 'org.jetbrains.kotlin.jvm' version '1.6.10'
+    id 'org.jetbrains.kotlin.plugin.spring' version '1.6.10'
     id 'org.jetbrains.dokka' version '0.9.18'
     id 'com.github.spotbugs' version '4.6.0'
     id "signing"
@@ -100,13 +100,16 @@ if (GC == 'null' || GC == null || GC == "") {
 println "Using java args for running ${projectName}: Xms=" + S_XMS + ",Xmx=" + S_XMX + ",forkJoinPool=" + PARALLEL + " -server"
 
 applicationDefaultJvmArgs = ["-Xmx1G", "-Xms1G", "-server", PARALLEL]
-applicationDefaultJvmArgs += ["--add-modules", "java.se",
-                              "--add-exports", "java.base/jdk.internal.ref=ALL-UNNAMED",
-                              "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-                              "--add-opens", "java.base/java.nio=ALL-UNNAMED",
-                              "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
-                              "--add-opens", "java.management/sun.management=ALL-UNNAMED",
-                              "--add-opens", "jdk.management/com.sun.management.internal=ALL-UNNAMED"]
+applicationDefaultJvmArgs += ["--add-modules", "java.base",
+                              "--add-modules", "java.se",
+                              "--add-exports","java.base/jdk.internal.ref=ALL-UNNAMED",
+                              "--add-opens","java.base/java.lang=ALL-UNNAMED",
+                              "--add-opens","java.base/java.nio=ALL-UNNAMED",
+                              "--add-opens","java.base/sun.nio.ch=ALL-UNNAMED",
+                              "--add-opens","java.management/sun.management=ALL-UNNAMED",
+                              "--add-opens", "jdk.management/com.ibm.lang.management.internal=ALL-UNNAMED",
+                              "--add-opens","jdk.management/com.sun.management.internal=ALL-UNNAMED"]
+
 sourceCompatibility = JavaVersion.VERSION_11
 targetCompatibility = JavaVersion.VERSION_11
 
@@ -166,7 +169,6 @@ dependencies {
 
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-csv:${jackson_version}"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-xml:${jackson_version}"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
 
     implementation "commons-cli:commons-cli:$commons_cli_version"
     implementation "javax.xml.bind:jaxb-api:$jaxb_api_version"
@@ -181,6 +183,7 @@ dependencies {
 
     implementation "com.openlattice:api:${api_version}"
     implementation "com.openlattice:rhizome:${rhizome_version}"
+    implementation "com.openlattice:rhizome-client:${rhizome_client_version}"
     implementation "com.openlattice:conductor-client:${conductor_client_version}"
 
     testImplementation "com.openlattice:api:${api_version}"
@@ -207,25 +210,29 @@ startScripts {
 }
 
 tasks.withType(JavaCompile) {
-    options.compilerArgs += ["--add-modules", "java.se",
-                             "--add-exports", "java.base/jdk.internal.ref=ALL-UNNAMED",
-                             "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-                             "--add-opens", "java.base/java.nio=ALL-UNNAMED",
-                             "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
-                             "--add-opens", "java.management/sun.management=ALL-UNNAMED",
-                             "--add-opens", "jdk.management/com.sun.management.internal=ALL-UNNAMED"]
+    options.compilerArgs+= ["--add-modules", "java.base",
+                            "--add-modules", "java.se",
+                            "--add-exports","java.base/jdk.internal.ref=ALL-UNNAMED"]
 }
 
 tasks.withType(Test) {
-    jvmArgs += [PARALLEL,"--add-modules", "java.se",
-                "--add-exports", "java.base/jdk.internal.ref=ALL-UNNAMED",
-                "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-                "--add-opens", "java.base/java.nio=ALL-UNNAMED",
-                "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
-                "--add-opens", "java.management/sun.management=ALL-UNNAMED",
-                "--add-opens", "jdk.management/com.sun.management.internal=ALL-UNNAMED"]
+    jvmArgs += ["--add-modules", "java.base",
+                "--add-modules", "java.se",
+                "--add-exports","java.base/jdk.internal.ref=ALL-UNNAMED",
+                "--add-opens","java.base/java.lang=ALL-UNNAMED",
+                "--add-opens","java.base/java.nio=ALL-UNNAMED",
+                "--add-opens","java.base/sun.nio.ch=ALL-UNNAMED",
+                "--add-opens","java.management/sun.management=ALL-UNNAMED",
+                "--add-opens", "jdk.management/com.ibm.lang.management.internal=ALL-UNNAMED",
+                "--add-opens","jdk.management/com.sun.management.internal=ALL-UNNAMED"]
 }
 
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions {
+        jvmTarget = "11"
+        freeCompilerArgs += '-Xjvm-default=compatibility'
+    }
+}
 
 eclipse {
     ext.downloadSources = true
@@ -238,13 +245,3 @@ eclipse {
 eclipse.classpath.plusConfigurations += [configurations.provided]
 
 
-compileKotlin {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-}
-compileTestKotlin {
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-}
