@@ -1,9 +1,8 @@
 package com.openlattice.shuttle.pods
 
-import com.kryptnostic.rhizome.configuration.servlets.DispatcherServletConfiguration
+import com.geekbeast.rhizome.configuration.servlets.DispatcherServletConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.servlet.config.annotation.EnableWebMvc
 
 /**
  *

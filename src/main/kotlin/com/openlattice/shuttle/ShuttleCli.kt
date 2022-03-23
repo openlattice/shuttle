@@ -4,11 +4,11 @@ import com.amazonaws.auth.InstanceProfileCredentialsProvider
 import com.amazonaws.regions.RegionUtils
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
-import com.dataloom.mappers.ObjectMappers
+import com.geekbeast.mappers.mappers.ObjectMappers
 import com.fasterxml.jackson.core.JsonParseException
 import com.fasterxml.jackson.databind.JsonMappingException
 import com.google.common.base.Preconditions
-import com.openlattice.ResourceConfigurationLoader
+import com.geekbeast.ResourceConfigurationLoader
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CONFIGURATION
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.CREATE
@@ -50,7 +50,6 @@ import java.io.File
 import java.io.IOException
 import java.nio.file.Paths
 import java.util.*
-import java.util.function.Supplier
 import kotlin.system.exitProcess
 
 private val logger = LoggerFactory.getLogger(ShuttleCli::class.java)

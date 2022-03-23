@@ -22,7 +22,7 @@ package com.openlattice.shuttle.edm;
 import com.openlattice.client.serialization.SerializationConstants;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration;
+import com.geekbeast.rhizome.configuration.configuration.annotation.ReloadableConfiguration;
 
 import java.util.Set;
 

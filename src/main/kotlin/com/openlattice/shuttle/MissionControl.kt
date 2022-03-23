@@ -21,14 +21,14 @@
 
 package com.openlattice.shuttle
 
-import com.geekbeast.auth0.Auth0Delegate
 import com.geekbeast.mappers.mappers.ObjectMappers
+import com.google.common.base.Suppliers
+import com.google.common.collect.Maps
+import com.geekbeast.auth0.Auth0Delegate
 import com.geekbeast.retrofit.RhizomeByteConverterFactory
 import com.geekbeast.retrofit.RhizomeCallAdapterFactory
 import com.geekbeast.retrofit.RhizomeJacksonConverterFactory
 import com.geekbeast.retrofit.RhizomeRetrofitCallException
-import com.google.common.base.Suppliers
-import com.google.common.collect.Maps
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
@@ -83,7 +83,15 @@ class MissionControl(
         private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
         private const val AUTH0_CONNECTION = "Username-Password-Authentication"
         const val AUTH0_CLIENT_DOMAIN = "openlattice.auth0.com"
-        const val AUTH0_SCOPES = "openid email nickname roles user_id organizations"
+        const val AUTH0_SCOPES = "openid email nickname roles uimport com.geekbeast.retrofit.RhizomeByteConverterFactory
+42
+import com.geekbeast.retrofit.RhizomeCallAdapterFactory
+43
+import com.geekbeast.retrofit.RhizomeJacksonConverterFactory
+44
+import com.geekbeast.retrofit.RhizomeRetrofitCallException
+45
+ser_id organizations"
 
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
         private val auth0Client: Auth0Delegate = Auth0Delegate.fromConstants(AUTH0_CLIENT_DOMAIN, AUTH0_CLIENT_ID,
@@ -300,7 +308,9 @@ class MissionControl(
             integrationDestinations,
             dataIntegrationApi,
             primaryKeyCols,
-            parameters,
+            parameters,import com.google.common.base.Suppliers
+33
+import com.google.common.collect.Maps
             dataStore,
             binaryStorageDestination,
             Blackbox.empty(),

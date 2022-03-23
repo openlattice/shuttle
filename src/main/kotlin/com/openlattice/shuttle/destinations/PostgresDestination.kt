@@ -21,7 +21,7 @@
 
 package com.openlattice.shuttle.destinations
 
-import com.dataloom.mappers.ObjectMappers
+import com.geekbeast.mappers.mappers.ObjectMappers
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.base.Stopwatch
 import com.google.common.collect.ImmutableList
@@ -38,7 +38,7 @@ import com.openlattice.edm.type.PropertyType
 import com.openlattice.graph.EDGES_UPSERT_SQL
 import com.openlattice.graph.bindColumnsForEdge
 import com.openlattice.postgres.JsonDeserializer
-import com.openlattice.postgres.PostgresArrays
+import com.geekbeast.postgres.PostgresArrays
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.util.DataStoreType
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind

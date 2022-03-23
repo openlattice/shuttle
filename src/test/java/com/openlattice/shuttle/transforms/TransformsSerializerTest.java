@@ -22,7 +22,7 @@
 package com.openlattice.shuttle.transforms;
 
 import com.google.common.collect.ImmutableList;
-import com.openlattice.serializer.AbstractJacksonSerializationTest;
+import com.geekbeast.serializer.serializer.AbstractJacksonSerializationTest;
 import com.openlattice.shuttle.transformations.Transformation;
 import com.openlattice.shuttle.transforms.TransformsSerializerTest.OptionalListOfTransforms;
 import transforms.HashTransform;
