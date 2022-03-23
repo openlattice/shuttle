@@ -83,15 +83,7 @@ class MissionControl(
         private const val AUTH0_CLIENT_ID = "o8Y2U2zb5Iwo01jdxMN1W2aiN8PxwVjh"
         private const val AUTH0_CONNECTION = "Username-Password-Authentication"
         const val AUTH0_CLIENT_DOMAIN = "openlattice.auth0.com"
-        const val AUTH0_SCOPES = "openid email nickname roles uimport com.geekbeast.retrofit.RhizomeByteConverterFactory
-42
-import com.geekbeast.retrofit.RhizomeCallAdapterFactory
-43
-import com.geekbeast.retrofit.RhizomeJacksonConverterFactory
-44
-import com.geekbeast.retrofit.RhizomeRetrofitCallException
-45
-ser_id organizations"
+        const val AUTH0_SCOPES = "openid email nickname roles user_id organizations"
 
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
         private val auth0Client: Auth0Delegate = Auth0Delegate.fromConstants(AUTH0_CLIENT_DOMAIN, AUTH0_CLIENT_ID,
@@ -308,9 +300,7 @@ ser_id organizations"
             integrationDestinations,
             dataIntegrationApi,
             primaryKeyCols,
-            parameters,import com.google.common.base.Suppliers
-33
-import com.google.common.collect.Maps
+            parameters,
             dataStore,
             binaryStorageDestination,
             Blackbox.empty(),
