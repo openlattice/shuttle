@@ -1,7 +1,7 @@
 package com.openlattice.shuttle.logs
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.kryptnostic.rhizome.configuration.annotation.ReloadableConfiguration
+import com.geekbeast.rhizome.configuration.configuration.annotation.ReloadableConfiguration
 
 @ReloadableConfiguration(uri = "blackbox.yaml")
 data class Blackbox (

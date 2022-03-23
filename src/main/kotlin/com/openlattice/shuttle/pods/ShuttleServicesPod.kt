@@ -2,21 +2,24 @@ package com.openlattice.shuttle.pods
 
 import com.auth0.client.mgmt.ManagementAPI
 import com.codahale.metrics.MetricRegistry
-import com.dataloom.mappers.ObjectMappers
+import com.geekbeast.auth0.Auth0Pod
+import com.geekbeast.auth0.Auth0TokenProvider
+import com.geekbeast.auth0.ManagementApiProvider
+import com.geekbeast.auth0.RefreshingAuth0TokenProvider
+import com.geekbeast.authentication.Auth0Configuration
 import com.geekbeast.hazelcast.HazelcastClientProvider
+import com.geekbeast.jdbc.DataSourceManager
+import com.geekbeast.mappers.mappers.ObjectMappers
+import com.geekbeast.rhizome.pods.ConfigurationLoader
+import com.geekbeast.tasks.PostConstructInitializerTaskDependencies
 import com.google.common.eventbus.EventBus
 import com.hazelcast.core.HazelcastInstance
-import com.kryptnostic.rhizome.pods.ConfigurationLoader
 import com.openlattice.assembler.Assembler
 import com.openlattice.assembler.AssemblerConfiguration
 import com.openlattice.assembler.UserRoleSyncTaskDependencies
 import com.openlattice.assembler.pods.AssemblerConfigurationPod
 import com.openlattice.assembler.tasks.UsersAndRolesInitializationTask
 import com.openlattice.auditing.AuditingConfiguration
-import com.openlattice.auth0.Auth0Pod
-import com.openlattice.auth0.Auth0TokenProvider
-import com.openlattice.auth0.AwsAuth0TokenProvider
-import com.openlattice.authentication.Auth0Configuration
 import com.openlattice.authorization.*
 import com.openlattice.authorization.initializers.AuthorizationInitializationDependencies
 import com.openlattice.authorization.initializers.AuthorizationInitializationTask
@@ -31,7 +34,6 @@ import com.openlattice.data.ids.PostgresEntityKeyIdService
 import com.openlattice.data.storage.ByteBlobDataManager
 import com.openlattice.data.storage.DataSourceResolver
 import com.openlattice.data.storage.aws.AwsDataSinkService
-import com.openlattice.data.storage.partitions.PartitionManager
 import com.openlattice.datasets.DataSetService
 import com.openlattice.datastore.services.EdmService
 import com.openlattice.datastore.services.EntitySetService
@@ -41,7 +43,6 @@ import com.openlattice.hazelcast.mapstores.shuttle.IntegrationJobsMapstore
 import com.openlattice.hazelcast.mapstores.shuttle.IntegrationsMapstore
 import com.openlattice.ids.HazelcastIdGenerationService
 import com.openlattice.ids.HazelcastLongIdService
-import com.openlattice.jdbc.DataSourceManager
 import com.openlattice.notifications.sms.PhoneNumberService
 import com.openlattice.organizations.HazelcastOrganizationService
 import com.openlattice.organizations.roles.HazelcastPrincipalService
@@ -52,7 +53,6 @@ import com.openlattice.scrunchie.search.ConductorElasticsearchImpl
 import com.openlattice.shuttle.IntegrationService
 import com.openlattice.shuttle.MissionParameters
 import com.openlattice.shuttle.logs.Blackbox
-import com.openlattice.tasks.PostConstructInitializerTaskDependencies
 import com.openlattice.users.Auth0UserListingService
 import com.openlattice.users.LocalUserListingService
 import com.openlattice.users.UserListingService
@@ -205,7 +205,6 @@ class ShuttleServicesPod {
                 authorizationManager(),
                 principalService(),
                 phoneNumberService(),
-                partitionManager(),
                 assembler(),
                 collaborationService()
         )
@@ -213,12 +212,12 @@ class ShuttleServicesPod {
 
     @Bean
     fun auth0TokenProvider(): Auth0TokenProvider {
-        return AwsAuth0TokenProvider(auth0Configuration)
+        return RefreshingAuth0TokenProvider(auth0Configuration)
     }
 
     @Bean
-    fun managementAPI(): ManagementAPI {
-        return ManagementAPI(auth0Configuration.domain, auth0TokenProvider().token)
+    fun managementApiProvider(): ManagementApiProvider {
+        return ManagementApiProvider(auth0TokenProvider(), auth0Configuration)
     }
 
     @Bean
@@ -229,7 +228,7 @@ class ShuttleServicesPod {
         } else {
             val auth0Token = auth0TokenProvider().token
             Auth0UserListingService(
-                    ManagementAPI(config.domain, auth0Token),
+                    managementApiProvider(),
                     Auth0ApiExtension(config.domain, auth0Token)
             )
         }
@@ -314,13 +313,9 @@ class ShuttleServicesPod {
     fun idGenerationService() = HazelcastIdGenerationService(hazelcastClientProvider)
 
     @Bean
-    internal fun partitionManager() = PartitionManager(hazelcastInstance, hds)
-
-    @Bean
     fun idService() = PostgresEntityKeyIdService(
             dataSourceResolver(),
-            idGenerationService(),
-            partitionManager()
+            idGenerationService()
     )
 
     @Bean
@@ -356,7 +351,6 @@ class ShuttleServicesPod {
             eventBus,
             aclKeyReservationService(),
             authorizationManager(),
-            partitionManager(),
             dataModelService(),
             hds,
             datasetService(),
@@ -366,7 +360,6 @@ class ShuttleServicesPod {
     @Bean
     internal fun awsDataSinkService(): AwsDataSinkService {
         return AwsDataSinkService(
-                partitionManager(),
                 byteBlobDataManager,
                 dataSourceResolver()
         )
