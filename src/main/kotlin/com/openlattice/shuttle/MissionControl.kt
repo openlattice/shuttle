@@ -21,10 +21,14 @@
 
 package com.openlattice.shuttle
 
-import com.dataloom.mappers.ObjectMappers
+import com.geekbeast.auth0.Auth0Delegate
+import com.geekbeast.mappers.mappers.ObjectMappers
+import com.geekbeast.retrofit.RhizomeByteConverterFactory
+import com.geekbeast.retrofit.RhizomeCallAdapterFactory
+import com.geekbeast.retrofit.RhizomeJacksonConverterFactory
+import com.geekbeast.retrofit.RhizomeRetrofitCallException
 import com.google.common.base.Suppliers
 import com.google.common.collect.Maps
-import com.openlattice.auth0.Auth0Delegate
 import com.openlattice.client.ApiClient
 import com.openlattice.client.RetrofitFactory
 import com.openlattice.data.S3Api
@@ -32,10 +36,6 @@ import com.openlattice.data.serializers.FullQualifiedNameJacksonSerializer
 import com.openlattice.edm.EntitySet
 import com.openlattice.edm.type.EntityType
 import com.openlattice.edm.type.PropertyType
-import com.openlattice.retrofit.RhizomeByteConverterFactory
-import com.openlattice.retrofit.RhizomeCallAdapterFactory
-import com.openlattice.retrofit.RhizomeJacksonConverterFactory
-import com.openlattice.retrofit.RhizomeRetrofitCallException
 import com.openlattice.shuttle.destinations.*
 import com.openlattice.shuttle.logs.Blackbox
 import com.openlattice.shuttle.payload.Payload
@@ -86,8 +86,8 @@ class MissionControl(
         const val AUTH0_SCOPES = "openid email nickname roles user_id organizations"
 
         private val logger = LoggerFactory.getLogger(MissionControl::class.java)
-        private val auth0Client: Auth0Delegate = Auth0Delegate.fromConstants( AUTH0_CLIENT_DOMAIN, AUTH0_CLIENT_ID,
-                AUTH0_CONNECTION, AUTH0_SCOPES )
+        private val auth0Client: Auth0Delegate = Auth0Delegate.fromConstants(AUTH0_CLIENT_DOMAIN, AUTH0_CLIENT_ID,
+                                                                             AUTH0_CONNECTION, AUTH0_SCOPES )
         private var emailConfiguration: Optional<EmailConfiguration> = Optional.empty()
         private var terminateOnSuccess = true
 
