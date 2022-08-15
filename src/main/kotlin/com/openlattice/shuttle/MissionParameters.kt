@@ -19,9 +19,9 @@ data class PostgresConfiguration(
 
 @ReloadableConfiguration(uri = "shuttle.yaml")
 data class MissionParameters(
-    @JsonProperty("postgres") val postgres: PostgresConfiguration,
-    @JsonProperty("aurora") val aurora: PostgresConfiguration,
-    @JsonProperty("alpr") val alpr: PostgresConfiguration
+    @JsonProperty("postgres") val postgres: PostgresConfiguration = PostgresConfiguration(Properties()),
+    @JsonProperty("aurora") val aurora: PostgresConfiguration = PostgresConfiguration(Properties()),
+    @JsonProperty("alpr") val alpr: PostgresConfiguration = PostgresConfiguration(Properties())
 ) {
     companion object {
         @JvmStatic
