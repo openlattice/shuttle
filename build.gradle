@@ -181,7 +181,7 @@ dependencies {
     implementation "com.microsoft.sqlserver:mssql-jdbc:$mssql_jdbc_version"
     implementation "org.postgresql:postgresql:$postgresql_version"
 
-    implementation (group: "org.slf4j", name: "slf4j-api", version: "${slf4j_version}") {
+    implementation (group: "org.slf4j", name: "slf4j-api", version: "1.8.0-beta4") {
         force = true
     }
 
