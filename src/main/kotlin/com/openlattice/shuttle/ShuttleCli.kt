@@ -39,7 +39,13 @@ import com.openlattice.shuttle.ShuttleCliOptions.Companion.TOKEN
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.UPLOAD_SIZE
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.USER
 import com.openlattice.shuttle.ShuttleCliOptions.Companion.XML
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.ARCHIVE
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.IMPORT
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.EXPORT
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.START_DATE
+import com.openlattice.shuttle.ShuttleCliOptions.Companion.DAYS
 import com.openlattice.shuttle.config.IntegrationConfig
+import com.openlattice.shuttle.config.ArchiveYamlMapping
 import com.openlattice.shuttle.payload.*
 import com.openlattice.shuttle.source.LocalFileOrigin
 import com.openlattice.shuttle.source.S3BucketOrigin
@@ -49,6 +55,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.nio.file.Paths
+import java.time.LocalDate
 import java.util.*
 import kotlin.system.exitProcess
 
@@ -79,6 +86,68 @@ fun main(args: Array<String>) {
 
     if (cl.hasOption(HELP)) {
         ShuttleCliOptions.printHelp()
+        return
+    }
+
+    if (cl.hasOption(ARCHIVE)) {
+        if (cl.hasOption(CONFIGURATION)) {
+
+            val archiveYamlMapping = try {
+                ObjectMappers.getYamlMapper()
+                    .readValue(File(cl.getOptionValue(CONFIGURATION)), ArchiveYamlMapping::class.java)
+            } catch (io: IOException) {
+                logger.info("IOException encountered converting yaml file into java objects", io)
+                exitProcess(1)
+            } catch (jp: JsonParseException) {
+                logger.info("Shuttle was unable to parse the yaml file", jp)
+                exitProcess(1)
+            } catch (jm: JsonMappingException) {
+                logger.info( "Shuttle was unable to map the yaml objects into java objects", jm)
+                exitProcess(1)
+            }
+
+            val days = if (cl.hasOption(DAYS)) {
+                cl.getOptionValue(DAYS).toInt()
+            } else {
+                DEFAULT_DAYS
+            }
+
+            val startDate = if (cl.hasOption(START_DATE)) {
+                cl.getOptionValue(START_DATE)
+            } else {
+                logger.info("No start date provided.")
+                NO_START_DATE
+            }
+
+            val archiver = ArchiveService(
+                archiveYamlMapping.archiveConfig,
+                archiveYamlMapping.dbName,
+                archiveYamlMapping.schemaName,
+                archiveYamlMapping.sourceName,
+                archiveYamlMapping.destinationName,
+                archiveYamlMapping.dateField
+            )
+
+            val archiveOption = cl.getOptionValue(ARCHIVE)
+
+            if (archiveOption.equals(EXPORT)) {
+                archiver.mummify(
+                    startDate,
+                    days
+                )
+            } else if (archiveOption.equals(IMPORT)) {
+                archiver.exhume(
+                    startDate,
+                    days
+                )
+            } else {
+                logger.error("Export or import option must be specified with archive. \n\t--archive import\n\t--archive export")
+                exitProcess(1)
+            }
+        } else {
+            logger.error("Archive specified, but config yaml file not provided. \n\t--config /path/to/file.yaml")
+            exitProcess(1)
+        }
         return
     }
 
